@@ -65,25 +65,29 @@ export const api = {
     apiFetch<SummaryResponse>(
       `/report/summary${windowSeconds ? `?window_seconds=${windowSeconds}` : ''}`,
     ),
-  sessions: (params?: { sort?: string; limit?: number; min_risk?: string }) => {
+  sessions: async (params?: { sort?: string; limit?: number; min_risk?: string }) => {
     const qs = new URLSearchParams()
     if (params?.sort) qs.set('sort', params.sort)
     if (params?.limit) qs.set('limit', String(params.limit))
     if (params?.min_risk) qs.set('min_risk', params.min_risk)
-    return apiFetch<SessionSummary[]>(`/report/sessions?${qs}`)
+    const result = await apiFetch<{ sessions: SessionSummary[] }>(`/report/sessions?${qs}`)
+    return result.sessions ?? []
   },
   sessionRisk: (id: string) => apiFetch<SessionRisk>(`/report/session/${id}/risk`),
-  sessionReplay: (id: string, limit?: number) =>
-    apiFetch<TrajectoryRecord[]>(
+  sessionReplay: async (id: string, limit?: number) => {
+    const result = await apiFetch<{ records: TrajectoryRecord[] }>(
       `/report/session/${id}${limit ? `?limit=${limit}` : ''}`,
-    ),
-  alerts: (params?: { severity?: string; acknowledged?: boolean; limit?: number }) => {
+    )
+    return result.records ?? []
+  },
+  alerts: async (params?: { severity?: string; acknowledged?: boolean; limit?: number }) => {
     const qs = new URLSearchParams()
     if (params?.severity) qs.set('severity', params.severity)
     if (params?.acknowledged !== undefined)
       qs.set('acknowledged', String(params.acknowledged))
     if (params?.limit) qs.set('limit', String(params.limit))
-    return apiFetch<Alert[]>(`/report/alerts?${qs}`)
+    const result = await apiFetch<{ alerts: Alert[] }>(`/report/alerts?${qs}`)
+    return result.alerts ?? []
   },
   acknowledgeAlert: (id: string) =>
     apiFetch<{ status: string }>(`/report/alerts/${id}/acknowledge`, {

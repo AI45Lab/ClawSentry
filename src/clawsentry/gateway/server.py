@@ -17,6 +17,7 @@ from collections import defaultdict, deque
 from datetime import datetime, timezone
 import hmac
 import json
+import argparse
 import logging
 import os
 import sqlite3
@@ -1642,7 +1643,9 @@ def create_http_app(
                     try:
                         event = await asyncio.wait_for(queue.get(), timeout=15.0)
                         event_type = str(event.get("type") or "message")
-                        payload = {k: v for k, v in event.items() if k != "type"}
+                        # Keep "type" in data payload so clients that only parse data: lines
+                        # (e.g. urllib-based watch CLI) can still dispatch on event type.
+                        payload = {**event, "type": event_type}
                         yield f"event: {event_type}\ndata: {json.dumps(payload)}\n\n"
                     except asyncio.TimeoutError:
                         yield ": keepalive\n\n"
@@ -2015,11 +2018,92 @@ def _gateway_args_from_env() -> dict:
     return args
 
 
+def _build_gateway_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="clawsentry-gateway",
+        description=(
+            "Run the ClawSentry Supervision Gateway.\n\n"
+            "All options can also be set via environment variables (shown in brackets).\n"
+            "CLI flags take precedence over environment variables."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--uds-path",
+        default=None,
+        metavar="PATH",
+        help=f"Unix domain socket path [CS_UDS_PATH] (default: {DEFAULT_UDS_PATH})",
+    )
+    parser.add_argument(
+        "--host",
+        default=None,
+        metavar="HOST",
+        help=f"HTTP bind host [CS_HTTP_HOST] (default: {DEFAULT_HTTP_HOST})",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        metavar="PORT",
+        help=f"HTTP bind port [CS_HTTP_PORT] (default: {DEFAULT_HTTP_PORT})",
+    )
+    parser.add_argument(
+        "--trajectory-db-path",
+        default=None,
+        metavar="PATH",
+        help=f"SQLite trajectory DB path [CS_TRAJECTORY_DB_PATH] (default: {DEFAULT_TRAJECTORY_DB_PATH})",
+    )
+    parser.add_argument(
+        "--trajectory-retention-seconds",
+        type=int,
+        default=None,
+        metavar="SECONDS",
+        help=f"Trajectory retention window [AHP_TRAJECTORY_RETENTION_SECONDS] (default: {DEFAULT_TRAJECTORY_RETENTION_SECONDS})",
+    )
+    parser.add_argument(
+        "--ssl-certfile",
+        default=None,
+        metavar="PATH",
+        help="TLS certificate file [AHP_SSL_CERTFILE] (enables HTTPS when combined with --ssl-keyfile)",
+    )
+    parser.add_argument(
+        "--ssl-keyfile",
+        default=None,
+        metavar="PATH",
+        help="TLS private key file [AHP_SSL_KEYFILE]",
+    )
+    return parser
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
     from ..cli.dotenv_loader import load_dotenv
     load_dotenv()
-    asyncio.run(run_gateway(**_gateway_args_from_env()))
+
+    parser = _build_gateway_parser()
+    args = parser.parse_args()
+
+    # Build kwargs: env-derived defaults, then override with explicit CLI flags
+    kwargs = _gateway_args_from_env()
+    if args.uds_path is not None:
+        kwargs["uds_path"] = args.uds_path
+    if args.host is not None:
+        kwargs["http_host"] = args.host
+    if args.port is not None:
+        kwargs["http_port"] = args.port
+    if args.trajectory_db_path is not None:
+        kwargs["trajectory_db_path"] = args.trajectory_db_path
+    if args.trajectory_retention_seconds is not None:
+        kwargs["trajectory_retention_seconds"] = args.trajectory_retention_seconds
+    if args.ssl_certfile is not None:
+        kwargs["ssl_certfile"] = args.ssl_certfile
+    if args.ssl_keyfile is not None:
+        kwargs["ssl_keyfile"] = args.ssl_keyfile
+
+    try:
+        asyncio.run(run_gateway(**kwargs))
+    except KeyboardInterrupt:
+        logger.info("Gateway stopped by user.")
 
 
 if __name__ == "__main__":

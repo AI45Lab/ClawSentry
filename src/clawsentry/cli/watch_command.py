@@ -89,6 +89,9 @@ def format_decision(event: dict, *, color: bool = True) -> str:
     Example (colour stripped)::
 
         [10:30:45]  BLOCK   rm -rf /data           risk=high    D1: destructive pattern
+
+    Returns an empty string for observation-only events (pre-prompt / post-response)
+    that are always fail-open and carry no tool name — callers should skip these.
     """
     hms = _timestamp_hms(event.get("timestamp"))
     decision = str(event.get("decision") or "unknown").upper()
@@ -96,8 +99,16 @@ def format_decision(event: dict, *, color: bool = True) -> str:
     risk = str(event.get("risk_level") or "unknown")
     reason = str(event.get("reason") or "")
 
+    # Skip observation-only events that carry no tool name (pre-prompt, post-response, etc.).
+    # These are always fail-open / non-blocking and never actionable for an operator.
+    if command.strip() in ("", "None"):
+        return ""
+
     colour_name = _DECISION_COLORS.get(decision.lower(), "cyan")
     decision_str = _c(colour_name, f"{decision:8s}", color=color)
+
+    actual_tier = str(event.get("actual_tier") or "")
+    tier_suffix = f" [{actual_tier}]" if actual_tier and actual_tier != "L1" else ""
 
     parts = [
         f"[{hms}]",
@@ -106,7 +117,9 @@ def format_decision(event: dict, *, color: bool = True) -> str:
         f"risk={risk}",
     ]
     if reason:
-        parts.append(f"   {reason}")
+        parts.append(f"   {reason}{tier_suffix}")
+    elif tier_suffix:
+        parts.append(tier_suffix)
 
     return "  ".join(parts)
 
@@ -335,6 +348,8 @@ def run_watch(
                     if parsed is None:
                         continue
                     output = format_event(parsed, color=color, json_mode=json_mode)
+                    if not output:
+                        continue
                     print(output, flush=True)
 
         except KeyboardInterrupt:

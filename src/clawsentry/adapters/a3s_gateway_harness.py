@@ -251,7 +251,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--default-deadline-ms",
         type=int,
-        default=int(os.getenv("A3S_GATEWAY_DEFAULT_DEADLINE_MS", "100")),
+        default=int(os.getenv("A3S_GATEWAY_DEFAULT_DEADLINE_MS", "4500")),
     )
     parser.add_argument(
         "--max-rpc-retries",

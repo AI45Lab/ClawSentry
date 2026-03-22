@@ -8,7 +8,7 @@ export function useAuth() {
   const check = useCallback(async () => {
     setChecking(true)
     try {
-      await api.health()
+      await api.summary()
       setAuthenticated(true)
     } catch (e) {
       if (e instanceof AuthError) {

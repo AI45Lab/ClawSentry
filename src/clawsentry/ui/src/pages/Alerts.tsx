@@ -156,7 +156,9 @@ export default function Alerts() {
                     to={`/sessions/${alert.session_id}`}
                     style={{ color: 'var(--color-accent)', textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}
                   >
-                    {alert.session_id.length > 12 ? alert.session_id.slice(0, 12) + '...' : alert.session_id}
+                    {(alert.session_id ?? '').length > 12
+                      ? (alert.session_id ?? '').slice(0, 12) + '...'
+                      : (alert.session_id ?? '—')}
                   </Link>
                 </td>
                 <td className="text-secondary" style={{ fontSize: '0.8rem', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

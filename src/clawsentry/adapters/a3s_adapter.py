@@ -141,7 +141,7 @@ class A3SCodeAdapter:
     def __init__(
         self,
         uds_path: str = "/tmp/clawsentry.sock",
-        default_deadline_ms: int = 100,
+        default_deadline_ms: int = 4500,
         max_rpc_retries: int = 1,
         retry_backoff_ms: int = 50,
     ) -> None:
@@ -348,17 +348,17 @@ class A3SCodeAdapter:
             writer.write(jsonrpc_body)
             await writer.drain()
 
-            # Read length-prefixed response
+            # Read length-prefixed response (+0.5s buffer so Gateway can send DEADLINE_EXCEEDED)
             length_bytes = await asyncio.wait_for(
                 reader.readexactly(4),
-                timeout=req.deadline_ms / 1000.0,
+                timeout=req.deadline_ms / 1000.0 + 0.5,
             )
             resp_length = struct.unpack("!I", length_bytes)[0]
             if resp_length > 10 * 1024 * 1024:  # 10MB limit
                 raise ValueError(f"Response too large: {resp_length} bytes")
             resp_data = await asyncio.wait_for(
                 reader.readexactly(resp_length),
-                timeout=req.deadline_ms / 1000.0,
+                timeout=req.deadline_ms / 1000.0 + 0.5,
             )
             return json.loads(resp_data)
         finally:

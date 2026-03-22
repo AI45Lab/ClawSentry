@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { LayoutDashboard, Users, AlertTriangle, ShieldCheck } from 'lucide-react'
 import StatusBar from './StatusBar'
+import ErrorBoundary from './ErrorBoundary'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -14,7 +15,7 @@ export default function Layout() {
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h1>A3S MONITOR</h1>
+          <h1>CLAWSENTRY</h1>
           <div className="subtitle">Security Dashboard</div>
         </div>
         <nav className="sidebar-nav">
@@ -36,8 +37,10 @@ export default function Layout() {
           <StatusBar />
         </div>
         <div className="page-content fade-in">
-          <Outlet />
-        </div>
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </div>
       </div>
     </div>
   )

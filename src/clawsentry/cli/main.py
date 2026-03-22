@@ -92,8 +92,8 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     watch_parser.add_argument(
         "--token",
-        default=None,
-        help="Bearer token for Gateway authentication.",
+        default=os.environ.get("CS_AUTH_TOKEN"),
+        help="Bearer token for Gateway authentication [CS_AUTH_TOKEN].",
     )
     watch_parser.add_argument(
         "--filter",
@@ -124,6 +124,8 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> None:
+    from .dotenv_loader import load_dotenv
+    load_dotenv()
     parser = _build_parser()
     args, remaining = parser.parse_known_args(argv)
 

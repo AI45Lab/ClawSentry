@@ -11,6 +11,7 @@ from __future__ import annotations
 import enum
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 
@@ -35,12 +36,15 @@ class SessionEnforcement:
     high_risk_count: int
 
     def to_dict(self) -> dict[str, Any]:
+        def _iso(ts: float) -> str:
+            return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+
         return {
             "session_id": self.session_id,
             "state": EnforcementState.ENFORCED.value,
             "action": self.action.value,
-            "triggered_at": self.triggered_at,
-            "last_high_risk_at": self.last_high_risk_at,
+            "triggered_at": _iso(self.triggered_at),
+            "last_high_risk_at": _iso(self.last_high_risk_at),
             "high_risk_count": self.high_risk_count,
         }
 
@@ -77,7 +81,7 @@ class SessionEnforcementPolicy:
         if enf is None:
             return None
         if self.cooldown_seconds > 0:
-            elapsed = time.monotonic() - enf.last_high_risk_at
+            elapsed = time.time() - enf.last_high_risk_at
             if elapsed >= self.cooldown_seconds:
                 del self._enforced[session_id]
                 return None
@@ -91,7 +95,7 @@ class SessionEnforcementPolicy:
             return None
         if high_risk_count < self.threshold:
             return None
-        now = time.monotonic()
+        now = time.time()
         existing = self._enforced.get(session_id)
         if existing is not None:
             # Already enforced — update timestamp for cooldown reset

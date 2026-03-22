@@ -17,7 +17,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h2>A3S MONITOR</h2>
+        <h2>CLAWSENTRY</h2>
         <div className="subtitle">Enter your AHP auth token to connect</div>
         <form onSubmit={handleSubmit}>
           <input
