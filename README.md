@@ -2,7 +2,7 @@
 
 # ClawSentry
 
-AHP (Agent Harness Protocol) reference implementation — a unified security supervision gateway for AI agent runtimes.
+[AHP (Agent Harness Protocol)](https://github.com/A3S-Lab/AgentHarnessProtocol) reference implementation — a unified security supervision gateway for AI agent runtimes.
 
 ## Features
 
