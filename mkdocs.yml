@@ -1,8 +1,8 @@
 site_name: ClawSentry
 site_description: "Agent Harness Protocol (AHP) 参考实现 — 面向 AI Agent 运行时的统一安全监督网关"
 site_url: https://elroyper.github.io/ClawSentry/
-repo_url: https://github.com/Elroyper/ClawSentry
-repo_name: Elroyper/ClawSentry
+repo_url: https://github.com/AI45Lab/ClawSentry
+repo_name: AI45Lab/ClawSentry
 docs_dir: site-docs
 
 theme:
@@ -82,7 +82,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Elroyper/ClawSentry
+      link: https://github.com/AI45Lab/ClawSentry
 
 copyright: Copyright &copy; 2026 ClawSentry Contributors
 
