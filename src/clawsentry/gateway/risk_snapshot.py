@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from typing import Optional
 
+from .detection_config import DetectionConfig
 from .injection_detector import score_layer1
 from .models import (
     AgentTrustLevel,
@@ -46,7 +47,7 @@ _D1_HIGH_DANGER_TOOLS = frozenset({
 
 # Canonical set of dangerous tools — shared across policy_engine and risk_snapshot
 DANGEROUS_TOOLS = frozenset({
-    "bash", "shell", "exec", "sudo", "chmod", "chown", "kill", "pkill",
+    "bash", "shell", "exec", "sudo", "chmod", "chown", "kill", "pkill", "mount",
 })
 
 # System paths that elevate bash from D1=2 to D1=3
@@ -254,8 +255,15 @@ class SessionRiskTracker:
 
     DEFAULT_MAX_SESSIONS = 10_000
 
-    def __init__(self, max_sessions: int = DEFAULT_MAX_SESSIONS) -> None:
+    def __init__(
+        self,
+        max_sessions: int = DEFAULT_MAX_SESSIONS,
+        d4_high_threshold: int = 5,
+        d4_mid_threshold: int = 2,
+    ) -> None:
         self._max_sessions = max_sessions
+        self._d4_high_threshold = d4_high_threshold
+        self._d4_mid_threshold = d4_mid_threshold
         self._high_risk_counts: dict[str, int] = {}
 
     def record_high_risk_event(self, session_id: str) -> None:
@@ -272,9 +280,9 @@ class SessionRiskTracker:
 
     def get_d4(self, session_id: str) -> int:
         count = self._high_risk_counts.get(session_id, 0)
-        if count >= 5:
+        if count >= self._d4_high_threshold:
             return 2
-        if count >= 2:
+        if count >= self._d4_mid_threshold:
             return 1
         return 0
 
@@ -313,16 +321,6 @@ _SHORT_CIRCUIT_RULES = [
     ("SC-3", lambda d: d.d1 == 0 and d.d2 == 0 and d.d3 == 0, RiskLevel.LOW),
 ]
 
-# Default fallback values for missing dimensions (per 12.5)
-_DIMENSION_DEFAULTS = {
-    "d1": 2,
-    "d2": 1,
-    "d3": 2,
-    "d4": 1,
-    "d5": 2,
-}
-
-
 def _composite_score(dims: RiskDimensions) -> int:
     """Calculate composite_score = max(D1, D2, D3) + D4 + D5. (Legacy, unused.)"""
     return max(dims.d1, dims.d2, dims.d3) + dims.d4 + dims.d5
@@ -343,24 +341,34 @@ def _score_to_risk_level(score: int) -> RiskLevel:
 # E-4: New composite scoring with D6 injection multiplier
 # ---------------------------------------------------------------------------
 
-def _composite_score_v2(dims: RiskDimensions) -> float:
+def _composite_score_v2(
+    dims: RiskDimensions,
+    config: Optional[DetectionConfig] = None,
+) -> float:
     """E-4 composite score with D6 injection multiplier. Returns 0.0-3.0."""
+    if config is None:
+        config = DetectionConfig()
     base_score = (
-        0.4 * max(dims.d1, dims.d2, dims.d3)
-        + 0.25 * dims.d4
-        + 0.15 * dims.d5
+        config.composite_weight_max_d123 * max(dims.d1, dims.d2, dims.d3)
+        + config.composite_weight_d4 * dims.d4
+        + config.composite_weight_d5 * dims.d5
     )
-    injection_multiplier = 1.0 + 0.5 * (dims.d6 / 3.0)
+    injection_multiplier = 1.0 + config.d6_injection_multiplier * (dims.d6 / 3.0)
     return base_score * injection_multiplier
 
 
-def _score_to_risk_level_v2(score: float) -> RiskLevel:
+def _score_to_risk_level_v2(
+    score: float,
+    config: Optional[DetectionConfig] = None,
+) -> RiskLevel:
     """E-4 risk level thresholds."""
-    if score >= 2.2:
+    if config is None:
+        config = DetectionConfig()
+    if score >= config.threshold_critical:
         return RiskLevel.CRITICAL
-    if score >= 1.5:
+    if score >= config.threshold_high:
         return RiskLevel.HIGH
-    if score >= 0.8:
+    if score >= config.threshold_medium:
         return RiskLevel.MEDIUM
     return RiskLevel.LOW
 
@@ -382,6 +390,7 @@ def compute_risk_snapshot(
     event: CanonicalEvent,
     context: Optional[DecisionContext],
     session_tracker: SessionRiskTracker,
+    config: Optional[DetectionConfig] = None,
 ) -> RiskSnapshot:
     """
     Compute an immutable RiskSnapshot for the given event.
@@ -394,6 +403,8 @@ def compute_risk_snapshot(
     5. Map to risk_level via v2 thresholds.
     6. D6 forced alert: D6 >= 2.0 and LOW -> MEDIUM.
     """
+    if config is None:
+        config = DetectionConfig()
     missing_dims: list[str] = []
 
     # D1
@@ -440,16 +451,17 @@ def compute_risk_snapshot(
             break
 
     # Composite scoring (E-4 v2 formula)
-    score = _composite_score_v2(dims)
+    score = _composite_score_v2(dims, config)
 
     if sc_level is not None:
         risk_level = sc_level
     else:
-        risk_level = _score_to_risk_level_v2(score)
+        risk_level = _score_to_risk_level_v2(score, config)
 
     # D6 forced alert: high injection score on low-risk event → bump to MEDIUM
     if d6 >= 2.0 and risk_level == RiskLevel.LOW:
         risk_level = RiskLevel.MEDIUM
+        sc_rule = None  # D6 override invalidates the short-circuit
 
     snapshot = RiskSnapshot(
         risk_level=risk_level,

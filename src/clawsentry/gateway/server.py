@@ -51,6 +51,7 @@ from .models import (
     SyncDecisionResponse,
     utc_now_iso,
 )
+from .detection_config import DetectionConfig
 from .policy_engine import L1PolicyEngine
 from .post_action_analyzer import PostActionAnalyzer
 from .trajectory_analyzer import TrajectoryAnalyzer
@@ -985,8 +986,10 @@ class SupervisionGateway:
         trajectory_retention_seconds: int = DEFAULT_TRAJECTORY_RETENTION_SECONDS,
         analyzer=None,
         session_enforcement: Optional[SessionEnforcementPolicy] = None,
+        detection_config: Optional[DetectionConfig] = None,
     ) -> None:
-        self.policy_engine = L1PolicyEngine(analyzer=analyzer)
+        self._detection_config = detection_config if detection_config is not None else DetectionConfig()
+        self.policy_engine = L1PolicyEngine(analyzer=analyzer, config=self._detection_config)
         self.idempotency_cache = IdempotencyCache()
         effective_db_path = trajectory_db_path
         if effective_db_path is None:
@@ -999,8 +1002,16 @@ class SupervisionGateway:
         self.event_bus = EventBus()
         self.alert_registry = AlertRegistry()
         self.session_enforcement = session_enforcement or SessionEnforcementPolicy()
-        self.post_action_analyzer = PostActionAnalyzer()
-        self.trajectory_analyzer = TrajectoryAnalyzer()
+        self.post_action_analyzer = PostActionAnalyzer(
+            whitelist_patterns=self._detection_config.post_action_whitelist,
+            tier_emergency=self._detection_config.post_action_emergency,
+            tier_escalate=self._detection_config.post_action_escalate,
+            tier_monitor=self._detection_config.post_action_monitor,
+        )
+        self.trajectory_analyzer = TrajectoryAnalyzer(
+            max_events_per_session=self._detection_config.trajectory_max_events,
+            max_sessions=self._detection_config.trajectory_max_sessions,
+        )
         self._start_time = time.monotonic()
         self._ready = True
 

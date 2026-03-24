@@ -231,6 +231,9 @@ class TrajectoryAnalyzer:
         self._max_events = max(max_events_per_session, 2)
         self._max_sessions = max(max_sessions, 1)
         self._buffers: dict[str, deque[_BufferedEvent]] = {}
+        # Tracks emitted matches to prevent duplicate SSE alerts.
+        # Structure: {session_id: {(sequence_id, frozenset(matched_event_ids))}}
+        self._emitted: dict[str, set[tuple[str, frozenset[str]]]] = {}
 
     def record(self, event: dict[str, Any]) -> list[TrajectoryMatch]:
         """Record an event and return any newly matched attack sequences.
@@ -270,6 +273,7 @@ class TrajectoryAnalyzer:
         while len(self._buffers) > self._max_sessions:
             oldest = next(iter(self._buffers))
             del self._buffers[oldest]
+            self._emitted.pop(oldest, None)
 
     def _check_sequences(
         self,
@@ -277,10 +281,16 @@ class TrajectoryAnalyzer:
         buf: deque[_BufferedEvent],
     ) -> list[TrajectoryMatch]:
         matches: list[TrajectoryMatch] = []
+        emitted_for_session = self._emitted.setdefault(session_id, set())
         for seq in self.sequences:
             m = self._match_sequence(seq, buf)
-            if m is not None:
-                matches.append(m)
+            if m is None:
+                continue
+            dedup_key = (m.sequence_id, frozenset(m.matched_event_ids))
+            if dedup_key in emitted_for_session:
+                continue
+            emitted_for_session.add(dedup_key)
+            matches.append(m)
         return matches
 
     def _match_sequence(

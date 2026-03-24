@@ -29,6 +29,7 @@ from .models import (
     RiskSnapshot,
     utc_now_iso,
 )
+from .detection_config import DetectionConfig
 from .risk_snapshot import DANGEROUS_TOOLS, SessionRiskTracker, compute_risk_snapshot
 from .semantic_analyzer import (
     KEY_DOMAIN_PATTERN,
@@ -38,12 +39,14 @@ from .semantic_analyzer import (
     has_manual_l2_escalation_flag,
 )
 
-_MIN_SCORE_FOR_LEVEL = {
-    RiskLevel.LOW: 0.0,
-    RiskLevel.MEDIUM: 0.8,
-    RiskLevel.HIGH: 1.5,
-    RiskLevel.CRITICAL: 2.2,
-}
+def _build_min_score_map(config: DetectionConfig) -> dict[RiskLevel, float]:
+    return {
+        RiskLevel.LOW: 0.0,
+        RiskLevel.MEDIUM: config.threshold_medium,
+        RiskLevel.HIGH: config.threshold_high,
+        RiskLevel.CRITICAL: config.threshold_critical,
+    }
+
 
 class L1PolicyEngine:
     """
@@ -58,9 +61,17 @@ class L1PolicyEngine:
     POLICY_ID = "L1-rule-engine"
     POLICY_VERSION = "1.0"
 
-    def __init__(self, analyzer=None) -> None:
-        self._session_tracker = SessionRiskTracker()
-        self._analyzer = analyzer if analyzer is not None else RuleBasedAnalyzer()
+    def __init__(self, analyzer=None, config: Optional[DetectionConfig] = None) -> None:
+        self._config = config if config is not None else DetectionConfig()
+        self._session_tracker = SessionRiskTracker(
+            d4_high_threshold=self._config.d4_high_threshold,
+            d4_mid_threshold=self._config.d4_mid_threshold,
+        )
+        self._min_score_for_level = _build_min_score_map(self._config)
+        self._analyzer = (
+            analyzer if analyzer is not None
+            else RuleBasedAnalyzer(patterns_path=self._config.attack_patterns_path)
+        )
 
     @property
     def analyzer(self):
@@ -84,15 +95,22 @@ class L1PolicyEngine:
         """
         start = time.monotonic()
 
-        l1_snapshot = compute_risk_snapshot(event, context, self._session_tracker)
+        l1_snapshot = compute_risk_snapshot(event, context, self._session_tracker, self._config)
         snapshot = l1_snapshot
         decision = self._decide(event, snapshot)
         actual_tier = DecisionTier.L1
 
         if self._should_run_l2(event, context, l1_snapshot, requested_tier):
-            snapshot = self._run_l2_analysis(event, context, l1_snapshot)
-            decision = self._decide(event, snapshot)
-            actual_tier = DecisionTier.L2
+            try:
+                snapshot = self._run_l2_analysis(event, context, l1_snapshot)
+                decision = self._decide(event, snapshot)
+                actual_tier = DecisionTier.L2
+            except Exception:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "L2 analysis failed; falling back to L1", exc_info=True,
+                )
+                # snapshot and decision remain at L1 values
             if (
                 l1_snapshot.risk_level not in (RiskLevel.HIGH, RiskLevel.CRITICAL)
                 and snapshot.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL)
@@ -204,7 +222,7 @@ class L1PolicyEngine:
         parts = [base]
         dims = snapshot.dimensions
         parts.append(
-            f"D1={dims.d1} D2={dims.d2} D3={dims.d3} D4={dims.d4} D5={dims.d5} D6={dims.d6:.1f}"
+            f"D1={dims.d1} D2={dims.d2} D3={dims.d3} D4={dims.d4} D5={dims.d5} D6={dims.d6:.2f}"
         )
         parts.append(f"score={snapshot.composite_score}")
         if snapshot.short_circuit_rule:
@@ -245,17 +263,27 @@ class L1PolicyEngine:
         except RuntimeError:
             loop = None
 
+        budget = self._config.l2_budget_ms
+        timeout_sec = budget / 1000.0
+
         if loop and loop.is_running():
             import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+            try:
                 result = pool.submit(
                     asyncio.run,
-                    self._analyzer.analyze(event, context, l1_snapshot, 5000.0),
-                ).result(timeout=5.0)
+                    self._analyzer.analyze(event, context, l1_snapshot, budget),
+                ).result(timeout=timeout_sec)
+            finally:
+                # cancel_futures=True (Python 3.9+) avoids blocking on timed-out threads
+                pool.shutdown(wait=False, cancel_futures=True)
         else:
-            result = asyncio.run(
-                self._analyzer.analyze(event, context, l1_snapshot, 5000.0)
-            )
+            async def _run_with_timeout() -> L2Result:
+                return await asyncio.wait_for(
+                    self._analyzer.analyze(event, context, l1_snapshot, budget),
+                    timeout=timeout_sec,
+                )
+            result = asyncio.run(_run_with_timeout())
 
         # Build RiskSnapshot from L2Result (upgrade-only enforced here)
         target_level = result.target_level
@@ -271,7 +299,7 @@ class L1PolicyEngine:
         )
         score = max(
             l1_snapshot.composite_score,
-            _MIN_SCORE_FOR_LEVEL[target_level],
+            self._min_score_for_level[target_level],
         )
         return RiskSnapshot(
             risk_level=target_level,

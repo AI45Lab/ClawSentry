@@ -47,7 +47,7 @@ EXFILTRATION_PATTERNS: list[re.Pattern] = [
         r"ssh.*?-R.*?:\d+:",
         r"(sendmail|mail).*?<.*?@",
         r"torsocks.*?(curl|wget)",
-        r"!\[.*?\]\(https?://(?!github\.com).*?\?",
+        r"!\[.*?\]\(https?://(?!github\.com|raw\.githubusercontent\.com|img\.shields\.io|shields\.io|badge\.fury\.io).*?\?",
         r"git\s+(clone|push).*?http.*?@",
     ]
 ]
@@ -90,6 +90,7 @@ def detect_secret_exposure(text: str) -> float:
 _OBFUSCATION_PATTERNS: list[re.Pattern] = [
     re.compile(p, re.IGNORECASE) for p in [
         r"base64\s+-d.*?\|.*?(bash|sh)",
+        r"eval.*base64",
         r"\\x[0-9a-f]{2}",
         r"\[::-1\]",
     ]
@@ -116,7 +117,7 @@ def detect_obfuscation(text: str) -> float:
         1 for p in _OBFUSCATION_PATTERNS if p.search(text)
     ) * 0.3
     entropy = _shannon_entropy(text)
-    entropy_score = max(0.0, (entropy - 7.0) / 1.0) if len(text) > 50 else 0.0
+    entropy_score = min((entropy - 5.5) / 2.5, 0.5) if len(text) > 50 and entropy > 5.5 else 0.0
     return min(pattern_score + entropy_score, 1.0)
 
 
@@ -132,10 +133,19 @@ _TIER_MONITOR = 0.3
 class PostActionAnalyzer:
     """Combined post-action security analyzer."""
 
-    def __init__(self, whitelist_patterns: Optional[list[str]] = None) -> None:
+    def __init__(
+        self,
+        whitelist_patterns: Optional[list[str]] = None,
+        tier_emergency: float = _TIER_EMERGENCY,
+        tier_escalate: float = _TIER_ESCALATE,
+        tier_monitor: float = _TIER_MONITOR,
+    ) -> None:
         self._whitelist: list[re.Pattern] = []
         if whitelist_patterns:
             self._whitelist = [re.compile(p) for p in whitelist_patterns]
+        self._tier_emergency = tier_emergency
+        self._tier_escalate = tier_escalate
+        self._tier_monitor = tier_monitor
 
     def analyze(
         self,
@@ -176,13 +186,19 @@ class PostActionAnalyzer:
             patterns_matched.append("obfuscation")
             scores.append(obfusc_score)
 
-        combined = max(scores) if scores else 0.0
+        if not scores:
+            combined = 0.0
+        elif len(scores) == 1:
+            combined = scores[0]
+        else:
+            combined = max(scores) + 0.15 * (len(scores) - 1)
+        combined = min(combined, 3.0)
 
-        if combined >= _TIER_EMERGENCY:
+        if combined >= self._tier_emergency:
             tier = PostActionResponseTier.EMERGENCY
-        elif combined >= _TIER_ESCALATE:
+        elif combined >= self._tier_escalate:
             tier = PostActionResponseTier.ESCALATE
-        elif combined >= _TIER_MONITOR:
+        elif combined >= self._tier_monitor:
             tier = PostActionResponseTier.MONITOR
         else:
             tier = PostActionResponseTier.LOG_ONLY
@@ -202,4 +218,4 @@ class PostActionAnalyzer:
         )
 
     def _is_whitelisted(self, path: str) -> bool:
-        return any(p.match(path) for p in self._whitelist)
+        return any(p.fullmatch(path) for p in self._whitelist)

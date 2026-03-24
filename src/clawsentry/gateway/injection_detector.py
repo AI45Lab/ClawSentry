@@ -6,10 +6,13 @@ Design basis: docs/plans/2026-03-23-e4-phase1-design-v1.2.md section 2.2
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Optional, Protocol, runtime_checkable
 
 from .models import CanaryToken
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Layer 1: Heuristic regex patterns
@@ -55,7 +58,7 @@ TOOL_SPECIFIC_PATTERNS: dict[str, list[re.Pattern]] = {
 }
 
 
-def score_layer1(text: str, tool_name: str) -> float:
+def score_layer1(text: str, tool_name: Optional[str] = None) -> float:
     """Score text for injection patterns (Layer 1 heuristic). Returns 0.0-3.0."""
     score = 0.0
 
@@ -125,6 +128,7 @@ class VectorLayer:
                 return 0.0
             return min(2.0 * (similarity - self._threshold) / (1.0 - self._threshold), 2.0)
         except Exception:
+            logger.warning("VectorLayer scoring failed", exc_info=True)
             return 0.0
 
 

@@ -27,6 +27,7 @@ def build_analyzer_from_env(
     *,
     trajectory_store: Any = None,
     workspace_root: Optional[Path] = None,
+    patterns_path: Optional[str] = None,
 ) -> Optional[CompositeAnalyzer | LLMAnalyzer | RuleBasedAnalyzer]:
     """Build a SemanticAnalyzer from environment variables.
 
@@ -73,7 +74,7 @@ def build_analyzer_from_env(
         base_url or "(default)",
     )
 
-    analyzers: list = [RuleBasedAnalyzer(), LLMAnalyzer(provider)]
+    analyzers: list = [RuleBasedAnalyzer(patterns_path=patterns_path), LLMAnalyzer(provider)]
 
     l3_enabled = os.getenv("CS_L3_ENABLED", "").strip().lower() in ("true", "1", "yes")
     if l3_enabled:

@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
 import time
 from dataclasses import dataclass, field
 from typing import Optional, Protocol, runtime_checkable
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     RISK_LEVEL_ORDER,
@@ -70,13 +73,21 @@ _L2_CRITICAL_HINTS = frozenset({
 })
 
 KEY_DOMAIN_PATTERN = re.compile(
-    r"\b(prod|production|credential|credentials|secret|token|password|key)\b",
+    r"\b(prod|production|credential|credentials|secret|token|password|api_key|private_key|ssh_key)\b",
     re.IGNORECASE,
 )
 _CRITICAL_INTENT_PATTERN = re.compile(
     r"\b(exfiltrat|bypass|disable\s+security|privilege\s+escalat|steal)\b",
     re.IGNORECASE,
 )
+_SECRET_RE = re.compile(
+    r"(AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{32,}|"
+    r"-----BEGIN[A-Z ]*PRIVATE KEY-----|"
+    r"[a-zA-Z_]*(?:SECRET|TOKEN|PASSWORD|API_KEY)[a-zA-Z_]*\s*[=:]\s*\S+)",
+    re.IGNORECASE,
+)
+_MAX_PROMPT_PAYLOAD_LEN = 4096
+_MAX_EVENT_TEXT_LEN = 65_536  # 64KB cap for regex scanning
 
 # ---------------------------------------------------------------------------
 # Helper functions
@@ -90,7 +101,10 @@ def event_text(event: CanonicalEvent) -> str:
     payload_text = json.dumps(event.payload or {}, ensure_ascii=False, sort_keys=True)
     risk_hints = " ".join(event.risk_hints or [])
     tool_name = event.tool_name or ""
-    return f"{tool_name} {risk_hints} {payload_text}".lower()
+    text = f"{tool_name} {risk_hints} {payload_text}".lower()
+    if len(text) > _MAX_EVENT_TEXT_LEN:
+        text = text[:_MAX_EVENT_TEXT_LEN]
+    return text
 
 
 def has_manual_l2_escalation_flag(context: Optional[DecisionContext]) -> bool:
@@ -107,8 +121,8 @@ def has_manual_l2_escalation_flag(context: Optional[DecisionContext]) -> bool:
 class RuleBasedAnalyzer:
     """L2 rule-based semantic analyzer — extracted from L1PolicyEngine._run_l2_analysis."""
 
-    def __init__(self) -> None:
-        self._pattern_matcher = PatternMatcher()
+    def __init__(self, patterns_path: Optional[str] = None) -> None:
+        self._pattern_matcher = PatternMatcher(patterns_path=patterns_path)
 
     @property
     def analyzer_id(self) -> str:
@@ -240,6 +254,7 @@ class LLMAnalyzer:
             )
             return self._parse_response(raw, l1_snapshot, start)
         except Exception:
+            logger.warning("LLM analysis failed; falling back to L1", exc_info=True)
             elapsed_ms = (time.monotonic() - start) * 1000
             return L2Result(
                 target_level=l1_snapshot.risk_level,
@@ -256,13 +271,17 @@ class LLMAnalyzer:
         l1_snapshot: RiskSnapshot,
     ) -> str:
         dims = l1_snapshot.dimensions
+        payload_str = json.dumps(event.payload or {}, ensure_ascii=False)
+        if len(payload_str) > _MAX_PROMPT_PAYLOAD_LEN:
+            payload_str = payload_str[:_MAX_PROMPT_PAYLOAD_LEN] + "...[truncated]"
+        payload_str = _SECRET_RE.sub("[REDACTED]", payload_str)
         parts = [
             f"Tool: {event.tool_name or 'unknown'}",
             f"Event type: {event.event_type.value}",
-            f"Payload: {json.dumps(event.payload or {}, ensure_ascii=False)}",
+            f"Payload: {payload_str}",
             f"Risk hints: {event.risk_hints or []}",
             f"L1 risk level: {l1_snapshot.risk_level.value}",
-            f"L1 dimensions: D1={dims.d1} D2={dims.d2} D3={dims.d3} D4={dims.d4} D5={dims.d5}",
+            f"L1 dimensions: D1={dims.d1} D2={dims.d2} D3={dims.d3} D4={dims.d4} D5={dims.d5} D6={dims.d6:.2f}",
             f"L1 composite score: {l1_snapshot.composite_score}",
         ]
         if l1_snapshot.short_circuit_rule:
@@ -284,6 +303,8 @@ class LLMAnalyzer:
             reasons = data.get("reasons", [])
             if not isinstance(reasons, list):
                 reasons = [str(reasons)]
+            else:
+                reasons = [str(r) for r in reasons if r is not None]
             confidence = float(data.get("confidence", 0.0))
             confidence = max(0.0, min(1.0, confidence))
             return L2Result(

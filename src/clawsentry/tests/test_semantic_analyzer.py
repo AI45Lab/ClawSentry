@@ -5,6 +5,7 @@ import pytest
 from clawsentry.gateway.models import (
     CanonicalEvent,
     DecisionContext,
+    EventType,
     RiskLevel,
     RiskSnapshot,
     RiskDimensions,
@@ -455,3 +456,97 @@ def test_l2_result_trace_field_with_data():
     result = L2Result(target_level=RiskLevel.LOW, reasons=[], confidence=1.0, analyzer_id="test", trace=trace)
     assert result.trace == trace
     assert result.trace["trigger_reason"] == "test"
+
+
+# ===========================================================================
+# LLM Prompt Sanitization Tests (H3)
+# ===========================================================================
+
+class TestLLMPromptSanitization:
+    """H3: LLM prompt should not contain raw secrets."""
+
+    def test_payload_truncated_in_prompt(self):
+        from clawsentry.gateway.semantic_analyzer import LLMAnalyzer
+        from unittest.mock import AsyncMock
+        provider = AsyncMock()
+        provider.provider_id = "mock"
+        analyzer = LLMAnalyzer(provider)
+        event = _evt(
+            tool_name="read_file",
+            payload={"content": "A" * 50000, "command": "cat big.txt"},
+        )
+        from clawsentry.gateway.risk_snapshot import compute_risk_snapshot, SessionRiskTracker
+        tracker = SessionRiskTracker()
+        snap = compute_risk_snapshot(event, None, tracker)
+        prompt = analyzer._build_prompt(event, None, snap)
+        assert len(prompt) <= 8192, f"Prompt too long: {len(prompt)}"
+
+    def test_secret_values_redacted_in_prompt(self):
+        from clawsentry.gateway.semantic_analyzer import LLMAnalyzer
+        from unittest.mock import AsyncMock
+        provider = AsyncMock()
+        provider.provider_id = "mock"
+        analyzer = LLMAnalyzer(provider)
+        event = _evt(
+            tool_name="bash",
+            payload={"command": "export AWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE"},
+        )
+        from clawsentry.gateway.risk_snapshot import compute_risk_snapshot, SessionRiskTracker
+        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
+        prompt = analyzer._build_prompt(event, None, snap)
+        assert "AKIAIOSFODNN7EXAMPLE" not in prompt
+
+
+# ===========================================================================
+# _parse_response Type Safety Tests (H4)
+# ===========================================================================
+
+class TestParseResponseTypeSafety:
+    """H4: _parse_response must handle non-string reasons."""
+
+    def test_mixed_type_reasons_coerced_to_strings(self):
+        from clawsentry.gateway.semantic_analyzer import LLMAnalyzer
+        from unittest.mock import AsyncMock
+        import json
+        import time
+        provider = AsyncMock()
+        provider.provider_id = "mock"
+        analyzer = LLMAnalyzer(provider)
+        from clawsentry.gateway.risk_snapshot import compute_risk_snapshot, SessionRiskTracker
+        event = _evt(tool_name="bash", payload={"command": "ls"})
+        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
+        raw = json.dumps({
+            "risk_assessment": "low",
+            "reasons": [{"nested": "object"}, 42, None, "valid string"],
+            "confidence": 0.8,
+        })
+        result = analyzer._parse_response(raw, snap, time.monotonic())
+        assert all(isinstance(r, str) for r in result.reasons)
+        joined = "; ".join(result.reasons)  # must not raise TypeError
+        assert isinstance(joined, str)
+
+
+# ===========================================================================
+# event_text Size Cap Tests (M5)
+# ===========================================================================
+
+class TestEventTextSizeCap:
+    """M5: event_text should cap output size."""
+
+    def test_large_payload_capped(self):
+        from clawsentry.gateway.semantic_analyzer import event_text
+        event = _evt(
+            tool_name="read_file",
+            payload={"content": "X" * 500_000},
+        )
+        text = event_text(event)
+        assert len(text) <= 65_536, f"event_text too long: {len(text)}"
+
+    def test_small_payload_unchanged(self):
+        from clawsentry.gateway.semantic_analyzer import event_text
+        event = _evt(
+            tool_name="bash",
+            payload={"command": "echo hello"},
+        )
+        text = event_text(event)
+        assert "echo hello" in text

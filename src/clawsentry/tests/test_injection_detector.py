@@ -374,6 +374,21 @@ class TestVectorLayer:
         assert layer.score("text") == 0.0
 
 
+class TestScoreLayer1TypeSafety:
+    """LOW: score_layer1 should accept None for tool_name."""
+
+    def test_none_tool_name_accepted(self):
+        from clawsentry.gateway.injection_detector import score_layer1
+        score = score_layer1("some normal text", None)
+        assert isinstance(score, float)
+        assert score >= 0.0
+
+    def test_default_tool_name_is_none(self):
+        from clawsentry.gateway.injection_detector import score_layer1
+        score = score_layer1("some normal text")
+        assert isinstance(score, float)
+
+
 class TestInjectionDetectorWithVector:
     """InjectionDetector integrates optional VectorLayer."""
 

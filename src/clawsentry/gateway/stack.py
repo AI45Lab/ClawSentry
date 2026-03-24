@@ -37,6 +37,7 @@ from ..adapters.openclaw_bootstrap import (
     build_openclaw_runtime,
     create_openclaw_webhook_app,
 )
+from .detection_config import DetectionConfig, build_detection_config_from_env
 from .idempotency import periodic_cleanup
 from .llm_factory import build_analyzer_from_env
 from .policy_engine import L1PolicyEngine
@@ -300,15 +301,22 @@ async def run_stack(args: argparse.Namespace) -> None:
         cooldown_seconds=_enf_cooldown,
     )
 
+    # Build detection config from CS_ environment variables
+    detection_config = build_detection_config_from_env()
+
     # Build gateway first, then configure LLM analyzer with trajectory store
     gateway = SupervisionGateway(
         trajectory_db_path=args.trajectory_db_path,
         trajectory_retention_seconds=args.trajectory_retention_seconds,
         session_enforcement=session_enforcement,
+        detection_config=detection_config,
     )
-    analyzer = build_analyzer_from_env(trajectory_store=gateway.trajectory_store)
+    analyzer = build_analyzer_from_env(
+        trajectory_store=gateway.trajectory_store,
+        patterns_path=detection_config.attack_patterns_path,
+    )
     if analyzer is not None:
-        gateway.policy_engine = L1PolicyEngine(analyzer=analyzer)
+        gateway.policy_engine = L1PolicyEngine(analyzer=analyzer, config=detection_config)
     gateway_app = create_http_app(gateway)
 
     # OpenClaw runtime + webhook only when configured

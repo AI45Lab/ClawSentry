@@ -11,6 +11,7 @@ Design basis: docs/plans/2026-03-23-e4-phase1-design-v1.2.md section 4
 from __future__ import annotations
 
 import fnmatch
+import logging
 import os
 import re
 from dataclasses import dataclass, field
@@ -22,6 +23,9 @@ import yaml
 from .models import RiskLevel
 
 _DEFAULT_PATTERNS_PATH = Path(__file__).parent / "attack_patterns.yaml"
+_MAX_DETECTION_INPUT_LEN = 102_400  # 100 KB — hard cap to prevent ReDoS on huge inputs
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +46,8 @@ class AttackPattern:
     risk_escalation: Optional[dict[str, str]] = None
     references: Optional[dict[str, list[str]]] = None
     mitre_attack: Optional[dict[str, list[str]]] = None
+    # Populated at match time with the highest weight of any fired detection regex
+    max_weight: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -65,6 +71,7 @@ def load_patterns(path: Optional[str] = None) -> list[AttackPattern]:
     """
     file_path = Path(path) if path else _DEFAULT_PATTERNS_PATH
     if not file_path.exists():
+        logger.warning("Failed to load attack patterns from %s: file not found", file_path)
         return []
     try:
         with open(file_path) as f:
@@ -72,19 +79,44 @@ def load_patterns(path: Optional[str] = None) -> list[AttackPattern]:
         if not data or "patterns" not in data:
             return []
         return [_parse_pattern(p) for p in data["patterns"]]
-    except Exception:
+    except Exception as exc:
+        logger.warning("Failed to load attack patterns from %s: %s", file_path, exc)
         return []
 
 
 def _parse_pattern(raw: dict) -> AttackPattern:
-    """Parse a single pattern dict from YAML into an ``AttackPattern``."""
+    """Parse a single pattern dict from YAML into an ``AttackPattern``.
+
+    Pre-compiles all detection regex patterns at load time (stored in
+    ``detection["_compiled"]``) to avoid repeated compilation on every call and
+    to eliminate ReDoS risk from repeated re.compile() on user-supplied text.
+    """
+    detection: dict[str, Any] = raw.get("detection", {})
+
+    # Pre-compile regex patterns once at load time
+    compiled: list[dict[str, Any]] = []
+    for rp in detection.get("regex_patterns", []):
+        if isinstance(rp, str):
+            compiled.append({
+                "compiled": re.compile(rp, re.IGNORECASE | re.DOTALL),
+                "weight": 5,
+            })
+        elif isinstance(rp, dict):
+            pat_str = rp.get("pattern", "")
+            if pat_str:
+                compiled.append({
+                    "compiled": re.compile(pat_str, re.IGNORECASE | re.DOTALL),
+                    "weight": rp.get("weight", 5),
+                })
+    detection["_compiled"] = compiled
+
     return AttackPattern(
         id=raw["id"],
         category=raw.get("category", "unknown"),
         description=raw.get("description", ""),
         risk_level=RiskLevel(raw.get("risk_level", "medium")),
         triggers=raw.get("triggers", {}),
-        detection=raw.get("detection", {}),
+        detection=detection,
         false_positive_filters=raw.get("false_positive_filters", []),
         risk_escalation=raw.get("risk_escalation"),
         references=raw.get("references"),
@@ -140,9 +172,10 @@ class PatternMatcher:
         results: list[AttackPattern] = []
         for pattern in self.patterns:
             if self._triggers_match(pattern, tool_name, payload):
-                if self._detection_match(pattern, content, payload):
-                    if not self._is_false_positive(pattern, payload):
-                        results.append(pattern)
+                matched, weight = self._detection_match(pattern, content, payload)
+                if matched and not self._is_false_positive(pattern, payload):
+                    pattern.max_weight = weight
+                    results.append(pattern)
         return results
 
     # -- trigger evaluation -------------------------------------------------
@@ -163,6 +196,10 @@ class PatternMatcher:
         self, trigger: dict, tool_name: str, payload: dict,
     ) -> bool:
         """Evaluate one trigger block (tool_names / file_extensions / etc.)."""
+        # M11: An empty trigger dict matches nothing (avoid catch-all false positives)
+        if not trigger:
+            return False
+
         # --- tool_names ---
         if "tool_names" in trigger:
             if tool_name.lower() not in [t.lower() for t in trigger["tool_names"]]:
@@ -228,22 +265,42 @@ class PatternMatcher:
 
     def _detection_match(
         self, pattern: AttackPattern, content: str, payload: dict,
-    ) -> bool:
-        """Check whether the detection regex patterns fire on the text."""
+    ) -> tuple[bool, int]:
+        """Check whether the detection regex patterns fire on the text.
+
+        Returns
+        -------
+        tuple[bool, int]
+            ``(matched, max_weight)`` where *max_weight* is the highest weight
+            of any regex that fired (0 when unweighted or no match).
+        """
         detection = pattern.detection
         if not detection:
-            return True
+            return True, 0
 
         text = content or str(payload.get("command", ""))
         if not text:
-            return False
+            return False, 0
 
-        regex_patterns = detection.get("regex_patterns", [])
-        for rp in regex_patterns:
+        # H9: Input length gating — truncate oversized inputs to cap ReDoS risk
+        if len(text) > _MAX_DETECTION_INPUT_LEN:
+            text = text[:_MAX_DETECTION_INPUT_LEN]
+
+        max_weight = 0
+
+        # Fast path: use pre-compiled patterns (populated by _parse_pattern)
+        for cp in detection.get("_compiled", []):
+            if cp["compiled"].search(text):
+                max_weight = max(max_weight, cp["weight"])
+                return True, max_weight
+
+        # Fallback: handle any patterns that were not pre-compiled (backward compat)
+        for rp in detection.get("regex_patterns", []):
             pat = rp if isinstance(rp, str) else rp.get("pattern", "")
             if pat and re.search(pat, text, re.IGNORECASE | re.DOTALL):
-                return True
-        return False
+                return True, 0
+
+        return False, max_weight
 
     # -- false-positive filtering -------------------------------------------
 
