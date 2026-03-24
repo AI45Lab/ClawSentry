@@ -67,7 +67,7 @@ class DetectionConfig:
                 f"d4 threshold ordering violated: mid={self.d4_mid_threshold} "
                 f"> high={self.d4_high_threshold}"
             )
-        for wname in ("composite_weight_max_d123", "composite_weight_d4", "composite_weight_d5"):
+        for wname in ("composite_weight_max_d123", "composite_weight_d4", "composite_weight_d5", "d6_injection_multiplier"):
             if getattr(self, wname) < 0:
                 raise ValueError(f"weight {wname} must be >= 0, got {getattr(self, wname)}")
         if self.l2_budget_ms <= 0:
@@ -76,6 +76,12 @@ class DetectionConfig:
             raise ValueError(
                 f"post_action tier ordering violated: monitor={self.post_action_monitor} "
                 f"<= escalate={self.post_action_escalate} <= emergency={self.post_action_emergency}"
+            )
+        if self.threshold_critical > 3.0:
+            logger.warning(
+                "threshold_critical=%.2f exceeds max achievable score (3.0) with default weights; "
+                "CRITICAL level may be unreachable",
+                self.threshold_critical,
             )
 
 
@@ -112,6 +118,8 @@ def build_detection_config_from_env() -> DetectionConfig:
     """Build a :class:`DetectionConfig` from ``CS_`` environment variables.
 
     Missing or unparseable variables silently fall back to defaults.
+    If the combination of overrides violates validation constraints,
+    the entire config falls back to defaults with an error log.
     """
     overrides: dict = {}
 
@@ -132,4 +140,11 @@ def build_detection_config_from_env() -> DetectionConfig:
         if items:
             overrides[field_name] = tuple(items)
 
-    return DetectionConfig(**overrides)
+    try:
+        return DetectionConfig(**overrides)
+    except (ValueError, TypeError) as exc:
+        logger.error(
+            "CS_ env vars produce invalid DetectionConfig (%s); falling back to defaults",
+            exc,
+        )
+        return DetectionConfig()

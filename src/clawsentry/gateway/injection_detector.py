@@ -35,12 +35,12 @@ WEAK_INJECTION_PATTERNS: list[re.Pattern] = [
 
 STRONG_INJECTION_PATTERNS: list[re.Pattern] = [
     re.compile(p, re.IGNORECASE | re.DOTALL) for p in [
-        r"<script>.*?</script>",
+        r"<script\b",
         r"data:text/html;base64,",
         r"eval\s*\(|exec\s*\(|__import__\s*\(",
-        r"<!--.*?(ignore|disregard).*?-->",
+        r"<!--[^>]*(?:ignore|disregard)",
         r"\u200b|\u200c|\u200d|\ufeff",
-        r"data:.*?base64,.*?(curl|wget)",
+        r"data:[^,]*base64,[^)]*(?:curl|wget)",
         r"\$\{[A-Z_]+\}.*?(curl|wget)",
         r"git\s+push.*?http.*?@",
     ]
@@ -57,9 +57,13 @@ TOOL_SPECIFIC_PATTERNS: dict[str, list[re.Pattern]] = {
     ],
 }
 
+_MAX_SCORE_INPUT_LEN = 65_536  # 64KB cap — matches event_text() limit
+
 
 def score_layer1(text: str, tool_name: Optional[str] = None) -> float:
     """Score text for injection patterns (Layer 1 heuristic). Returns 0.0-3.0."""
+    if len(text) > _MAX_SCORE_INPUT_LEN:
+        text = text[:_MAX_SCORE_INPUT_LEN]
     score = 0.0
 
     # Weak patterns: +0.3 each, max 1.5
@@ -76,7 +80,7 @@ def score_layer1(text: str, tool_name: Optional[str] = None) -> float:
         tool_count = sum(
             1 for p in TOOL_SPECIFIC_PATTERNS[tool_key] if p.search(text)
         )
-        score += tool_count * 0.5
+        score += min(tool_count * 0.5, 1.0)
 
     return min(score, 3.0)
 
@@ -127,8 +131,8 @@ class VectorLayer:
             if similarity <= self._threshold:
                 return 0.0
             return min(2.0 * (similarity - self._threshold) / (1.0 - self._threshold), 2.0)
-        except Exception:
-            logger.warning("VectorLayer scoring failed", exc_info=True)
+        except Exception as exc:
+            logger.warning("VectorLayer scoring failed (%s)", type(exc).__name__, exc_info=True)
             return 0.0
 
 

@@ -155,7 +155,7 @@ class TestPostActionInGateway:
             "bash",
             "evt-1",
         )
-        assert finding.tier != PostActionResponseTier.LOG_ONLY
+        assert finding.tier == PostActionResponseTier.MONITOR
         assert "exfiltration" in finding.patterns_matched
 
     def test_analyzer_clean_output(self):
@@ -168,6 +168,23 @@ class TestPostActionInGateway:
         )
         assert finding.tier == PostActionResponseTier.LOG_ONLY
         assert finding.patterns_matched == []
+
+    def test_post_action_finding_delivered_via_event_bus(self):
+        """Verify post_action_finding events are delivered through EventBus."""
+        gw = SupervisionGateway()
+        sub_id, queue = gw.event_bus.subscribe()
+        try:
+            gw.event_bus.broadcast({
+                "type": "post_action_finding",
+                "tier": "escalate",
+                "patterns_matched": ["exfiltration"],
+            })
+            assert not queue.empty(), "post_action_finding should be delivered"
+            msg = queue.get_nowait()
+            assert msg["type"] == "post_action_finding"
+            assert msg["tier"] == "escalate"
+        finally:
+            gw.event_bus.unsubscribe(sub_id)
 
 
 # ===========================================================================
@@ -219,11 +236,16 @@ class TestTrajectoryGatewayIntegration:
         assert isinstance(gw.trajectory_analyzer, TrajectoryAnalyzer)
 
     def test_trajectory_alert_in_event_bus_types(self):
+        """Verify trajectory_alert events are delivered to default subscribers."""
         gw = SupervisionGateway()
         sub_id, queue = gw.event_bus.subscribe()
-        sub = gw.event_bus._subscribers[sub_id]
-        assert "trajectory_alert" in sub["event_types"]
-        gw.event_bus.unsubscribe(sub_id)
+        try:
+            gw.event_bus.broadcast({"type": "trajectory_alert", "test": True})
+            assert not queue.empty(), "trajectory_alert should be delivered to default subscriber"
+            msg = queue.get_nowait()
+            assert msg["type"] == "trajectory_alert"
+        finally:
+            gw.event_bus.unsubscribe(sub_id)
 
     @pytest.mark.asyncio
     async def test_exfil_sequence_triggers_sse_broadcast(self):

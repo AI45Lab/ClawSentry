@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -315,8 +315,10 @@ class RiskSnapshot(BaseModel):
 
     Once produced, must not change during the decision/retry lifecycle.
     """
+    model_config = ConfigDict(frozen=True)
+
     risk_level: RiskLevel
-    composite_score: float = Field(..., ge=0)  # base: max(D1,D2,D3)+D4+D5; may include D6 multiplier
+    composite_score: float = Field(..., ge=0)  # v2: base*injection_multiplier (D6)
     dimensions: RiskDimensions
     short_circuit_rule: Optional[str] = None  # SC-1/SC-2/SC-3 or null
     missing_dimensions: list[str] = Field(default_factory=list)
@@ -365,8 +367,7 @@ class PostActionFinding:
 
     def __post_init__(self) -> None:
         self.patterns_matched = list(self.patterns_matched)  # defensive copy
-        if self.details is None:
-            self.details = {}
+        self.details = dict(self.details) if self.details else {}  # defensive copy
         if not (0.0 <= self.score <= 3.0):
             raise ValueError(
                 f"PostActionFinding.score must be in [0.0, 3.0], got {self.score}"

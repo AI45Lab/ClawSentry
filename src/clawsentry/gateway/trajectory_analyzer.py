@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 # Data models
 # ---------------------------------------------------------------------------
 
+_VALID_RISK_LEVELS = frozenset({"low", "medium", "high", "critical"})
+
 @dataclass
 class AttackSequence:
     """Definition of a multi-step attack pattern."""
@@ -29,6 +31,11 @@ class AttackSequence:
     steps: list[dict[str, Any]]
     within_events: int = 10
     within_seconds: float = 60.0
+
+    def __post_init__(self) -> None:
+        self.risk_level = self.risk_level.lower()
+        if self.risk_level not in _VALID_RISK_LEVELS:
+            raise ValueError(f"risk_level must be one of {_VALID_RISK_LEVELS}, got '{self.risk_level}'")
 
 
 @dataclass
@@ -54,6 +61,8 @@ class _BufferedEvent:
 # Built-in attack sequences
 # ---------------------------------------------------------------------------
 
+# _SENSITIVE_FILE_RE: narrower set used by exfil-credential sequence
+# _CREDENTIAL_FILE_RE: broader set used by secret-harvest sequence (includes .p12/.pfx/.jks/.keystore/.aws/.ssh)
 _SENSITIVE_FILE_RE = re.compile(
     r"\.env$|\.pem$|\.key$|id_rsa|id_ed25519|credentials|\.secret|\.token|\.password",
     re.IGNORECASE,
@@ -263,6 +272,9 @@ class TrajectoryAnalyzer:
             buf = deque(maxlen=self._max_events)
             self._buffers[session_id] = buf
             self._evict_if_needed()
+        else:
+            # Move to end for LRU eviction ordering
+            self._buffers[session_id] = self._buffers.pop(session_id)
         buf.append(buf_evt)
 
         return self._check_sequences(session_id, buf)
@@ -282,6 +294,7 @@ class TrajectoryAnalyzer:
     ) -> list[TrajectoryMatch]:
         matches: list[TrajectoryMatch] = []
         emitted_for_session = self._emitted.setdefault(session_id, set())
+        max_dedup_entries = self._max_events * max(len(self.sequences), 1)
         for seq in self.sequences:
             m = self._match_sequence(seq, buf)
             if m is None:
@@ -291,6 +304,9 @@ class TrajectoryAnalyzer:
                 continue
             emitted_for_session.add(dedup_key)
             matches.append(m)
+        # Cap dedup set to prevent unbounded memory growth
+        if len(emitted_for_session) > max_dedup_entries:
+            emitted_for_session.clear()
         return matches
 
     def _match_sequence(
@@ -302,10 +318,12 @@ class TrajectoryAnalyzer:
             return None
 
         events = list(buf)
+        if not events:
+            return None
         current_evt = events[-1]
 
         # Determine the window
-        window_events = events[-seq.within_events:] if seq.within_events < len(events) else events
+        window_events = events[-seq.within_events:]
         if seq.within_seconds > 0:
             cutoff = current_evt.ts - seq.within_seconds
             window_events = [e for e in window_events if e.ts >= cutoff]

@@ -149,21 +149,12 @@ class TestDetectObfuscation:
         assert score >= 0.3
 
     def test_high_entropy(self):
-        """Random-looking high-entropy strings suggest encoded payloads."""
-        import random
-        import string
-        random.seed(42)
-        # 200 random chars → high entropy
-        text = "".join(random.choices(string.printable, k=200))
+        """High-entropy strings above threshold 5.5 trigger obfuscation detection."""
+        # 256 distinct characters repeated → entropy ~= log2(256) = 8
+        text = "".join(chr(i) for i in range(256)) * 3
         entropy = _shannon_entropy(text)
-        # string.printable has ~95 chars; 200 random picks → entropy ~6+
-        # Only triggers if entropy > 7.0 AND len > 50
-        if entropy > 7.0:
-            assert detect_obfuscation(text) > 0.0
-        else:
-            # Even if entropy is not above 7, the test still passes — it just
-            # documents the threshold behavior
-            assert detect_obfuscation(text) >= 0.0
+        assert entropy > 5.5, f"Expected entropy > 5.5, got {entropy}"
+        assert detect_obfuscation(text) > 0.0
 
 
 # ---------------------------------------------------------------------------

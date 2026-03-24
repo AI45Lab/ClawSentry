@@ -32,10 +32,10 @@ def _write_yaml(tmp_path: str, content: str) -> str:
 class TestLoadPatterns:
     """Tests for load_patterns() and YAML parsing."""
 
-    def test_default_patterns_load_at_least_10(self):
-        """Default attack_patterns.yaml should contain >= 10 patterns."""
+    def test_default_patterns_load_at_least_25(self):
+        """Default attack_patterns.yaml should contain >= 25 patterns (Phase 2)."""
         patterns = load_patterns()
-        assert len(patterns) >= 10
+        assert len(patterns) >= 25
 
     def test_all_patterns_have_required_fields(self):
         """Every pattern must have id, category, risk_level, triggers, detection."""

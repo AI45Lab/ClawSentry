@@ -10,6 +10,7 @@ Design basis: docs/plans/2026-03-23-e4-phase1-design-v1.2.md section 4
 
 from __future__ import annotations
 
+import copy
 import fnmatch
 import logging
 import os
@@ -84,6 +85,24 @@ def load_patterns(path: Optional[str] = None) -> list[AttackPattern]:
         return []
 
 
+def _precompile_trigger_patterns(triggers: dict[str, Any]) -> None:
+    """Pre-compile regex patterns in trigger conditions."""
+    for key in ("command_patterns", "path_patterns"):
+        raw_patterns = triggers.get(key)
+        if raw_patterns:
+            compiled_key = f"_compiled_{key}"
+            triggers[compiled_key] = [
+                re.compile(p, re.IGNORECASE) for p in raw_patterns
+            ]
+    # Handle nested conditions
+    for cond in triggers.get("conditions", []):
+        if "OR" in cond:
+            for sub in cond["OR"]:
+                _precompile_trigger_patterns(sub)
+        else:
+            _precompile_trigger_patterns(cond)
+
+
 def _parse_pattern(raw: dict) -> AttackPattern:
     """Parse a single pattern dict from YAML into an ``AttackPattern``.
 
@@ -109,6 +128,10 @@ def _parse_pattern(raw: dict) -> AttackPattern:
                     "weight": rp.get("weight", 5),
                 })
     detection["_compiled"] = compiled
+
+    # Pre-compile trigger regex patterns
+    triggers: dict[str, Any] = raw.get("triggers", {})
+    _precompile_trigger_patterns(triggers)
 
     return AttackPattern(
         id=raw["id"],
@@ -170,12 +193,14 @@ class PatternMatcher:
             contents or command string).
         """
         results: list[AttackPattern] = []
-        for pattern in self.patterns:
+        patterns = self.patterns  # local ref for atomic snapshot during hot-reload
+        for pattern in patterns:
             if self._triggers_match(pattern, tool_name, payload):
                 matched, weight = self._detection_match(pattern, content, payload)
                 if matched and not self._is_false_positive(pattern, payload):
-                    pattern.max_weight = weight
-                    results.append(pattern)
+                    hit = copy.copy(pattern)
+                    hit.max_weight = weight
+                    results.append(hit)
         return results
 
     # -- trigger evaluation -------------------------------------------------
@@ -218,8 +243,12 @@ class PatternMatcher:
             if not any(fnmatch.fnmatch(basename, pat) for pat in trigger["file_patterns"]):
                 return False
 
-        # --- command_patterns (regex) ---
-        if "command_patterns" in trigger:
+        # --- command_patterns (regex, pre-compiled) ---
+        if "_compiled_command_patterns" in trigger:
+            command = str(payload.get("command", ""))
+            if not any(cp.search(command) for cp in trigger["_compiled_command_patterns"]):
+                return False
+        elif "command_patterns" in trigger:
             command = str(payload.get("command", ""))
             if not any(
                 re.search(p, command, re.IGNORECASE)
@@ -227,8 +256,11 @@ class PatternMatcher:
             ):
                 return False
 
-        # --- path_patterns (regex) ---
-        if "path_patterns" in trigger:
+        # --- path_patterns (regex, pre-compiled) ---
+        if "_compiled_path_patterns" in trigger:
+            if not any(cp.search(path) for cp in trigger["_compiled_path_patterns"]):
+                return False
+        elif "path_patterns" in trigger:
             if not any(
                 re.search(p, path, re.IGNORECASE)
                 for p in trigger["path_patterns"]
@@ -287,20 +319,25 @@ class PatternMatcher:
             text = text[:_MAX_DETECTION_INPUT_LEN]
 
         max_weight = 0
+        matched = False
 
-        # Fast path: use pre-compiled patterns (populated by _parse_pattern)
+        # Use pre-compiled patterns (populated by _parse_pattern)
         for cp in detection.get("_compiled", []):
             if cp["compiled"].search(text):
+                matched = True
                 max_weight = max(max_weight, cp["weight"])
-                return True, max_weight
+
+        if matched:
+            return True, max_weight
 
         # Fallback: handle any patterns that were not pre-compiled (backward compat)
         for rp in detection.get("regex_patterns", []):
             pat = rp if isinstance(rp, str) else rp.get("pattern", "")
+            weight = rp.get("weight", 5) if isinstance(rp, dict) else 0
             if pat and re.search(pat, text, re.IGNORECASE | re.DOTALL):
-                return True, 0
+                return True, weight
 
-        return False, max_weight
+        return False, 0
 
     # -- false-positive filtering -------------------------------------------
 

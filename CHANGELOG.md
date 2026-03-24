@@ -2,6 +2,57 @@
 
 本文件记录 ClawSentry 各版本的重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.2.0] — 2026-03-24
+
+### 新增
+
+#### 核心安全增强（E-4 Phase 1-3，2026-03-24）
+- **D6 注入检测维度**：`injection_detector.py`，Layer 1（10 弱+8 强 regex, <0.3ms）+ Layer 2（Canary Token 泄露检测）
+- **Post-action 安全围栏**：`post_action_analyzer.py`，异步检测间接注入/数据泄露/凭据暴露/混淆，分级响应（LOG/MONITOR/ESCALATE/EMERGENCY）
+- **攻击模式库**：`attack_patterns.yaml` v1.1，25 条模式覆盖 OWASP ASI01-04（含供应链/容器逃逸/反弹 shell）
+- **EmbeddingBackend Protocol**：可插拔 L3 向量相似度接口（纯 Protocol，无模型依赖）
+- **TrajectoryAnalyzer**：5 个多步攻击序列检测（凭据窃取/后门安装/侦察渗透/密钥收割/分阶段渗出）
+- **DetectionConfig**：统一 frozen dataclass（17 可调字段）+ `build_detection_config_from_env()` + 17 CS_ 环境变量
+- L1 评分重构：加权公式 `0.4*max(D1,D2,D3)+0.25*D4+0.15*D5` + D6 乘数，新阈值 LOW<0.8/MED<1.5/HIGH<2.2/CRIT≥2.2
+- SSE 新事件类型：`post_action_finding`、`trajectory_alert`
+
+#### 用户体验改进（E-1~E-3，2026-03-23）
+- **`clawsentry start`**：一键启动命令（框架自动检测 → 初始化 → Gateway → watch），Ctrl+C 优雅关闭
+- **Web UI 自动登录**：启动时输出带 token 的 URL，点击即可免密登录
+- **watch 输出优化**：混合格式（ALLOW 单行/BLOCK-DEFER 树形展开）+ SessionTracker Unicode 分组框 + Emoji 视觉锚点
+- **watch 新 CLI 参数**：`--verbose` / `--no-emoji` / `--compact`
+- **Web UI 重构**：Linear/Vercel 设计语言，Inter 字体，紫色 accent（#a78bfa），新组件：EmptyState/SkeletonCard/ScoreBar/VerdictBar/AreaChart 渐变/HintTag/LatencyBadge/TierBadge/SVG 环形倒计时
+
+#### 测试覆盖
+- 测试总量：775 → 1138（+363 tests，覆盖 D6/Post-action/模式库/DetectionConfig/TrajectoryAnalyzer）
+- 1 skipped = E2E SDK 测试（需 `A3S_SDK_E2E=1` + LLM API key，预期行为）
+
+### 修复
+
+#### 第二轮代码审查（3 Critical + 16 Important + 16 Minor + 9 Nitpick）
+- **[C-1]** PatternMatcher `_detection_match` 全扫描修复（不再 early-return 丢失最高 weight）
+- **[C-2]** `copy.copy(pattern)` 防止共享 AttackPattern 对象 mutation
+- **[C-3]** TrajectoryAnalyzer `_emitted` set 上限 + LRU 驱逐防止内存泄漏
+- SSE `/report/stream` 白名单补充 `post_action_finding` / `trajectory_alert`（I-1）
+- `build_detection_config_from_env()` try/except 降级 + `d6_injection_multiplier` 验证（I-2/I-3）
+- `score_layer1` + `PostActionAnalyzer` 64KB 输入上限（I-4/I-6）
+- ThreadPoolExecutor `asyncio.wait_for` 包装防线程泄漏（I-7）
+- `detect_instructional_content` 收窄标记 + 阈值 >0.5（I-8）
+- 触发器 command/path_patterns 递归预编译（I-11）
+- max_weight ≥ 8 → HIGH 风险升级（I-12）
+- RiskSnapshot `frozen=True` 不可变保证（I-10）
+- 正则优化 / 防御性拷贝 / bidi 字符检测 / 文档完善（Minor/Nitpick）
+
+#### 第一轮代码审查
+- PatternMatcher 正则预编译 + 100KB 输入限制（H9/H10）
+- Post-action 复合评分聚合：max + 0.15 per extra signal（H8）
+- LLM prompt payload 脱敏（4KB 截断 + REDACTED 标注，H3/H4）
+- CDN 白名单扩展 + Shannon 熵阈值 7.0→5.5（M12/M13）
+- `event_text()` 64KB 上限防止 regex 性能退化（M5）
+- `mount` 加入 DANGEROUS_TOOLS（M3）
+
+---
+
 ## [0.1.0] — 2026-03-23
 
 首个公开版本。ClawSentry 是 Agent Harness Protocol (AHP) 的 Python 参考实现——一个面向 AI Agent 运行时的统一安全监督网关，支持 a3s-code 和 OpenClaw 双框架接入。
@@ -86,4 +137,5 @@
 - 775 个测试用例，覆盖单元测试 + 集成测试 + E2E 测试
 - 测试通过时间 ~6.5s
 
+[0.2.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.1.0

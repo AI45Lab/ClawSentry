@@ -316,6 +316,9 @@ async def run_stack(args: argparse.Namespace) -> None:
         patterns_path=detection_config.attack_patterns_path,
     )
     if analyzer is not None:
+        # Replace the default rule-only engine with one backed by the LLM analyzer.
+        # This creates a fresh SessionRiskTracker; safe at startup since no events
+        # have been processed yet.
         gateway.policy_engine = L1PolicyEngine(analyzer=analyzer, config=detection_config)
     gateway_app = create_http_app(gateway)
 

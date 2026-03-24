@@ -168,6 +168,11 @@ class RuleBasedAnalyzer:
                 matched, key=lambda p: RISK_LEVEL_ORDER.get(p.risk_level, 0)
             ).risk_level
             target_level = _max_risk_level(target_level, max_pattern_risk)
+            # High-weight match on medium-risk pattern can escalate to HIGH
+            max_weight = max(p.max_weight for p in matched)
+            if max_weight >= 8 and RISK_LEVEL_ORDER.get(target_level, 0) < RISK_LEVEL_ORDER[RiskLevel.HIGH]:
+                target_level = RiskLevel.HIGH
+                reasons.append(f"high_weight_pattern(w={max_weight})")
             reasons.append(f"attack_pattern: {', '.join(p.id for p in matched)}")
 
         if has_manual_l2_escalation_flag(context):

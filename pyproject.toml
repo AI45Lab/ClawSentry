@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clawsentry"
-version = "0.1.0"
+version = "0.2.0"
 description = "AHP unified safety supervision framework for AI agent runtimes."
 readme = "src/clawsentry/README.md"
 requires-python = ">=3.11"
@@ -36,6 +36,7 @@ dependencies = [
     "fastapi>=0.100",
     "uvicorn[standard]>=0.23",
     "pydantic>=2.0",
+    "PyYAML>=6.0",
 ]
 
 [project.urls]
@@ -72,7 +73,7 @@ clawsentry-harness = "clawsentry.adapters.a3s_gateway_harness:main"
 clawsentry-stack = "clawsentry.gateway.stack:main"
 
 [tool.setuptools.package-data]
-clawsentry = ["ui/dist/**", "gateway/skills/*.yaml"]
+clawsentry = ["ui/dist/**", "gateway/skills/*.yaml", "gateway/attack_patterns.yaml"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

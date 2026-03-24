@@ -10,6 +10,8 @@ Design basis:
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
+import logging
 import time
 from typing import Optional
 
@@ -106,7 +108,6 @@ class L1PolicyEngine:
                 decision = self._decide(event, snapshot)
                 actual_tier = DecisionTier.L2
             except Exception:
-                import logging
                 logging.getLogger(__name__).warning(
                     "L2 analysis failed; falling back to L1", exc_info=True,
                 )
@@ -224,7 +225,7 @@ class L1PolicyEngine:
         parts.append(
             f"D1={dims.d1} D2={dims.d2} D3={dims.d3} D4={dims.d4} D5={dims.d5} D6={dims.d6:.2f}"
         )
-        parts.append(f"score={snapshot.composite_score}")
+        parts.append(f"score={snapshot.composite_score:.4f}")
         if snapshot.short_circuit_rule:
             parts.append(f"short_circuit={snapshot.short_circuit_rule}")
         if event.tool_name:
@@ -267,13 +268,15 @@ class L1PolicyEngine:
         timeout_sec = budget / 1000.0
 
         if loop and loop.is_running():
-            import concurrent.futures
             pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
             try:
                 result = pool.submit(
                     asyncio.run,
-                    self._analyzer.analyze(event, context, l1_snapshot, budget),
-                ).result(timeout=timeout_sec)
+                    asyncio.wait_for(
+                        self._analyzer.analyze(event, context, l1_snapshot, budget),
+                        timeout=timeout_sec,
+                    ),
+                ).result(timeout=timeout_sec + 0.5)  # outer timeout as safety net
             finally:
                 # cancel_futures=True (Python 3.9+) avoids blocking on timed-out threads
                 pool.shutdown(wait=False, cancel_futures=True)

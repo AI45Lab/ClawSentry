@@ -2,7 +2,7 @@
 # ClawSentry Attack Pattern Library v1.0
 #
 # Design basis: docs/plans/2026-03-23-e4-phase1-design-v1.2.md section 4
-# Coverage: OWASP Agentic AI Top 5 (ASI01, ASI02, ASI03, ASI05)
+# Coverage: OWASP Agentic AI Top 5 (ASI01, ASI02, ASI03, ASI04, ASI05)
 #
 # Each pattern has:
 #   - triggers: tool/file/command conditions (AND/OR boolean logic)
@@ -85,6 +85,8 @@ patterns:
           weight: 8
         - pattern: "\\u2060|\\u2061|\\u2062|\\u2063"
           weight: 7
+        - pattern: "\\u202a|\\u202b|\\u202c|\\u202d|\\u202e|\\u2066|\\u2067|\\u2068|\\u2069"
+          weight: 9
     references:
       papers: ["AgentSecurityBench-2024"]
     mitre_attack:
@@ -408,12 +410,19 @@ patterns:
       regex_patterns:
         - pattern: "\\b(insmod|modprobe)\\s+"
           weight: 10
-        - pattern: "rmmod\\s+"
-          weight: 7
-        - pattern: "echo.*>\\s*/proc/sys/"
+        - pattern: "rmmod\\s+(\\w+).*&&"
+          weight: 4
+        - pattern: "echo.*>\\s*/proc/sys/kernel/"
           weight: 9
-        - pattern: "sysctl\\s+-w\\s+"
+        - pattern: "sysctl\\s+-w\\s+kernel\\.(randomize_va_space|dmesg_restrict|kptr_restrict|yama|modules_disabled)"
           weight: 8
+    false_positive_filters:
+      - type: whitelist_path
+        paths:
+          - "*/ansible/*"
+          - "*/puppet/*"
+          - "*/chef/*"
+          - "*/ci/*"
     mitre_attack:
       tactics: ["TA0003"]
       techniques: ["T1547.006"]
@@ -450,6 +459,7 @@ patterns:
   - id: "ASI04-001"
     category: "supply_chain"
     description: "Typosquatting package install — common misspellings of popular packages"
+  # Typosquat list last updated: 2026-03-24. Refresh periodically from PyPI/npm advisories.
     risk_level: "high"
     triggers:
       tool_names: ["bash", "shell", "exec"]

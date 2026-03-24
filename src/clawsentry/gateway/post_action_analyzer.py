@@ -1,16 +1,26 @@
 """
 Post-action security analyzer — non-blocking analysis of tool outputs.
 
+Public API:
+    - detect_instructional_content(text) → float
+    - detect_exfiltration(text) → float
+    - detect_secret_exposure(text) → float
+    - detect_obfuscation(text) → float
+    - PostActionAnalyzer.analyze(tool_output, ...) → PostActionFinding
+
 Design basis: docs/plans/2026-03-23-e4-phase1-design-v1.2.md section 3
 """
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 from typing import Optional
 
 from .models import PostActionFinding, PostActionResponseTier
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -21,7 +31,7 @@ _INSTRUCTIONAL_MARKERS: list[re.Pattern] = [
     re.compile(p, re.IGNORECASE) for p in [
         r"\b(must|should|need to)\b",
         r"\b(do not|don't|never)\b",
-        r"\b(step \d+|first|then|next)\b",
+        r"\b(step \d+)\b",
         r"(?:now|next|instead)\s+(?:do|execute|run)",
     ]
 ]
@@ -142,7 +152,11 @@ class PostActionAnalyzer:
     ) -> None:
         self._whitelist: list[re.Pattern] = []
         if whitelist_patterns:
-            self._whitelist = [re.compile(p) for p in whitelist_patterns]
+            for p in whitelist_patterns:
+                try:
+                    self._whitelist.append(re.compile(p))
+                except re.error as exc:
+                    logger.warning("Invalid whitelist pattern %r: %s — skipping", p, exc)
         self._tier_emergency = tier_emergency
         self._tier_escalate = tier_escalate
         self._tier_monitor = tier_monitor
@@ -163,11 +177,15 @@ class PostActionAnalyzer:
                 details={"whitelisted": True, "event_id": event_id},
             )
 
+        # Cap input to 64KB to match event_text() discipline
+        if len(tool_output) > 65_536:
+            tool_output = tool_output[:65_536]
+
         patterns_matched: list[str] = []
         scores: list[float] = []
 
         instr_score = detect_instructional_content(tool_output)
-        if instr_score > 0.3:
+        if instr_score > 0.5:
             patterns_matched.append("indirect_injection")
             scores.append(instr_score)
 

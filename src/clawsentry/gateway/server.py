@@ -585,6 +585,19 @@ class TrajectoryStore:
         self._conn.commit()
 
 
+def _parse_iso_timestamp(value: Optional[str]) -> float:
+    """Parse an ISO-8601 timestamp string to a Unix timestamp float.
+
+    Returns 0.0 for missing or malformed values.
+    """
+    if not value:
+        return 0.0
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+    except (ValueError, TypeError):
+        return 0.0
+
+
 class SessionRegistry:
     """In-memory live session view for current-process metrics endpoints."""
 
@@ -599,15 +612,6 @@ class SessionRegistry:
         self.max_sessions = max(max_sessions, 1)
         self.max_timeline_per_session = max(max_timeline_per_session, 1)
         self._sessions: dict[str, dict[str, Any]] = {}
-
-    @staticmethod
-    def _parse_iso_timestamp(value: Optional[str]) -> float:
-        if not value:
-            return 0.0
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
-        except (ValueError, TypeError):
-            return 0.0
 
     def _evict_if_needed(self) -> None:
         while len(self._sessions) > self.max_sessions:
@@ -636,7 +640,7 @@ class SessionRegistry:
             return
 
         occurred_at = str(event.get("occurred_at") or utc_now_iso())
-        occurred_at_ts = self._parse_iso_timestamp(occurred_at)
+        occurred_at_ts = _parse_iso_timestamp(occurred_at)
         risk_level = str(snapshot.get("risk_level") or decision.get("risk_level") or "low")
         dimensions = snapshot.get("dimensions") or {}
         tool_name = event.get("tool_name")
@@ -684,7 +688,7 @@ class SessionRegistry:
         session["d4_accumulation"] = session["d4_accumulation"] + int(dimensions.get("d4") or 0)
         if _risk_rank(risk_level) >= _risk_rank("high"):
             session["high_risk_event_count"] += 1
-        if occurred_at_ts and occurred_at_ts < self._parse_iso_timestamp(session["first_event_at"]):
+        if occurred_at_ts and occurred_at_ts < _parse_iso_timestamp(session["first_event_at"]):
             session["first_event_at"] = occurred_at
         if occurred_at_ts >= float(session.get("last_event_ts", 0.0)):
             session["last_event_at"] = occurred_at
@@ -1193,7 +1197,7 @@ class SupervisionGateway:
                 "session_id": _sid,
                 "event_id": req.event.event_id,
                 "tool_name": req.event.tool_name or "",
-                "occurred_at_ts": self.session_registry._parse_iso_timestamp(
+                "occurred_at_ts": _parse_iso_timestamp(
                     str(event_dict.get("occurred_at") or "")
                 ),
                 "payload": req.event.payload or {},
@@ -1680,12 +1684,12 @@ def create_http_app(
                 media_type="application/json",
             )
 
-        event_types = {"decision", "session_risk_change", "session_start", "alert", "session_enforcement_change"}
+        event_types = {"decision", "session_risk_change", "session_start", "alert", "session_enforcement_change", "post_action_finding", "trajectory_alert"}
         if types:
             requested_types = {item.strip() for item in types.split(",") if item.strip()}
             if not requested_types or not requested_types.issubset(event_types):
                 return Response(
-                    content=json.dumps({"error": "types must be a comma-separated subset of: decision, session_risk_change, session_start, alert, session_enforcement_change"}),
+                    content=json.dumps({"error": "types must be a comma-separated subset of: decision, session_risk_change, session_start, alert, session_enforcement_change, post_action_finding, trajectory_alert"}),
                     status_code=400,
                     media_type="application/json",
                 )

@@ -321,22 +321,6 @@ _SHORT_CIRCUIT_RULES = [
     ("SC-3", lambda d: d.d1 == 0 and d.d2 == 0 and d.d3 == 0, RiskLevel.LOW),
 ]
 
-def _composite_score(dims: RiskDimensions) -> int:
-    """Calculate composite_score = max(D1, D2, D3) + D4 + D5. (Legacy, unused.)"""
-    return max(dims.d1, dims.d2, dims.d3) + dims.d4 + dims.d5
-
-
-def _score_to_risk_level(score: int) -> RiskLevel:
-    """Map composite_score to risk_level per 04 section 12.3. (Legacy, unused.)"""
-    if score >= 5:
-        return RiskLevel.CRITICAL
-    if score >= 4:
-        return RiskLevel.HIGH
-    if score >= 2:
-        return RiskLevel.MEDIUM
-    return RiskLevel.LOW
-
-
 # ---------------------------------------------------------------------------
 # E-4: New composite scoring with D6 injection multiplier
 # ---------------------------------------------------------------------------
@@ -345,7 +329,11 @@ def _composite_score_v2(
     dims: RiskDimensions,
     config: Optional[DetectionConfig] = None,
 ) -> float:
-    """E-4 composite score with D6 injection multiplier. Returns 0.0-3.0."""
+    """E-4 composite score with D6 injection multiplier.
+
+    Returns >= 0.0 (bounded to [0.0, 3.0] with default weights;
+    unbounded when custom weights exceed defaults).
+    """
     if config is None:
         config = DetectionConfig()
     base_score = (
