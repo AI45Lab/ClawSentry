@@ -166,6 +166,7 @@ def _build_openclaw_runtime(
 ) -> OpenClawRuntime:
     config = OpenClawBootstrapConfig(
         webhook_token=webhook_token,
+        webhook_token_secondary=os.getenv("OPENCLAW_WEBHOOK_TOKEN_SECONDARY") or None,
         webhook_secret=webhook_secret,
         webhook_require_https=webhook_require_https,
         webhook_max_body_bytes=webhook_max_body_bytes,
@@ -223,11 +224,17 @@ def add_resolve_endpoint(app, approval_client):
             )
 
         try:
-            await approval_client.resolve(approval_id, decision, reason=reason)
+            ok = await approval_client.resolve(approval_id, decision, reason=reason)
         except Exception as e:
             logger.exception("resolve failed for %s", approval_id)
             return JSONResponse(
                 {"error": f"resolve failed: {e}"},
+                status_code=502,
+            )
+
+        if not ok:
+            return JSONResponse(
+                {"error": "resolve was not delivered (WS unavailable or rejected)"},
                 status_code=502,
             )
 

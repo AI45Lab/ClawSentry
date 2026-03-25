@@ -55,6 +55,7 @@ def create_webhook_app(
         source_url = str(request.url)
 
         # Security verification
+        source_ip = request.client.host if request.client else ""
         check = verify_webhook_request(
             config=config,
             token=token,
@@ -63,6 +64,7 @@ def create_webhook_app(
             content_type=content_type,
             body=body,
             source_url=source_url,
+            source_ip=source_ip,
         )
 
         if not check.ok:

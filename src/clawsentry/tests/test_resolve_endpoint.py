@@ -21,7 +21,7 @@ class TestResolveEndpoint:
     @pytest.fixture
     def mock_approval_client(self):
         client = AsyncMock()
-        client.resolve = AsyncMock(return_value=None)
+        client.resolve = AsyncMock(return_value=True)
         return client
 
     @pytest.fixture
@@ -102,6 +102,24 @@ class TestResolveEndpoint:
                 "decision": "invalid-value",
             })
         assert resp.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_resolve_returns_502_when_ws_unavailable(self, gateway):
+        """When resolve() returns False (WS down), endpoint should return 502."""
+        client = AsyncMock()
+        client.resolve = AsyncMock(return_value=False)
+        app = create_http_app(gateway)
+        add_resolve_endpoint(app, client)
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as ac:
+            resp = await ac.post("/ahp/resolve", json={
+                "approval_id": "ap-ws-down",
+                "decision": "allow-once",
+            })
+        assert resp.status_code == 502
+        assert "not delivered" in resp.json()["error"]
 
     @pytest.mark.asyncio
     async def test_resolve_requires_auth(self, gateway, mock_approval_client):

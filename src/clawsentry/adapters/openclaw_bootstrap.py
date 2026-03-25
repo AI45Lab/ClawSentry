@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+import time
 from typing import Any, Optional
 
 from .openclaw_adapter import OpenClawAdapter, OpenClawAdapterConfig
@@ -58,6 +59,7 @@ class OpenClawBootstrapConfig:
     """Single-entry configuration for OpenClaw hook + webhook runtime."""
 
     webhook_token: str = DEFAULT_WEBHOOK_TOKEN
+    webhook_token_secondary: Optional[str] = None
     webhook_secret: Optional[str] = None
     webhook_require_https: bool = DEFAULT_WEBHOOK_REQUIRE_HTTPS
     webhook_max_body_bytes: int = DEFAULT_WEBHOOK_MAX_BODY_BYTES
@@ -88,6 +90,7 @@ class OpenClawBootstrapConfig:
 
         base = cls(
             webhook_token=os.getenv("OPENCLAW_WEBHOOK_TOKEN", DEFAULT_WEBHOOK_TOKEN),
+            webhook_token_secondary=os.getenv("OPENCLAW_WEBHOOK_TOKEN_SECONDARY") or None,
             webhook_secret=os.getenv("OPENCLAW_WEBHOOK_SECRET") or None,
             webhook_require_https=_env_bool(
                 "OPENCLAW_WEBHOOK_REQUIRE_HTTPS", DEFAULT_WEBHOOK_REQUIRE_HTTPS
@@ -184,11 +187,13 @@ def build_openclaw_runtime(config: OpenClawBootstrapConfig) -> OpenClawRuntime:
 
     webhook_security = WebhookSecurityConfig(
         primary_token=config.webhook_token,
+        secondary_token=config.webhook_token_secondary,
         webhook_secret=config.webhook_secret,
         require_https=config.webhook_require_https,
         max_body_bytes=config.webhook_max_body_bytes,
         ip_whitelist=ip_whitelist,
         token_ttl_seconds=token_ttl,
+        token_issued_at=time.time(),
     )
 
     normalizer = OpenClawNormalizer(

@@ -56,6 +56,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default=False,
         help="Preview OpenClaw config changes without applying (use with --setup).",
     )
+    init_parser.add_argument(
+        "--openclaw-home",
+        type=Path,
+        default=None,
+        help="Custom OpenClaw config directory (default: ~/.openclaw/).",
+    )
 
     # --- gateway ---
     sub.add_parser(
@@ -198,6 +204,7 @@ def main(argv: list[str] | None = None) -> None:
             auto_detect=getattr(args, "auto_detect", False),
             setup=getattr(args, "setup", False),
             dry_run=getattr(args, "dry_run", False),
+            openclaw_home=getattr(args, "openclaw_home", None),
         )
         sys.exit(code)
 
