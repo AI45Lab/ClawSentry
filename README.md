@@ -4,6 +4,10 @@
 
 AHP (Agent Harness Protocol) reference implementation — a unified security supervision gateway for AI agent runtimes.
 
+<p align="center">
+  <img src="site-docs/assets/architecture-overview.png" alt="ClawSentry Architecture Overview" width="820">
+</p>
+
 ## Features
 
 - **Three-tier progressive decision**: L1 rule engine (<1 ms) → L2 semantic analysis (<3 s) → L3 review agent (<30 s)
@@ -69,10 +73,6 @@ open http://localhost:8080/ui      # open web dashboard
 ```
 
 ## Architecture
-
-<p align="center">
-  <img src="site-docs/assets/architecture-overview.png" alt="ClawSentry Architecture Overview" width="820">
-</p>
 
 **Decision tiers:**
 
