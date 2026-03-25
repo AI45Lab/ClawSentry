@@ -70,15 +70,9 @@ open http://localhost:8080/ui      # open web dashboard
 
 ## Architecture
 
-![ClawSentry Architecture Overview](site-docs/assets/architecture-overview.png)
-
-```
-a3s-code ──→ A3S Adapter ──┐
-                            ├──→ AHP CanonicalEvent ──→ PolicyEngine ──→ L1/L2/L3
-OpenClaw ──→ OC Adapter ───┘                                                │
-                                                        SessionRegistry ←───┘
-                                                        EventBus ──→ SSE / CLI / Web UI
-```
+<p align="center">
+  <img src="site-docs/assets/architecture-overview.png" alt="ClawSentry Architecture Overview" width="820">
+</p>
 
 **Decision tiers:**
 
