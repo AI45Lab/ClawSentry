@@ -111,29 +111,72 @@ hide:
   <figcaption>ClawSentry — 统一 AI Agent 安全监督网关</figcaption>
 </figure>
 
-### 决策数据流
+### 完整数据流
 
 ```mermaid
 flowchart LR
     subgraph fw["Agent 框架"]
+        direction TB
         A3S["a3s-code\nstdio / HTTP"]
         OC["OpenClaw\nWS / Webhook"]
     end
 
-    GW["AHP Gateway"]
-
-    subgraph dec["三层递进决策（同步阻塞）"]
-        L1["L1 规则引擎\n&lt;1ms · D1–D6"] -->|不确定| L2["L2 语义分析\n&lt;3s · LLM"] -->|不确定| L3["L3 审查 Agent\n&lt;30s"]
+    subgraph gw["适配器层"]
+        direction TB
+        A3SA["A3S Adapter"]
+        OCA["OpenClaw Adapter"]
     end
 
-    PA["Post-action 围栏\n（异步）"]
-    OBS["实时监控\nSSE · CLI · Web"]
+    subgraph sync["同步决策路径（pre_action 阻塞）"]
+        direction TB
+        CE["CanonicalEvent\nAHP 归一化"]
+        PE["PolicyEngine\n决策编排 + 会话执法"]
+        L1["L1 规则引擎\n&lt;1ms · D1–D6 六维评分"]
+        L2["L2 语义分析\n&lt;3s · LLM + 25种攻击模式"]
+        L3["L3 审查 Agent\n&lt;30s · 多轮工具推理"]
+        CE --> PE --> L1
+        L1 -->|"不确定"| L2
+        L2 -->|"不确定"| L3
+        L1 & L2 & L3 -->|"CanonicalDecision"| PE
+    end
 
-    fw --> GW
-    GW --> dec
-    dec -->|"ALLOW / BLOCK / DEFER"| fw
-    GW -.->|"post_action"| PA
-    GW --> OBS
+    subgraph async["异步分析（post_action · 非阻塞）"]
+        direction TB
+        PA["Post-action 围栏\n注入/外传/凭证/混淆"]
+        TA["轨迹分析器\n5种多步攻击序列"]
+        PEV["自进化模式库\n信心评分 · YAML 持久化"]
+    end
+
+    subgraph obs["状态 & 可观测"]
+        direction TB
+        SR["SessionRegistry"]
+        EB["SSE EventBus"]
+        AR["AlertRegistry"]
+        DB[("TrajectoryStore\nSQLite")]
+    end
+
+    subgraph out["输出通道"]
+        direction TB
+        CLI["clawsentry watch\n终端实时监控"]
+        WEB["Web 仪表板\nReact SPA"]
+        API["REST API\n报表 & 管理"]
+    end
+
+    A3S --> A3SA
+    OC --> OCA
+    A3SA & OCA --> CE
+    PE -->|"同步判决"| A3SA & OCA
+
+    CE -.->|"post_action 异步"| PA & TA
+    L2 -.->|"候选模式"| PEV
+    L3 --> DB
+
+    PE --> SR
+    PA & TA --> EB
+    SR --> EB
+    EB --> AR
+    EB --> CLI & WEB
+    AR --> API
 ```
 
 ---
