@@ -24,6 +24,14 @@ logger = logging.getLogger("openclaw-approval-client")
 
 _VALID_DECISIONS = frozenset({"allow-once", "allow-always", "deny"})
 
+
+class ResolveError(Exception):
+    """Raised when OpenClaw responds with an error to a resolve request.
+
+    Carries the error message so callers (e.g. resolve()) can inspect it
+    for retry-eligible patterns like "additional properties".
+    """
+
 _VERDICT_TO_OPENCLAW: dict[DecisionVerdict, Optional[str]] = {
     DecisionVerdict.ALLOW: "allow-once",
     DecisionVerdict.BLOCK: "deny",
@@ -295,16 +303,27 @@ class OpenClawApprovalClient:
                 params,
             )
         except Exception as e:
-            if reason is not None and "additional properties" in str(e).lower():
+            err_lower = str(e).lower()
+            if reason is not None and (
+                "additional properties" in err_lower
+                or "unexpected property" in err_lower
+            ):
                 logger.info(
                     "OpenClaw rejected reason field, retrying without it "
                     "(approval=%s)",
                     approval_id,
                 )
-                return await self._send_request(
-                    "exec.approval.resolve",
-                    {"id": approval_id, "decision": decision},
-                )
+                try:
+                    return await self._send_request(
+                        "exec.approval.resolve",
+                        {"id": approval_id, "decision": decision},
+                    )
+                except Exception:
+                    logger.exception(
+                        "Retry without reason also failed for approval %s",
+                        approval_id,
+                    )
+                    return False
             logger.exception(
                 "Failed to resolve approval %s with decision %s",
                 approval_id,
@@ -369,10 +388,9 @@ class OpenClawApprovalClient:
             return True
 
         error = response.get("error", {})
-        logger.error(
-            "Approval resolve failed: %s", error.get("message", "unknown error")
-        )
-        return False
+        error_msg = error.get("message", "unknown error")
+        logger.error("Approval resolve failed: %s", error_msg)
+        raise ResolveError(error_msg)
 
     async def stop_listening(self) -> None:
         """Stop the background listener loop."""

@@ -140,6 +140,7 @@ class TestGatewayCore:
         params = _sync_decision_params(
             request_id="req-l2-explicit",
             decision_tier="L2",
+            deadline_ms=1000,  # L2 needs budget > _L2_OVERHEAD_MARGIN_MS (200ms)
             event={
                 "event_id": "evt-l2-explicit",
                 "trace_id": "trace-l2-explicit",
@@ -162,6 +163,7 @@ class TestGatewayCore:
         params = _sync_decision_params(
             request_id="req-l2-auto",
             decision_tier="L1",
+            deadline_ms=1000,  # L2 auto-escalation needs budget > _L2_OVERHEAD_MARGIN_MS
             event={
                 "event_id": "evt-l2-auto",
                 "trace_id": "trace-l2-auto",
@@ -328,6 +330,7 @@ class TestGatewayCore:
         l2_body = _jsonrpc_request("ahp/sync_decision", _sync_decision_params(
             request_id="req-tier-l2",
             decision_tier="L2",
+            deadline_ms=1000,  # L2 needs budget > _L2_OVERHEAD_MARGIN_MS (200ms)
             event={
                 "event_id": "evt-tier-l2",
                 "trace_id": "trace-tier-l2",
@@ -1803,11 +1806,14 @@ def test_l2_budget_capped_by_deadline():
     )
     ctx = DecisionContext(session_risk_summary={"l2_escalate": True})
 
-    # default l2_budget_ms is 3000; pass deadline_budget_ms=1500 → should cap
+    # default l2_budget_ms is 5000; pass deadline_budget_ms=1500 → should cap
+    # With overhead margin: budget = min(5000, max(0, 1500 - 200)) = 1300
+    from clawsentry.gateway.policy_engine import _L2_OVERHEAD_MARGIN_MS
     _, _, _ = engine.evaluate(event, ctx, DecisionTier.L2, deadline_budget_ms=1500.0)
     assert len(captured_budget) == 1
-    assert captured_budget[0] <= 1500.0, (
-        f"L2 budget {captured_budget[0]} exceeded deadline 1500"
+    expected = 1500.0 - _L2_OVERHEAD_MARGIN_MS  # 1300.0
+    assert captured_budget[0] == expected, (
+        f"L2 budget {captured_budget[0]} should be {expected} (deadline 1500 - margin {_L2_OVERHEAD_MARGIN_MS})"
     )
 
 
@@ -1856,6 +1862,111 @@ def test_l2_budget_uncapped_without_deadline():
     assert captured_budget[0] == 5000.0
 
 
+def test_l2_budget_reserves_overhead_margin():
+    """CS-009: L2 budget must subtract _L2_OVERHEAD_MARGIN_MS when deadline is set."""
+    from clawsentry.gateway.policy_engine import L1PolicyEngine, _L2_OVERHEAD_MARGIN_MS
+    from clawsentry.gateway.semantic_analyzer import L2Result
+    from clawsentry.gateway.models import (
+        CanonicalEvent, DecisionContext, DecisionTier, EventType, RiskLevel,
+    )
+
+    captured_budget = []
+
+    class SpyAnalyzer:
+        analyzer_id = "spy"
+
+        async def analyze(self, event, context, l1_snapshot, budget_ms):
+            captured_budget.append(budget_ms)
+            return L2Result(
+                target_level=RiskLevel.LOW,
+                reasons=["ok"],
+                confidence=0.8,
+                analyzer_id="spy",
+                latency_ms=1.0,
+            )
+
+    engine = L1PolicyEngine(analyzer=SpyAnalyzer())
+
+    event = CanonicalEvent(
+        event_id="evt-margin",
+        trace_id="trace-margin",
+        event_type=EventType.PRE_ACTION,
+        session_id="sess-margin",
+        agent_id="agent-margin",
+        source_framework="test",
+        occurred_at="2026-03-26T00:00:00+00:00",
+        payload={"command": "cat /etc/passwd"},
+        tool_name="bash",
+        risk_hints=["credential_exfiltration"],
+    )
+    ctx = DecisionContext(session_risk_summary={"l2_escalate": True})
+
+    # deadline_budget_ms=5000 → budget should be 5000 - _L2_OVERHEAD_MARGIN_MS
+    _, _, _ = engine.evaluate(event, ctx, DecisionTier.L2, deadline_budget_ms=5000.0)
+    assert len(captured_budget) == 1
+    expected_max = 5000.0 - _L2_OVERHEAD_MARGIN_MS
+    assert captured_budget[0] <= expected_max, (
+        f"L2 budget {captured_budget[0]} should be <= {expected_max} (with overhead margin)"
+    )
+    assert captured_budget[0] >= 0, "Budget must not be negative"
+
+
+def test_l2_budget_margin_does_not_go_negative():
+    """CS-009: When deadline < margin, budget is clamped to 0 and L2 falls back to L1."""
+    from clawsentry.gateway.policy_engine import L1PolicyEngine, _L2_OVERHEAD_MARGIN_MS
+    from clawsentry.gateway.semantic_analyzer import L2Result
+    from clawsentry.gateway.models import (
+        CanonicalEvent, DecisionContext, DecisionTier, EventType, RiskLevel,
+    )
+
+    captured_budget = []
+
+    class SpyAnalyzer:
+        analyzer_id = "spy"
+
+        async def analyze(self, event, context, l1_snapshot, budget_ms):
+            captured_budget.append(budget_ms)
+            return L2Result(
+                target_level=RiskLevel.LOW,
+                reasons=["ok"],
+                confidence=0.8,
+                analyzer_id="spy",
+                latency_ms=1.0,
+            )
+
+    engine = L1PolicyEngine(analyzer=SpyAnalyzer())
+
+    event = CanonicalEvent(
+        event_id="evt-neg",
+        trace_id="trace-neg",
+        event_type=EventType.PRE_ACTION,
+        session_id="sess-neg",
+        agent_id="agent-neg",
+        source_framework="test",
+        occurred_at="2026-03-26T00:00:00+00:00",
+        payload={"command": "cat /etc/passwd"},
+        tool_name="bash",
+        risk_hints=["credential_exfiltration"],
+    )
+    ctx = DecisionContext(session_risk_summary={"l2_escalate": True})
+
+    # deadline_budget_ms=100 < margin=200 → budget clamped to 0 → L2 times out immediately
+    # L2 failure falls back to L1, so actual_tier should be L1
+    _, _, actual_tier = engine.evaluate(event, ctx, DecisionTier.L2, deadline_budget_ms=100.0)
+
+    # Budget is 0ms → asyncio.wait_for timeout immediately → L2 fails → fallback to L1.
+    # The spy analyzer may or may not be called (timeout=0 races with coroutine start).
+    # The key invariant: budget is never negative, and the system degrades gracefully.
+    if len(captured_budget) == 1:
+        assert captured_budget[0] == 0.0, (
+            f"L2 budget should be 0 when deadline ({100.0}) < margin ({_L2_OVERHEAD_MARGIN_MS})"
+        )
+    else:
+        # L2 timed out before analyzer was called → fell back to L1
+        from clawsentry.gateway.models import DecisionTier as DT
+        assert actual_tier == DT.L1, "Should fall back to L1 when budget is exhausted"
+
+
 # ---------------------------------------------------------------------------
 # G-2: _gateway_args_from_env() respects environment variables
 # ---------------------------------------------------------------------------
@@ -1882,3 +1993,273 @@ class TestGatewayMainEnvVars:
         monkeypatch.setenv("CS_UDS_PATH", "/tmp/custom.sock")
         args = _gateway_args_from_env()
         assert args["uds_path"] == "/tmp/custom.sock"
+
+
+# ---------------------------------------------------------------------------
+# CS-012: Record decision before deadline check
+# ---------------------------------------------------------------------------
+
+class TestCS012RecordBeforeDeadline:
+    """CS-012: When deadline is exceeded, the decision must still be recorded
+    in trajectory_store and session_registry before the error is returned."""
+
+    @pytest.fixture
+    def gw(self):
+        return SupervisionGateway()
+
+    @pytest.mark.asyncio
+    async def test_deadline_exceeded_still_records_trajectory(self, gw, monkeypatch):
+        """When deadline is exceeded, trajectory_store should still have the record."""
+        call_count = 0
+        base_time = 1000.0
+
+        def fake_monotonic():
+            nonlocal call_count
+            call_count += 1
+            # First call: start time (line 1106) → 1000.0
+            # Second call: remaining_ms calc (line 1134) → 1000.0 (within deadline)
+            # Third call onward: deadline check → way past deadline
+            if call_count <= 2:
+                return base_time
+            return base_time + 10.0  # 10 seconds past start, way past 100ms deadline
+
+        monkeypatch.setattr(time, "monotonic", fake_monotonic)
+
+        params = _sync_decision_params(
+            request_id="req-deadline-record-001",
+            deadline_ms=100,
+        )
+        body = _jsonrpc_request("ahp/sync_decision", params)
+        result = await gw.handle_jsonrpc(body)
+
+        # Should return DEADLINE_EXCEEDED error
+        assert "error" in result, "Expected DEADLINE_EXCEEDED error response"
+        error_data = result["error"]["data"]
+        assert error_data["rpc_error_code"] == "DEADLINE_EXCEEDED"
+
+        # But trajectory should still be recorded (CS-012 fix)
+        assert gw.trajectory_store.count() == 1, (
+            "CS-012: trajectory_store must record even on DEADLINE_EXCEEDED"
+        )
+        rec = gw.trajectory_store.records[0]
+        assert rec["meta"]["request_id"] == "req-deadline-record-001"
+
+    @pytest.mark.asyncio
+    async def test_deadline_exceeded_still_records_session(self, gw, monkeypatch):
+        """When deadline is exceeded, session_registry should still have the record."""
+        call_count = 0
+        base_time = 1000.0
+
+        def fake_monotonic():
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:
+                return base_time
+            return base_time + 10.0
+
+        monkeypatch.setattr(time, "monotonic", fake_monotonic)
+
+        params = _sync_decision_params(
+            request_id="req-deadline-session-001",
+            deadline_ms=100,
+            event={
+                "event_id": "evt-dl-sess",
+                "trace_id": "trace-dl-sess",
+                "event_type": "pre_action",
+                "session_id": "sess-deadline-001",
+                "agent_id": "agent-001",
+                "source_framework": "test",
+                "occurred_at": "2026-03-19T12:00:00+00:00",
+                "payload": {"tool": "read_file", "path": "/tmp/readme.txt"},
+                "tool_name": "read_file",
+            },
+        )
+        body = _jsonrpc_request("ahp/sync_decision", params)
+        result = await gw.handle_jsonrpc(body)
+
+        # Should return DEADLINE_EXCEEDED error
+        assert "error" in result
+        assert result["error"]["data"]["rpc_error_code"] == "DEADLINE_EXCEEDED"
+
+        # Session should still be recorded (CS-012 fix)
+        stats = gw.session_registry.get_session_stats("sess-deadline-001")
+        assert stats.get("event_count", 0) >= 1, (
+            "CS-012: session_registry must record even on DEADLINE_EXCEEDED"
+        )
+
+    @pytest.mark.asyncio
+    async def test_deadline_exceeded_returns_fallback_decision(self, gw, monkeypatch):
+        """DEADLINE_EXCEEDED response should still contain fallback_decision."""
+        call_count = 0
+        base_time = 1000.0
+
+        def fake_monotonic():
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:
+                return base_time
+            return base_time + 10.0
+
+        monkeypatch.setattr(time, "monotonic", fake_monotonic)
+
+        params = _sync_decision_params(
+            request_id="req-deadline-fallback-001",
+            deadline_ms=100,
+        )
+        body = _jsonrpc_request("ahp/sync_decision", params)
+        result = await gw.handle_jsonrpc(body)
+
+        assert "error" in result
+        error_data = result["error"]["data"]
+        assert error_data["rpc_error_code"] == "DEADLINE_EXCEEDED"
+        assert "fallback_decision" in error_data
+        assert error_data["fallback_decision"] is not None
+
+
+# ---------------------------------------------------------------------------
+# L3 budget configuration tests
+# ---------------------------------------------------------------------------
+
+def test_l3_budget_overrides_l2_budget():
+    """CS_L3_BUDGET_MS should increase L2 analysis budget when L3 is present."""
+    from clawsentry.gateway.policy_engine import L1PolicyEngine, _L2_OVERHEAD_MARGIN_MS
+    from clawsentry.gateway.semantic_analyzer import L2Result
+    from clawsentry.gateway.detection_config import DetectionConfig
+    from clawsentry.gateway.models import (
+        CanonicalEvent, DecisionContext, DecisionTier, EventType, RiskLevel,
+    )
+
+    captured_budget = []
+
+    class SpyAnalyzer:
+        analyzer_id = "spy"
+
+        async def analyze(self, event, context, l1_snapshot, budget_ms):
+            captured_budget.append(budget_ms)
+            return L2Result(
+                target_level=RiskLevel.LOW,
+                reasons=["ok"],
+                confidence=0.8,
+                analyzer_id="spy",
+                latency_ms=1.0,
+            )
+
+    config = DetectionConfig(l2_budget_ms=5000.0, l3_budget_ms=15000.0)
+    engine = L1PolicyEngine(analyzer=SpyAnalyzer(), config=config)
+
+    event = CanonicalEvent(
+        event_id="evt-l3b",
+        trace_id="trace-l3b",
+        event_type=EventType.PRE_ACTION,
+        session_id="sess-l3b",
+        agent_id="agent-l3b",
+        source_framework="test",
+        occurred_at="2026-03-26T00:00:00+00:00",
+        payload={"command": "cat /etc/passwd"},
+        tool_name="bash",
+        risk_hints=["credential_exfiltration"],
+    )
+    ctx = DecisionContext(session_risk_summary={"l2_escalate": True})
+
+    # No deadline → budget should be max(5000, 15000) = 15000
+    _, _, _ = engine.evaluate(event, ctx, DecisionTier.L2)
+    assert len(captured_budget) == 1
+    assert captured_budget[0] == 15000.0, (
+        f"L3 budget should override L2: expected 15000, got {captured_budget[0]}"
+    )
+
+
+def test_l3_budget_still_capped_by_deadline():
+    """L3 budget is still capped by the request deadline."""
+    from clawsentry.gateway.policy_engine import L1PolicyEngine, _L2_OVERHEAD_MARGIN_MS
+    from clawsentry.gateway.semantic_analyzer import L2Result
+    from clawsentry.gateway.detection_config import DetectionConfig
+    from clawsentry.gateway.models import (
+        CanonicalEvent, DecisionContext, DecisionTier, EventType, RiskLevel,
+    )
+
+    captured_budget = []
+
+    class SpyAnalyzer:
+        analyzer_id = "spy"
+
+        async def analyze(self, event, context, l1_snapshot, budget_ms):
+            captured_budget.append(budget_ms)
+            return L2Result(
+                target_level=RiskLevel.LOW,
+                reasons=["ok"],
+                confidence=0.8,
+                analyzer_id="spy",
+                latency_ms=1.0,
+            )
+
+    config = DetectionConfig(l2_budget_ms=5000.0, l3_budget_ms=15000.0)
+    engine = L1PolicyEngine(analyzer=SpyAnalyzer(), config=config)
+
+    event = CanonicalEvent(
+        event_id="evt-l3bc",
+        trace_id="trace-l3bc",
+        event_type=EventType.PRE_ACTION,
+        session_id="sess-l3bc",
+        agent_id="agent-l3bc",
+        source_framework="test",
+        occurred_at="2026-03-26T00:00:00+00:00",
+        payload={"command": "cat /etc/passwd"},
+        tool_name="bash",
+        risk_hints=["credential_exfiltration"],
+    )
+    ctx = DecisionContext(session_risk_summary={"l2_escalate": True})
+
+    # deadline=10000 → budget = min(15000, 10000-200) = 9800
+    _, _, _ = engine.evaluate(event, ctx, DecisionTier.L2, deadline_budget_ms=10000.0)
+    assert len(captured_budget) == 1
+    expected = 10000.0 - _L2_OVERHEAD_MARGIN_MS
+    assert captured_budget[0] == expected, (
+        f"L3 budget should be capped by deadline: expected {expected}, got {captured_budget[0]}"
+    )
+
+
+def test_l3_budget_none_uses_l2_budget():
+    """When l3_budget_ms is None (default), L2 budget is used."""
+    from clawsentry.gateway.policy_engine import L1PolicyEngine
+    from clawsentry.gateway.semantic_analyzer import L2Result
+    from clawsentry.gateway.detection_config import DetectionConfig
+    from clawsentry.gateway.models import (
+        CanonicalEvent, DecisionContext, DecisionTier, EventType, RiskLevel,
+    )
+
+    captured_budget = []
+
+    class SpyAnalyzer:
+        analyzer_id = "spy"
+
+        async def analyze(self, event, context, l1_snapshot, budget_ms):
+            captured_budget.append(budget_ms)
+            return L2Result(
+                target_level=RiskLevel.LOW,
+                reasons=["ok"],
+                confidence=0.8,
+                analyzer_id="spy",
+                latency_ms=1.0,
+            )
+
+    config = DetectionConfig(l2_budget_ms=5000.0, l3_budget_ms=None)
+    engine = L1PolicyEngine(analyzer=SpyAnalyzer(), config=config)
+
+    event = CanonicalEvent(
+        event_id="evt-l3n",
+        trace_id="trace-l3n",
+        event_type=EventType.PRE_ACTION,
+        session_id="sess-l3n",
+        agent_id="agent-l3n",
+        source_framework="test",
+        occurred_at="2026-03-26T00:00:00+00:00",
+        payload={"command": "cat /etc/passwd"},
+        tool_name="bash",
+        risk_hints=["credential_exfiltration"],
+    )
+    ctx = DecisionContext(session_risk_summary={"l2_escalate": True})
+
+    _, _, _ = engine.evaluate(event, ctx, DecisionTier.L2)
+    assert len(captured_budget) == 1
+    assert captured_budget[0] == 5000.0

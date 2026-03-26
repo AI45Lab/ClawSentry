@@ -1147,31 +1147,9 @@ class SupervisionGateway:
                 )
                 return self._jsonrpc_error_with_data(rpc_id, -32603, error_resp)
 
-        # Check if we exceeded deadline
-        if time.monotonic() > deadline_at:
-            error_resp = SyncDecisionErrorResponse(
-                request_id=req.request_id,
-                rpc_error_code=RPCErrorCode.DEADLINE_EXCEEDED,
-                rpc_error_message=f"Decision took longer than deadline_ms={req.deadline_ms}",
-                retry_eligible=True,
-                retry_after_ms=50,
-                fallback_decision=decision,
-            )
-            return self._jsonrpc_error_with_data(rpc_id, -32604, error_resp)
-
-        # Build success response
-        resp = SyncDecisionResponse(
-            request_id=req.request_id,
-            decision=decision,
-            actual_tier=actual_tier,
-            served_at=utc_now_iso(),
-        )
-        resp_dict = resp.model_dump(mode="json")
-
-        # Cache response
-        self.idempotency_cache.put(req.request_id, resp_dict, req.deadline_ms)
-
-        # Record trajectory
+        # --- CS-012: Record decision BEFORE deadline check ---
+        # Recording must happen unconditionally so that even deadline-exceeded
+        # decisions are persisted to trajectory_store and session_registry.
         event_dict = req.event.model_dump(mode="json")
         decision_dict = decision.model_dump(mode="json")
         snapshot_dict = snapshot.model_dump(mode="json")
@@ -1245,6 +1223,30 @@ class SupervisionGateway:
                         "timestamp": str(event_dict.get("occurred_at") or utc_now_iso()),
                     }
                 )
+
+        # Check if we exceeded deadline (after recording, so audit trail is intact)
+        if time.monotonic() > deadline_at:
+            error_resp = SyncDecisionErrorResponse(
+                request_id=req.request_id,
+                rpc_error_code=RPCErrorCode.DEADLINE_EXCEEDED,
+                rpc_error_message=f"Decision took longer than deadline_ms={req.deadline_ms}",
+                retry_eligible=True,
+                retry_after_ms=50,
+                fallback_decision=decision,
+            )
+            return self._jsonrpc_error_with_data(rpc_id, -32604, error_resp)
+
+        # Build success response
+        resp = SyncDecisionResponse(
+            request_id=req.request_id,
+            decision=decision,
+            actual_tier=actual_tier,
+            served_at=utc_now_iso(),
+        )
+        resp_dict = resp.model_dump(mode="json")
+
+        # Cache response
+        self.idempotency_cache.put(req.request_id, resp_dict, req.deadline_ms)
 
         current_risk_level = str(snapshot_dict.get("risk_level") or decision_dict.get("risk_level") or "low")
         occurred_at = str(event_dict.get("occurred_at") or utc_now_iso())
@@ -2144,6 +2146,7 @@ async def run_gateway(
         trajectory_store=gateway.trajectory_store,
         patterns_path=detection_config.attack_patterns_path,
         evolved_patterns_path=detection_config.evolved_patterns_path if detection_config.evolving_enabled else None,
+        l3_budget_ms=detection_config.l3_budget_ms,
     )
     if analyzer is not None:
         gateway.policy_engine = L1PolicyEngine(analyzer=analyzer, config=detection_config)

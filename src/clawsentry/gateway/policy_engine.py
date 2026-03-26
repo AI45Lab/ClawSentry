@@ -41,6 +41,11 @@ from .semantic_analyzer import (
     has_manual_l2_escalation_flag,
 )
 
+# Overhead margin (ms) subtracted from deadline budget to leave room for
+# recording, response building, and thread-pool teardown after L2 analysis.
+_L2_OVERHEAD_MARGIN_MS: float = 200.0
+
+
 def _build_min_score_map(config: DetectionConfig) -> dict[RiskLevel, float]:
     return {
         RiskLevel.LOW: 0.0,
@@ -274,8 +279,10 @@ class L1PolicyEngine:
             loop = None
 
         budget = self._config.l2_budget_ms
+        if self._config.l3_budget_ms is not None:
+            budget = max(budget, self._config.l3_budget_ms)
         if deadline_budget_ms is not None:
-            budget = min(budget, deadline_budget_ms)
+            budget = min(budget, max(0, deadline_budget_ms - _L2_OVERHEAD_MARGIN_MS))
         timeout_sec = budget / 1000.0
 
         if loop and loop.is_running():

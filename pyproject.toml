@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clawsentry"
-version = "0.2.2"
+version = "0.2.3"
 description = "AHP unified safety supervision framework for AI agent runtimes."
 readme = "src/clawsentry/README.md"
 requires-python = ">=3.11"

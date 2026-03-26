@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from typing import Any
 
 import pytest
 
@@ -512,6 +514,27 @@ class TestResolveWithReason:
         assert "reason" not in call_log[1]
         assert call_log[1] == {"id": "ap-degrade", "decision": "deny"}
 
+    async def test_resolve_retries_on_unexpected_property_error(self, client):
+        """Real OpenClaw uses 'unexpected property' wording — retry must also match."""
+        call_log: list[dict] = []
+
+        async def mock_send(method, params):
+            call_log.append(dict(params))
+            if "reason" in params:
+                raise RuntimeError(
+                    "invalid exec.approval.resolve params: at root: unexpected property 'reason'"
+                )
+            return True
+
+        client._send_request = mock_send
+        result = await client.resolve(
+            "ap-real-oc", "deny", reason="blocked: policy"
+        )
+        assert result is True
+        assert len(call_log) == 2
+        assert "reason" in call_log[0]
+        assert "reason" not in call_log[1]
+
     async def test_resolve_does_not_retry_on_unrelated_error(self, client):
         """Non-additional-properties errors do NOT trigger a retry."""
         call_count = 0
@@ -527,3 +550,188 @@ class TestResolveWithReason:
         )
         assert result is False
         assert call_count == 1  # no retry
+
+
+class TestResolveReasonFallbackE2E:
+    """CS-011: End-to-end test that resolve() retries without reason when
+    OpenClaw responds with an error about additional properties.
+
+    This exercises the REAL _send_request code path (no mock of _send_request).
+    """
+
+    @pytest.fixture
+    async def reason_rejecting_gateway(self):
+        """MockOpenClawGateway that rejects the 'reason' field on first call."""
+        from clawsentry.tests.helpers.mock_openclaw_gateway import (
+            MockOpenClawGateway,
+        )
+
+        gw = _ReasonRejectingGateway(require_token="cs011-token")
+        await gw.start()
+        yield gw
+        await gw.stop()
+
+    async def test_resolve_retries_via_real_send_request(
+        self, reason_rejecting_gateway
+    ):
+        """When real _send_request receives {"ok": false, "error": ...additional properties...},
+        resolve() should catch the error and retry without the reason field."""
+        gw = reason_rejecting_gateway
+        cfg = OpenClawApprovalClientConfig(
+            ws_url=gw.ws_url,
+            operator_token="cs011-token",
+            enabled=True,
+        )
+        client = OpenClawApprovalClient(cfg)
+        await client.connect()
+        assert client.connected is True
+
+        result = await client.resolve(
+            "ap-cs011", "deny", reason="blocked: destructive pattern"
+        )
+        # The retry should succeed
+        assert result is True
+
+        # Gateway should have received 2 calls: first rejected, second accepted
+        assert len(gw.resolved_approvals) == 1
+        assert gw.resolved_approvals[0] == {"id": "ap-cs011", "decision": "deny"}
+        assert "reason" not in gw.resolved_approvals[0]
+
+        # The rejected call count should be 1
+        assert gw.rejected_count == 1
+
+        await client.close()
+
+    async def test_resolve_without_reason_no_retry_needed(
+        self, reason_rejecting_gateway
+    ):
+        """When reason is None, no retry is needed — first call succeeds."""
+        gw = reason_rejecting_gateway
+        cfg = OpenClawApprovalClientConfig(
+            ws_url=gw.ws_url,
+            operator_token="cs011-token",
+            enabled=True,
+        )
+        client = OpenClawApprovalClient(cfg)
+        await client.connect()
+        assert client.connected is True
+
+        result = await client.resolve("ap-ok", "allow-once")
+        assert result is True
+        assert len(gw.resolved_approvals) == 1
+        assert gw.rejected_count == 0
+
+        await client.close()
+
+    async def test_resolve_retry_also_fails_returns_false(
+        self, reason_rejecting_gateway
+    ):
+        """When the retry itself fails, resolve() should return False."""
+        gw = reason_rejecting_gateway
+        gw.reject_all = True  # Make ALL calls fail
+        cfg = OpenClawApprovalClientConfig(
+            ws_url=gw.ws_url,
+            operator_token="cs011-token",
+            enabled=True,
+        )
+        client = OpenClawApprovalClient(cfg)
+        await client.connect()
+        assert client.connected is True
+
+        result = await client.resolve(
+            "ap-fail-both", "deny", reason="will fail"
+        )
+        assert result is False
+
+        await client.close()
+
+
+class _ReasonRejectingGateway:
+    """Mock gateway that rejects resolve calls with a 'reason' field,
+    simulating real OpenClaw behavior for CS-011."""
+
+    def __init__(self, *, require_token: str = "test-token") -> None:
+        self.require_token = require_token
+        self.resolved_approvals: list[dict[str, Any]] = []
+        self.rejected_count = 0
+        self.reject_all = False
+        self._server: Any = None
+        self._port: int = 0
+
+    @property
+    def ws_url(self) -> str:
+        return f"ws://127.0.0.1:{self._port}"
+
+    async def start(self) -> None:
+        import websockets as ws_lib
+
+        self._server = await ws_lib.serve(self._handler, "127.0.0.1", 0)
+        for sock in self._server.sockets:
+            self._port = sock.getsockname()[1]
+            break
+
+    async def stop(self) -> None:
+        if self._server:
+            self._server.close()
+            await self._server.wait_closed()
+
+    async def _handler(self, websocket: Any) -> None:
+        import websockets as ws_lib
+
+        # Handshake: challenge → connect → hello-ok
+        challenge = {
+            "type": "event",
+            "event": "connect.challenge",
+            "payload": {"nonce": "abc123", "ts": 1234567890000},
+        }
+        await websocket.send(json.dumps(challenge))
+
+        connect_raw = await websocket.recv()
+        connect_msg = json.loads(connect_raw)
+        token = connect_msg.get("params", {}).get("auth", {}).get("token", "")
+        if token != self.require_token:
+            await websocket.send(json.dumps({
+                "type": "res", "id": connect_msg.get("id"),
+                "ok": False, "error": {"message": "invalid token"},
+            }))
+            await websocket.close()
+            return
+
+        await websocket.send(json.dumps({
+            "type": "res", "id": connect_msg.get("id"),
+            "ok": True, "payload": {"type": "hello-ok", "protocol": 3},
+        }))
+
+        # Handle requests
+        try:
+            async for message in websocket:
+                msg = json.loads(message)
+                if msg.get("method") == "exec.approval.resolve":
+                    params = msg.get("params", {})
+                    if self.reject_all or "reason" in params:
+                        # Reject with "additional properties" error
+                        self.rejected_count += 1
+                        resp = {
+                            "type": "res",
+                            "id": msg.get("id"),
+                            "ok": False,
+                            "error": {
+                                "message": (
+                                    "invalid exec.approval.resolve params: "
+                                    "unexpected property 'reason' — "
+                                    "data must NOT have additional properties"
+                                ),
+                            },
+                        }
+                    else:
+                        # Accept
+                        self.resolved_approvals.append(params)
+                        resp = {
+                            "type": "res",
+                            "id": msg.get("id"),
+                            "ok": True,
+                            "payload": {"ok": True},
+                        }
+                    await websocket.send(json.dumps(resp))
+        except ws_lib.exceptions.ConnectionClosed:
+            pass

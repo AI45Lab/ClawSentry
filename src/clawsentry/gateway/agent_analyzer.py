@@ -43,6 +43,7 @@ _ALLOWED_TOOL_CALLS: dict[str, str] = {
 class AgentAnalyzerConfig:
     provider_timeout_ms: float = 20_000.0
     hard_cap_ms: float = 30_000.0
+    l3_budget_ms: Optional[float] = None  # User-configurable L3 budget; None = use passed budget
     max_reasoning_turns: int = 8
     initial_trajectory_limit: int = 20
     max_findings: int = 10
@@ -126,8 +127,9 @@ class AgentAnalyzer:
                 event.session_id,
                 limit=self._config.initial_trajectory_limit,
             )
+            base_budget = self._config.l3_budget_ms if self._config.l3_budget_ms is not None else budget_ms
             effective_budget = min(
-                budget_ms, self._config.provider_timeout_ms, self._config.hard_cap_ms
+                base_budget, self._config.provider_timeout_ms, self._config.hard_cap_ms
             )
 
             if self._config.enable_multi_turn:

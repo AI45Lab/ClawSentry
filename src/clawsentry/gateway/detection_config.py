@@ -40,6 +40,7 @@ class DetectionConfig:
 
     # --- L2 semantic analysis ---
     l2_budget_ms: float = 5000.0
+    l3_budget_ms: Optional[float] = None  # Separate L3 budget; None = use l2_budget_ms
     attack_patterns_path: Optional[str] = None  # None = built-in default
 
     # --- Post-action tier thresholds ---
@@ -76,6 +77,8 @@ class DetectionConfig:
                 raise ValueError(f"weight {wname} must be >= 0, got {getattr(self, wname)}")
         if self.l2_budget_ms <= 0:
             raise ValueError(f"l2_budget_ms must be > 0, got {self.l2_budget_ms}")
+        if self.l3_budget_ms is not None and self.l3_budget_ms <= 0:
+            raise ValueError(f"l3_budget_ms must be > 0, got {self.l3_budget_ms}")
         if not (self.post_action_monitor <= self.post_action_escalate <= self.post_action_emergency):
             raise ValueError(
                 f"post_action tier ordering violated: monitor={self.post_action_monitor} "
@@ -104,6 +107,7 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_D4_HIGH_THRESHOLD", "d4_high_threshold", int),
     ("CS_D4_MID_THRESHOLD", "d4_mid_threshold", int),
     ("CS_L2_BUDGET_MS", "l2_budget_ms", float),
+    ("CS_L3_BUDGET_MS", "l3_budget_ms", float),
     ("CS_ATTACK_PATTERNS_PATH", "attack_patterns_path", str),
     ("CS_POST_ACTION_EMERGENCY", "post_action_emergency", float),
     ("CS_POST_ACTION_ESCALATE", "post_action_escalate", float),

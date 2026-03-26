@@ -2,6 +2,25 @@
 
 本文件记录 ClawSentry 各版本的重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.2.3] — 2026-03-26
+
+### 修复
+
+#### Issue Batch 2026-03-26-2（2 Critical + 1 High + 1 feat, 12 tests）
+- **[CS-012]** `_handle_sync_decision()` deadline exceeded 时 early return 跳过 `trajectory_store.record()` 和 `session_registry.record()`，导致 fallback 决策不落库 — 将 recording 移到 deadline 检查之前
+- **[CS-011]** `_send_request()` 收到 OpenClaw 错误响应时返回 `False` 而非抛异常，导致 `resolve()` reason 降级重试永不触发 — 新增 `ResolveError` 异常 + 匹配 "unexpected property" 错误格式
+- **[CS-009]** L2 budget cap 无 overhead margin，LLM 调用耗尽 budget 后刚好超过 deadline — 预留 200ms margin
+
+### 新增
+- **`CS_L3_BUDGET_MS`** 环境变量：独立配置 L3 最大预算（默认跟随 L2），解决 L3 场景下 deadline 不足问题
+- 穿透链：`DetectionConfig` → `policy_engine` → `llm_factory` → `AgentAnalyzerConfig`
+
+#### 测试新增
+- 12 个新测试覆盖：deadline 下 recording / ResolveError + retry E2E / overhead margin / L3 budget 配置
+- 测试总量：1277 → 1289（+12 tests）
+
+---
+
 ## [0.2.2] — 2026-03-26
 
 ### 修复

@@ -29,6 +29,7 @@ def build_analyzer_from_env(
     workspace_root: Optional[Path] = None,
     patterns_path: Optional[str] = None,
     evolved_patterns_path: Optional[str] = None,
+    l3_budget_ms: Optional[float] = None,
 ) -> Optional[CompositeAnalyzer | LLMAnalyzer | RuleBasedAnalyzer]:
     """Build a SemanticAnalyzer from environment variables.
 
@@ -94,10 +95,15 @@ def build_analyzer_from_env(
                 if custom_path.exists() and custom_path.is_dir():
                     loaded = skill_registry.load_additional(custom_path)
                     logger.info("Custom skills loaded from %s (%d skills)", custom_path, loaded)
+            from .agent_analyzer import AgentAnalyzerConfig
+            agent_config = AgentAnalyzerConfig()
+            if l3_budget_ms is not None:
+                agent_config = AgentAnalyzerConfig(l3_budget_ms=l3_budget_ms)
             agent = AgentAnalyzer(
                 provider=provider,
                 toolkit=toolkit,
                 skill_registry=skill_registry,
+                config=agent_config,
             )
             analyzers.append(agent)
             logger.info("L3 AgentAnalyzer enabled")
