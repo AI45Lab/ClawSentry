@@ -76,6 +76,10 @@ hide:
 
 ---
 
+
+!!! tip "v0.6.4: Env-file discovery hints"
+    `clawsentry start` 和 `clawsentry config show --effective` 现在会提示已发现但未自动加载的 `.clawsentry.env.local`、legacy `.env.clawsentry` 或 `.clawsentry.env.example`，并给出显式 `--env-file` 下一步命令；严格 env-first 来源模型不变。
+
 <div class="grid-cards" markdown>
 
 <div class="card" markdown>
