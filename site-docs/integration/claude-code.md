@@ -58,7 +58,7 @@ which clawsentry-harness  # 确认 harness 命令在 PATH 中
 
 ### 一键初始化
 
-使用 `clawsentry init claude-code` 生成/合并项目策略；需要本机密钥或端口覆盖时，另建显式 env file：
+使用 `clawsentry init claude-code` 查看框架 env 建议并按需安装 hooks；需要本机密钥或端口覆盖时，另建显式 env file：
 
 ```bash
 cd your-project/
@@ -67,7 +67,7 @@ clawsentry init claude-code
 
 此命令会自动：
 
-- 生成/合并 **`.clawsentry.env.example`** — 把 `claude-code` 输出 `CS_FRAMEWORK` / `CS_ENABLED_FRAMEWORKS` 建议，不包含密钥
+- 输出 `CS_FRAMEWORK` / `CS_ENABLED_FRAMEWORKS` 建议，不包含密钥
 - 注入 hooks 到 **`~/.claude/settings.json`** — 智能合并，不覆盖已有 hooks
 
 本机运行时值示例（可选，文件名固定为 `.clawsentry.env.local`，不要提交）：
@@ -339,8 +339,8 @@ clawsentry start --framework claude-code --no-watch
 
 `clawsentry start` 的完整流程：
 
-1. 读取或生成 `.clawsentry.env.example` 项目策略
-2. 合成 CLI、进程环境、显式 env file 与项目策略
+1. 使用 CLI、进程环境和显式 env file 合成运行时配置
+2. 发现本机 env 文件但未加载时只提示下一步，不自动读取
 3. 后台启动 Gateway 进程
 4. 等待 health check 通过
 5. 前台启动 `watch` 事件流（可用 `--no-watch` 跳过）

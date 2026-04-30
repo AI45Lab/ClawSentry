@@ -8,8 +8,10 @@ description: 按功能块复制 ClawSentry dotenv 配置：L1、L2、L3、Anti-b
 本页是**唯一推荐复制配置片段的页面**。所有片段都是 dotenv `KEY=VALUE` 格式，可放入 `.clawsentry.env.example`、`.clawsentry.env.local`、CI secret/env 或 systemd `EnvironmentFile=`。不要在 ClawSentry env file 里使用 section、数组或嵌套表。
 
 > **规则**：可提交文件只放非密钥策略；密钥和本机端口放进进程/部署环境或显式 `--env-file .clawsentry.env.local`。
+> **使用方式**：`.clawsentry.env.example` 只是模板，启动不会自动读取。日常本机使用时先 `cp .clawsentry.env.example .clawsentry.env.local`，填入本机值后再显式 `--env-file .clawsentry.env.local`。
 
 ```bash
+cp .clawsentry.env.example .clawsentry.env.local
 clawsentry config show --effective --env-file .clawsentry.env.local
 clawsentry start --env-file .clawsentry.env.local --framework codex --open-browser
 ```
@@ -20,7 +22,7 @@ clawsentry start --env-file .clawsentry.env.local --framework codex --open-brows
 
 | 你的目标 | 复制哪些块 | 下一步 |
 |---|---|---|
-| 先跑起来看 Gateway / Web UI | [基础骨架](#base-skeleton) + [L1 only](#template-l1-only) | `clawsentry start --framework codex` |
+| 先跑起来看 Gateway / Web UI | [基础骨架](#base-skeleton) + [L1 only](#template-l1-only) | `clawsentry start --framework codex`；如已有本机 env 文件则加 `--env-file .clawsentry.env.local` |
 | 团队共享 L2 语义分析 | [基础骨架](#base-skeleton) + [L2 + token budget](#template-l2-budgeted) | 配本机 `CS_LLM_API_KEY` |
 | 高风险操作同步审查 | [严格 L3](#template-l3-strict) + [DEFER 审批](#template-defer-bridge) | 先小仓库试运行 |
 | 防重试/绕过 | [Anti-bypass Guard](#template-anti-bypass) | 从 observe rollout 开始 |

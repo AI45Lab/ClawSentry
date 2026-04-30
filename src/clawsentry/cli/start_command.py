@@ -11,7 +11,13 @@ import urllib.request
 from pathlib import Path
 
 from .integrations_command import collect_integration_status
-from .dotenv_loader import EnvFileError, overlay_env_file, resolve_explicit_env_file
+from .dotenv_loader import (
+    EnvFileError,
+    discover_local_env_files,
+    format_env_file_hint,
+    overlay_env_file,
+    resolve_explicit_env_file,
+)
 from .initializers.base import read_env_file
 from clawsentry.gateway.env_config import config_to_child_env, parse_enabled_frameworks
 
@@ -455,7 +461,7 @@ def run_start(
         return
 
     # 4. Print banner
-    print(f"\nClawSentry starting...")
+    print("\nClawSentry starting...")
     print(f"  Framework:  {framework}{' (auto-detected)' if auto_detected else ''}")
     if len(active_frameworks) > 1:
         print(f"  Enabled:    {', '.join(active_frameworks)}")
@@ -474,6 +480,14 @@ def run_start(
     elif parsed_env.path is not None and "CS_AUTH_TOKEN" in parsed_env.values and "CS_AUTH_TOKEN" not in os.environ:
         print(f"  Auth token: explicit env-file ({parsed_env.source_detail_for('CS_AUTH_TOKEN')})")
     print(f"  Log file:   {log_path}")
+    for warning in parsed_env.warnings:
+        print(f"  WARNING:    {warning}")
+    if parsed_env.path is None and not os.environ.get("CLAWSENTRY_ENV_FILE"):
+        for line in format_env_file_hint(
+            discover_local_env_files(target_dir),
+            command=f"clawsentry start --framework {framework}",
+        ):
+            print(f"  {line}")
     if openclaw_setup_result is not None:
         if openclaw_setup_result.files_modified:
             print(
@@ -529,8 +543,10 @@ def run_start(
         print(f"Gateway running (PID {proc.pid}). Use 'clawsentry stop' to stop it.")
         if ephemeral_token:
             print(f"  clawsentry watch --token {token}    # to monitor events with this ephemeral token")
+        elif "CS_AUTH_TOKEN" not in os.environ:
+            print(f"  clawsentry watch --token {token}    # to monitor events with this env-file token")
         else:
-            print(f"  clawsentry watch    # to monitor events")
+            print("  clawsentry watch    # to monitor events")
         return
 
     # 7. Watch loop (foreground)
@@ -586,7 +602,7 @@ def _run_start_with_latch(
     keep_running = False
 
     # Banner
-    print(f"\nClawSentry starting (Latch mode)...")
+    print("\nClawSentry starting (Latch mode)...")
     print(f"  Framework:  {framework}{' (auto-detected)' if auto_detected else ''}")
     if len(active_frameworks) > 1:
         print(f"  Enabled:    {', '.join(active_frameworks)}")

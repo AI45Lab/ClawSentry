@@ -2,11 +2,30 @@
 
 本文件记录 ClawSentry 各版本的重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [未发布]
+## [Unreleased]
 
 ### 待办
 
 - 下一轮用户反馈与回归验证后补充。
+
+## [0.6.4] — 2026-04-30
+
+### 改进
+
+- **Env-file UX 提示** — `start` / `config show --effective` 在发现 `.clawsentry.env.local`、旧 `.env.clawsentry` 或 `.clawsentry.env.example` 但未显式加载时，输出可复制的下一步提示；仍不自动读取本地 env file。
+- **自动检测失败恢复路径** — 未能自动识别 framework 时，会先提示可用的 explicit `--env-file` / `CLAWSENTRY_ENV_FILE` 路径，再要求用户显式传入 `--framework`。
+- **公开文档口径收口** — README、PyPI README、在线配置页、recent feature coverage、API metadata 与进度文档更新到 v0.6.4，强调“发现即提示，不等于加载”的严格来源模型。
+
+### 测试与验证
+
+- Python 完整回归：开发仓库 `3118 passed, 5 skipped`；公开仓库 `3117 passed, 6 skipped`。
+- Web UI 回归：`npm test -- --run` → `53 passed`。
+- Focused env-file UX / docs contract regression：`python -m pytest src/clawsentry/tests/test_dotenv_loader.py src/clawsentry/tests/test_start_command.py src/clawsentry/tests/test_config_command.py src/clawsentry/tests/test_cli_main.py src/clawsentry/tests/test_public_docs_contract.py -q --tb=short` → `71 passed`。
+- Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
+- 文档构建：`mkdocs build --strict` → PASS。
+- 包构建：`python -m build` → PASS（setuptools license deprecation warnings only）。
+- `git diff --check` → PASS。
+- Public publish smoke is tracked in `docs/validation/v0.6.4-env-file-hints-release-2026-04-30.md`.
 
 ## [0.6.3] — 2026-04-30
 
@@ -38,7 +57,7 @@
 
 ### 改进
 
-- **Kimi 能力边界显式化** — Kimi native hooks 现在明确为 native allow/block 支持，不宣称具备 `a3s-code` AHP transport 对等能力。Native `modify` 与真实 `defer` 会报告为 unsupported/degraded，而不是被宣传为已支持。
+- **Kimi 能力边界显式化** — Kimi native hooks 现在明确为 native allow/block 支持，不提供 `a3s-code` AHP transport 对等能力。Native `modify` 与真实 `defer` 会报告为 unsupported/degraded，而不是被宣传为已支持。
 - **六框架文档覆盖** — README、PyPI README、quickstart、CLI 文档、FAQ、兼容矩阵、recent feature coverage 与在线文档现在都把 Kimi CLI 与 a3s-code、Claude Code、Codex、Gemini CLI、OpenClaw 并列说明。
 
 ### 测试与验证
@@ -53,20 +72,20 @@
 
 ### 改进
 
-- **配置来源严格拆分** — `.clawsentry.toml` 现在是唯一会自动发现的项目配置文件。本地 secret/runtime 值来自 process/deployment environment，或显式 `--env-file` / `CLAWSENTRY_ENV_FILE`；`.env.clawsentry` 仅用于 legacy/migration，不会在正常 `init` / `start` 流程中生成或自动加载。
-- **框架启用状态迁移到 TOML** — framework 状态存储在 `.clawsentry.toml [frameworks]`；`CS_FRAMEWORK` 与 `CS_ENABLED_FRAMEWORKS` 仅保留用于 migration/legacy harness defaults。
-- **env-file 来源显式化** — env-file 解析不修改进程环境，并报告隔离值与来源标签；最终解析顺序为 `CLI > process env > explicit env-file > .clawsentry.toml > legacy aliases > defaults`。
+- **配置来源严格拆分** — `CS_*` / `AHP_*` 运行时值来自 process/deployment environment，或显式 `--env-file` / `CLAWSENTRY_ENV_FILE`；`.clawsentry.env.example` 是可提交 dotenv 模板，`.env.clawsentry` 仅用于 legacy/migration，不会在正常 `init` / `start` 流程中生成或自动加载。
+- **框架启用状态 env-first 化** — framework 状态使用 `CS_FRAMEWORK` 与 `CS_ENABLED_FRAMEWORKS` 表达；`init` 输出这些 env 建议而不写入 secret/runtime 文件。
+- **env-file 来源显式化** — env-file 解析不修改进程环境，并报告隔离值与来源标签；最终解析顺序为 `CLI > process env > explicit env-file > legacy aliases > defaults`。
 - **本地 fresh start UX** — 未提供 token 时，`clawsentry start` 会生成临时内存态 `CS_AUTH_TOKEN`，不会把 secret 写入磁盘；对 ephemeral-token session，`start --no-watch` 现在会打印可复制的 `clawsentry watch --token ...` 命令。
 - **Readiness UX 对齐** — `start` 与 `integrations status` readiness 检查现在使用 effective process-env + explicit-env-file 视图，避免 runtime 值来自 shell/deployment env 时误报 “not configured”。
 
 ### 文档
 
-- 围绕新的 `.clawsentry.toml` + explicit env-file 模型，重写配置概览、env-vars、templates、CLI、quickstart、deployment、troubleshooting、integration pages、README 文案与相关在线文档。
-- 新增生产配置分层指引、env-file 迁移排障说明、可复制 TOML templates 中的 `[frameworks]` blocks，以及更清晰的 a3s-code / ephemeral-token 说明。
+- 围绕 env-first + explicit env-file 模型，重写配置概览、env-vars、templates、CLI、quickstart、deployment、troubleshooting、integration pages、README 文案与相关在线文档。
+- 新增生产配置分层指引、env-file 迁移排障说明、可复制 dotenv templates，以及更清晰的 a3s-code / ephemeral-token 说明。
 
 ### 测试与验证
 
-- 新增回归覆盖：`clawsentry test-llm` 中的 explicit env-file L3 行为、非变异 env-file 解析、project/env 优先级、TOML framework enablement、来自 process env 的 readiness，以及 init/start 流程不生成 `.env.clawsentry`。
+- 新增回归覆盖：`clawsentry test-llm` 中的 explicit env-file L3 行为、非变异 env-file 解析、env 优先级、framework enablement、来自 process env 的 readiness，以及 init/start 流程不生成 `.env.clawsentry`。
 
 ## [0.6.0] — 2026-04-29
 
@@ -327,7 +346,7 @@
 
 - Python 完整回归：`3126 passed, 4 skipped`。
 - `mkdocs build --strict`：PASS。
-- Gemini CLI 真实 provider smoke：`gemini-2.5-flash` + Gemini relay 证明真实 `BeforeTool` deny；Kimi/OpenAI-compatible endpoint 不宣称为 Gemini CLI 直连支持。
+- Gemini CLI 真实 provider smoke：`gemini-2.5-flash` + Gemini relay 证明真实 `BeforeTool` deny；Kimi/OpenAI-compatible endpoint 不属于 Gemini CLI 直连支持。
 - **UI 浏览器验证 fixture 补齐企业 DEFER 场景样本** — `build_runtime_replay_events` 新增 openclaw `defer_pending` rollout 命令样本，并补充契约测试，确保弹窗接入所需关键字段持续可用。
 
 ## [0.5.5] — 2026-04-23
@@ -1344,4 +1363,5 @@
 [0.2.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.1.0
 
+[0.6.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.4
 [0.6.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.3

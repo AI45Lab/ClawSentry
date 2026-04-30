@@ -7,7 +7,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .dotenv_loader import EnvFileError, resolve_explicit_env_file
+from .dotenv_loader import (
+    EnvFileError,
+    discover_local_env_files,
+    format_env_file_hint,
+    resolve_explicit_env_file,
+)
 from .initializers import FRAMEWORK_INITIALIZERS
 from clawsentry.gateway.detection_config import PRESETS
 from clawsentry.gateway.env_config import (
@@ -76,6 +81,15 @@ def run_config_show(
         print("Warnings:")
         for warning in eff.warnings:
             print(f"  - {warning}")
+    if parsed.path is None and not os.environ.get("CLAWSENTRY_ENV_FILE"):
+        hint_lines = format_env_file_hint(
+            discover_local_env_files(target_dir),
+            command="clawsentry config show --effective",
+        )
+        if hint_lines:
+            print("Hints:")
+            for line in hint_lines:
+                print(f"  - {line}")
     print("No project TOML is read. Env-file loading is explicit only.")
 
 

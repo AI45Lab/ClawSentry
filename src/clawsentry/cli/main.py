@@ -1019,7 +1019,13 @@ def main(argv: list[str] | None = None) -> None:
 
         auto_detected = False
         if framework is None:
-            from .dotenv_loader import EnvFileError, overlay_env_file, resolve_explicit_env_file
+            from .dotenv_loader import (
+                EnvFileError,
+                discover_local_env_files,
+                format_env_file_hint,
+                overlay_env_file,
+                resolve_explicit_env_file,
+            )
             try:
                 parsed_start_env = resolve_explicit_env_file(
                     cli_env_file=args.env_file,
@@ -1030,6 +1036,8 @@ def main(argv: list[str] | None = None) -> None:
                 sys.exit(2)
             framework = detect_framework(env_values=overlay_env_file(os.environ, parsed_start_env))
             if framework is None:
+                for line in format_env_file_hint(discover_local_env_files()):
+                    print(line, file=sys.stderr)
                 print(
                     "Could not auto-detect framework.\n"
                     "Use: clawsentry start --framework <a3s-code|claude-code|codex|gemini-cli|kimi-cli|openclaw>",

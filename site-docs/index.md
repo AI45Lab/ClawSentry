@@ -154,7 +154,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 - `clawsentry init kimi-cli --setup` 写 `$KIMI_SHARE_DIR/config.toml` 或 `~/.kimi/config.toml`
 - 保留非 ClawSentry hooks，只替换 marker-managed blocks
 - 可阻断 `UserPromptSubmit` 和 `PreToolUse` 高危调用；post/session/subagent/compact/notification 作为观察面
-- 不宣称 native `modify` / true `defer` parity
+- 不提供 native `modify` / true `defer` parity
 
 [:octicons-arrow-right-24: Kimi CLI 集成指南](integration/kimi-cli.md)
 </div>
@@ -395,7 +395,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3112 passed / 6 skipped**（发布时以 CI/验证报告为准） |
+| 测试用例 | **3117 passed / 6 skipped**（v0.6.4 public release gate） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |

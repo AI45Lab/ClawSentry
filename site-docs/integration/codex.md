@@ -190,7 +190,7 @@ Codex 配置。维护者开发期间也必须遵守这一点：不要把 ClawSen
 
 ## 一键启动
 
-`clawsentry start` 可以读取项目策略、启动 Gateway、打开实时监控：
+`clawsentry start` 会按 CLI / 进程环境 / 显式 env file 合成运行时配置，启动 Gateway，并打开实时监控：
 
 ```bash
 clawsentry start --framework codex
@@ -198,8 +198,8 @@ clawsentry start --framework codex
 
 此命令会依次执行：
 
-1. 读取 `.clawsentry.env.example` 中的 Codex 框架策略；缺失时可按 `--framework codex` 生成/合并项目策略
-2. 合成 CLI、进程环境、显式 env file 与项目策略
+1. 使用 `--framework codex` 标记本次启动的默认框架
+2. 合成 CLI、进程环境与显式 env file；发现 `.clawsentry.env.local` / 旧 `.env.clawsentry` 但未加载时只提示，不自动读取
 3. 在后台启动 Gateway
 4. 等待 health check 通过
 5. 进入 `watch` 实时监控模式

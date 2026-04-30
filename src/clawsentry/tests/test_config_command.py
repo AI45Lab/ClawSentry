@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from clawsentry.cli.config_command import (
@@ -58,6 +56,16 @@ class TestConfigShow:
         assert "source=env-file:" in out
         assert "sk-secret-value" not in out
         assert "llm.api_key" in out
+
+    def test_show_hints_when_local_env_exists_but_is_not_loaded(self, tmp_path, capsys):
+        (tmp_path / ".clawsentry.env.local").write_text("CS_LLM_PROVIDER=openai\n")
+
+        run_config_show(target_dir=tmp_path, effective=True)
+
+        out = capsys.readouterr().out
+        assert "Hints:" in out
+        assert "no env file was loaded automatically" in out
+        assert "clawsentry config show --effective --env-file .clawsentry.env.local" in out
 
 
 class TestConfigSet:

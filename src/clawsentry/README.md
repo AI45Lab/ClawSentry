@@ -1,12 +1,12 @@
 # ClawSentry — AHP Supervision Gateway
 
-> **Python 3.11+** | **3112 public regression tests** | Protocol `ahp.1.0`
+> **Python 3.11+** | **3117 public regression tests** | Protocol `ahp.1.0`
 
 **ClawSentry** is the Python reference implementation of AHP (Agent Harness Protocol) — a unified security supervision gateway for multi-agent frameworks. Deployed as a sidecar, it normalizes runtime events from different frameworks (a3s-code, Claude Code, Codex, Gemini CLI, Kimi CLI, OpenClaw) into a unified protocol, passes them through a three-layer progressive risk evaluation pipeline, and produces real-time decisions (allow / block / modify / defer) with complete audit trails.
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.6.3)**: configuration docs are env-first end-to-end. Operators now get copy-pasteable `CS_*` / `AHP_*` blocks for L1/L2/L3 routing, anti-bypass guardrails, DEFER, trajectory analysis, D4 frequency, benchmark mode, and production deployment without stale project TOML instructions.
+**Current release highlight (v0.6.4)**: env-file discovery is now helpful without weakening the strict source model. `start` and `config show --effective` surface discovered `.clawsentry.env.local`, legacy `.env.clawsentry`, or `.clawsentry.env.example` files as hints, while runtime values still require process env, `--env-file`, or `CLAWSENTRY_ENV_FILE`.
 
 ---
 
@@ -334,7 +334,7 @@ Operational boundary notes:
 - `codex` remains an observation-first path by default; `clawsentry init codex --setup` can add managed native hooks without replacing user/OMX hooks. The tested host-blocking surface is intentionally narrow: `PreToolUse(Bash)` can deny when Gateway returns block/defer; other Codex native events stay async advisory/observational.
 - `gemini-cli` uses Gemini native command hooks via `clawsentry init gemini-cli --setup`, defaulting to project-local `.gemini/settings.json`. Shell-tool events are canonicalized before policy evaluation. Do not treat Kimi/OpenAI-compatible endpoints as directly supported by Gemini CLI.
 - Gemini managed hook commands redirect diagnostics away from stderr and fail open if the harness process itself cannot start, because Gemini can interpret plain stderr text as hook output.
-- `kimi-cli` uses Kimi native `[[hooks]]` through `clawsentry init kimi-cli --setup`. It can block dangerous tool calls through `PreToolUse`, block prompts through `UserPromptSubmit`, and record safe Shell plus lifecycle observation events. It does **not** claim native tool-input rewrite or true `defer` parity with `a3s-code`; those effects are degraded/unsupported in adapter reporting.
+- `kimi-cli` uses Kimi native `[[hooks]]` through `clawsentry init kimi-cli --setup`. It can block dangerous tool calls through `PreToolUse`, block prompts through `UserPromptSubmit`, and record safe Shell plus lifecycle observation events. Native tool-input rewrite and true `defer` parity with `a3s-code` are not supported; those effects are reported as degraded/unsupported in adapter reporting.
 - `a3s-code` should be documented as explicit SDK transport wiring, not `.a3s-code/settings.json` auto-loading.
 - `openclaw` and `claude-code` provide strong coverage only when host-side setup remains intact.
 
@@ -479,7 +479,7 @@ src/clawsentry/
 |-- ui/                                # Web security dashboard (React SPA)
 |   |-- src/                           # TypeScript source
 |   +-- dist/                          # Pre-built artifacts (shipped with pip)
-+-- tests/                             # Test suite (3112 public regression tests)
++-- tests/                             # Test suite (3117 public regression tests)
 ```
 
 ---
@@ -620,7 +620,7 @@ pip install -e ".[dev]"
 
 # Full suite
 python -m pytest src/clawsentry/tests/ -v --tb=short
-# Expected: 3112 passed, 6 skipped
+# Expected: 3117 passed, 6 skipped
 
 # E2E (requires LLM API key)
 A3S_SDK_E2E=1 python -m pytest src/clawsentry/tests/ -v --tb=short
@@ -641,6 +641,6 @@ python -m pytest src/clawsentry/tests/test_detection_config.py -v
 
 ClawSentry can attach request-only `decision_effects` metadata to canonical decisions without changing the stable `allow/block/modify/defer` verdict set.
 
-- `block + action_scope=session` marks a session as quarantined; v1 blocks subsequent same-session `pre_action` events but does not claim host process termination.
+- `block + action_scope=session` marks a session as quarantined; v1 blocks subsequent same-session `pre_action` events but does not terminate the host process.
 - `modify + modified_payload + rewrite_effect` supports audited command/tool-input rewrite. The host response may include the replacement payload; persisted replay/reporting surfaces keep hashes and redacted previews by default.
 - Adapter outcomes are recorded separately via `adapter_effect_result` records and `/ahp/adapter-effect-result`, so unsupported hosts are reported as degraded/unsupported instead of falsely enforced.

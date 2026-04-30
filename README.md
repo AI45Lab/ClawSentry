@@ -22,7 +22,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3112 public regression tests** with release-time CI/build evidence
+- **3117+ public regression tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,12 +34,12 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
-## What's New in v0.6.3
+## What's New in v0.6.4
 
-- **Env-first configuration docs**: configuration reference pages now consistently use copy-pasteable dotenv parameters instead of stale project TOML instructions.
-- **Simplified reading path**: Environment Variables is the parameter catalog, Detection Pipeline Configuration is the runtime layer map, and Policy Tuning is the scenario tuning guide.
-- **Ready-to-use template blocks**: templates now include L1, L2, strict L3, anti-bypass observe/review/enforce, DEFER, trajectory, D4, benchmark, and production blocks.
-- **Release freshness guardrails**: public docs/tests now catch stale TOML wording, accidental `.env-template` paths, and out-of-date release status before publication.
+- **Env-file discovery hints**: `clawsentry start` and `clawsentry config show --effective` now tell operators when `.clawsentry.env.local`, legacy `.env.clawsentry`, or `.clawsentry.env.example` exists but was not loaded.
+- **Strict source model preserved**: discovered env files remain advisory only; runtime values still require process env, `--env-file`, or `CLAWSENTRY_ENV_FILE`.
+- **Better first-run recovery**: auto-detection failures now print the exact `--env-file` command to try before asking users to manually inspect configuration.
+- **Docs and release status refreshed**: progress docs, online configuration docs, changelog, and API metadata are aligned for v0.6.4.
 
 ## Quick Start
 
@@ -159,9 +159,9 @@ should be understood as explicit transport wiring, not `.a3s-code/settings.json`
 auto-loading. `claude-code` and `openclaw` remain more host-config-dependent than
 `a3s-code`.
 
-`gemini-cli` should be understood as native-hook support: `clawsentry init gemini-cli --setup` installs project-local managed hooks in `.gemini/settings.json`, and shell-tool events are canonicalized to policy-facing `bash` before evaluation. Kimi/OpenAI-compatible endpoints are not claimed as directly usable by Gemini CLI. Managed Gemini hook commands redirect diagnostics away from stderr and exit fail-open on harness process failure so Gemini does not treat plain stderr text as hook output.
+`gemini-cli` should be understood as native-hook support: `clawsentry init gemini-cli --setup` installs project-local managed hooks in `.gemini/settings.json`, and shell-tool events are canonicalized to policy-facing `bash` before evaluation. Kimi/OpenAI-compatible endpoints are not directly supported by Gemini CLI. Managed Gemini hook commands redirect diagnostics away from stderr and exit fail-open on harness process failure so Gemini does not treat plain stderr text as hook output.
 
-`kimi-cli` is native-hook support, not AHP transport parity: `clawsentry init kimi-cli --setup` adds marker-managed `[[hooks]]` entries to `$KIMI_SHARE_DIR/config.toml` (or `~/.kimi/config.toml`) and preserves non-ClawSentry user hooks. Kimi `PreToolUse` can block dangerous tool calls, `UserPromptSubmit` can block prompts, and lifecycle hooks provide observation. Native tool-input rewrite and true `defer` are intentionally reported as unsupported/degraded rather than claimed as equal to `a3s-code`.
+`kimi-cli` is native-hook support, not AHP transport parity: `clawsentry init kimi-cli --setup` adds marker-managed `[[hooks]]` entries to `$KIMI_SHARE_DIR/config.toml` (or `~/.kimi/config.toml`) and preserves non-ClawSentry user hooks. Kimi `PreToolUse` can block dangerous tool calls, `UserPromptSubmit` can block prompts, and lifecycle hooks provide observation. Native tool-input rewrite and true `defer` are reported as unsupported/degraded rather than presented as equal to `a3s-code`.
 
 For a machine-readable local view of the same boundaries, run
 `clawsentry integrations status --json`.

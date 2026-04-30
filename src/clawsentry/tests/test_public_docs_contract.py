@@ -423,6 +423,10 @@ def test_clawsentry_config_docs_use_dotenv_templates_not_section_configs() -> No
         "唯一会自动发现",
         "唯一自动发现",
         "自动发现的项目配置",
+        "读取或生成 `.clawsentry.env.example`",
+        "生成/合并 **`.clawsentry.env.example`**",
+        "只会生成或合并项目 `.clawsentry.env.example`",
+        "--include-secret-sources",
         "ProjectConfig dataclass + .clawsentry.env.example 加载",
         "pyproject.env-template",
         "config.env-template",
@@ -444,11 +448,20 @@ def test_clawsentry_config_docs_use_dotenv_templates_not_section_configs() -> No
     ]:
         assert term in templates
 
+    overview = (
+        REPO_ROOT / "site-docs" / "configuration" / "configuration-overview.md"
+    ).read_text(encoding="utf-8")
+    assert ".clawsentry.env.example` 是可提交的 dotenv 模板，正常启动不会读取它" in overview
+    assert "cp .clawsentry.env.example .clawsentry.env.local" in overview
+
 
 def test_release_docs_use_real_toml_paths_and_current_public_status() -> None:
+    pyproject = PYPROJECT.read_text(encoding="utf-8")
+    package_version = _extract(r'^version = "([^"]+)"$', pyproject)
     release_doc_paths = [
         REPO_ROOT / "README.md",
         REPO_ROOT / "CHANGELOG.md",
+        REPO_ROOT / "docs" / "validation" / "v0.6.4-env-file-hints-release-2026-04-30.md",
         REPO_ROOT / "docs" / "validation" / "v0.6.3-env-first-config-docs-release-2026-04-30.md",
         REPO_ROOT / "docs" / "management" / "RELEASE_CHECKLIST.md",
         REPO_ROOT / "docs" / "management" / "REPO_WORKFLOW.md",
@@ -458,11 +471,11 @@ def test_release_docs_use_real_toml_paths_and_current_public_status() -> None:
     )
 
     if (REPO_ROOT / "docs" / "management").exists():
-        assert "workspace baseline: v0.6.3 released" in release_docs
+        assert f"workspace baseline: v{package_version} released" in release_docs
     else:
-        assert "What's New in v0.6.3" in release_docs
-    assert "0.6.3" in release_docs
-    assert "https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.3" in release_docs
+        assert f"What's New in v{package_version}" in release_docs
+    assert package_version in release_docs
+    assert f"https://github.com/Elroyper/ClawSentry/releases/tag/v{package_version}" in release_docs
     assert "https://pypi.org/project/clawsentry/" in release_docs
     assert "pyproject.env-template" not in release_docs
     assert "config.env-template" not in release_docs

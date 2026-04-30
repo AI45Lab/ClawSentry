@@ -68,7 +68,7 @@ description: Source-backed coverage matrix for recent ClawSentry online document
 
 These are intentionally not part of this docs-only pass:
 
-1. **AgentDoG labeled evaluation:** select labeled ATBench safe/unsafe records and compute unsafe recall / safe false-positive rate before claiming safety improvement.
+1. **AgentDoG labeled evaluation:** select labeled ATBench safe/unsafe records and compute unsafe recall / safe false-positive rate before documenting safety improvement.
 2. **Raw vs ClawSentry live runners:** implement a3s-code, Claude Code, Gemini CLI, Codex and optional OpenClaw live runner comparisons after offline replay metrics are stable.
 3. **Optional `clawsentry setup` alias:** keep `config wizard` as the tested setup surface; add a separate alias only if there is a concrete release need.
 4. **Rendered visual screenshots:** capture light/dark screenshots for Quickstart, Templates, Metric Dictionary and L3 pages when browser tooling is available in CI or release validation.

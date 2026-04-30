@@ -157,6 +157,21 @@ class TestCLIParsing:
         assert "PASS: service deployment validation succeeded" in proc.stdout
         assert "abcdefghijklmnopqrstuvwxyz123456" not in proc.stdout
 
+    def test_start_without_framework_hints_unloaded_local_env_file(self, tmp_path):
+        (tmp_path / ".clawsentry.env.local").write_text("CS_FRAMEWORK=codex\n")
+        proc = subprocess.run(
+            [sys.executable, "-m", "clawsentry", "start", "--no-watch"],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            env=_cli_env(),
+        )
+
+        assert proc.returncode == 1
+        assert "Env-file hint: no env file was loaded automatically." in proc.stderr
+        assert "clawsentry start --env-file .clawsentry.env.local" in proc.stderr
+
     def test_rules_report_writes_artifact_from_cli(self, tmp_path):
         output_path = tmp_path / "rules-report.json"
 

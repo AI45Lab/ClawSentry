@@ -711,7 +711,7 @@ D1-D5 的短路规则在源码中硬编码，综合评分阈值和 D6 参数可�
 | `CS_D6_INJECTION_MULTIPLIER` | D6 乘数权重（公式中 `0.5 × D6/3.0` 的系数） | `0.5` |
 
 !!! tip "使用预设快速调整"
-    也可通过 `.clawsentry.env.example` 中的 `preset = "high"` 一键调整所有阈值，无需逐一设置环境变量。详见[安全预设配置](../configuration/detection-config.md#presets)。
+    也可在 dotenv env file 中设置 `CS_PRESET=high` 一键调整所有阈值，无需逐一设置环境变量。`.clawsentry.env.example` 可作为可提交模板，真实启动时请复制到 `.clawsentry.env.local` 并显式 `--env-file` 加载。详见[安全预设配置](../configuration/detection-config.md#presets)。
 
 ---
 

@@ -58,8 +58,9 @@ clawsentry start --framework a3s-code
 
 它会自动完成 ClawSentry 侧的工作：
 
-- 读取或生成当前项目的 `.clawsentry.env.example` 框架策略
-- 使用进程/部署环境或本次启动生成的临时运行时值启动 Gateway（UDS + HTTP）
+- 使用 `--framework a3s-code`、进程/部署环境和显式 `--env-file` 合成运行时配置
+- 未提供 `CS_AUTH_TOKEN` 时，为本次启动生成临时 token；发现本地 env 文件但未加载时会提示下一步
+- 启动 Gateway（UDS + HTTP）
 - 在前台显示 `clawsentry watch` 实时事件流
 
 !!! important "a3s-code 还需要一行 SDK 配置"
@@ -131,7 +132,7 @@ Gateway 默认监听：
 | `http://127.0.0.1:8080/ahp/a3s` | HTTP (JSON-RPC AHP) | a3s-code `HttpTransport` 直连 |
 
 !!! tip "本机密钥放哪里？"
-    `clawsentry init a3s-code` 不写入密钥文件。需要稳定 `CS_AUTH_TOKEN`、端口或 UDS 覆盖时，请手动创建 `.clawsentry.env.local` 并在命令中显式传入 `--env-file .clawsentry.env.local`。
+    `clawsentry init a3s-code` 不写入密钥文件，也不会创建可自动加载的 env file。需要稳定 `CS_AUTH_TOKEN`、端口或 UDS 覆盖时，请从 `.clawsentry.env.example` 复制出 `.clawsentry.env.local`，填入本机值，并在命令中显式传入 `--env-file .clawsentry.env.local`。
 
 ---
 

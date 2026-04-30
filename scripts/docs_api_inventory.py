@@ -1023,7 +1023,7 @@ def write_openapi() -> None:
         "openapi": "3.1.0",
         "info": {
             "title": "ClawSentry Public API Reference",
-            "version": "0.6.3",
+            "version": "0.6.4",
             "description": "Docs-owned OpenAPI artifact generated from route inventory plus curated semantic metadata. It does not change runtime API behavior.",
         },
         "servers": [

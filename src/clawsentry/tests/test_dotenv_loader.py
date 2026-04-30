@@ -6,6 +6,8 @@ import pytest
 
 from clawsentry.cli.dotenv_loader import (
     EnvFileError,
+    discover_local_env_files,
+    format_env_file_hint,
     load_dotenv,
     overlay_env_file,
     parse_env_file,
@@ -77,3 +79,18 @@ def test_legacy_env_filename_only_when_explicit(tmp_path):
 
     assert parsed.values["CS_AUTH_TOKEN"] == "legacy-token"
     assert any(".env.clawsentry is a legacy name" in warning for warning in parsed.warnings)
+
+
+def test_local_env_discovery_is_hint_only(tmp_path):
+    local = tmp_path / ".clawsentry.env.local"
+    template = tmp_path / ".clawsentry.env.example"
+    local.write_text("CS_AUTH_TOKEN=local-token\n")
+    template.write_text("CS_FRAMEWORK=codex\n")
+
+    discovery = discover_local_env_files(tmp_path)
+    hint = "\n".join(format_env_file_hint(discovery, command="clawsentry start"))
+
+    assert discovery.local == local
+    assert discovery.template == template
+    assert "no env file was loaded automatically" in hint
+    assert "clawsentry start --env-file .clawsentry.env.local" in hint

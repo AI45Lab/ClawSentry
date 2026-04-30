@@ -5,7 +5,7 @@ description: ClawSentry env-first 配置来源、页面导览、优先级和诊�
 
 # 配置概览
 
-ClawSentry 当前配置模型是 **env-first**：运行时只消费 `KEY=VALUE` 形式的环境变量、显式 env file、CLI 参数和内置默认值。ClawSentry 不再读取或生成项目级 section 配置；`.clawsentry.env.example` 只是可提交的 dotenv 模板，`.clawsentry.env.local` 是本机未提交的 dotenv 文件，二者都需要通过 `--env-file` 或 `CLAWSENTRY_ENV_FILE` 显式传入才会参与解析。
+ClawSentry 当前配置模型是 **env-first**：运行时只消费 `KEY=VALUE` 形式的环境变量、显式 env file、CLI 参数和内置默认值。ClawSentry 不再读取或生成项目级 section 配置。`.clawsentry.env.example` 是可提交的 dotenv 模板，正常启动不会读取它；本机运行时通常先复制成 `.clawsentry.env.local`，再把本机 token / API key / 端口覆盖写进去，并通过 `--env-file` 或 `CLAWSENTRY_ENV_FILE` 显式加载。
 
 ```bash
 clawsentry config wizard --interactive
@@ -16,7 +16,8 @@ clawsentry config show --effective
 
 ```bash
 clawsentry config wizard --non-interactive --framework codex --mode normal --llm-provider none --force
-clawsentry config show --effective --env-file .clawsentry.env.example
+cp .clawsentry.env.example .clawsentry.env.local
+clawsentry config show --effective --env-file .clawsentry.env.local
 ```
 
 `config show --effective` 是排障第一入口：它展示最终生效值、来源标签，并对密钥脱敏。
@@ -46,8 +47,8 @@ ClawSentry 会把多个来源合成为一份有效配置。优先级从高到低
 4. **白名单旧别名**：迁移兼容，例如旧预算变量；只在规范名称缺失时读取
 5. **内置默认值**
 
-!!! important "没有自动发现的 ClawSentry 项目配置文件"
-    `.clawsentry.env.example`、`.clawsentry.env.local`、旧 `.env.clawsentry` 都不会被正常启动流程自动加载。需要使用它们时必须显式传入 `--env-file PATH`。旧 `.env.clawsentry` 只作为迁移文件名保留；命令会标记其 legacy 来源。
+!!! important "没有自动加载的 ClawSentry env file"
+    `.clawsentry.env.example`、`.clawsentry.env.local`、旧 `.env.clawsentry` 都不会被正常启动流程自动加载。`.clawsentry.env.example` 的用途是提交模板和复制起点，不是运行时输入；需要真实生效时，把它复制到 `.clawsentry.env.local` 或部署 env file，填入本机值后显式传入 `--env-file PATH`。旧 `.env.clawsentry` 只作为迁移文件名保留；命令会标记其 legacy 来源。
 
 显式 env file 的解析是**非突变**的：解析阶段只返回隔离的 key/value 与来源路径，不直接写入 `os.environ`。启动入口会按优先级把它们合成到子进程环境中。
 
@@ -88,14 +89,16 @@ CS_LLM_API_KEY=sk-...
 CS_HTTP_PORT=9100
 ```
 
-使用方式：
+推荐使用方式：
 
 ```bash
-clawsentry config show --effective --env-file .clawsentry.env.example
+cp .clawsentry.env.example .clawsentry.env.local
+$EDITOR .clawsentry.env.local
+clawsentry config show --effective --env-file .clawsentry.env.local
 clawsentry start --env-file .clawsentry.env.local
 ```
 
-如果同时需要共享模板和本机密钥，推荐把共享模板复制为本机文件再补密钥，或由部署系统把二者合并后作为一个 explicit env file 传入。
+如果同时需要共享模板和本机密钥，推荐把共享模板复制为本机文件再补密钥，或由部署系统把二者合并后作为一个 explicit env file 传入。只有在你显式把 `.clawsentry.env.example` 传给 `--env-file` 时，它才会被解析；这通常只适合检查模板，不适合作为真实启动方式。
 
 ---
 
@@ -126,10 +129,10 @@ clawsentry service validate --env-file /etc/clawsentry/gateway.env
 
 ## 发布状态核对 {#release-status}
 
-截至 2026-04-30，本仓库核对到公开发布面已经刷新到 `v0.6.3`：
+截至 2026-04-30，本仓库发布面刷新到 `v0.6.4`：
 
-- GitHub latest release：`v0.6.3 — Env-first configuration docs refresh`
-- GitHub tags：最新 tag 为 `v0.6.3`
-- PyPI：`clawsentry` 最新版本为 `0.6.3`
+- GitHub latest release / tags：`v0.6.4 — Env-file discovery hints`
+- PyPI：`clawsentry` 最新版本为 `0.6.4`
+- 运行时配置来源仍保持 env-first strict split；本地 env 文件只会被提示，不会被自动加载
 
 若你看到更早版本，优先清浏览器/CDN 缓存，并确认访问的是 <https://github.com/Elroyper/ClawSentry> 与 <https://pypi.org/project/clawsentry/>。

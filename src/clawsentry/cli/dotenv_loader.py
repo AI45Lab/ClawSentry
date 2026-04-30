@@ -14,11 +14,30 @@ from pathlib import Path
 from typing import Mapping, MutableMapping
 
 ENV_FILE_NAME = ".env.clawsentry"
+LOCAL_ENV_FILE_NAME = ".clawsentry.env.local"
+ENV_TEMPLATE_NAME = ".clawsentry.env.example"
 EXPLICIT_ENV_FILE_ENV = "CLAWSENTRY_ENV_FILE"
 
 
 class EnvFileError(RuntimeError):
     """Raised when an explicitly requested env file cannot be loaded."""
+
+
+@dataclass(frozen=True)
+class EnvFileDiscovery:
+    """Non-loading local env-file discovery result for UX hints."""
+
+    local: Path | None = None
+    legacy: Path | None = None
+    template: Path | None = None
+
+    @property
+    def has_hint(self) -> bool:
+        return self.local is not None or self.legacy is not None or self.template is not None
+
+    @property
+    def preferred_runtime_file(self) -> Path | None:
+        return self.local or self.legacy
 
 
 @dataclass(frozen=True)
@@ -117,6 +136,51 @@ def resolve_explicit_env_file(
     if selected is None:
         return ParsedEnvFile(path=None)
     return parse_env_file(selected)
+
+
+def discover_local_env_files(search_dir: Path | None = None) -> EnvFileDiscovery:
+    """Find common ClawSentry env files without loading them.
+
+    This powers migration/help text only.  It deliberately preserves the strict
+    source model: callers must still pass ``--env-file`` or set
+    ``CLAWSENTRY_ENV_FILE`` before any discovered file contributes values.
+    """
+    root = (search_dir or Path.cwd()).expanduser()
+    local = root / LOCAL_ENV_FILE_NAME
+    legacy = root / ENV_FILE_NAME
+    template = root / ENV_TEMPLATE_NAME
+    return EnvFileDiscovery(
+        local=local if local.is_file() else None,
+        legacy=legacy if legacy.is_file() else None,
+        template=template if template.is_file() else None,
+    )
+
+
+def format_env_file_hint(
+    discovery: EnvFileDiscovery,
+    *,
+    command: str = "clawsentry start",
+) -> list[str]:
+    """Return user-facing guidance for discovered-but-unloaded env files."""
+    if not discovery.has_hint:
+        return []
+    lines = ["Env-file hint: no env file was loaded automatically."]
+    if discovery.local is not None:
+        lines.append(
+            f"  Found {discovery.local.name}; use `{command} --env-file {discovery.local.name}` "
+            "or set CLAWSENTRY_ENV_FILE."
+        )
+    if discovery.legacy is not None:
+        lines.append(
+            f"  Found legacy {discovery.legacy.name}; use `--env-file {discovery.legacy.name}` "
+            f"or copy it to {LOCAL_ENV_FILE_NAME}."
+        )
+    if discovery.template is not None and discovery.local is None:
+        lines.append(
+            f"  Found {discovery.template.name}; it is a commit-safe template, not a runtime input. "
+            f"Copy it to {LOCAL_ENV_FILE_NAME}, add local secrets, then pass `--env-file`."
+        )
+    return lines
 
 
 def overlay_env_file(

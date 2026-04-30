@@ -207,7 +207,7 @@ clawsentry l3 jobs drain \
   --max-jobs 2
 ```
 
-这些命令只 claim `job_state=queued` 的 job；`running` / `completed` / `failed` 不会被 rerun。省略 `--runner` 时默认执行 `llm_provider`。
+这些命令只选择 `job_state=queued` 的 job；`running` / `completed` / `failed` 不会被 rerun。省略 `--runner` 时默认执行 `llm_provider`。
 
 ### Heartbeat / idle aggregate queueing {#heartbeat-idle-aggregate-queueing}
 

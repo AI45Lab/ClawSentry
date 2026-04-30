@@ -6,10 +6,11 @@ ClawSentry 通过环境变量和显式 env file 配置，遵循 12-Factor App �
 
 ## 显式 env file 支持
 
-ClawSentry 不再自动加载当前目录的 `.env.clawsentry`。本机密钥、端口覆盖、provider API key 等运行时值应来自进程/部署环境，或通过 `--env-file PATH` / `CLAWSENTRY_ENV_FILE=PATH` 显式传入。解析阶段是非突变的：命令先得到隔离的 key/value 和 provenance，再按优先级合成有效配置。
+ClawSentry 不再自动加载当前目录的 `.env.clawsentry`，也不会在启动时自动读取 `.clawsentry.env.example`。本机密钥、端口覆盖、provider API key 等运行时值应来自进程/部署环境，或通过 `--env-file PATH` / `CLAWSENTRY_ENV_FILE=PATH` 显式传入。解析阶段是非突变的：命令先得到隔离的 key/value 和 provenance，再按优先级合成有效配置。
 
 !!! info "显式加载规则"
     - 推荐本机文件名：`.clawsentry.env.local`（加入 `.gitignore`，不要提交）
+    - `.clawsentry.env.example` 是可提交模板；复制到 `.clawsentry.env.local` 后再填本机值
     - 旧 `.env.clawsentry` 只作为 legacy/migration 文件名；需要复用时必须显式 `--env-file .env.clawsentry`
     - 已存在的进程环境变量优先于 env file
     - 支持 `#` 注释和引号包裹的值

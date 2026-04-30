@@ -57,7 +57,7 @@ clawsentry --help
 
 ### 一键初始化
 
-默认初始化只生成或合并项目 `.clawsentry.env.example`，不会写入密钥，也不会修改 `~/.openclaw/`：
+默认初始化只输出 env 建议，不会写入密钥，也不会修改 `~/.openclaw/`：
 
 ```bash
 clawsentry init openclaw --auto-detect
@@ -147,7 +147,7 @@ clawsentry start --framework openclaw --setup-openclaw
 clawsentry start --frameworks codex,openclaw --setup-openclaw --no-watch
 ```
 
-默认的 `clawsentry start --framework openclaw` 仍然是无副作用模式，只会生成或合并项目 `.clawsentry.env.example`。只有显式加上 `--setup-openclaw` 时，才会尝试修改 `~/.openclaw/openclaw.json` 与 `exec-approvals.json`。
+默认的 `clawsentry start --framework openclaw` 仍然是无副作用模式：它只合成 CLI / 进程环境 / 显式 env file 并启动 Gateway，不会写入项目 env 文件。只有显式加上 `--setup-openclaw` 时，才会尝试修改 `~/.openclaw/openclaw.json` 与 `exec-approvals.json`。
 
 当检测到 OpenClaw 配置时，日志输出：
 

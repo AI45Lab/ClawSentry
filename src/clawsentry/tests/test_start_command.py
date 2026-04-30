@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -106,6 +105,7 @@ class TestRunStart:
         out = capsys.readouterr().out
         assert "Framework:  codex" in out
         assert "Auth token: explicit env-file" in out
+        assert "clawsentry watch --token file-token" in out
         assert not (tmp_path / (".clawsentry" + ".toml")).exists()
         child_env = launch.call_args.kwargs["extra_env"]
         assert child_env["CS_AUTH_TOKEN"] == "file-token"
@@ -124,3 +124,35 @@ class TestRunStart:
         child_env = launch.call_args.kwargs["extra_env"]
         assert child_env["CS_ENABLED_FRAMEWORKS"] == "a3s-code,codex"
         assert not (tmp_path / (".clawsentry" + ".toml")).exists()
+
+    def test_start_warns_about_unloaded_local_env_file_without_loading_it(self, tmp_path, capsys):
+        (tmp_path / ".clawsentry.env.local").write_text("CS_AUTH_TOKEN=file-token\n")
+        proc = MagicMock()
+        proc.pid = 12345
+        proc.poll.return_value = None
+        with (
+            patch("clawsentry.cli.start_command.launch_gateway", return_value=proc) as launch,
+            patch("clawsentry.cli.start_command.wait_for_health", return_value=True),
+        ):
+            run_start(framework="codex", target_dir=tmp_path, no_watch=True)
+
+        out = capsys.readouterr().out
+        assert "Env-file hint: no env file was loaded automatically." in out
+        assert "clawsentry start --framework codex --env-file .clawsentry.env.local" in out
+        child_env = launch.call_args.kwargs["extra_env"]
+        assert child_env["CS_AUTH_TOKEN"] != "file-token"
+
+    def test_start_explains_template_must_be_copied_to_local_env(self, tmp_path, capsys):
+        (tmp_path / ".clawsentry.env.example").write_text("CS_FRAMEWORK=codex\n")
+        proc = MagicMock()
+        proc.pid = 12345
+        proc.poll.return_value = None
+        with (
+            patch("clawsentry.cli.start_command.launch_gateway", return_value=proc),
+            patch("clawsentry.cli.start_command.wait_for_health", return_value=True),
+        ):
+            run_start(framework="codex", target_dir=tmp_path, no_watch=True)
+
+        out = capsys.readouterr().out
+        assert ".clawsentry.env.example; it is a commit-safe template, not a runtime input" in out
+        assert "Copy it to .clawsentry.env.local" in out
