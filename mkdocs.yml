@@ -135,7 +135,7 @@ nav:
     - L3 审查 Agent: decision-layers/l3-agent.md
     - L3 咨询审查: decision-layers/l3-advisory.md
     - Post-action 围栏: decision-layers/post-action.md
-    - Sanitizer 能力边界: decision-layers/sanitizer-capability.md
+    - Sanitizer 当前能力: decision-layers/sanitizer-capability.md
     - 轨迹分析器: decision-layers/trajectory-analyzer.md
     - Anti-bypass Guard: decision-layers/anti-bypass-guard.md
   - Web 仪表板: dashboard/index.md

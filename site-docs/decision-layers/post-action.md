@@ -417,4 +417,4 @@ class PostActionFinding:
 
 ---
 
-更多 sanitizer 的能力边界、`would_sanitize` 与 `advisory_only` 解释，见 [Sanitizer 能力边界](sanitizer-capability.md)。
+更多 sanitizer 当前能力、`would_sanitize` 与 `advisory_only` 解释，见 [Sanitizer 当前能力](sanitizer-capability.md)。

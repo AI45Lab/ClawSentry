@@ -1,102 +1,119 @@
 ---
-title: Sanitizer 能力边界
-description: 解释 ClawSentry 对 command、tool input 和 tool output 能做什么、不能做什么，以及用户如何阅读 would_sanitize/advisory_only
+title: Sanitizer 当前能力
+description: ClawSentry 当前是否有 sanitizer、它能做什么、在哪里看到结果、以及哪些场景不要依赖它
 ---
 
-# Sanitizer 能力边界
+# Sanitizer 当前能力
 
-ClawSentry 的 sanitizer 目标不是制造“已经全部净化”的错觉，而是把三件事分清楚：**检测到了什么、能否生成安全替代内容、当前 adapter 是否真的能在宿主记录前改写。**
+先给结论：**ClawSentry 现在有 sanitizer，但它不是一个“自动清洗所有内容”的独立开关。**
 
-!!! warning "最重要的边界"
-    对 `tool_output`，当前通用能力是 `would_sanitize` + redacted preview + 审计证据。除非某个 adapter 能证明 rewrite-before-history，否则 ClawSentry 不声称已经强制改写了工具输出。
+当前 sanitizer 主要做两件事：
 
-## 三类目标能力
+1. **对工具输出做泄露识别和安全展示**：发现 secret / token / 私钥等内容时，在 watch/report/SSE 里给出 redacted preview、命中类型和数量。
+2. **为执行前输入改写保留决策协议**：当某个 adapter 明确支持修改输入时，Gateway 可以请求改写 command 或 tool input；否则会显示 degraded/unsupported，而不是假装已经改写成功。
 
-| 目标 | 当前能力 | 是否可声称强制改写 |
-|------|----------|--------------------|
-| `command` | 可生成 sanitize/rewrite 请求；可附带 replacement payload | 仅当 adapter 支持 `MODIFY` 并执行替换时 |
-| `tool_input` | 可生成 sanitize/rewrite 请求；可附带 replacement payload | 仅当 adapter 支持 `MODIFY` 并执行替换时 |
-| `tool_output` | 检测敏感内容、生成 redacted preview、记录 hash/type/count、发出 `would_sanitize` | 默认不能；当前是 `advisory_only` |
+如果你只是日常使用 ClawSentry，最需要理解的是第一项：它会告诉你“工具输出里出现了本应被净化的敏感内容”，并用安全摘要展示给 operator。
 
-换句话说：
+## 我应该启用它吗？
 
-- **执行前输入**：有机会改写，但要看 adapter 能不能接住 `MODIFY`。
-- **执行后输出**：可以发现和安全展示，但不能普遍保证它没有进入 agent history。
+**不需要单独启用。**
 
-## watch/report 里会看到什么
+Sanitizer 的输出泄露识别属于 post-action 分析的一部分。只要你的 ClawSentry Gateway 正在接收工具输出事件，`clawsentry watch`、report/SSE 和相关审计视图就会在命中时显示 sanitizer 摘要。
 
-如果 post-action 输出里出现疑似 secret，ClawSentry 会把原始内容转换成 capability-honest advisory：
+典型使用方式：
+
+```bash
+clawsentry start --framework codex
+clawsentry watch --interactive
+```
+
+当工具输出里出现疑似 secret 时，你会看到类似：
+
+```text
+Sanitizer: would_sanitize tool_output
+Redactions: api_key=1
+Preview: [REDACTED:api_key]
+```
+
+这表示：ClawSentry 发现了需要净化展示的内容，并已经在报告/监控输出里用 redacted preview 展示；你不需要从日志里复制原始 secret 才能判断问题。
+
+## 当前能检测哪些内容？
+
+当前 post-action sanitizer 主要针对工具输出里的常见敏感信息，例如：
+
+| 类型 | 示例场景 |
+|------|----------|
+| API key / token | OpenAI-style key、GitHub token、Bearer token |
+| 云凭证 | AWS access key / secret access key |
+| 私钥 | RSA / EC / OpenSSH / PGP private key block |
+| 数据库连接串 | 带用户名密码的 `DATABASE_URL` |
+| 协作平台 token | Slack token、Lark/Feishu access token |
+| 钱包私钥形态 | 带 `private_key` / `wallet_key` 上下文的 64 位 hex key |
+
+命中后，ClawSentry 会记录：
 
 ```json
 {
   "target": "tool_output",
   "would_sanitize": true,
+  "redaction_types": ["api_key"],
+  "redaction_counts": {"api_key": 1},
   "original_preview_redacted": "[REDACTED:api_key]",
   "sanitized_preview_redacted": "[REDACTED:api_key]",
-  "redaction_types": ["api_key"],
-  "redaction_counts": {
-    "api_key": 1
-  },
   "adapter_outcome": "would_sanitize",
   "enforcement": "advisory_only"
 }
 ```
 
-用户应该这样读：
+## 看到 sanitizer 事件后该怎么做？
 
-1. `would_sanitize: true`：ClawSentry 识别到如果要安全展示，需要 redact。
-2. `redaction_types/counts`：告诉你命中了哪些类型、各多少个。
-3. `*_preview_redacted`：给 operator 看安全摘要，不直接泄露原文。
-4. `enforcement: advisory_only`：这是审计/提示，不是跨所有框架的强制历史改写。
+| 你看到的内容 | 它说明什么 | 你应该做什么 |
+|--------------|------------|--------------|
+| `would_sanitize: true` | 工具输出里有疑似敏感内容，报告中已安全展示 | 检查该工具为什么输出 secret |
+| `redaction_types/counts` | 命中了哪些敏感类型、数量是多少 | 判断影响范围，必要时 rotate secret |
+| `Preview: [REDACTED:...]` | 这是安全摘要，不是原文 | 用它排障，不要要求系统打印原始 secret |
+| `advisory_only` | 这是观察和报告，不是跨框架强制改写历史 | 若需要强约束，使用 block/defer/scope 或支持改写的 adapter |
+| `degraded` / `unsupported` | 当前 adapter 不支持某个 sanitizer effect | 不要依赖自动改写；改用阻断、审批或换接入方式 |
 
-## 为什么 tool output 不能直接说“已净化”
+## 它会不会阻止 secret 进入 Agent history？
 
-很多 Agent 框架的流程是：工具返回结果后，宿主框架先把 output 放进自己的上下文或历史，再通知外部观察者。若 ClawSentry 位于观察侧，它可以发现泄露并在报告里 redact，但不能证明原始 output 没进过宿主历史。
+**不能统一保证。**
 
-因此当前实现强制了两个规则：
+很多 Agent 框架的顺序是：工具返回 output 后，宿主框架先把 output 放进自己的上下文或历史，再把事件交给外部观察者。ClawSentry 在观察侧可以发现泄露并安全展示，但不能对所有框架承诺“原始输出从未进入 history”。
 
-- `tool_output` sanitizer 不允许携带 replacement payload。
-- `tool_output` sanitizer 自动标记为 `advisory_only`，outcome 为 `tool_output_would_sanitize`。
+因此当前 ClawSentry 对 `tool_output` 的表述是：
 
-这避免了误导用户。
+- 会显示 `would_sanitize`；
+- 会给出 redacted preview、hash、类型和数量；
+- 默认是 `advisory_only`；
+- 不会携带 `replacement_payload`；
+- 不声称已经强制改写工具输出。
 
-## command / tool input 什么时候可以改写
+如果你的目标是**阻止动作发生**，优先使用：
 
-执行前输入与输出不同。对 command 或 tool input，如果 Gateway 生成 `MODIFY` 决策，并且 adapter 支持修改 payload，ClawSentry 可以请求替换内容：
+- L1/L2/L3 风险决策的 `block` / `defer`；
+- [Session scope 配置](../configuration/session-scope.md) 限制本次任务可访问的路径、域名、工具和命令前缀；
+- 支持输入修改的 adapter 能力，而不是依赖 tool-output sanitizer。
 
-```json
-{
-  "decision": "modify",
-  "decision_effects": {
-    "sanitize_effect": {
-      "target": "tool_input",
-      "original_preview_redacted": "token=[REDACTED:api_key]",
-      "sanitized_preview_redacted": "token=[REDACTED:api_key]",
-      "replacement_payload": {
-        "args": {"token": "[REDACTED:api_key]"}
-      }
-    }
-  }
-}
-```
+## command / tool input 能不能被改写？
 
-但用户仍要看 adapter capability：如果 adapter 只支持 allow/block，那么 ClawSentry 会退化为 degraded/unsupported，而不是假装已经改写。
+可以，但这是 **adapter 能力相关** 的功能，不是所有接入方式都有。
 
-## 用户应该怎么处理 sanitizer 事件
+当 Gateway 决策为 `modify`，并且 adapter 支持修改执行前输入时，ClawSentry 可以请求替换 command 或 tool input。审计面会保留 hash 和 redacted preview，避免把完整 replacement payload 展示到 replay/watch/report 中。
 
-| 看到的状态 | 含义 | 推荐动作 |
-|------------|------|----------|
-| `would_sanitize + advisory_only` | 输出里有敏感内容，但当前只做报告/审计 redaction | 检查工具输出来源；必要时 rotate secret；调整规则或 adapter |
-| `command_sanitize` / `tool_input_sanitize` | 执行前输入可被请求净化 | 确认 adapter 是否返回 observed effect result |
-| `degraded` / `unsupported` | 该框架能力不足 | 不要依赖强制改写；使用 block/defer 或更强 adapter |
-| redaction count 增加 | 泄露数量上升 | 优先调查 session、workspace、工具参数来源 |
+用户判断标准很简单：
 
-## 与 scope 的关系
+| 情况 | 可以怎么理解 |
+|------|--------------|
+| adapter 回写 `enforced` | 该 adapter 报告它实际执行了 sanitizer/rewrite effect |
+| adapter 回写 `degraded` | 它尝试处理但降级了，需要看 `degrade_reason` |
+| adapter 回写 `unsupported` | 该接入方式不支持，不要依赖自动改写 |
+| 没有 adapter effect result | 只能说明 Gateway 发出了请求，不能证明宿主执行了改写 |
 
-Session scope 管“这次任务允许做什么”；sanitizer 管“内容里是否携带不该暴露的信息”。两者可以同时出现：
+## 一句话总结
 
-- scope 可以因为访问 `.env` 或 `~/.ssh` 直接 deny。
-- sanitizer 可以在工具输出已经包含 secret 时给出 `would_sanitize` 与 redacted preview。
-- 如果 adapter 不能强制改写输出，sanitizer 仍然保持 advisory-only。
+ClawSentry 当前 sanitizer **有用，但要按正确用途使用**：
 
-完整配置示例见 [Session scope 配置](../configuration/session-scope.md)。
+- 对工具输出：用于发现 secret 泄露、生成安全摘要、提醒 operator 处理。
+- 对执行前输入：只有 adapter 明确支持修改时，才可作为实际改写能力使用。
+- 对强制防护：不要把 sanitizer 当成万能清洗器；需要阻断时用 block/defer/scope。
