@@ -1,194 +1,224 @@
 ---
 title: Scope 限制
-description: 安全决策引擎如何用 SessionScopeProfile 为单次任务限制工具、路径、域名和命令前缀
+description: 用最小权限 profile 让 ClawSentry 在每次工具执行前自动检查任务边界
 ---
 
 # Scope 限制
 
 <div class="cs-doc-hero" markdown>
-<p class="cs-eyebrow">TASK-BOUNDARY ENFORCEMENT</p>
+<p class="cs-eyebrow">AUTOMATIC TASK BOUNDARY</p>
 
-## 把“这次任务能碰什么”写进安全决策
+## 配置一次，之后每次工具执行前自动检查
 
-Scope 限制让安全决策引擎不只回答“这个动作危险吗”，还回答：**这个动作是否属于本次任务允许的工具、路径、域名和命令范围？** 它是 L1/L2/L3 风险判断之外的任务边界层：高风险动作仍会被阻断；低风险动作如果越界，也可以被解释、延迟或阻断。
+Scope 限制的作用很简单：告诉 ClawSentry **这个任务允许 Agent 碰哪些工具、路径、域名和命令**。配置好默认 scope profile 后，启动 ClawSentry 期间，每个 `pre_action` 工具调用都会自动经过 scope 检查；越界动作会被解释、要求审批或直接阻断。
 
 <div class="cs-pill-row" markdown>
-<span class="cs-pill">工具 allow/deny</span>
-<span class="cs-pill">路径前缀</span>
-<span class="cs-pill">域名边界</span>
-<span class="cs-pill">命令前缀</span>
-<span class="cs-pill">dry-run → enforced</span>
+<span class="cs-pill">先配置 profile</span>
+<span class="cs-pill">clawsentry start 后自动检查</span>
+<span class="cs-pill">越界 block / defer</span>
+<span class="cs-pill">不会降低原有风险阻断</span>
 </div>
 </div>
 
-## 适合解决什么问题
+## 这个功能是什么？
 
-<div class="cs-card-grid" markdown>
-<div class="cs-card" markdown>
+你可以把 Scope 限制理解成 **“本次任务的安全围栏”**。
 
-### 文档任务不该碰 SSH key
+例如你只想让 Agent 改文档：
 
-把 `site-docs/`、`docs/` 放进允许路径，把 `~/.ssh`、`.env` 放进底线禁止路径。即使读取命令本身低风险，也会因为越界被标记。
+- ✅ 可以读写 `site-docs/`、`docs/`
+- ✅ 可以运行 `git status`、`python -m pytest`
+- ⚠️ 访问未列入的域名先让人确认
+- ⛔ 永远不碰 `~/.ssh`、`.env`、`sudo`、`rm -rf`
+
+Scope 不取代 L1/L2/L3 风险引擎。它是在原有风险判断之外，再加一层“这个动作是不是属于当前任务”的检查。
+
+## 开启后是不是自动进行？
+
+**是，但前提是你配置了默认 scope profile。**
+
+<div class="cs-before-after" markdown>
+<div markdown>
+
+### 已配置默认 profile
+
+```bash
+CS_SESSION_SCOPE_PROFILE_FILE=scope.json clawsentry start --framework codex
+```
+
+之后 ClawSentry 收到每个 `pre_action` 决策请求时，都会自动加载这份 profile 做 scope 检查。
 
 </div>
-<div class="cs-card" markdown>
+<div markdown>
 
-### 修 bug 不该外传数据
+### 没配置默认 profile
 
-为任务声明允许域名；未列入的域名访问会出现 `scope_defer:unknown_domain`，网络写入会出现 `scope_defer:network_write`。
+```bash
+clawsentry start --framework codex
+```
 
-</div>
-<div class="cs-card" markdown>
-
-### 自动化脚本不该升级权限
-
-`sudo`、递归删除、格式化设备等 destructive command 会触发底线 deny，即使 profile 作者忘了手写对应 command prefix。
+ClawSentry 仍会做普通 L1/L2/L3 风险判断，但不会凭空知道“这次任务允许访问哪里”。
 
 </div>
 </div>
 
-## 决策顺序
+!!! info "自动检查不是自动猜任务范围"
+    当前 ClawSentry 不会从一句自然语言任务里自动推断 scope。你需要提供一份 profile；一旦提供，Gateway 会在运行期间自动把它应用到没有显式 scope 的决策请求上。
+
+## 大概底层原理
 
 <div class="cs-flow" markdown>
-CanonicalEvent + DecisionContext.session_scope_profile → deterministic evaluator → `allow` / `defer` / `deny` / `neutral` reason codes → policy engine 只在 confirmed 且非 dry-run 时收紧 ALLOW → 最终 decision 进入 watch/report/SSE
+Agent 要执行工具 → Adapter 发 `pre_action` 给 ClawSentry → Gateway 自动附加默认 `SessionScopeProfile` → Scope evaluator 产出 `allow/defer/deny/neutral` → Policy engine 把越界动作收紧为 `defer` 或 `block` → watch/report 显示 reason code
 </div>
 
-### 四种 verdict 怎么读
+### 它会检查哪些东西？
 
-| verdict | 典型 reason code | 对真实决策的影响 |
-|---------|------------------|------------------|
-| `deny` | `scope_deny:path ~/.ssh`、`scope_deny:domain pastebin.com`、`scope_deny:destructive_command` | enforced 时把动作收紧为 `block`。 |
-| `defer` | `scope_defer:unknown_path ...`、`scope_defer:unknown_domain ...`、`scope_defer:network_write` | enforced 且原决策不是 block/defer 时，收紧为 `defer`。 |
-| `allow` | `scope_allow:path_prefix site-docs/`、`scope_allow:tool read_file` | 只说明在任务范围内，仍需叠加 L1/L2/L3 风险判断。 |
-| `neutral` | `scope_neutral:no_applicable_rule` | 没有适用 scope 规则，回到普通风险判断。 |
+| 检查对象 | 你能配置什么 | 例子 |
+|---------|--------------|------|
+| 工具 | 允许/禁止哪些 tool name | 只允许 `read_file`、`write_file` |
+| 路径 | 允许路径前缀、禁止敏感路径 | 允许 `site-docs/`，禁止 `~/.ssh` |
+| 域名 | 允许/禁止访问哪些域名 | 允许 `github.com`，禁止 `pastebin.com` |
+| 命令 | 允许/禁止命令前缀 | 允许 `python -m pytest`，禁止 `sudo` |
+| 网络写入 | 未明确允许时要求审批 | `curl -d ...` 触发 `scope_defer:network_write` |
 
-!!! tip "默认先 dry-run"
-    推荐先在 `dry_run: true` 下运行 `clawsentry scope validate/preview` 或 `POST /ahp/scope/preview`。只有 profile 被 operator 确认，并且 `dry_run: false` 后，scope 才会真实收紧 Gateway 决策。
+### 四种结果怎么理解？
 
-## 最小示例：文档维护范围
+| 结果 | 意思 | 自动执行效果 |
+|------|------|--------------|
+| `allow` | 动作在任务范围内 | 继续交给 L1/L2/L3 风险判断，不代表一定放行所有高危动作。 |
+| `defer` | 动作可能越界，需要人确认 | 如果 profile 已 enforce，原本允许的动作会变成 `defer`。 |
+| `deny` | 动作命中底线禁止项 | 如果 profile 已 enforce，动作会变成 `block`。 |
+| `neutral` | 没有 scope 规则命中 | 回到普通风险判断。 |
+
+## 如何配置：最小可用 profile
+
+创建 `scope.json`：
 
 ```json
 {
   "scope_version": "cs.session_scope.v1",
   "profile_id": "docs-only",
   "source": "operator",
-  "confirmed": false,
-  "dry_run": true,
+  "confirmed": true,
+  "dry_run": false,
   "base_rules": {
     "denied_paths": ["~/.ssh", ".env"],
     "denied_domains": ["pastebin.com", "file.io"],
     "denied_command_prefixes": ["sudo", "rm -rf"]
   },
   "task_rules": {
-    "allowed_tools": ["read_file", "write_file"],
-    "allowed_path_prefixes": ["site-docs/", "docs/"],
+    "allowed_tools": ["read_file", "write_file", "bash"],
+    "allowed_path_prefixes": ["site-docs/", "docs/", "README.md"],
     "allowed_domains": ["github.com"],
-    "allowed_command_prefixes": ["git status", "python -m pytest"],
-    "queued_categories": ["network"]
+    "allowed_command_prefixes": ["git status", "python -m pytest", "mkdocs build"]
   }
 }
 ```
 
-预览一个访问 `~/.ssh/id_rsa` 的事件：
+字段只需要记住三点：
 
-```bash
-clawsentry scope preview --profile scope.json --event event.json --json
-```
+| 字段 | 用户视角 |
+|------|----------|
+| `confirmed: true` | 这份规则已经确认过，可以用于真实决策。 |
+| `dry_run: false` | 不只是预览；越界时可以真的 `defer` / `block`。 |
+| `base_rules.denied_*` | 底线禁止项，任务规则不能覆盖。 |
+| `task_rules.allowed_*` | 本次任务允许范围。 |
 
-典型结果：
+!!! warning "第一次配置建议先 dry-run"
+    如果你担心误伤，把 `confirmed` 设为 `false`、`dry_run` 设为 `true`，先看 watch/report 里的 reason codes；确认没问题后再改成 `confirmed: true`、`dry_run: false`。
 
-```json
-{
-  "mode": "dry_run_only",
-  "scope_evaluation": {
-    "profile_id": "docs-only",
-    "confirmed": false,
-    "dry_run": true,
-    "enforced": false,
-    "verdict": "deny",
-    "reason_codes": ["scope_deny:path ~/.ssh"]
-  }
-}
-```
-
-这说明 profile 的规则可以解释“如果正式启用会阻断什么”，但 dry-run 阶段不会真的 block/defer。
-
-## 从预览到真实收紧
+## 如何使用：推荐流程
 
 <div class="cs-operator-path" markdown>
 <div class="cs-path-option cs-path-option--recommended" markdown>
 
-### 1. Validate
+### 1. 写 profile
 
-先校验 profile schema：
+把上面的 JSON 保存成 `scope.json`，根据你的任务修改允许路径、域名和命令前缀。
+
+</div>
+<div class="cs-path-option" markdown>
+
+### 2. 校验 profile
 
 ```bash
 clawsentry scope validate --profile scope.json
 ```
 
+这一步只检查格式和字段，不会启动防护。
+
 </div>
 <div class="cs-path-option" markdown>
 
-### 2. Preview
-
-用代表性事件调试 reason codes：
+### 3. 启动自动检查
 
 ```bash
-clawsentry scope preview --profile scope.json --event event.json --json
+CS_SESSION_SCOPE_PROFILE_FILE=scope.json clawsentry start --framework codex
 ```
 
+启动后，后续进入 ClawSentry 的 `pre_action` 决策都会自动套用这份默认 profile。
+
 </div>
-<div class="cs-path-option" markdown>
+</div>
 
-### 3. Enforce
+## 如何看效果
 
-确认不会误伤后，把 profile 放进 AHP 决策上下文，且设置：
+开另一个终端观察：
 
-```json
-{"confirmed": true, "dry_run": false}
+```bash
+clawsentry watch --interactive
 ```
 
-</div>
-</div>
+如果 Agent 尝试访问 `~/.ssh/id_rsa`，你会看到类似：
 
-## 它和 L1/L2/L3 的关系
+```text
+Scope: enforced profile=docs-only verdict=deny
+Reasons: scope_deny:path ~/.ssh
+Decision: block
+```
 
-<div class="cs-before-after" markdown>
-<div markdown>
+如果 Agent 访问了没列入允许范围的域名，可能看到：
 
-### Scope 不会降低风险
+```text
+Scope: enforced profile=docs-only verdict=defer
+Reasons: scope_defer:unknown_domain unknown.example
+Decision: defer
+```
 
-如果 L1/L2/L3 已经因为 high/critical 风险决定 block，scope 不会把它改回 allow。
+## 常见问题
 
-</div>
-<div markdown>
+### 只要开了 ClawSentry，就一定有 scope 吗？
 
-### Scope 只会收紧边界
+不是。普通 `clawsentry start` 会启用风险引擎，但 **scope 需要一份任务范围 profile**。推荐通过 `CS_SESSION_SCOPE_PROFILE_FILE=scope.json` 配置默认 profile，让它在 Gateway 里自动应用。
 
-当原决策允许动作继续时，enforced scope 的 `deny` 可收紧为 block，`defer` 可收紧为人工审批。
+### 我每次任务都要改 profile 吗？
 
-</div>
-</div>
+取决于你的使用方式：
 
-## 代码级核查证据
+- 固定项目/固定目录：可以长期使用一份项目 profile。
+- 不同任务边界差别很大：建议每个任务换一份 profile。
+- 只想先观察：用 `dry_run: true`，不真实阻断。
+
+### scope 会不会把高风险动作放行？
+
+不会。Scope 只会收紧，不会降低 L1/L2/L3 已经给出的高风险阻断。
+
+### 上游 AHP 请求自己带了 scope 怎么办？
+
+上游请求里的 `context.session_scope_profile` 优先级更高。默认 profile 只在请求没有显式 scope 时自动补上。
+
+## 代码级依据
 
 | 结论 | 代码证据 |
 |------|----------|
-| Profile schema 支持 base/task 两层规则 | `src/clawsentry/gateway/models.py:201-246` 定义 `SessionScopeBaseRules`、`SessionScopeTaskRules`、`SessionScopeProfile`，字段包括 denied/allowed tools、paths、domains、command prefixes、`confirmed`、`dry_run`。 |
-| verdict 和报告摘要是固定模型 | `src/clawsentry/gateway/models.py:83-93` 定义 source/verdict 枚举；`src/clawsentry/gateway/models.py:258-269` 定义 `SessionScopeEvaluationSummary`。 |
-| evaluator 是 deterministic 且只读 context profile | `src/clawsentry/gateway/session_scope.py:75-116` 从 `DecisionContext.session_scope_profile` 读取 profile，返回 deny/defer/allow/neutral 和 reason codes。 |
-| enforced 条件是 confirmed 且非 dry-run | `src/clawsentry/gateway/session_scope.py:43-56` 的 `enforced` 属性与 summary 输出使用 `confirmed and not dry_run`。 |
-| base deny 覆盖工具、命令前缀、路径、域名与破坏性命令 | `src/clawsentry/gateway/session_scope.py:153-178` 生成 `scope_deny:*` reason codes。 |
-| task allow/defer 覆盖工具、命令前缀、路径、域名、网络写入/未声明网络 | `src/clawsentry/gateway/session_scope.py:181-237` 生成 `scope_allow:*` 与 `scope_defer:*` reason codes。 |
-| policy engine 只在 pre_action 上应用 scope | `src/clawsentry/gateway/policy_engine.py:324-336` 非 `pre_action` 直接返回原 decision。 |
-| dry-run 只附加解释，不收紧决策 | `src/clawsentry/gateway/policy_engine.py:338-352` 在 `enforced=false` 时只追加 `scope_evaluation` 与 reason suffix。 |
-| enforced deny/defer 会收紧决策 | `src/clawsentry/gateway/policy_engine.py:354-381` 将 `deny` 转成 `block`，将可收紧的 `defer` 转成人工审批。 |
-| CLI preview/validate 已实现 | `src/clawsentry/cli/scope_command.py:16-81` 提供 `scope validate` 与 `scope preview`，并输出 protection statement。 |
-| HTTP preview endpoint 已实现 | `src/clawsentry/gateway/server.py:3526-3565` 暴露 `POST /ahp/scope/preview`，支持 `confirm=true` 转 enforced preview。 |
-| 当前行为有测试锁定 | `src/clawsentry/tests/test_scope_command.py:57-112` 验证 CLI dry-run/enforced preview；`src/clawsentry/tests/test_gateway.py:2444-2479` 验证 HTTP preview；`src/clawsentry/tests/test_watch_command.py:1493-1517` 验证 watch 展示 scope boundary。 |
+| 默认 profile 可通过环境变量加载 | `src/clawsentry/gateway/server.py` 的 `_load_default_session_scope_profile()` 读取 `CS_SESSION_SCOPE_PROFILE_FILE` / `CS_SESSION_SCOPE_PROFILE` 并验证为 `SessionScopeProfile`。 |
+| Gateway 会给无 scope 的请求自动补默认 profile | `src/clawsentry/gateway/server.py` 的 `_context_with_default_session_scope()` 在请求 context 缺少 `session_scope_profile` 时补上默认 profile。 |
+| 只检查 `pre_action` | `src/clawsentry/gateway/policy_engine.py:324-336` 只在工具执行前决策中应用 scope。 |
+| enforced 条件 | `src/clawsentry/gateway/session_scope.py:43-56` 使用 `confirmed and not dry_run` 判定是否真实执行。 |
+| deny/defer 如何收紧决策 | `src/clawsentry/gateway/policy_engine.py:354-381` 把 enforced `deny` 收紧为 `block`，把 enforced `defer` 收紧为人工审批。 |
 
 ## 继续阅读
 
-- 配置字段与完整示例：[Session scope 配置](../configuration/session-scope.md)
+- 详细字段参考：[Session scope 配置](../configuration/session-scope.md)
 - API 预览端点：[POST /ahp/scope/preview](../api/decisions.md#post-ahp-scope-preview)
-- 与 sanitizer 的边界：[Sanitizer 当前能力](sanitizer-capability.md)
+- Sanitizer 与 scope 的边界：[Sanitizer 当前能力](sanitizer-capability.md)

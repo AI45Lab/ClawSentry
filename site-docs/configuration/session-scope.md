@@ -12,6 +12,9 @@ Session scope 用来回答一个更贴近用户的问题：**这次任务里，A
 !!! tip "推荐工作流"
     先用 `dry_run: true` 写 profile，再用 `clawsentry scope validate/preview` 调规则。只有确认不会误伤后，才把 `confirmed: true` 与 `dry_run: false` 用到真实决策上下文里。
 
+!!! info "让它在开启 ClawSentry 后自动进行"
+    把 profile 保存成 JSON 文件，并用 `CS_SESSION_SCOPE_PROFILE_FILE=scope.json clawsentry start ...` 启动。之后 Gateway 会在每个没有显式 scope 的 `pre_action` 决策中自动套用这份默认 profile。
+
 ## 最小可用 profile
 
 下面这个 profile 表示“本次只做文档维护”：
@@ -123,7 +126,7 @@ clawsentry scope preview --profile scope.json --event event.json --json
 - scope 不会降低原本已经是 high/critical 的阻断决策。
 - ClawSentry 不会自动从 LLM 任务描述里推断 scope；profile 需要由 operator、项目模板或上游集成显式提供。
 
-AHP / Gateway 集成可以在 `SyncDecisionRequest.context.session_scope_profile` 中传入 profile；CLI 的 `scope preview` 只负责离线校验和预览。
+AHP / Gateway 集成可以在 `SyncDecisionRequest.context.session_scope_profile` 中传入 profile；如果请求没有显式 profile，Gateway 会使用 `CS_SESSION_SCOPE_PROFILE_FILE` 指向的默认 profile。CLI 的 `scope preview` 只负责离线校验和预览。
 
 ## 常见 reason codes
 

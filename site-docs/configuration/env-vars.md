@@ -196,6 +196,23 @@ Anti-bypass guard 用于检测 `PRE_ACTION` 中对 prior final risky decision �
 
 ---
 
+## Scope 限制
+
+Scope 限制用来给 ClawSentry 配置默认任务边界。设置后，Gateway 会在每个没有显式 scope 的 `pre_action` 决策中自动套用这份 profile。
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `CS_SESSION_SCOPE_PROFILE_FILE` | (空) | 默认 `SessionScopeProfile` JSON 文件路径。设置后，`clawsentry start` 期间每个工具执行前决策都会自动进行 scope 检查 |
+| `CS_SESSION_SCOPE_PROFILE` | (空) | 兼容别名；建议新配置使用 `CS_SESSION_SCOPE_PROFILE_FILE` |
+
+!!! example "开启默认 scope 自动检查"
+    ```bash
+    CS_SESSION_SCOPE_PROFILE_FILE=scope.json clawsentry start --framework codex
+    ```
+    profile 内需要设置 `confirmed: true` 与 `dry_run: false` 才会真实收紧为 `defer` / `block`；否则只解释不阻断。
+
+---
+
 ## 会话执法
 
 当单个会话累积多次高危决策时，自动触发强制措施。
@@ -495,6 +512,9 @@ AHP_SESSION_ENFORCEMENT_ENABLED=true
 AHP_SESSION_ENFORCEMENT_THRESHOLD=3
 AHP_SESSION_ENFORCEMENT_ACTION=defer
 AHP_SESSION_ENFORCEMENT_COOLDOWN_SECONDS=600
+
+# Scope 限制：配置后每次 pre_action 自动检查任务边界
+CS_SESSION_SCOPE_PROFILE_FILE=/etc/clawsentry/scope.json
 
 # Webhook 安全
 AHP_WEBHOOK_IP_WHITELIST=10.0.0.0/8

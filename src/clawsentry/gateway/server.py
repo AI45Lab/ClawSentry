@@ -392,6 +392,26 @@ def _snapshot_io_metric(bucket: dict[str, float | int]) -> dict[str, float | int
     }
 
 
+def _load_default_session_scope_profile() -> SessionScopeProfile | None:
+    """Load the optional default scope profile applied to incoming requests."""
+
+    raw_path = (
+        os.getenv("CS_SESSION_SCOPE_PROFILE_FILE")
+        or os.getenv("CS_SESSION_SCOPE_PROFILE")
+        or ""
+    ).strip()
+    if not raw_path:
+        return None
+    path = Path(raw_path).expanduser()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return SessionScopeProfile.model_validate(payload)
+    except Exception as exc:  # noqa: BLE001 - startup-time config surface
+        raise RuntimeError(
+            f"Failed to load CS_SESSION_SCOPE_PROFILE_FILE={path}: {exc}"
+        ) from exc
+
+
 def _risk_level_from_string(risk_level: str) -> RiskLevel:
     try:
         return RiskLevel(str(risk_level or "high").lower())
@@ -770,6 +790,7 @@ class SupervisionGateway:
         self.alert_registry = AlertRegistry()
         self.session_enforcement = session_enforcement or SessionEnforcementPolicy()
         self.anti_bypass_guard = AntiBypassGuard()
+        self.default_session_scope_profile = _load_default_session_scope_profile()
         self.post_action_analyzer = PostActionAnalyzer(
             whitelist_patterns=self._detection_config.post_action_whitelist,
             tier_emergency=self._detection_config.post_action_emergency,
@@ -1030,6 +1051,27 @@ class SupervisionGateway:
 
         return await self._handle_sync_decision(rpc_id, params)
 
+    def _context_with_default_session_scope(
+        self,
+        context: DecisionContext | None,
+    ) -> DecisionContext | None:
+        """Attach the configured default scope profile when request context lacks one."""
+
+        profile = self.default_session_scope_profile
+        if profile is None:
+            return context
+        if context is None:
+            return DecisionContext(
+                session_scope_profile_id=profile.profile_id,
+                session_scope_profile=profile,
+            )
+        if context.session_scope_profile is not None:
+            return context
+        updates: dict[str, Any] = {"session_scope_profile": profile}
+        if not context.session_scope_profile_id:
+            updates["session_scope_profile_id"] = profile.profile_id
+        return context.model_copy(update=updates)
+
     async def _run_post_action_async(
         self,
         output_text: str,
@@ -1145,6 +1187,10 @@ class SupervisionGateway:
                 retry_eligible=False,
             )
             return self._jsonrpc_error_with_data(rpc_id, -32602, error_resp)
+
+        req = req.model_copy(update={
+            "context": self._context_with_default_session_scope(req.context)
+        })
 
         # Check deadline
         start = time.monotonic()

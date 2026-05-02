@@ -2479,6 +2479,35 @@ class TestHttpTransport:
         assert "Not protected today:" in data["protection_statement"]
 
     @pytest.mark.asyncio
+    async def test_default_scope_profile_file_applies_to_sync_decisions(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        profile_path = tmp_path / "scope.json"
+        profile_path.write_text(
+            json.dumps({
+                "profile_id": "auto-scope",
+                "confirmed": True,
+                "dry_run": False,
+                "base_rules": {"denied_paths": ["/tmp"]},
+            }),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SESSION_SCOPE_PROFILE_FILE", str(profile_path))
+        gw = SupervisionGateway()
+
+        body = _jsonrpc_request("ahp/sync_decision", _sync_decision_params())
+        result = await gw.handle_jsonrpc(body)
+
+        decision = result["result"]["decision"]
+        assert decision["decision"] == "block"
+        assert decision["policy_id"] == "session-scope"
+        assert decision["scope_evaluation"]["profile_id"] == "auto-scope"
+        assert decision["scope_evaluation"]["enforced"] is True
+        assert "scope_deny:path /tmp" in decision["scope_evaluation"]["reason_codes"]
+
+    @pytest.mark.asyncio
     async def test_http_dangerous_block(self, app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
