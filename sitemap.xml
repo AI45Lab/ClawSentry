@@ -2,162 +2,214 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://elroyper.github.io/ClawSentry/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/changelog/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/advanced/attack-patterns/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/advanced/custom-adapter/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/advanced/custom-analyzer/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/advanced/custom-skills/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/advanced/embedding-backend/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/advanced/pattern-evolution/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/advanced/rule-governance/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/api/authentication/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/api/decisions/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/api/metric-dictionary/</loc>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/api/models-errors/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/api/overview/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/api/reference/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/api/reporting/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/api/validity-report/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/api/webhooks/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/cli/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/configuration/configuration-overview/</loc>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/configuration/detection-config/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/configuration/env-vars/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/configuration/llm-config/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/configuration/policy-tuning/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/configuration/session-scope/</loc>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/configuration/templates/</loc>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/dashboard/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/decision-layers/anti-bypass-guard/</loc>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/decision-layers/l1-rules/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/decision-layers/l2-semantic/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/decision-layers/l3-advisory/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/decision-layers/l3-agent/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/decision-layers/post-action/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/decision-layers/sanitizer-capability/</loc>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/decision-layers/scope-restrictions/</loc>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/decision-layers/trajectory-analyzer/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/getting-started/concepts/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/getting-started/faq/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/getting-started/installation/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/getting-started/quickstart/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/integration/a3s-code/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/integration/claude-code/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/integration/codex/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/integration/gemini-cli/</loc>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/integration/kimi-cli/</loc>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/integration/latch/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/integration/openclaw/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/operations/benchmark-mode/</loc>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/operations/deployment/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/operations/docs-audit-2026-04-27/</loc>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/operations/docs-coverage-audit/</loc>
+         <lastmod>2026-05-02</lastmod>
+    </url>
+    <url>
+         <loc>https://elroyper.github.io/ClawSentry/operations/recent-feature-coverage/</loc>
+         <lastmod>2026-05-02</lastmod>
     </url>
     <url>
          <loc>https://elroyper.github.io/ClawSentry/operations/troubleshooting/</loc>
-         <lastmod>2026-04-23</lastmod>
+         <lastmod>2026-05-02</lastmod>
     </url>
 </urlset>

@@ -3,7 +3,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/ahp",
-    "source": "src/clawsentry/gateway/server.py:2981",
+    "source": "src/clawsentry/gateway/server.py:3476",
     "group": "AHP 决策",
     "audience": "developer",
     "public_status": "public",
@@ -52,7 +52,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/ahp/a3s",
-    "source": "src/clawsentry/gateway/server.py:3038",
+    "source": "src/clawsentry/gateway/server.py:3574",
     "group": "AHP 决策",
     "audience": "developer",
     "public_status": "public",
@@ -93,7 +93,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/ahp/codex",
-    "source": "src/clawsentry/gateway/server.py:3072",
+    "source": "src/clawsentry/gateway/server.py:3608",
     "group": "AHP 决策",
     "audience": "developer",
     "public_status": "public",
@@ -126,7 +126,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/ahp/adapter-effect-result",
-    "source": "src/clawsentry/gateway/server.py:3002",
+    "source": "src/clawsentry/gateway/server.py:3497",
     "group": "AHP 决策",
     "audience": "developer|operator",
     "public_status": "public",
@@ -152,6 +152,74 @@
     ],
     "exclusion_reason": null,
     "openapi_ref": "#/paths/~1ahp~1adapter-effect-result/post"
+  },
+  {
+    "service": "gateway",
+    "method": "POST",
+    "path": "/ahp/scope/preview",
+    "source": "src/clawsentry/gateway/server.py:3526",
+    "group": "AHP 决策",
+    "audience": "developer|operator",
+    "public_status": "public",
+    "auth": "bearer-disabled-when-empty-token",
+    "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Scope preview is capability-honest: dry-run profiles explain what would happen but do not enforce until confirmed.",
+    "markdown_ref": "api/decisions.md#post-ahp-scope-preview",
+    "summary": "预览 deterministic SessionScopeProfile 对单个 canonical event 的 allow/defer/deny reason codes",
+    "request_example": {
+      "profile": {
+        "profile_id": "docs-only",
+        "confirmed": false,
+        "dry_run": true,
+        "base_rules": {
+          "denied_paths": [
+            "~/.ssh"
+          ]
+        },
+        "task_rules": {
+          "allowed_tools": [
+            "read_file"
+          ]
+        }
+      },
+      "event": {
+        "event_id": "evt-scope-docs",
+        "trace_id": "trace-scope-docs",
+        "event_type": "pre_action",
+        "session_id": "sess-scope-docs",
+        "agent_id": "agent-scope-docs",
+        "source_framework": "test",
+        "occurred_at": "2026-05-02T00:00:00+00:00",
+        "tool_name": "read_file",
+        "payload": {
+          "path": "~/.ssh/id_rsa"
+        }
+      }
+    },
+    "response_example": {
+      "valid": true,
+      "mode": "dry_run_only",
+      "profile_id": "docs-only",
+      "scope_evaluation": {
+        "profile_id": "docs-only",
+        "source": "operator",
+        "confirmed": false,
+        "dry_run": true,
+        "enforced": false,
+        "verdict": "deny",
+        "reason_codes": [
+          "scope_deny:path ~/.ssh"
+        ]
+      },
+      "protection_statement": "Protected today: scope preview validates rules and explains the decision that would apply. Not protected today: dry-run scope profiles do not block or defer actions until explicitly confirmed."
+    },
+    "errors": [
+      "400",
+      "401",
+      "404",
+      "429"
+    ],
+    "exclusion_reason": null,
+    "openapi_ref": "#/paths/~1ahp~1scope~1preview/post"
   },
   {
     "service": "stack",
@@ -189,7 +257,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/health",
-    "source": "src/clawsentry/gateway/server.py:3111",
+    "source": "src/clawsentry/gateway/server.py:3647",
     "group": "运行状态",
     "audience": "operator",
     "public_status": "public",
@@ -215,7 +283,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/metrics",
-    "source": "src/clawsentry/gateway/server.py:3125",
+    "source": "src/clawsentry/gateway/server.py:3661",
     "group": "运行状态",
     "audience": "operator",
     "public_status": "public",
@@ -239,7 +307,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/summary",
-    "source": "src/clawsentry/gateway/server.py:3137",
+    "source": "src/clawsentry/gateway/server.py:3673",
     "group": "报表与监控",
     "audience": "operator",
     "public_status": "public",
@@ -252,21 +320,104 @@
       "path": {}
     },
     "response_example": {
-      "total_decisions": 128,
-      "risk_distribution": {
-        "low": 101,
-        "medium": 18,
-        "high": 8,
-        "critical": 1
+      "total_records": 1250,
+      "by_source_framework": {
+        "a3s-code": 800,
+        "openclaw": 450
       },
-      "active_sessions": 7,
-      "l3_advisory": {
-        "snapshots": 4,
-        "jobs": {
-          "queued": 1,
-          "completed": 3
+      "by_event_type": {
+        "pre_action": 900,
+        "post_action": 300,
+        "session": 50
+      },
+      "by_decision": {
+        "allow": 1000,
+        "block": 150,
+        "defer": 80,
+        "modify": 20
+      },
+      "by_risk_level": {
+        "low": 800,
+        "medium": 300,
+        "high": 120,
+        "critical": 30
+      },
+      "by_actual_tier": {
+        "L1": 1200,
+        "L2": 50
+      },
+      "by_caller_adapter": {
+        "a3s-adapter.v1": 800,
+        "openclaw-adapter.v1": 450
+      },
+      "invalid_event": {
+        "count_1m": 0,
+        "count_5m": 2,
+        "count_15m": 5,
+        "rate_5m": 0.004,
+        "rate_15m": 0.002,
+        "alerts": []
+      },
+      "high_risk_trend": {
+        "windows": {
+          "5m": {
+            "count": 3,
+            "total": 50,
+            "ratio": 0.06
+          },
+          "15m": {
+            "count": 8,
+            "total": 150,
+            "ratio": 0.053
+          },
+          "60m": {
+            "count": 20,
+            "total": 500,
+            "ratio": 0.04
+          }
+        },
+        "direction_5m": "up",
+        "series_5m": [
+          {
+            "bucket_start": "2026-03-23T09:00:00+00:00",
+            "bucket_end": "2026-03-23T09:05:00+00:00",
+            "total_count": 40,
+            "high_or_critical_count": 2,
+            "ratio": 0.05
+          }
+        ]
+      },
+      "system_security_posture": {
+        "score_0_100": 72.5,
+        "level": "elevated",
+        "drivers": [
+          {
+            "key": "high_sessions",
+            "label": "High-risk sessions",
+            "value": 3
+          }
+        ],
+        "window_seconds": 3600,
+        "generated_at": "2026-04-25T12:00:05Z",
+        "decision_affecting": false
+      },
+      "decision_path_io": {
+        "record_path": {
+          "calls": 25
+        },
+        "reporting": {
+          "report_summary": {
+            "calls": 1
+          }
         }
-      }
+      },
+      "decision_path_io_pressure": {
+        "level": "healthy",
+        "max_seconds": 0.01,
+        "decision_affecting": false
+      },
+      "generated_at": "2026-03-23T10:30:00+00:00",
+      "window_seconds": null
     },
     "errors": [
       "400",
@@ -281,7 +432,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/stream",
-    "source": "src/clawsentry/gateway/server.py:3177",
+    "source": "src/clawsentry/gateway/server.py:3715",
     "group": "报表与监控",
     "audience": "developer",
     "public_status": "public",
@@ -306,7 +457,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/sessions",
-    "source": "src/clawsentry/gateway/server.py:3291",
+    "source": "src/clawsentry/gateway/server.py:3829",
     "group": "报表与监控",
     "audience": "operator",
     "public_status": "public",
@@ -321,14 +472,105 @@
     "response_example": {
       "sessions": [
         {
-          "session_id": "sess-001",
-          "workspace": "/workspace/demo",
-          "max_risk": "high",
+          "session_id": "session-001",
+          "agent_id": "agent-001",
+          "source_framework": "a3s-code",
+          "caller_adapter": "a3s-adapter.v1",
+          "workspace_root": "/workspace/repo-alpha",
+          "transcript_path": "/workspace/repo-alpha/.a3s/session-001.jsonl",
+          "current_risk_level": "high",
+          "cumulative_score": 5,
+          "latest_composite_score": 2.4,
+          "session_risk_sum": 6.7,
+          "session_risk_ewma": 1.9,
+          "latest_post_action_score": 1.0,
+          "post_action_score_ewma": 0.72,
+          "risk_points_sum": 5,
+          "risk_velocity": "up",
+          "window_risk_summary": {
+            "window_seconds": null,
+            "generated_at": "2026-03-23T10:31:00+00:00",
+            "event_count": 25,
+            "high_or_critical_count": 3,
+            "latest_composite_score": 2.4,
+            "session_risk_sum": 6.7,
+            "session_risk_ewma": 1.9,
+            "risk_points_sum": 5,
+            "risk_velocity": "up",
+            "score_range": [
+              0.0,
+              3.0
+            ],
+            "score_semantics": {
+              "zero_with_no_events": "no_data_not_confirmed_low_risk",
+              "decision_affecting": false
+            },
+            "decision_affecting": false
+          },
+          "post_action_score_summary": {
+            "window_seconds": null,
+            "generated_at": "2026-03-23T10:31:00+00:00",
+            "event_count": 3,
+            "latest_post_action_score": 1.0,
+            "post_action_score_sum": 2.4,
+            "post_action_score_avg": 0.8,
+            "post_action_score_ewma": 0.72,
+            "score_range": [
+              0.0,
+              3.0
+            ],
+            "score_semantics": {
+              "zero_with_no_events": "no_post_action_data_not_confirmed_low_risk",
+              "decision_affecting": false
+            },
+            "decision_affecting": false
+          },
+          "score_range": [
+            0.0,
+            3.0
+          ],
+          "score_semantics": {
+            "zero_with_no_events": "no_data_not_confirmed_low_risk",
+            "decision_affecting": false
+          },
           "latest_decision": "defer",
-          "event_count": 12
+          "event_count": 25,
+          "high_or_critical_count": 3,
+          "decision_distribution": {
+            "allow": 20,
+            "block": 3,
+            "defer": 2
+          },
+          "first_event_at": "2026-03-23T10:00:00+00:00",
+          "last_event_at": "2026-03-23T10:30:00+00:00",
+          "d4_accumulation": 4,
+          "l3_state": "completed",
+          "l3_reason_code": "suspicious_sequence_matched",
+          "evidence_summary": {
+            "reasoning_turns": 3,
+            "tools_observed": [
+              "read_trajectory",
+              "read_file"
+            ],
+            "key_findings": [
+              "Read secret-like file before outbound curl"
+            ]
+          }
         }
       ],
-      "total": 1
+      "total_active": 1,
+      "decision_path_io": {
+        "record_path": {
+          "calls": 25
+        },
+        "reporting": {
+          "report_sessions": {
+            "calls": 1
+          }
+        }
+      },
+      "generated_at": "2026-03-23T10:31:00+00:00",
+      "window_seconds": null
     },
     "errors": [
       "400",
@@ -343,7 +585,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/session/{session_id}/risk",
-    "source": "src/clawsentry/gateway/server.py:3384",
+    "source": "src/clawsentry/gateway/server.py:3923",
     "group": "报表与监控",
     "audience": "operator",
     "public_status": "public",
@@ -357,13 +599,123 @@
     },
     "response_example": {
       "session_id": "sess-001",
+      "agent_id": "agent-001",
+      "source_framework": "a3s-code",
+      "caller_adapter": "a3s-adapter.v1",
+      "workspace_root": "/workspace/repo-alpha",
+      "transcript_path": "/workspace/repo-alpha/.a3s/session-001.jsonl",
+      "current_risk_level": "high",
+      "cumulative_score": 5,
+      "latest_composite_score": 2.4,
+      "session_risk_sum": 6.7,
+      "session_risk_ewma": 1.9,
+      "latest_post_action_score": 1.0,
+      "post_action_score_ewma": 0.72,
+      "risk_points_sum": 5,
+      "risk_velocity": "up",
+      "window_risk_summary": {
+        "window_seconds": 3600,
+        "generated_at": "2026-03-23T10:31:00+00:00",
+        "event_count": 12,
+        "high_or_critical_count": 3,
+        "latest_composite_score": 2.4,
+        "session_risk_sum": 6.7,
+        "session_risk_ewma": 1.9,
+        "risk_points_sum": 5,
+        "risk_velocity": "up",
+        "score_range": [
+          0.0,
+          3.0
+        ],
+        "score_semantics": {
+          "zero_with_no_events": "no_data_not_confirmed_low_risk",
+          "decision_affecting": false
+        },
+        "decision_affecting": false
+      },
+      "post_action_score_summary": {
+        "window_seconds": 3600,
+        "generated_at": "2026-03-23T10:31:00+00:00",
+        "event_count": 3,
+        "latest_post_action_score": 1.0,
+        "post_action_score_sum": 2.4,
+        "post_action_score_avg": 0.8,
+        "post_action_score_ewma": 0.72,
+        "score_range": [
+          0.0,
+          3.0
+        ],
+        "score_semantics": {
+          "zero_with_no_events": "no_post_action_data_not_confirmed_low_risk",
+          "decision_affecting": false
+        },
+        "decision_affecting": false
+      },
+      "score_range": [
+        0.0,
+        3.0
+      ],
+      "score_semantics": {
+        "zero_with_no_events": "no_data_not_confirmed_low_risk",
+        "decision_affecting": false
+      },
+      "event_count": 25,
+      "high_or_critical_count": 3,
       "risk_timeline": [
         {
-          "timestamp": "2026-04-22T08:00:00Z",
+          "event_id": "evt-001",
+          "occurred_at": "2026-03-23T10:00:00+00:00",
+          "risk_level": "low",
+          "composite_score": 1.0,
+          "tool_name": "bash",
+          "decision": "allow"
+        },
+        {
+          "event_id": "evt-002",
+          "occurred_at": "2026-03-23T10:05:00+00:00",
           "risk_level": "high",
-          "reason": "credential access"
+          "composite_score": 2.4,
+          "tool_name": "bash",
+          "decision": "block"
         }
-      ]
+      ],
+      "risk_hints_seen": [
+        "destructive_pattern",
+        "shell_execution"
+      ],
+      "tools_used": [
+        "bash",
+        "file_editor"
+      ],
+      "actual_tier_distribution": {
+        "L1": 23,
+        "L2": 2
+      },
+      "l3_advisory": {
+        "latest_review": {
+          "review_id": "l3adv-001",
+          "snapshot_id": "l3snap-001",
+          "l3_state": "completed",
+          "advisory_only": true
+        },
+        "latest_job": {
+          "job_id": "l3job-001",
+          "job_state": "completed",
+          "runner": "llm_provider"
+        }
+      },
+      "decision_path_io": {
+        "record_path": {
+          "calls": 25
+        },
+        "reporting": {
+          "report_session_risk": {
+            "calls": 1
+          }
+        }
+      },
+      "generated_at": "2026-03-23T10:31:00+00:00",
+      "window_seconds": 3600
     },
     "errors": [
       "400",
@@ -377,8 +729,95 @@
   {
     "service": "gateway",
     "method": "GET",
+    "path": "/report/session/{session_id}/post-action",
+    "source": "src/clawsentry/gateway/server.py:3946",
+    "group": "报表与监控",
+    "audience": "operator|developer",
+    "public_status": "public",
+    "auth": "bearer-disabled-when-empty-token",
+    "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
+    "markdown_ref": "api/reporting.md#get-report-session-post-action",
+    "summary": "Post-action 安全围栏分与 session EWMA",
+    "request_example": {
+      "query": {},
+      "path": {}
+    },
+    "response_example": {
+      "session_id": "sess-001",
+      "latest_post_action_score": 1.0,
+      "post_action_score_sum": 2.4,
+      "post_action_score_avg": 0.8,
+      "post_action_score_ewma": 0.72,
+      "post_action_event_count": 3,
+      "score_range": [
+        0.0,
+        3.0
+      ],
+      "score_semantics": {
+        "zero_with_no_events": "no_post_action_data_not_confirmed_low_risk",
+        "decision_affecting": false,
+        "aggregation": "latest, sum, avg, and EWMA are separate from session_risk_ewma; do not add raw channels"
+      },
+      "post_action_score_summary": {
+        "window_seconds": 3600,
+        "generated_at": "2026-03-23T10:31:00+00:00",
+        "event_count": 3,
+        "latest_post_action_score": 1.0,
+        "post_action_score_sum": 2.4,
+        "post_action_score_avg": 0.8,
+        "post_action_score_ewma": 0.72,
+        "score_range": [
+          0.0,
+          3.0
+        ],
+        "score_semantics": {
+          "zero_with_no_events": "no_post_action_data_not_confirmed_low_risk",
+          "decision_affecting": false
+        },
+        "decision_affecting": false
+      },
+      "decision_affecting": false,
+      "post_action_scores": [
+        {
+          "event_id": "evt-post-001",
+          "occurred_at": "2026-03-23T10:05:00+00:00",
+          "tool_name": "read_file",
+          "source_framework": "a3s-code",
+          "tier": "escalate",
+          "patterns_matched": [
+            "indirect_injection"
+          ],
+          "score": 1.0,
+          "handling": "broadcast"
+        }
+      ],
+      "decision_path_io": {
+        "record_path": {
+          "calls": 25
+        },
+        "reporting": {
+          "report_session_post_action": {
+            "calls": 1
+          }
+        }
+      },
+      "generated_at": "2026-03-23T10:31:00+00:00",
+      "window_seconds": 3600
+    },
+    "errors": [
+      "400",
+      "401",
+      "404",
+      "429"
+    ],
+    "exclusion_reason": null,
+    "openapi_ref": "#/paths/~1report~1session~1{session_id}~1post-action/get"
+  },
+  {
+    "service": "gateway",
+    "method": "GET",
     "path": "/report/session/{session_id}",
-    "source": "src/clawsentry/gateway/server.py:3807",
+    "source": "src/clawsentry/gateway/server.py:4381",
     "group": "报表与监控",
     "audience": "operator",
     "public_status": "public",
@@ -418,7 +857,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/session/{session_id}/page",
-    "source": "src/clawsentry/gateway/server.py:3855",
+    "source": "src/clawsentry/gateway/server.py:4429",
     "group": "报表与监控",
     "audience": "developer",
     "public_status": "public",
@@ -449,7 +888,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/alerts",
-    "source": "src/clawsentry/gateway/server.py:3919",
+    "source": "src/clawsentry/gateway/server.py:4493",
     "group": "告警与处置",
     "audience": "operator",
     "public_status": "public",
@@ -484,7 +923,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/alerts/{alert_id}/acknowledge",
-    "source": "src/clawsentry/gateway/server.py:4002",
+    "source": "src/clawsentry/gateway/server.py:4576",
     "group": "告警与处置",
     "audience": "operator",
     "public_status": "public",
@@ -513,7 +952,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/session/{session_id}/enforcement",
-    "source": "src/clawsentry/gateway/server.py:4026",
+    "source": "src/clawsentry/gateway/server.py:4600",
     "group": "告警与处置",
     "audience": "operator",
     "public_status": "public",
@@ -543,7 +982,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/session/{session_id}/enforcement",
-    "source": "src/clawsentry/gateway/server.py:4033",
+    "source": "src/clawsentry/gateway/server.py:4607",
     "group": "告警与处置",
     "audience": "operator",
     "public_status": "public",
@@ -573,7 +1012,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/session/{session_id}/quarantine",
-    "source": "src/clawsentry/gateway/server.py:4070",
+    "source": "src/clawsentry/gateway/server.py:4644",
     "group": "告警与处置",
     "audience": "operator",
     "public_status": "public",
@@ -602,7 +1041,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/session/{session_id}/quarantine",
-    "source": "src/clawsentry/gateway/server.py:4080",
+    "source": "src/clawsentry/gateway/server.py:4654",
     "group": "告警与处置",
     "audience": "operator",
     "public_status": "public",
@@ -633,7 +1072,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/ahp/patterns",
-    "source": "src/clawsentry/gateway/server.py:4125",
+    "source": "src/clawsentry/gateway/server.py:4699",
     "group": "规则与模式",
     "audience": "developer",
     "public_status": "public",
@@ -666,7 +1105,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/ahp/patterns/confirm",
-    "source": "src/clawsentry/gateway/server.py:4139",
+    "source": "src/clawsentry/gateway/server.py:4713",
     "group": "规则与模式",
     "audience": "operator",
     "public_status": "public",
@@ -737,7 +1176,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/session/{session_id}/l3-advisory/snapshots",
-    "source": "src/clawsentry/gateway/server.py:3407",
+    "source": "src/clawsentry/gateway/server.py:3969",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -747,7 +1186,7 @@
     "summary": "创建 L3 evidence snapshot",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -771,7 +1210,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/session/{session_id}/l3-advisory/snapshots",
-    "source": "src/clawsentry/gateway/server.py:3447",
+    "source": "src/clawsentry/gateway/server.py:4009",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -804,7 +1243,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/l3-advisory/snapshot/{snapshot_id}",
-    "source": "src/clawsentry/gateway/server.py:3460",
+    "source": "src/clawsentry/gateway/server.py:4022",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -837,7 +1276,7 @@
     "service": "gateway",
     "method": "GET",
     "path": "/report/l3-advisory/jobs",
-    "source": "src/clawsentry/gateway/server.py:3480",
+    "source": "src/clawsentry/gateway/server.py:4042",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -870,7 +1309,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/l3-advisory/jobs/run-next",
-    "source": "src/clawsentry/gateway/server.py:3503",
+    "source": "src/clawsentry/gateway/server.py:4065",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -880,7 +1319,7 @@
     "summary": "运行最旧的 queued L3 advisory job",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -904,7 +1343,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/l3-advisory/jobs/drain",
-    "source": "src/clawsentry/gateway/server.py:3530",
+    "source": "src/clawsentry/gateway/server.py:4092",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -914,7 +1353,7 @@
     "summary": "有界运行 queued L3 advisory jobs",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -938,7 +1377,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/l3-advisory/snapshot/{snapshot_id}/jobs",
-    "source": "src/clawsentry/gateway/server.py:3558",
+    "source": "src/clawsentry/gateway/server.py:4120",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -948,7 +1387,7 @@
     "summary": "创建 L3 advisory job",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -972,7 +1411,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/l3-advisory/reviews",
-    "source": "src/clawsentry/gateway/server.py:3581",
+    "source": "src/clawsentry/gateway/server.py:4143",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -982,7 +1421,7 @@
     "summary": "写入 L3 advisory review",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -1006,7 +1445,7 @@
     "service": "gateway",
     "method": "PATCH",
     "path": "/report/l3-advisory/review/{review_id}",
-    "source": "src/clawsentry/gateway/server.py:3625",
+    "source": "src/clawsentry/gateway/server.py:4192",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -1016,7 +1455,7 @@
     "summary": "更新 L3 advisory review",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -1040,7 +1479,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/l3-advisory/snapshot/{snapshot_id}/run-local-review",
-    "source": "src/clawsentry/gateway/server.py:3677",
+    "source": "src/clawsentry/gateway/server.py:4249",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -1050,7 +1489,7 @@
     "summary": "立即运行本地 L3 review",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -1074,7 +1513,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/l3-advisory/job/{job_id}/run-local",
-    "source": "src/clawsentry/gateway/server.py:3696",
+    "source": "src/clawsentry/gateway/server.py:4268",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -1084,7 +1523,7 @@
     "summary": "运行本地 L3 job",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -1108,7 +1547,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/l3-advisory/job/{job_id}/run-worker",
-    "source": "src/clawsentry/gateway/server.py:3715",
+    "source": "src/clawsentry/gateway/server.py:4287",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -1118,7 +1557,7 @@
     "summary": "运行 L3 worker job",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -1142,7 +1581,7 @@
     "service": "gateway",
     "method": "POST",
     "path": "/report/session/{session_id}/l3-advisory/full-review",
-    "source": "src/clawsentry/gateway/server.py:3738",
+    "source": "src/clawsentry/gateway/server.py:4312",
     "group": "L3 Advisory",
     "audience": "operator|developer",
     "public_status": "public",
@@ -1152,7 +1591,7 @@
     "summary": "对 session 发起 operator full review",
     "request_example": {
       "session_id": "sess-001",
-      "runner": "deterministic_local",
+      "runner": "llm_provider",
       "queue_only": false
     },
     "response_example": {
@@ -1176,7 +1615,7 @@
     "service": "gateway-enterprise",
     "method": "GET",
     "path": "/enterprise/health",
-    "source": "src/clawsentry/gateway/server.py:3115",
+    "source": "src/clawsentry/gateway/server.py:3651",
     "group": "Enterprise 条件端点",
     "audience": "operator",
     "public_status": "enterprise",
@@ -1205,7 +1644,7 @@
     "service": "gateway-enterprise",
     "method": "GET",
     "path": "/enterprise/report/summary",
-    "source": "src/clawsentry/gateway/server.py:3150",
+    "source": "src/clawsentry/gateway/server.py:3686",
     "group": "Enterprise 条件端点",
     "audience": "operator",
     "public_status": "enterprise",
@@ -1218,8 +1657,64 @@
       "path": {}
     },
     "response_example": {
-      "status": "ok",
-      "data": {}
+      "total_records": 1250,
+      "by_source_framework": {
+        "a3s-code": 800,
+        "codex": 450
+      },
+      "by_risk_level": {
+        "low": 800,
+        "medium": 300,
+        "high": 120,
+        "critical": 30
+      },
+      "by_actual_tier": {
+        "L1": 1100,
+        "L2": 120,
+        "L3": 30
+      },
+      "trinityguard": {
+        "total_records": 1250,
+        "mapped_records": 180,
+        "unmapped_records": 1070,
+        "by_tier": {
+          "RT1": 120,
+          "RT2": 40,
+          "RT3": 20
+        },
+        "by_subtype": {
+          "prompt_injection": 45,
+          "sensitive_info_disclosure": 35,
+          "unauthorized_code_execution": 25,
+          "insecure_output_handling": 20,
+          "cascading_failure": 12
+        }
+      },
+      "enterprise": {
+        "live_risk_overview": {
+          "active_sessions": 18,
+          "mapped_active_sessions": 6,
+          "by_trinityguard_tier": {
+            "RT1": 4,
+            "RT2": 1,
+            "RT3": 1
+          },
+          "by_trinityguard_subtype": {
+            "prompt_injection": 2,
+            "sensitive_info_disclosure": 1,
+            "tool_misuse": 1,
+            "insecure_output_handling": 1,
+            "cascading_failure": 1
+          },
+          "system_security_posture": {
+            "score_0_100": 72.5,
+            "level": "elevated",
+            "decision_affecting": false
+          }
+        }
+      },
+      "generated_at": "2026-04-25T12:00:05Z",
+      "window_seconds": 3600
     },
     "errors": [
       "400",
@@ -1234,7 +1729,7 @@
     "service": "gateway-enterprise",
     "method": "GET",
     "path": "/enterprise/report/live",
-    "source": "src/clawsentry/gateway/server.py:3170",
+    "source": "src/clawsentry/gateway/server.py:3706",
     "group": "Enterprise 条件端点",
     "audience": "operator",
     "public_status": "enterprise",
@@ -1247,8 +1742,69 @@
       "path": {}
     },
     "response_example": {
-      "status": "ok",
-      "data": {}
+      "generated_at": "2026-04-25T12:00:05Z",
+      "active_sessions": 18,
+      "high_risk_sessions": 3,
+      "mapped_active_sessions": 6,
+      "by_risk_level": {
+        "low": 10,
+        "medium": 5,
+        "high": 2,
+        "critical": 1
+      },
+      "by_trinityguard_tier": {
+        "RT1": 4,
+        "RT2": 1,
+        "RT3": 1
+      },
+      "by_trinityguard_subtype": {
+        "prompt_injection": 2,
+        "sensitive_info_disclosure": 1,
+        "tool_misuse": 1,
+        "insecure_output_handling": 1,
+        "cascading_failure": 1
+      },
+      "top_trinityguard_tiers": [
+        {
+          "tier": "RT1",
+          "count": 4
+        },
+        {
+          "tier": "RT2",
+          "count": 1
+        },
+        {
+          "tier": "RT3",
+          "count": 1
+        }
+      ],
+      "top_trinityguard_subtypes": [
+        {
+          "subtype": "prompt_injection",
+          "count": 2
+        },
+        {
+          "subtype": "sensitive_info_disclosure",
+          "count": 1
+        }
+      ],
+      "system_security_posture": {
+        "score_0_100": 72.5,
+        "level": "elevated",
+        "drivers": [
+          {
+            "key": "high_sessions",
+            "label": "High-risk sessions",
+            "value": 2
+          }
+        ],
+        "window_seconds": 3600,
+        "decision_affecting": false
+      },
+      "cache_ttl_ms": 1000,
+      "stale": false,
+      "degraded": false,
+      "degraded_reason": null
     },
     "errors": [
       "400",
@@ -1263,7 +1819,7 @@
     "service": "gateway-enterprise",
     "method": "GET",
     "path": "/enterprise/report/stream",
-    "source": "src/clawsentry/gateway/server.py:3235",
+    "source": "src/clawsentry/gateway/server.py:3773",
     "group": "Enterprise 条件端点",
     "audience": "operator",
     "public_status": "enterprise",
@@ -1275,15 +1831,11 @@
       "query": {},
       "path": {}
     },
-    "response_example": {
-      "status": "ok",
-      "data": {}
-    },
+    "response_example": "event: decision\ndata: {\"session_id\":\"sess-001\",\"risk_level\":\"high\",\"trinityguard_classification\":{\"tier\":\"RT1\",\"subtype\":\"tool_misuse\"},\"live_risk_overview\":{\"by_trinityguard_tier\":{\"RT1\":1}}}\n\n",
     "errors": [
-      "400",
       "401",
-      "404",
-      "429"
+      "429",
+      "500"
     ],
     "exclusion_reason": null,
     "openapi_ref": "#/paths/~1enterprise~1report~1stream/get"
@@ -1292,7 +1844,7 @@
     "service": "gateway-enterprise",
     "method": "GET",
     "path": "/enterprise/report/sessions",
-    "source": "src/clawsentry/gateway/server.py:3336",
+    "source": "src/clawsentry/gateway/server.py:3874",
     "group": "Enterprise 条件端点",
     "audience": "operator",
     "public_status": "enterprise",
@@ -1305,8 +1857,38 @@
       "path": {}
     },
     "response_example": {
-      "status": "ok",
-      "data": {}
+      "sessions": [
+        {
+          "session_id": "session-001",
+          "source_framework": "codex",
+          "workspace_root": "/workspace/repo-alpha",
+          "current_risk_level": "high",
+          "session_risk_ewma": 1.9,
+          "trinityguard_classification": {
+            "mapped": true,
+            "tier": "RT1",
+            "tier_label": "Atomic Risks",
+            "subtype": "sensitive_info_disclosure",
+            "label": "Sensitive Info Disclosure",
+            "confidence": "high"
+          }
+        }
+      ],
+      "total_active": 1,
+      "enterprise": {
+        "live_risk_overview": {
+          "active_sessions": 1,
+          "mapped_active_sessions": 1,
+          "by_trinityguard_tier": {
+            "RT1": 1
+          },
+          "by_trinityguard_subtype": {
+            "sensitive_info_disclosure": 1
+          }
+        }
+      },
+      "generated_at": "2026-04-25T12:00:05Z",
+      "window_seconds": null
     },
     "errors": [
       "400",
@@ -1321,7 +1903,7 @@
     "service": "gateway-enterprise",
     "method": "GET",
     "path": "/enterprise/report/session/{session_id}/risk",
-    "source": "src/clawsentry/gateway/server.py:3781",
+    "source": "src/clawsentry/gateway/server.py:4355",
     "group": "Enterprise 条件端点",
     "audience": "operator",
     "public_status": "enterprise",
@@ -1334,8 +1916,40 @@
       "path": {}
     },
     "response_example": {
-      "status": "ok",
-      "data": {}
+      "session_id": "sess-001",
+      "current_risk_level": "high",
+      "session_risk_ewma": 1.9,
+      "actual_tier_distribution": {
+        "L1": 23,
+        "L2": 2,
+        "L3": 1
+      },
+      "risk_timeline": [
+        {
+          "event_id": "evt-001",
+          "risk_level": "high",
+          "decision": "block",
+          "trinityguard_classification": {
+            "mapped": true,
+            "tier": "RT1",
+            "tier_label": "Atomic Risks",
+            "subtype": "sensitive_info_disclosure",
+            "label": "Sensitive Info Disclosure"
+          }
+        }
+      ],
+      "trinityguard_summary": {
+        "mapped_records": 1,
+        "unmapped_records": 0,
+        "by_tier": {
+          "RT1": 1
+        },
+        "by_subtype": {
+          "sensitive_info_disclosure": 1
+        }
+      },
+      "generated_at": "2026-04-25T12:00:05Z",
+      "window_seconds": 3600
     },
     "errors": [
       "400",
@@ -1350,7 +1964,7 @@
     "service": "gateway-enterprise",
     "method": "GET",
     "path": "/enterprise/report/session/{session_id}",
-    "source": "src/clawsentry/gateway/server.py:3830",
+    "source": "src/clawsentry/gateway/server.py:4404",
     "group": "Enterprise 条件端点",
     "audience": "operator",
     "public_status": "enterprise",
@@ -1363,8 +1977,37 @@
       "path": {}
     },
     "response_example": {
-      "status": "ok",
-      "data": {}
+      "session_id": "sess-001",
+      "record_count": 1,
+      "records": [
+        {
+          "event": {
+            "event_id": "evt-001",
+            "event_type": "pre_action",
+            "tool_name": "bash"
+          },
+          "decision": {
+            "decision": "block",
+            "risk_level": "high"
+          },
+          "trinityguard_classification": {
+            "mapped": true,
+            "tier": "RT1",
+            "subtype": "unauthorized_code_execution",
+            "label": "Unauthorized Code Execution"
+          }
+        }
+      ],
+      "trinityguard_summary": {
+        "mapped_records": 1,
+        "unmapped_records": 0,
+        "by_tier": {
+          "RT1": 1
+        },
+        "by_subtype": {
+          "unauthorized_code_execution": 1
+        }
+      }
     },
     "errors": [
       "400",
@@ -1379,7 +2022,7 @@
     "service": "gateway-enterprise",
     "method": "GET",
     "path": "/enterprise/report/session/{session_id}/page",
-    "source": "src/clawsentry/gateway/server.py:3886",
+    "source": "src/clawsentry/gateway/server.py:4460",
     "group": "Enterprise 条件端点",
     "audience": "operator",
     "public_status": "enterprise",
@@ -1392,8 +2035,34 @@
       "path": {}
     },
     "response_example": {
-      "status": "ok",
-      "data": {}
+      "session_id": "sess-001",
+      "records": [
+        {
+          "event": {
+            "event_id": "evt-001",
+            "event_type": "pre_action",
+            "tool_name": "bash"
+          },
+          "trinityguard_classification": {
+            "mapped": true,
+            "tier": "RT1",
+            "subtype": "tool_misuse",
+            "label": "Tool Misuse"
+          }
+        }
+      ],
+      "trinityguard_summary": {
+        "mapped_records": 1,
+        "unmapped_records": 0,
+        "by_tier": {
+          "RT1": 1
+        },
+        "by_subtype": {
+          "tool_misuse": 1
+        }
+      },
+      "next_cursor": null,
+      "has_more": false
     },
     "errors": [
       "400",
@@ -1408,7 +2077,7 @@
     "service": "gateway-enterprise",
     "method": "GET",
     "path": "/enterprise/report/alerts",
-    "source": "src/clawsentry/gateway/server.py:3959",
+    "source": "src/clawsentry/gateway/server.py:4533",
     "group": "Enterprise 条件端点",
     "audience": "operator",
     "public_status": "enterprise",
@@ -1421,8 +2090,30 @@
       "path": {}
     },
     "response_example": {
-      "status": "ok",
-      "data": {}
+      "alerts": [
+        {
+          "alert_id": "alert-001",
+          "severity": "high",
+          "status": "open",
+          "session_id": "sess-001",
+          "trinityguard_classification": {
+            "mapped": true,
+            "tier": "RT1",
+            "subtype": "tool_misuse",
+            "label": "Tool Misuse"
+          }
+        }
+      ],
+      "enterprise": {
+        "live_risk_overview": {
+          "by_trinityguard_tier": {
+            "RT1": 1
+          },
+          "by_trinityguard_subtype": {
+            "tool_misuse": 1
+          }
+        }
+      }
     },
     "errors": [
       "400",
@@ -1437,7 +2128,7 @@
     "service": "gateway-ui",
     "method": "GET",
     "path": "/ui",
-    "source": "src/clawsentry/gateway/server.py:4206",
+    "source": "src/clawsentry/gateway/server.py:4780",
     "group": "Excluded",
     "audience": "operator",
     "public_status": "excluded",
@@ -1463,7 +2154,7 @@
     "service": "gateway-ui",
     "method": "GET",
     "path": "/ui/{path:path}",
-    "source": "src/clawsentry/gateway/server.py:4195",
+    "source": "src/clawsentry/gateway/server.py:4769",
     "group": "Excluded",
     "audience": "operator",
     "public_status": "excluded",

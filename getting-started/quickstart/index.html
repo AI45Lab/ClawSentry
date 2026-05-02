@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://elroyper.github.io/ClawSentry/getting-started/quickstart/">
       
       
-        <link rel="prev" href="../..">
+        <link rel="prev" href="../installation/">
       
       
-        <link rel="next" href="../installation/">
+        <link rel="next" href="../concepts/">
       
       
         
@@ -250,7 +250,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../installation/" class="md-tabs__link">
           
   
   
@@ -290,7 +290,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../configuration/env-vars/" class="md-tabs__link">
+        <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
   
@@ -572,6 +572,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -642,6 +670,128 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choose-first-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        先选择一条路径：观察优先，还是 L2/L3 就绪
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="先选择一条路径：观察优先，还是 L2/L3 就绪">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-llm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        路径 A：观察优先 / 不接 LLM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-l2l3-ready-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        路径 B：推荐的 L2/L3-ready operator 路径
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-first-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        运行后确认什么
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choose-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        选择运行模式
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-route" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        推荐阅读路线
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="推荐阅读路线">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 跑起来
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 选框架
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 理解配置来源
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 注入密钥并部署
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -812,10 +962,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_12" class="md-nav__link">
+  <a href="#env" class="md-nav__link">
     <span class="md-ellipsis">
       
-        项目级安全配置
+        安全预设与 env 配置
       
     </span>
   </a>
@@ -823,10 +973,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_13" class="md-nav__link">
+  <a href="#_12" class="md-nav__link">
     <span class="md-ellipsis">
       
         下一步
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kimi-cli-native-hook-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kimi CLI native-hook path
       
     </span>
   </a>
@@ -837,34 +998,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../installation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    安装
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1078,6 +1211,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../integration/gemini-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gemini CLI 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/kimi-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kimi CLI 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../integration/openclaw/" class="md-nav__link">
         
   
@@ -1195,6 +1384,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../configuration/configuration-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置概览
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../configuration/env-vars/" class="md-nav__link">
         
   
@@ -1203,6 +1448,34 @@
     
   
     环境变量
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/session-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session scope 配置
   
 
     
@@ -1459,6 +1732,34 @@
     
   
     API 有效性报告
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/metric-dictionary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    指标字典
   
 
     
@@ -1820,6 +2121,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../decision-layers/sanitizer-capability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sanitizer 当前能力
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/scope-restrictions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope 限制
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../decision-layers/trajectory-analyzer/" class="md-nav__link">
         
   
@@ -1828,6 +2185,34 @@
     
   
     轨迹分析器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/anti-bypass-guard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-bypass Guard
   
 
     
@@ -2221,6 +2606,118 @@
   
   
     <li class="md-nav__item">
+      <a href="../../operations/benchmark-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark 模式
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文档覆盖审计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    执行审计 2026-04-27
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    最近功能覆盖矩阵
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../operations/troubleshooting/" class="md-nav__link">
         
   
@@ -2310,6 +2807,128 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choose-first-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        先选择一条路径：观察优先，还是 L2/L3 就绪
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="先选择一条路径：观察优先，还是 L2/L3 就绪">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-llm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        路径 A：观察优先 / 不接 LLM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-l2l3-ready-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        路径 B：推荐的 L2/L3-ready operator 路径
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-first-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        运行后确认什么
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choose-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        选择运行模式
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-route" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        推荐阅读路线
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="推荐阅读路线">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 跑起来
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 选框架
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 理解配置来源
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 注入密钥并部署
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2480,10 +3099,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_12" class="md-nav__link">
+  <a href="#env" class="md-nav__link">
     <span class="md-ellipsis">
       
-        项目级安全配置
+        安全预设与 env 配置
       
     </span>
   </a>
@@ -2491,10 +3110,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_13" class="md-nav__link">
+  <a href="#_12" class="md-nav__link">
     <span class="md-ellipsis">
       
         下一步
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kimi-cli-native-hook-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kimi CLI native-hook path
       
     </span>
   </a>
@@ -2525,13 +3155,159 @@
 <section class="cs-doc-hero cs-doc-hero--quickstart">
 <div class="cs-eyebrow">Quickstart</div>
 <h2 id="5-gatewayweb-ui">5 分钟启动 Gateway、Web UI 与框架接入<a class="headerlink" href="#5-gatewayweb-ui" title="Permanent link">&para;</a></h2>
-<p>选择你使用的 AI 框架，先启动 ClawSentry Gateway，再打开 Web UI，并按框架能力决定是启用拦截还是监控。</p>
+<p>选择你使用的 AI 框架，先启动 ClawSentry Gateway，再打开 Web UI。首次体验可以不接 LLM；团队或安全敏感仓库建议直接按 L2/L3-ready 路径配置 provider、token budget 与审计存储。</p>
 <div class="cs-actions">
 <p><a class="md-button md-button--primary" href="#framework-capabilities">选择框架</a>
 <a class="md-button" href="../../api/reference/">查看 API Reference</a>
 <a class="md-button" href="../../dashboard/">Web 仪表板说明</a></p>
 </div>
 </section>
+<h2 id="choose-first-path">先选择一条路径：观察优先，还是 L2/L3 就绪<a class="headerlink" href="#choose-first-path" title="Permanent link">&para;</a></h2>
+<p>ClawSentry 的推荐新手路径不再把 “永远不接 LLM” 当成默认终点。你可以先用观察模式确认 Gateway / Web UI / 框架接入正常；如果你的目标是团队值守、语义分析或 L3 审查，请直接走 L2/L3-ready 路径，并把 provider、token budget 与延迟预期一次讲清。</p>
+<div class="cs-before-after">
+<div>
+<h3 id="a-llm">路径 A：观察优先 / 不接 LLM<a class="headerlink" href="#a-llm" title="Permanent link">&para;</a></h3>
+<p>适合第一次验证安装、Web UI 登录、framework/session/workspace 分组。不会调用外部 provider，也不会改变 Codex 默认拦截语义。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clawsentry
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>clawsentry<span class="w"> </span>config<span class="w"> </span>wizard<span class="w"> </span>--interactive
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>codex<span class="w"> </span>--open-browser
+</span></code></pre></div>
+<p>你会看到 Gateway 地址、Web UI token、<code>watch</code> 事件流和 L1 风险分。</p>
+</div>
+<div>
+<h3 id="b-l2l3-ready-operator">路径 B：推荐的 L2/L3-ready operator 路径<a class="headerlink" href="#b-l2l3-ready-operator" title="Permanent link">&para;</a></h3>
+<p>适合团队仓库、安全敏感项目或希望 Dashboard 显示语义/审查结果的用户。密钥只放环境变量，预算显式打开。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CS_LLM_API_KEY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>sk-...
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>clawsentry<span class="w"> </span>config<span class="w"> </span>wizard<span class="w"> </span>--non-interactive<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--mode<span class="w"> </span>strict<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>--llm-provider<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span>--llm-model<span class="w"> </span>gpt-4o-mini<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span>--l2<span class="w"> </span>--l3<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span>--token-budget<span class="w"> </span><span class="m">200000</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>--write-project-config
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>clawsentry<span class="w"> </span>test-llm<span class="w"> </span>--json
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>codex<span class="w"> </span>--open-browser
+</span></code></pre></div>
+<p>你会看到 L2/L3 可用性、token budget 来源、Dashboard 的 L3 advisory / risk summary 字段。</p>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title"><code>config wizard</code> 的两种运行方式</p>
+<p>本地终端推荐 <code>clawsentry config wizard --interactive</code>，它会用 5 步画面询问 framework、mode、LLM、L2/L3 与 token budget。CI、脚本和文档复制命令继续使用 <code>--non-interactive</code>，以保证输出可复现。</p>
+</div>
+<hr />
+<h2 id="verify-first-run">运行后确认什么<a class="headerlink" href="#verify-first-run" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>clawsentry<span class="w"> </span>config<span class="w"> </span>show<span class="w"> </span>--effective
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>curl<span class="w"> </span>http://127.0.0.1:8080/health
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>你要确认</th>
+<th>观察优先路径</th>
+<th>L2/L3-ready 路径</th>
+<th>在哪里看</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gateway 存活</td>
+<td><code>status=healthy</code></td>
+<td>同左</td>
+<td><code>/health</code>、终端 banner</td>
+</tr>
+<tr>
+<td>Web UI 登录</td>
+<td><code>?token=</code> 写入 sessionStorage</td>
+<td>同左</td>
+<td><code>http://127.0.0.1:8080/ui?token=...</code></td>
+</tr>
+<tr>
+<td>L2 是否会运行</td>
+<td>只跑 rule-based / L1+规则语义</td>
+<td>provider 可用时运行 LLMAnalyzer + RuleBasedAnalyzer</td>
+<td><code>clawsentry test-llm --json</code>、Session Detail</td>
+</tr>
+<tr>
+<td>L3 是否会运行</td>
+<td>默认关闭</td>
+<td>high/critical 或显式触发时运行同步 L3；full-review 为 advisory</td>
+<td>L3 审查 Agent、L3 咨询审查页面</td>
+</tr>
+<tr>
+<td>成本边界</td>
+<td>无 provider 成本</td>
+<td>由 token budget 和 timeout 控制</td>
+<td><a href="../../configuration/templates/">配置模板</a>、<a href="../../configuration/llm-config/">LLM 配置</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="choose-mode">选择运行模式<a class="headerlink" href="#choose-mode" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>你要做什么</th>
+<th>推荐配置</th>
+<th>延迟/成本预期</th>
+<th>下一步</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>本地先看审计/Web UI</td>
+<td><code>normal</code> + L1/规则语义</td>
+<td>最低；无外部 provider</td>
+<td><code>clawsentry start --framework &lt;name&gt;</code></td>
+</tr>
+<tr>
+<td>团队仓库语义分析</td>
+<td><code>normal</code> + L2 + token budget</td>
+<td>L2 只在 medium+ / 关键域事件触发</td>
+<td><a href="../../configuration/templates/#template-l2-budgeted">L2 预算模板</a></td>
+</tr>
+<tr>
+<td>安全敏感变更审查</td>
+<td><code>strict</code> + L2 + L3</td>
+<td>L3 可能带来 10s+ 审查延迟</td>
+<td><a href="../../configuration/templates/#template-l3-strict">严格 L3 模板</a></td>
+</tr>
+<tr>
+<td>只想手动复盘高风险 session</td>
+<td>同步 L3 可不开；启用 L3 advisory</td>
+<td>不改历史判决；按需生成报告</td>
+<td><a href="../../decision-layers/l3-advisory/">L3 咨询审查</a></td>
+</tr>
+<tr>
+<td>CI 或安全 benchmark</td>
+<td><code>benchmark</code> + 临时 home</td>
+<td>无人值守；DEFER 确定性处理</td>
+<td><a href="../../operations/benchmark-mode/">Benchmark 模式</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="reading-route">推荐阅读路线<a class="headerlink" href="#reading-route" title="Permanent link">&para;</a></h2>
+<p>第一次体验时，不建议从 API Reference 或环境变量表开始。按下面顺序阅读会更顺：</p>
+<div class="cs-card-grid">
+<div class="cs-card">
+<h3 id="1">1. 跑起来<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
+<p>从路径 A 或路径 B 复制命令，打开 Web UI，确认 Gateway 可访问。</p>
+</div>
+<div class="cs-card">
+<h3 id="2">2. 选框架<a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
+<p>在本页的能力表里确认你的框架是“可阻断”还是“监控 + 可选增强”。</p>
+</div>
+<div class="cs-card">
+<h3 id="3">3. 理解配置来源<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
+<p>先读<a href="../../configuration/configuration-overview/">配置概览</a>确认优先级、<code>.clawsentry.env.example</code> 与显式 env-file 边界，再用<a href="../../configuration/templates/">配置模板</a>选择 L2/L3 / 预算。</p>
+</div>
+<div class="cs-card">
+<h3 id="4">4. 注入密钥并部署<a class="headerlink" href="#4" title="Permanent link">&para;</a></h3>
+<p>本机/CI secrets 看<a href="../../configuration/env-vars/">环境变量参考</a>；团队常驻看<a href="../../operations/deployment/">生产部署</a>；遇到配置未生效看<a href="../../operations/troubleshooting/">故障排查</a>。</p>
+</div>
+</div>
+<hr />
 <h2 id="framework-capabilities">框架能力对比<a class="headerlink" href="#framework-capabilities" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -2597,7 +3373,7 @@
 </table>
 <div class="admonition info">
 <p class="admonition-title">为什么 Codex 默认仍按监控模式使用？</p>
-<p>ClawSentry 默认通过监控 Codex session 日志实现实时评估和推荐。当前版本可用 <code>clawsentry init codex --setup</code> 非破坏式安装 managed native hooks，并已验证 <code>PreToolUse(Bash)</code> 可经 Gateway 返回 host deny；其他 native events 仍是异步观察，生产上建议继续配合 <code>--approval-policy untrusted</code> 使用。</p>
+<p>ClawSentry 默认通过监控 Codex session 日志实现实时评估和推荐。你可以用 <code>clawsentry init codex --setup</code> 非破坏式安装 managed native hooks。同步防护主要覆盖 Bash preflight / approval gate；其他 native events 仍按异步观察处理，生产上建议继续配合 <code>--approval-policy untrusted</code> 使用。</p>
 </div>
 <h2 id="web-ui">第一次打开 Web UI，先看什么？<a class="headerlink" href="#web-ui" title="Permanent link">&para;</a></h2>
 <p>如果你刚打开 <code>http://127.0.0.1:8080/ui?token=...</code>，先不要把它当成“图表页”，而要把它当成<strong>安全监控台</strong>：</p>
@@ -2613,7 +3389,7 @@
 <li><strong>Session</strong>：该工作区中的某一次具体 Agent 会话</li>
 </ul>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg></span> 最简单的使用顺序可以记成：</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Dashboard -&gt; Sessions -&gt; Session Detail
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Dashboard -&gt; Sessions -&gt; Session Detail
 </span></code></pre></div>
 <ul>
 <li>如果你只盯一个框架，先找最危险的 workspace</li>
@@ -2621,13 +3397,13 @@
 </ul>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg></span> 如果你想先把这个使用模型看懂，再看页面细节，直接读：<a href="../../dashboard/">Web 安全仪表板说明</a></p>
 <h3 id="web-ui_1">Web UI 登录与本地代理<a class="headerlink" href="#web-ui_1" title="Permanent link">&para;</a></h3>
-<p><code>clawsentry start</code> 会在终端打印形如 <code>http://127.0.0.1:8080/ui?token=...</code> 的 Web UI 地址。页面会把 <code>?token=</code> 写入浏览器 <code>sessionStorage</code> 后立刻清理地址栏中的 token；如果手动登录，使用同一个 <code>CS_AUTH_TOKEN</code>（通常来自 <code>.env.clawsentry</code>）。</p>
+<p><code>clawsentry start</code> 会在终端打印形如 <code>http://127.0.0.1:8080/ui?token=...</code> 的 Web UI 地址。页面会把 <code>?token=</code> 写入浏览器 <code>sessionStorage</code> 后立刻清理地址栏中的 token；如果手动登录，使用同一个 <code>CS_AUTH_TOKEN</code>（来自进程环境、显式 <code>--env-file</code>，或本次 <code>start</code> 生成的临时 token）。</p>
 <ul>
 <li><code>401</code> 表示 invalid token：复制的 token 与 Gateway 启动时的 <code>CS_AUTH_TOKEN</code> 不一致。</li>
 <li><code>Gateway unavailable</code> 表示浏览器或 CLI 连不上 Gateway，不等同于 token 错误；先确认 Gateway 地址、端口和本机代理设置。</li>
 <li>如果你的 shell 配置了代理，访问本机 Gateway 前可设置：</li>
 </ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NO_PROXY</span><span class="o">=</span>localhost,127.0.0.1,::1
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NO_PROXY</span><span class="o">=</span>localhost,127.0.0.1,::1
 </span></code></pre></div>
 <hr />
 <h2 id="_2">接入步骤<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
@@ -2636,227 +3412,223 @@
 <div class="tabbed-block">
 <p>Claude Code 通过原生 Hook 系统接入，<strong>自动拦截</strong>高危操作。</p>
 <p><strong>前置条件</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clawsentry
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>claude<span class="w"> </span>--version<span class="w">      </span><span class="c1"># 确认 Claude Code 已安装</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clawsentry
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>claude<span class="w"> </span>--version<span class="w">      </span><span class="c1"># 确认 Claude Code 已安装</span>
 </span></code></pre></div>
 <h3 id="_3">一键启动（推荐）<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>claude-code
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>claude-code
 </span></code></pre></div>
 <p>自动完成：初始化配置 → 注入 hooks → 启动 Gateway → 显示实时监控。</p>
 <details class="example">
 <summary>终端输出示例</summary>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ClawSentry starting...
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  Framework:  claude-code
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  Gateway:    http://127.0.0.1:8080 (background)
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>  Web UI:     http://127.0.0.1:8080/ui?token=xK7m9p2Q...
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>  Log file:   /tmp/clawsentry-gateway.log
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>Gateway ready. Streaming events...
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>──────────────────────────────────────
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>[14:23:05] DECISION  session=my-session
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>  verdict : ALLOW
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>  risk    : low
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>  command : cat README.md
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>──────────────────────────────────────
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ClawSentry starting...
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  Framework:  claude-code
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>  Gateway:    http://127.0.0.1:8080 (background)
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>  Web UI:     http://127.0.0.1:8080/ui?token=xK7m9p2Q...
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>  Log file:   /tmp/clawsentry-gateway.log
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>Gateway ready. Streaming events...
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>──────────────────────────────────────
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>[14:23:05] DECISION  session=my-session
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>  verdict : ALLOW
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>  risk    : low
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>  command : cat README.md
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>──────────────────────────────────────
 </span></code></pre></div>
 </details>
 <div class="admonition tip">
 <p class="admonition-title">可选参数</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>claude-code<span class="w"> </span>--interactive<span class="w">   </span><span class="c1"># 启用 DEFER 交互审批</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>claude-code<span class="w"> </span>--no-watch<span class="w">      </span><span class="c1"># 仅启动 Gateway</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>claude-code<span class="w"> </span>--open-browser<span class="w">  </span><span class="c1"># 自动打开 Web UI</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>claude-code<span class="w"> </span>--interactive<span class="w">   </span><span class="c1"># 启用 DEFER 交互审批</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>claude-code<span class="w"> </span>--no-watch<span class="w">      </span><span class="c1"># 仅启动 Gateway</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>claude-code<span class="w"> </span>--open-browser<span class="w">  </span><span class="c1"># 自动打开 Web UI</span>
 </span></code></pre></div>
 </div>
 <details class="note">
 <summary>分步操作（高级用户）</summary>
 <p><strong>步骤 1：初始化</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>claude-code
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>claude-code
 </span></code></pre></div>
-<p>生成 <code>.env.clawsentry</code>，自动注入 hooks 到 <code>~/.claude/settings.json</code>。</p>
+<p>输出 <code>CS_FRAMEWORK=claude-code</code> / <code>CS_ENABLED_FRAMEWORKS=claude-code</code> 建议；带 <code>--setup</code> 时可自动注入 hooks 到 <code>~/.claude/settings.json</code>。</p>
 <p><strong>步骤 2：启动 Gateway</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">source</span><span class="w"> </span>.env.clawsentry
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>clawsentry<span class="w"> </span>gateway
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>clawsentry<span class="w"> </span>gateway<span class="w"> </span>--env-file<span class="w"> </span>.clawsentry.env.local
 </span></code></pre></div>
 <p><strong>步骤 3：使用 Claude Code</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>claude<span class="w">   </span><span class="c1"># hooks 自动生效，工具调用经过 ClawSentry 评估</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>claude<span class="w">   </span><span class="c1"># hooks 自动生效，工具调用经过 ClawSentry 评估</span>
 </span></code></pre></div>
 <p><strong>步骤 4：实时监控（另一终端，可选）</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>clawsentry<span class="w"> </span>watch
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>clawsentry<span class="w"> </span>watch<span class="w"> </span>--interactive<span class="w">   </span><span class="c1"># 交互式 DEFER 审批</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>clawsentry<span class="w"> </span>watch
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>clawsentry<span class="w"> </span>watch<span class="w"> </span>--interactive<span class="w">   </span><span class="c1"># 交互式 DEFER 审批</span>
 </span></code></pre></div>
 <p><strong>卸载</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>claude-code<span class="w"> </span>--uninstall
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>claude-code<span class="w"> </span>--uninstall
 </span></code></pre></div>
 </details>
 <h3 id="_4">验证<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>clawsentry<span class="w"> </span>doctor<span class="w">   </span><span class="c1"># 检查配置、连接、hooks 等诊断项</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>clawsentry<span class="w"> </span>doctor<span class="w">   </span><span class="c1"># 检查配置、连接、hooks 等诊断项</span>
 </span></code></pre></div>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg></span> 完整配置和高级用法：<a href="../../integration/claude-code/">Claude Code 集成指南</a></p>
 </div>
 <div class="tabbed-block">
 <p>a3s-code 通过显式 AHP Transport（HTTP / stdio）接入，<strong>自动拦截</strong>高危操作。</p>
 <p><strong>前置条件</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clawsentry<span class="w"> </span>a3s-code
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clawsentry<span class="w"> </span>a3s-code
 </span></code></pre></div>
 <h3 id="_5">一键启动（推荐）<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>a3s-code
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>a3s-code
 </span></code></pre></div>
-<p>这条命令负责 ClawSentry 侧的运行环境：初始化/合并项目配置、启动 Gateway、显示实时事件流。</p>
+<p>这条命令负责 ClawSentry 侧的运行环境：选择框架、启动 Gateway、显示实时事件流。</p>
 <h3 id="a3s-code-agent">继续配置 a3s-code Agent<a class="headerlink" href="#a3s-code-agent" title="Permanent link">&para;</a></h3>
 <p>a3s-code 侧仍需要在你的 Agent 代码中显式设置 <code>SessionOptions().ahp_transport</code>，然后运行 Agent 脚本。</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span> <span class="nn">a3s_code</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">SessionOptions</span><span class="p">,</span> <span class="n">StdioTransport</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;agent.hcl&quot;</span><span class="p">)</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">SessionOptions</span><span class="p">()</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="n">opts</span><span class="o">.</span><span class="n">ahp_transport</span> <span class="o">=</span> <span class="n">StdioTransport</span><span class="p">(</span><span class="n">program</span><span class="o">=</span><span class="s2">&quot;clawsentry-harness&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[])</span>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="p">,</span> <span class="n">permissive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span> <span class="nn">a3s_code</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">SessionOptions</span><span class="p">,</span> <span class="n">StdioTransport</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;agent.hcl&quot;</span><span class="p">)</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">SessionOptions</span><span class="p">()</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="n">opts</span><span class="o">.</span><span class="n">ahp_transport</span> <span class="o">=</span> <span class="n">StdioTransport</span><span class="p">(</span><span class="n">program</span><span class="o">=</span><span class="s2">&quot;clawsentry-harness&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[])</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="p">,</span> <span class="n">permissive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
-<p>如需 HTTP 方式，可改用已验证的 <code>HttpTransport</code> 直连 Gateway：</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">import</span> <span class="nn">os</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span> <span class="nn">a3s_code</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">HttpTransport</span><span class="p">,</span> <span class="n">SessionOptions</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;agent.hcl&quot;</span><span class="p">)</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">SessionOptions</span><span class="p">()</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CS_AUTH_TOKEN&quot;</span><span class="p">]</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="n">opts</span><span class="o">.</span><span class="n">ahp_transport</span> <span class="o">=</span> <span class="n">HttpTransport</span><span class="p">(</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    <span class="sa">f</span><span class="s2">&quot;http://127.0.0.1:8080/ahp/a3s?token=</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="p">)</span>
-</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="p">,</span> <span class="n">permissive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<p>如需 HTTP 方式，可改用 <code>HttpTransport</code> 直连 Gateway。注意：fresh <code>clawsentry start</code> 生成的临时 token 不会写入父 shell；HTTP 方式请先显式 <code>export CS_AUTH_TOKEN = ...</code> 或使用 <code>--env-file</code>，否则优先用上面的 stdio transport：</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">import</span> <span class="nn">os</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="kn">from</span> <span class="nn">a3s_code</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">HttpTransport</span><span class="p">,</span> <span class="n">SessionOptions</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;agent.hcl&quot;</span><span class="p">)</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">SessionOptions</span><span class="p">()</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="n">token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CS_AUTH_TOKEN&quot;</span><span class="p">]</span>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="n">opts</span><span class="o">.</span><span class="n">ahp_transport</span> <span class="o">=</span> <span class="n">HttpTransport</span><span class="p">(</span>
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>    <span class="sa">f</span><span class="s2">&quot;http://127.0.0.1:8080/ahp/a3s?token=</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="p">)</span>
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="p">,</span> <span class="n">permissive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <details class="example">
 <summary>终端输出示例</summary>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>ClawSentry starting...
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>  Framework:  a3s-code
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>  Gateway:    http://127.0.0.1:8080 (background)
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>  Web UI:     http://127.0.0.1:8080/ui?token=xK7m9p2Q...
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>  Log file:   /tmp/clawsentry-gateway.log
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>Gateway ready. Streaming events...
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>ClawSentry starting...
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>  Framework:  a3s-code
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>  Gateway:    http://127.0.0.1:8080 (background)
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>  Web UI:     http://127.0.0.1:8080/ui?token=xK7m9p2Q...
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>  Log file:   /tmp/clawsentry-gateway.log
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>Gateway ready. Streaming events...
 </span></code></pre></div>
 </details>
 <details class="note">
 <summary>分步操作（高级用户）</summary>
-<p>如果你不想使用 <code>clawsentry start</code>，可以把它拆成下面几步。<code>init</code> 只负责写项目配置，<code>gateway</code> 只负责启动服务，<code>watch</code> 只负责观察事件。</p>
+<p>如果你不想使用 <code>clawsentry start</code>，可以把它拆成下面几步。<code>init</code> 负责输出 env 建议或安装 managed hooks，<code>gateway</code> 只负责启动服务，<code>watch</code> 只负责观察事件。</p>
 <p><strong>步骤 1：初始化</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>a3s-code
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="nb">source</span><span class="w"> </span>.env.clawsentry
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>a3s-code
 </span></code></pre></div>
 <p><strong>步骤 2：启动 Gateway</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>clawsentry<span class="w"> </span>gateway
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>clawsentry<span class="w"> </span>gateway
 </span></code></pre></div>
 <p><strong>步骤 3：在 Agent 代码中显式配置 AHP Transport 并运行 Agent</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span> <span class="nn">a3s_code</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">SessionOptions</span><span class="p">,</span> <span class="n">StdioTransport</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;agent.hcl&quot;</span><span class="p">)</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">SessionOptions</span><span class="p">()</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="n">opts</span><span class="o">.</span><span class="n">ahp_transport</span> <span class="o">=</span> <span class="n">StdioTransport</span><span class="p">(</span><span class="n">program</span><span class="o">=</span><span class="s2">&quot;clawsentry-harness&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[])</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="p">,</span> <span class="n">permissive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kn">from</span> <span class="nn">a3s_code</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">SessionOptions</span><span class="p">,</span> <span class="n">StdioTransport</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;agent.hcl&quot;</span><span class="p">)</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">SessionOptions</span><span class="p">()</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="n">opts</span><span class="o">.</span><span class="n">ahp_transport</span> <span class="o">=</span> <span class="n">StdioTransport</span><span class="p">(</span><span class="n">program</span><span class="o">=</span><span class="s2">&quot;clawsentry-harness&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[])</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="p">,</span> <span class="n">permissive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
-<p>如需 HTTP 方式，可改用已验证的 <code>HttpTransport</code> 直连 Gateway：</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="kn">import</span> <span class="nn">os</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="kn">from</span> <span class="nn">a3s_code</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">HttpTransport</span><span class="p">,</span> <span class="n">SessionOptions</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;agent.hcl&quot;</span><span class="p">)</span>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">SessionOptions</span><span class="p">()</span>
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="n">token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CS_AUTH_TOKEN&quot;</span><span class="p">]</span>
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="n">opts</span><span class="o">.</span><span class="n">ahp_transport</span> <span class="o">=</span> <span class="n">HttpTransport</span><span class="p">(</span>
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>    <span class="sa">f</span><span class="s2">&quot;http://127.0.0.1:8080/ahp/a3s?token=</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="p">)</span>
-</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="p">,</span> <span class="n">permissive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<p>如需 HTTP 方式，可改用 <code>HttpTransport</code> 直连 Gateway。注意临时 token 不会写入父 shell；请显式设置 <code>CS_AUTH_TOKEN</code> / <code>--env-file</code>：</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kn">import</span> <span class="nn">os</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="kn">from</span> <span class="nn">a3s_code</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">HttpTransport</span><span class="p">,</span> <span class="n">SessionOptions</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;agent.hcl&quot;</span><span class="p">)</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">SessionOptions</span><span class="p">()</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="n">token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CS_AUTH_TOKEN&quot;</span><span class="p">]</span>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="n">opts</span><span class="o">.</span><span class="n">ahp_transport</span> <span class="o">=</span> <span class="n">HttpTransport</span><span class="p">(</span>
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>    <span class="sa">f</span><span class="s2">&quot;http://127.0.0.1:8080/ahp/a3s?token=</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="p">)</span>
+</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="p">,</span> <span class="n">permissive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
-<p>运行你的 a3s-code Agent 脚本后，如果你还想单独看事件流，可以在另一终端运行 <code>clawsentry watch</code>。</p>
+<p>运行你的 a3s-code Agent 脚本后，如果你还想单独看事件流，可以在另一终端运行 <code>clawsentry watch</code>；如果 Gateway 使用临时 token，复制 <code>start --no-watch</code> 输出里的 <code>clawsentry watch --token ...</code>。</p>
 </details>
 <h3 id="_6">验证<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>clawsentry<span class="w"> </span>doctor
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>clawsentry<span class="w"> </span>doctor
 </span></code></pre></div>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg></span> 完整配置和高级用法：<a href="../../integration/a3s-code/">a3s-code 集成指南</a></p>
 </div>
 <div class="tabbed-block">
 <p>OpenClaw 通过 WebSocket 实时事件流接入，<strong>自动拦截</strong>高危操作。</p>
 <p><strong>前置条件</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;clawsentry[enforcement]&quot;</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="c1"># OpenClaw Gateway 已启动（默认端口 18789）</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;clawsentry[enforcement]&quot;</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="c1"># OpenClaw Gateway 已启动（默认端口 18789）</span>
 </span></code></pre></div>
 <h3 id="_7">一键启动（推荐）<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>openclaw
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>openclaw
 </span></code></pre></div>
 <details class="example">
 <summary>终端输出示例</summary>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>ClawSentry starting...
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>  Framework:  openclaw
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>  Gateway:    http://127.0.0.1:8080 (background)
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>  Web UI:     http://127.0.0.1:8080/ui?token=xK7m9p2Q...
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>  Log file:   /tmp/clawsentry-gateway.log
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>Gateway ready. Streaming events...
-</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>
-</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>──────────────────────────────────────
-</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>[14:30:22] DECISION  session=demo-session
-</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>  verdict : DEFER (awaiting operator)
-</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>  risk    : medium
-</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>  command : pip install requests
-</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>  [A]llow  [D]eny  [S]kip &gt;
-</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a>──────────────────────────────────────
+<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>ClawSentry starting...
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>  Framework:  openclaw
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>  Gateway:    http://127.0.0.1:8080 (background)
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>  Web UI:     http://127.0.0.1:8080/ui?token=xK7m9p2Q...
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>  Log file:   /tmp/clawsentry-gateway.log
+</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>
+</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>Gateway ready. Streaming events...
+</span><span id="__span-27-8"><a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>
+</span><span id="__span-27-9"><a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>──────────────────────────────────────
+</span><span id="__span-27-10"><a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>[14:30:22] DECISION  session=demo-session
+</span><span id="__span-27-11"><a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>  verdict : DEFER (awaiting operator)
+</span><span id="__span-27-12"><a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>  risk    : medium
+</span><span id="__span-27-13"><a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>  command : pip install requests
+</span><span id="__span-27-14"><a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a>  [A]llow  [D]eny  [S]kip &gt;
+</span><span id="__span-27-15"><a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a>──────────────────────────────────────
 </span></code></pre></div>
 </details>
 <details class="note">
 <summary>分步操作（高级用户）</summary>
 <p><strong>步骤 1：初始化（自动检测 OpenClaw 配置）</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--auto-detect<span class="w"> </span>--setup
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="nb">source</span><span class="w"> </span>.env.clawsentry
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--auto-detect<span class="w"> </span>--setup
 </span></code></pre></div>
-<p><code>--auto-detect</code> 从 <code>~/.openclaw/openclaw.json</code> 读取 Token。
+<p><code>--auto-detect</code> 检查 <code>~/.openclaw/openclaw.json</code>，但不会把 Token 写入 <code>.clawsentry.env.example</code>。
 <code>--setup</code> 自动配置 <code>tools.exec.host = "gateway"</code>。</p>
 <p><strong>步骤 2：启动 Gateway</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>clawsentry<span class="w"> </span>gateway
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>clawsentry<span class="w"> </span>gateway
 </span></code></pre></div>
 <p><strong>步骤 3：运行 OpenClaw</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>openclaw<span class="w"> </span>agent<span class="w"> </span>--session-id<span class="w"> </span>demo-session
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>openclaw<span class="w"> </span>agent<span class="w"> </span>--session-id<span class="w"> </span>demo-session
 </span></code></pre></div>
 <p><strong>步骤 4：交互式审批（另一终端）</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>clawsentry<span class="w"> </span>watch<span class="w"> </span>--interactive
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>clawsentry<span class="w"> </span>watch<span class="w"> </span>--interactive
 </span></code></pre></div>
 </details>
 <h3 id="_8">验证<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>clawsentry<span class="w"> </span>doctor
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>clawsentry<span class="w"> </span>doctor
 </span></code></pre></div>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg></span> 完整配置和高级用法：<a href="../../integration/openclaw/">OpenClaw 集成指南</a></p>
 </div>
 <div class="tabbed-block">
 <div class="admonition warning">
 <p class="admonition-title">默认监控模式</p>
-<p>ClawSentry 默认通过监控 Codex session 日志实现<strong>实时风险评估和推荐</strong>。可选的 <code>clawsentry init codex --setup</code> 会安装 managed native hooks；当前已测试并做过真实 Gateway daemon smoke 的同步防护范围仅限 <code>PreToolUse(Bash)</code>，其他 Codex native events 仍为异步观察/建议。建议配合 <code>--approval-policy untrusted</code> 使用。</p>
+<p>ClawSentry 默认通过监控 Codex session 日志实现<strong>实时风险评估和推荐</strong>。可选的 <code>clawsentry init codex --setup</code> 会安装 managed native hooks；同步防护主要覆盖 <code>PreToolUse(Bash)</code> / <code>PermissionRequest(Bash)</code>；其他 Codex native events 仍为异步观察/建议。建议配合 <code>--approval-policy untrusted</code> 使用。</p>
 </div>
 <p><strong>前置条件</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clawsentry
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clawsentry
 </span></code></pre></div>
 <h3 id="_9">一键启动（推荐）<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>codex
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>codex
 </span></code></pre></div>
 <details class="note">
 <summary>分步操作（高级用户）</summary>
 <p><strong>步骤 1：初始化</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>codex
-</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="c1"># 可选：安装 managed Codex native hooks</span>
-</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="c1"># PreToolUse(Bash) 同步 preflight；其他 native events best-effort 异步观察</span>
-</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>codex<span class="w"> </span>--setup
-</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="nb">source</span><span class="w"> </span>.env.clawsentry
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>codex
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="c1"># 可选：安装 managed Codex native hooks</span>
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="c1"># PreToolUse(Bash) 同步 preflight；其他 native events best-effort 异步观察</span>
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>codex<span class="w"> </span>--setup
 </span></code></pre></div>
 <p><strong>步骤 2：启动 Gateway</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>clawsentry<span class="w"> </span>gateway
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>clawsentry<span class="w"> </span>gateway
 </span></code></pre></div>
 <p>Gateway 启动时自动开始监控 Codex session 日志目录。</p>
 <p><strong>步骤 3：使用 Codex</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>codex<span class="w"> </span>--approval-policy<span class="w"> </span>untrusted
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>codex<span class="w"> </span>--approval-policy<span class="w"> </span>untrusted
 </span></code></pre></div>
 <p><strong>步骤 4：查看安全建议（另一终端）</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>clawsentry<span class="w"> </span>watch
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>clawsentry<span class="w"> </span>watch
 </span></code></pre></div>
 <p><code>clawsentry watch</code> 会实时显示风险评估结果；如果启用了 managed native hooks，<code>PreToolUse(Bash)</code> 在 Gateway 判为 block/defer 时可让 Codex host deny 该 Bash 调用。其他 native events 只做异步观察/建议。</p>
 </details>
 <h3 id="_10">验证<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>clawsentry<span class="w"> </span>doctor
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>clawsentry<span class="w"> </span>doctor
 </span></code></pre></div>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg></span> 完整配置和高级用法：<a href="../../integration/codex/">Codex 集成指南</a></p>
 </div>
@@ -2864,49 +3636,49 @@
 </div>
 <hr />
 <h2 id="_11">多框架并存<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h2>
-<p>同一个项目可以逐个初始化多个框架，ClawSentry 会增量合并 <code>.env.clawsentry</code>：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>a3s-code
-</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>codex
-</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--auto-detect<span class="w"> </span>--setup<span class="w"> </span>--dry-run
-</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--auto-detect<span class="w"> </span>--setup
+<p>同一个项目可以逐个初始化多个框架；<code>init</code> 会输出对应 <code>CS_FRAMEWORK</code> / <code>CS_ENABLED_FRAMEWORKS</code> 建议，<code>--setup</code> 只修改目标宿主工具的 managed hooks：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>a3s-code
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>codex
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--auto-detect<span class="w"> </span>--setup<span class="w"> </span>--dry-run
+</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--auto-detect<span class="w"> </span>--setup
 </span></code></pre></div>
 <p>也可以在启动时一次声明要启用的框架：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--frameworks<span class="w"> </span>a3s-code,codex,openclaw<span class="w"> </span>--no-watch
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--frameworks<span class="w"> </span>a3s-code,codex,openclaw<span class="w"> </span>--no-watch
 </span></code></pre></div>
 <p>这条命令除了显示 <code>Enabled: ...</code>，还会在启动 banner 里打印每个框架的 <code>Readiness</code> 摘要与 <code>Next actions</code>。例如，<code>a3s-code</code> 会提示仍需人工确认 <code>SessionOptions.ahp_transport</code> 是否已经在 agent 代码里接好，<code>openclaw</code> 会在宿主配置不完整时直接提醒你改用 <code>--setup-openclaw</code>。</p>
-<p>合并时不会轮换已有 <code>CS_AUTH_TOKEN</code>，也不会改写已有 <code>CS_FRAMEWORK</code>；新增框架会记录到 <code>CS_ENABLED_FRAMEWORKS</code>：</p>
-<div class="language-ini highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="na">CS_FRAMEWORK</span><span class="o">=</span><span class="s">a3s-code</span>
-</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="na">CS_ENABLED_FRAMEWORKS</span><span class="o">=</span><span class="s">a3s-code,codex,openclaw</span>
-</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="na">CS_CODEX_WATCH_ENABLED</span><span class="o">=</span><span class="s">true</span>
-</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="na">OPENCLAW_ENFORCEMENT_ENABLED</span><span class="o">=</span><span class="s">true</span>
+<p>不会写入或轮换 <code>CS_AUTH_TOKEN</code>。多框架启用请在显式 env file 或部署环境中写逗号分隔列表：</p>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="nv">CS_ENABLED_FRAMEWORKS</span><span class="o">=</span>a3s-code,codex,openclaw
+</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="nv">CS_FRAMEWORK</span><span class="o">=</span>a3s-code
+</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="nv">CS_CODEX_WATCH_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-42-4"><a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="nv">OPENCLAW_ENFORCEMENT_ENABLED</span><span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">OpenClaw 可恢复</p>
 <p>OpenClaw 外部配置修改是显式 opt-in：<code>clawsentry init openclaw</code> 和 <code>clawsentry start --frameworks ...</code> 默认不会改 <code>~/.openclaw/</code>。<code>clawsentry init openclaw --setup</code> 修改 OpenClaw 配置前会创建 <code>.bak</code> 备份。需要回退时运行：
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--restore<span class="w"> </span>--dry-run
-</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--restore
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--restore<span class="w"> </span>--dry-run
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--restore
 </span></code></pre></div></p>
 </div>
-<p>如需只禁用其中一个框架，使用同一个 <code>init</code> 入口的 <code>--uninstall</code>，不会删除整个 <code>.env.clawsentry</code> 或影响其他已启用框架：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>codex<span class="w"> </span>--uninstall
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>claude-code<span class="w"> </span>--uninstall
-</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--uninstall
+<p>如需只卸载某个框架的 managed hooks，使用同一个 <code>init</code> 入口的 <code>--uninstall</code>；环境变量列表请同步从你的 explicit env file / deployment env 中移除：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>codex<span class="w"> </span>--uninstall
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>claude-code<span class="w"> </span>--uninstall
+</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>openclaw<span class="w"> </span>--uninstall
 </span></code></pre></div>
 <p>查看当前项目集成状态：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>clawsentry<span class="w"> </span>integrations<span class="w"> </span>status
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>clawsentry<span class="w"> </span>integrations<span class="w"> </span>status
 </span></code></pre></div>
 <p>如果你需要脚本化检查或想看更细的排障线索，使用：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>clawsentry<span class="w"> </span>integrations<span class="w"> </span>status<span class="w"> </span>--json
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>clawsentry<span class="w"> </span>integrations<span class="w"> </span>status<span class="w"> </span>--json
 </span></code></pre></div>
 <p>其中 <code>framework_readiness</code> 会按框架给出 <code>status / summary / checks / warnings / next_step</code>，适合 CI、自检脚本和 release 前人工复核。</p>
 <hr />
-<h2 id="_12">项目级安全配置<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h2>
-<p>ClawSentry 提供 4 个内置安全预设，通过一行命令切换，无需手动配置环境变量。</p>
+<h2 id="env">安全预设与 env 配置<a class="headerlink" href="#env" title="Permanent link">&para;</a></h2>
+<p>ClawSentry 提供 4 个内置安全预设。<code>config init</code> / <code>config wizard</code> 写的是 dotenv <code>KEY=VALUE</code> 模板；运行时仍需要显式 <code>--env-file</code> 或进程/部署环境。</p>
 <p><strong>快速切换预设：</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>clawsentry<span class="w"> </span>config<span class="w"> </span>init<span class="w"> </span>--preset<span class="w"> </span>high<span class="w">    </span><span class="c1"># 在当前项目创建 .clawsentry.toml</span>
-</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>clawsentry<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>strict<span class="w">            </span><span class="c1"># 切换预设</span>
-</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a>clawsentry<span class="w"> </span>config<span class="w"> </span>show<span class="w">                  </span><span class="c1"># 查看当前配置及生效参数</span>
-</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a>clawsentry<span class="w"> </span>config<span class="w"> </span>disable<span class="w">               </span><span class="c1"># 临时禁用项目配置（恢复全局默认）</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>clawsentry<span class="w"> </span>config<span class="w"> </span>init<span class="w"> </span>--preset<span class="w"> </span>high<span class="w">    </span><span class="c1"># 在当前项目创建 .clawsentry.env.example</span>
+</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>clawsentry<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>strict<span class="w"> </span>--env-file<span class="w"> </span>.clawsentry.env.local<span class="w">  </span><span class="c1"># 写入显式 env file</span>
+</span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>clawsentry<span class="w"> </span>config<span class="w"> </span>show<span class="w"> </span>--effective<span class="w"> </span>--env-file<span class="w"> </span>.clawsentry.env.local
+</span><span id="__span-47-4"><a id="__codelineno-47-4" name="__codelineno-47-4" href="#__codelineno-47-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CS_PROJECT_ENABLED</span><span class="o">=</span><span class="nb">false</span><span class="w">        </span><span class="c1"># 单进程禁用</span>
 </span></code></pre></div>
 <table>
 <thead>
@@ -2945,20 +3717,17 @@
 </tbody>
 </table>
 <div class="admonition info">
-<p class="admonition-title">项目配置文件</p>
-<p><code>clawsentry config init</code> 在项目根目录生成 <code>.clawsentry.toml</code>，Harness 在每次 hook 调用时自动读取（60s TTL 缓存）。不同项目可以有不同预设，互不干扰。</p>
-<div class="language-toml highlight"><span class="filename">.clawsentry.toml</span><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="k">[project]</span>
-</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-</span><span id="__span-45-3"><a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a><span class="n">preset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;high&quot;</span>
-</span><span id="__span-45-4"><a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a>
-</span><span id="__span-45-5"><a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a><span class="k">[overrides]</span>
-</span><span id="__span-45-6"><a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a><span class="c1"># 可选：在预设基础上精细覆盖单个参数</span>
-</span><span id="__span-45-7"><a id="__codelineno-45-7" name="__codelineno-45-7" href="#__codelineno-45-7"></a><span class="c1"># threshold_critical = 2.0</span>
+<p class="admonition-title">dotenv 模板</p>
+<p><code>clawsentry config init</code> 在当前目录生成 <code>.clawsentry.env.example</code>，内容是 <code>CS_PRESET=high</code> 等 <code>KEY=VALUE</code>。它不会被自动读取；启动或检查时请显式 <code>--env-file .clawsentry.env.local</code>。</p>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.example</span><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="nv">CS_PRESET</span><span class="o">=</span>high
+</span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a><span class="nv">CS_MODE</span><span class="o">=</span>normal
+</span><span id="__span-48-3"><a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a><span class="nv">CS_FRAMEWORK</span><span class="o">=</span>codex
+</span><span id="__span-48-4"><a id="__codelineno-48-4" name="__codelineno-48-4" href="#__codelineno-48-4"></a><span class="nv">CS_ENABLED_FRAMEWORKS</span><span class="o">=</span>codex
 </span></code></pre></div>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg></span> 预设参数全表 + 高级调优：<a href="../../configuration/detection-config/#presets">检测管线配置文档</a></p>
 </div>
 <hr />
-<h2 id="_13">下一步<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h2>
+<h2 id="_12">下一步<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../concepts/">核心概念</a> — 深入理解 AHP 协议和三层决策模型</li>
 <li><a href="../../configuration/detection-config/">检测管线配置</a> — 调整 L1 规则和检测阈值</li>
@@ -2966,6 +3735,13 @@
 <li><a href="../../integration/latch/">Latch 移动监控</a> — 手机端实时审批（可选）</li>
 <li><a href="../faq/">常见问题</a></li>
 </ul>
+<h2 id="kimi-cli-native-hook-path">Kimi CLI native-hook path<a class="headerlink" href="#kimi-cli-native-hook-path" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>kimi-cli
+</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>kimi-cli<span class="w"> </span>--setup<span class="w"> </span>--dry-run
+</span><span id="__span-49-3"><a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>kimi-cli<span class="w"> </span>--setup
+</span><span id="__span-49-4"><a id="__codelineno-49-4" name="__codelineno-49-4" href="#__codelineno-49-4"></a>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>kimi-cli<span class="w"> </span>--no-watch
+</span></code></pre></div>
+<p>Kimi CLI support is native-hook based: <code>PreToolUse</code> can block dangerous tool calls, <code>UserPromptSubmit</code> can block prompts before model submission, and post/session/subagent/compact/notification hooks are observation-only. Preview managed hooks with an isolated <code>KIMI_SHARE_DIR</code> before changing a real <code>~/.kimi/config.toml</code>.</p>
 
 
 
@@ -2988,7 +3764,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月23日 07:53:05 UTC">2026年4月23日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月30日 06:50:49 UTC">2026年4月30日</span>
   </span>
 
     
@@ -3035,7 +3811,7 @@
       <nav class="md-footer__inner md-grid" aria-label="页脚" >
         
           
-          <a href="../.." class="md-footer__link md-footer__link--prev" aria-label="上一页: 首页">
+          <a href="../installation/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 安装">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3045,20 +3821,20 @@
                 上一页
               </span>
               <div class="md-ellipsis">
-                首页
+                安装
               </div>
             </div>
           </a>
         
         
           
-          <a href="../installation/" class="md-footer__link md-footer__link--next" aria-label="下一页: 安装">
+          <a href="../concepts/" class="md-footer__link md-footer__link--next" aria-label="下一页: 核心概念">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 下一页
               </span>
               <div class="md-ellipsis">
-                安装
+                核心概念
               </div>
             </div>
             <div class="md-footer__button md-icon">

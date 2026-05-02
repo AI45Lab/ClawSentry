@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClawSentry Public API Reference",
-    "version": "0.5.5",
+    "version": "0.6.5",
     "description": "Docs-owned OpenAPI artifact generated from route inventory plus curated semantic metadata. It does not change runtime API behavior."
   },
   "servers": [
@@ -151,7 +151,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:2981",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3476",
         "x-clawsentry-markdown-ref": "api/decisions.md#post-ahp",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.",
         "requestBody": {
@@ -222,7 +222,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3038",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3574",
         "x-clawsentry-markdown-ref": "api/decisions.md#post-ahp-a3s",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.",
         "requestBody": {
@@ -285,7 +285,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3072",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3608",
         "x-clawsentry-markdown-ref": "api/decisions.md#post-ahp-codex",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.",
         "requestBody": {
@@ -343,7 +343,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3002",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3497",
         "x-clawsentry-markdown-ref": "api/decisions.md#post-ahp-adapter-effect-result",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth; native hook subprocesses should authenticate when token is configured.",
         "requestBody": {
@@ -354,6 +354,99 @@
                 "request_id": "docs-example",
                 "payload": {
                   "example": true
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/ahp/scope/preview": {
+      "post": {
+        "tags": [
+          "AHP 决策"
+        ],
+        "summary": "预览 deterministic SessionScopeProfile 对单个 canonical event 的 allow/defer/deny reason codes",
+        "description": "Service: `gateway`. Auth: `bearer-disabled-when-empty-token`. CS_AUTH_TOKEN empty disables Gateway bearer auth. Scope preview is capability-honest: dry-run profiles explain what would happen but do not enforce until confirmed. See `api/decisions.md#post-ahp-scope-preview`.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": {
+                  "valid": true,
+                  "mode": "dry_run_only",
+                  "profile_id": "docs-only",
+                  "scope_evaluation": {
+                    "profile_id": "docs-only",
+                    "source": "operator",
+                    "confirmed": false,
+                    "dry_run": true,
+                    "enforced": false,
+                    "verdict": "deny",
+                    "reason_codes": [
+                      "scope_deny:path ~/.ssh"
+                    ]
+                  },
+                  "protection_statement": "Protected today: scope preview validates rules and explains the decision that would apply. Not protected today: dry-run scope profiles do not block or defer actions until explicitly confirmed."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error 400"
+          },
+          "401": {
+            "description": "Error 401"
+          },
+          "404": {
+            "description": "Error 404"
+          },
+          "429": {
+            "description": "Error 429"
+          }
+        },
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3526",
+        "x-clawsentry-markdown-ref": "api/decisions.md#post-ahp-scope-preview",
+        "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Scope preview is capability-honest: dry-run profiles explain what would happen but do not enforce until confirmed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "profile": {
+                  "profile_id": "docs-only",
+                  "confirmed": false,
+                  "dry_run": true,
+                  "base_rules": {
+                    "denied_paths": [
+                      "~/.ssh"
+                    ]
+                  },
+                  "task_rules": {
+                    "allowed_tools": [
+                      "read_file"
+                    ]
+                  }
+                },
+                "event": {
+                  "event_id": "evt-scope-docs",
+                  "trace_id": "trace-scope-docs",
+                  "event_type": "pre_action",
+                  "session_id": "sess-scope-docs",
+                  "agent_id": "agent-scope-docs",
+                  "source_framework": "test",
+                  "occurred_at": "2026-05-02T00:00:00+00:00",
+                  "tool_name": "read_file",
+                  "payload": {
+                    "path": "~/.ssh/id_rsa"
+                  }
                 }
               }
             }
@@ -447,7 +540,7 @@
             "description": "Error 500"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3111",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3647",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-health",
         "x-clawsentry-auth-note": "Gateway health endpoint is intentionally unauthenticated."
       }
@@ -462,7 +555,8 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Successful text/plain response. See api-coverage.json for the curated text example."
+            "description": "Successful text/plain response. See api-coverage.json for the curated text example.",
+            "x-clawsentry-text-example": "# HELP clawsentry_decisions_total Total decisions\nclawsentry_decisions_total{decision=\"block\"} 3\n"
           },
           "401": {
             "description": "Error 401"
@@ -471,7 +565,7 @@
             "description": "Error 500"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3125",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3661",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-metrics",
         "x-clawsentry-auth-note": "CS_METRICS_AUTH=true requires Bearer token; false/empty exposes metrics without auth."
       }
@@ -501,21 +595,104 @@
             "content": {
               "application/json": {
                 "example": {
-                  "total_decisions": 128,
-                  "risk_distribution": {
-                    "low": 101,
-                    "medium": 18,
-                    "high": 8,
-                    "critical": 1
+                  "total_records": 1250,
+                  "by_source_framework": {
+                    "a3s-code": 800,
+                    "openclaw": 450
                   },
-                  "active_sessions": 7,
-                  "l3_advisory": {
-                    "snapshots": 4,
-                    "jobs": {
-                      "queued": 1,
-                      "completed": 3
+                  "by_event_type": {
+                    "pre_action": 900,
+                    "post_action": 300,
+                    "session": 50
+                  },
+                  "by_decision": {
+                    "allow": 1000,
+                    "block": 150,
+                    "defer": 80,
+                    "modify": 20
+                  },
+                  "by_risk_level": {
+                    "low": 800,
+                    "medium": 300,
+                    "high": 120,
+                    "critical": 30
+                  },
+                  "by_actual_tier": {
+                    "L1": 1200,
+                    "L2": 50
+                  },
+                  "by_caller_adapter": {
+                    "a3s-adapter.v1": 800,
+                    "openclaw-adapter.v1": 450
+                  },
+                  "invalid_event": {
+                    "count_1m": 0,
+                    "count_5m": 2,
+                    "count_15m": 5,
+                    "rate_5m": 0.004,
+                    "rate_15m": 0.002,
+                    "alerts": []
+                  },
+                  "high_risk_trend": {
+                    "windows": {
+                      "5m": {
+                        "count": 3,
+                        "total": 50,
+                        "ratio": 0.06
+                      },
+                      "15m": {
+                        "count": 8,
+                        "total": 150,
+                        "ratio": 0.053
+                      },
+                      "60m": {
+                        "count": 20,
+                        "total": 500,
+                        "ratio": 0.04
+                      }
+                    },
+                    "direction_5m": "up",
+                    "series_5m": [
+                      {
+                        "bucket_start": "2026-03-23T09:00:00+00:00",
+                        "bucket_end": "2026-03-23T09:05:00+00:00",
+                        "total_count": 40,
+                        "high_or_critical_count": 2,
+                        "ratio": 0.05
+                      }
+                    ]
+                  },
+                  "system_security_posture": {
+                    "score_0_100": 72.5,
+                    "level": "elevated",
+                    "drivers": [
+                      {
+                        "key": "high_sessions",
+                        "label": "High-risk sessions",
+                        "value": 3
+                      }
+                    ],
+                    "window_seconds": 3600,
+                    "generated_at": "2026-04-25T12:00:05Z",
+                    "decision_affecting": false
+                  },
+                  "decision_path_io": {
+                    "record_path": {
+                      "calls": 25
+                    },
+                    "reporting": {
+                      "report_summary": {
+                        "calls": 1
+                      }
                     }
-                  }
+                  },
+                  "decision_path_io_pressure": {
+                    "level": "healthy",
+                    "max_seconds": 0.01,
+                    "decision_affecting": false
+                  },
+                  "generated_at": "2026-03-23T10:30:00+00:00",
+                  "window_seconds": null
                 }
               }
             }
@@ -533,7 +710,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3137",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3673",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-report-summary",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -551,16 +728,6 @@
         "summary": "SSE 实时事件流",
         "description": "Service: `gateway`. Auth: `query-token`. Accepts Bearer token and browser-friendly ?token= query auth; CS_AUTH_TOKEN empty disables auth. See `api/reporting.md#get-report-stream`.",
         "parameters": [
-          {
-            "name": "window_seconds",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 604800
-            }
-          },
           {
             "name": "session_id",
             "in": "query",
@@ -602,7 +769,8 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful text/event-stream response. See api-coverage.json for the curated text example."
+            "description": "Successful text/event-stream response. See api-coverage.json for the curated text example.",
+            "x-clawsentry-text-example": "event: decision\ndata: {\"session_id\":\"sess-001\",\"decision\":\"block\",\"risk_level\":\"high\"}\n\n"
           },
           "401": {
             "description": "Error 401"
@@ -614,7 +782,7 @@
             "description": "Error 500"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3177",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3715",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-report-stream",
         "x-clawsentry-auth-note": "Accepts Bearer token and browser-friendly ?token= query auth; CS_AUTH_TOKEN empty disables auth.",
         "security": [
@@ -632,6 +800,57 @@
         "summary": "会话列表",
         "description": "Service: `gateway`. Auth: `bearer-disabled-when-empty-token`. CS_AUTH_TOKEN empty disables Gateway bearer auth. See `api/reporting.md#get-report-sessions`.",
         "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "all"
+              ],
+              "default": "active"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "risk_level",
+                "last_event"
+              ],
+              "default": "risk_level"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "min_risk",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+              ]
+            }
+          },
           {
             "name": "window_seconds",
             "in": "query",
@@ -651,14 +870,306 @@
                 "example": {
                   "sessions": [
                     {
-                      "session_id": "sess-001",
-                      "workspace": "/workspace/demo",
-                      "max_risk": "high",
+                      "session_id": "session-001",
+                      "agent_id": "agent-001",
+                      "source_framework": "a3s-code",
+                      "caller_adapter": "a3s-adapter.v1",
+                      "workspace_root": "/workspace/repo-alpha",
+                      "transcript_path": "/workspace/repo-alpha/.a3s/session-001.jsonl",
+                      "current_risk_level": "high",
+                      "cumulative_score": 5,
+                      "latest_composite_score": 2.4,
+                      "session_risk_sum": 6.7,
+                      "session_risk_ewma": 1.9,
+                      "latest_post_action_score": 1.0,
+                      "post_action_score_ewma": 0.72,
+                      "risk_points_sum": 5,
+                      "risk_velocity": "up",
+                      "window_risk_summary": {
+                        "window_seconds": null,
+                        "generated_at": "2026-03-23T10:31:00+00:00",
+                        "event_count": 25,
+                        "high_or_critical_count": 3,
+                        "latest_composite_score": 2.4,
+                        "session_risk_sum": 6.7,
+                        "session_risk_ewma": 1.9,
+                        "risk_points_sum": 5,
+                        "risk_velocity": "up",
+                        "score_range": [
+                          0.0,
+                          3.0
+                        ],
+                        "score_semantics": {
+                          "zero_with_no_events": "no_data_not_confirmed_low_risk",
+                          "decision_affecting": false
+                        },
+                        "decision_affecting": false
+                      },
+                      "post_action_score_summary": {
+                        "window_seconds": null,
+                        "generated_at": "2026-03-23T10:31:00+00:00",
+                        "event_count": 3,
+                        "latest_post_action_score": 1.0,
+                        "post_action_score_sum": 2.4,
+                        "post_action_score_avg": 0.8,
+                        "post_action_score_ewma": 0.72,
+                        "score_range": [
+                          0.0,
+                          3.0
+                        ],
+                        "score_semantics": {
+                          "zero_with_no_events": "no_post_action_data_not_confirmed_low_risk",
+                          "decision_affecting": false
+                        },
+                        "decision_affecting": false
+                      },
+                      "score_range": [
+                        0.0,
+                        3.0
+                      ],
+                      "score_semantics": {
+                        "zero_with_no_events": "no_data_not_confirmed_low_risk",
+                        "decision_affecting": false
+                      },
                       "latest_decision": "defer",
-                      "event_count": 12
+                      "event_count": 25,
+                      "high_or_critical_count": 3,
+                      "decision_distribution": {
+                        "allow": 20,
+                        "block": 3,
+                        "defer": 2
+                      },
+                      "first_event_at": "2026-03-23T10:00:00+00:00",
+                      "last_event_at": "2026-03-23T10:30:00+00:00",
+                      "d4_accumulation": 4,
+                      "l3_state": "completed",
+                      "l3_reason_code": "suspicious_sequence_matched",
+                      "evidence_summary": {
+                        "reasoning_turns": 3,
+                        "tools_observed": [
+                          "read_trajectory",
+                          "read_file"
+                        ],
+                        "key_findings": [
+                          "Read secret-like file before outbound curl"
+                        ]
+                      }
                     }
                   ],
-                  "total": 1
+                  "total_active": 1,
+                  "decision_path_io": {
+                    "record_path": {
+                      "calls": 25
+                    },
+                    "reporting": {
+                      "report_sessions": {
+                        "calls": 1
+                      }
+                    }
+                  },
+                  "generated_at": "2026-03-23T10:31:00+00:00",
+                  "window_seconds": null
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sessions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "session_id": {
+                            "type": "string"
+                          },
+                          "agent_id": {
+                            "type": "string"
+                          },
+                          "source_framework": {
+                            "type": "string"
+                          },
+                          "caller_adapter": {
+                            "type": "string"
+                          },
+                          "workspace_root": {
+                            "type": "string"
+                          },
+                          "transcript_path": {
+                            "type": "string"
+                          },
+                          "current_risk_level": {
+                            "type": "string",
+                            "enum": [
+                              "low",
+                              "medium",
+                              "high",
+                              "critical"
+                            ]
+                          },
+                          "cumulative_score": {
+                            "type": "number"
+                          },
+                          "latest_composite_score": {
+                            "type": "number",
+                            "minimum": 0.0,
+                            "maximum": 3.0
+                          },
+                          "session_risk_sum": {
+                            "type": "number",
+                            "minimum": 0.0
+                          },
+                          "session_risk_ewma": {
+                            "type": "number",
+                            "minimum": 0.0,
+                            "maximum": 3.0,
+                            "description": "Windowed session risk EWMA display score, alpha=0.3 (ewma_0 = score_0; ewma_n = 0.3 * score_n + 0.7 * ewma_(n-1)). Range is 0.0..3.0. A 0.0 value when no window events exist uses the no_data_not_confirmed_low_risk sentinel and must not be read as confirmed low risk. This is an observability/UI field and is non-decision-affecting."
+                          },
+                          "risk_points_sum": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "risk_velocity": {
+                            "type": "string"
+                          },
+                          "window_risk_summary": {
+                            "type": "object",
+                            "properties": {
+                              "window_seconds": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 1
+                              },
+                              "generated_at": {
+                                "type": "string"
+                              },
+                              "event_count": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "high_or_critical_count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Canonical high/critical event count. Do not expose legacy high_risk_event_count here."
+                              },
+                              "latest_composite_score": {
+                                "type": "number",
+                                "minimum": 0.0,
+                                "maximum": 3.0
+                              },
+                              "session_risk_sum": {
+                                "type": "number",
+                                "minimum": 0.0
+                              },
+                              "session_risk_ewma": {
+                                "type": "number",
+                                "minimum": 0.0,
+                                "maximum": 3.0,
+                                "description": "Windowed session risk EWMA display score, alpha=0.3 (ewma_0 = score_0; ewma_n = 0.3 * score_n + 0.7 * ewma_(n-1)). Range is 0.0..3.0. A 0.0 value when no window events exist uses the no_data_not_confirmed_low_risk sentinel and must not be read as confirmed low risk. This is an observability/UI field and is non-decision-affecting."
+                              },
+                              "risk_points_sum": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "risk_velocity": {
+                                "type": "string"
+                              },
+                              "score_range": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2,
+                                "description": "Inclusive score range for session risk display values: [0.0, 3.0]."
+                              },
+                              "score_semantics": {
+                                "type": "object",
+                                "properties": {
+                                  "zero_with_no_events": {
+                                    "type": "string",
+                                    "enum": [
+                                      "no_data_not_confirmed_low_risk"
+                                    ],
+                                    "description": "0.0 with no events is a no-data sentinel, not confirmed low risk."
+                                  },
+                                  "decision_affecting": {
+                                    "type": "boolean",
+                                    "const": false,
+                                    "description": "Session risk display metrics do not alter canonical Gateway decisions."
+                                  }
+                                },
+                                "additionalProperties": true
+                              },
+                              "decision_affecting": {
+                                "type": "boolean",
+                                "const": false
+                              }
+                            },
+                            "additionalProperties": true
+                          },
+                          "score_range": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "description": "Inclusive score range for session risk display values: [0.0, 3.0]."
+                          },
+                          "score_semantics": {
+                            "type": "object",
+                            "properties": {
+                              "zero_with_no_events": {
+                                "type": "string",
+                                "enum": [
+                                  "no_data_not_confirmed_low_risk"
+                                ],
+                                "description": "0.0 with no events is a no-data sentinel, not confirmed low risk."
+                              },
+                              "decision_affecting": {
+                                "type": "boolean",
+                                "const": false,
+                                "description": "Session risk display metrics do not alter canonical Gateway decisions."
+                              }
+                            },
+                            "additionalProperties": true
+                          },
+                          "event_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "high_or_critical_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "decision_distribution": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "total_active": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "generated_at": {
+                      "type": "string"
+                    },
+                    "window_seconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1
+                    }
+                  },
+                  "additionalProperties": true
                 }
               }
             }
@@ -676,7 +1187,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3291",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3829",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-report-sessions",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -703,6 +1214,17 @@
             }
           },
           {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
             "name": "window_seconds",
             "in": "query",
             "required": false,
@@ -720,13 +1242,301 @@
               "application/json": {
                 "example": {
                   "session_id": "sess-001",
+                  "agent_id": "agent-001",
+                  "source_framework": "a3s-code",
+                  "caller_adapter": "a3s-adapter.v1",
+                  "workspace_root": "/workspace/repo-alpha",
+                  "transcript_path": "/workspace/repo-alpha/.a3s/session-001.jsonl",
+                  "current_risk_level": "high",
+                  "cumulative_score": 5,
+                  "latest_composite_score": 2.4,
+                  "session_risk_sum": 6.7,
+                  "session_risk_ewma": 1.9,
+                  "latest_post_action_score": 1.0,
+                  "post_action_score_ewma": 0.72,
+                  "risk_points_sum": 5,
+                  "risk_velocity": "up",
+                  "window_risk_summary": {
+                    "window_seconds": 3600,
+                    "generated_at": "2026-03-23T10:31:00+00:00",
+                    "event_count": 12,
+                    "high_or_critical_count": 3,
+                    "latest_composite_score": 2.4,
+                    "session_risk_sum": 6.7,
+                    "session_risk_ewma": 1.9,
+                    "risk_points_sum": 5,
+                    "risk_velocity": "up",
+                    "score_range": [
+                      0.0,
+                      3.0
+                    ],
+                    "score_semantics": {
+                      "zero_with_no_events": "no_data_not_confirmed_low_risk",
+                      "decision_affecting": false
+                    },
+                    "decision_affecting": false
+                  },
+                  "post_action_score_summary": {
+                    "window_seconds": 3600,
+                    "generated_at": "2026-03-23T10:31:00+00:00",
+                    "event_count": 3,
+                    "latest_post_action_score": 1.0,
+                    "post_action_score_sum": 2.4,
+                    "post_action_score_avg": 0.8,
+                    "post_action_score_ewma": 0.72,
+                    "score_range": [
+                      0.0,
+                      3.0
+                    ],
+                    "score_semantics": {
+                      "zero_with_no_events": "no_post_action_data_not_confirmed_low_risk",
+                      "decision_affecting": false
+                    },
+                    "decision_affecting": false
+                  },
+                  "score_range": [
+                    0.0,
+                    3.0
+                  ],
+                  "score_semantics": {
+                    "zero_with_no_events": "no_data_not_confirmed_low_risk",
+                    "decision_affecting": false
+                  },
+                  "event_count": 25,
+                  "high_or_critical_count": 3,
                   "risk_timeline": [
                     {
-                      "timestamp": "2026-04-22T08:00:00Z",
+                      "event_id": "evt-001",
+                      "occurred_at": "2026-03-23T10:00:00+00:00",
+                      "risk_level": "low",
+                      "composite_score": 1.0,
+                      "tool_name": "bash",
+                      "decision": "allow"
+                    },
+                    {
+                      "event_id": "evt-002",
+                      "occurred_at": "2026-03-23T10:05:00+00:00",
                       "risk_level": "high",
-                      "reason": "credential access"
+                      "composite_score": 2.4,
+                      "tool_name": "bash",
+                      "decision": "block"
                     }
-                  ]
+                  ],
+                  "risk_hints_seen": [
+                    "destructive_pattern",
+                    "shell_execution"
+                  ],
+                  "tools_used": [
+                    "bash",
+                    "file_editor"
+                  ],
+                  "actual_tier_distribution": {
+                    "L1": 23,
+                    "L2": 2
+                  },
+                  "l3_advisory": {
+                    "latest_review": {
+                      "review_id": "l3adv-001",
+                      "snapshot_id": "l3snap-001",
+                      "l3_state": "completed",
+                      "advisory_only": true
+                    },
+                    "latest_job": {
+                      "job_id": "l3job-001",
+                      "job_state": "completed",
+                      "runner": "llm_provider"
+                    }
+                  },
+                  "decision_path_io": {
+                    "record_path": {
+                      "calls": 25
+                    },
+                    "reporting": {
+                      "report_session_risk": {
+                        "calls": 1
+                      }
+                    }
+                  },
+                  "generated_at": "2026-03-23T10:31:00+00:00",
+                  "window_seconds": 3600
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session_id": {
+                      "type": "string"
+                    },
+                    "agent_id": {
+                      "type": "string"
+                    },
+                    "source_framework": {
+                      "type": "string"
+                    },
+                    "caller_adapter": {
+                      "type": "string"
+                    },
+                    "workspace_root": {
+                      "type": "string"
+                    },
+                    "transcript_path": {
+                      "type": "string"
+                    },
+                    "current_risk_level": {
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high",
+                        "critical"
+                      ]
+                    },
+                    "cumulative_score": {
+                      "type": "number"
+                    },
+                    "latest_composite_score": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 3.0
+                    },
+                    "session_risk_sum": {
+                      "type": "number",
+                      "minimum": 0.0
+                    },
+                    "session_risk_ewma": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 3.0,
+                      "description": "Windowed session risk EWMA display score, alpha=0.3 (ewma_0 = score_0; ewma_n = 0.3 * score_n + 0.7 * ewma_(n-1)). Range is 0.0..3.0. A 0.0 value when no window events exist uses the no_data_not_confirmed_low_risk sentinel and must not be read as confirmed low risk. This is an observability/UI field and is non-decision-affecting."
+                    },
+                    "risk_points_sum": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "risk_velocity": {
+                      "type": "string"
+                    },
+                    "window_risk_summary": {
+                      "type": "object",
+                      "properties": {
+                        "window_seconds": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1
+                        },
+                        "generated_at": {
+                          "type": "string"
+                        },
+                        "event_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "high_or_critical_count": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Canonical high/critical event count. Do not expose legacy high_risk_event_count here."
+                        },
+                        "latest_composite_score": {
+                          "type": "number",
+                          "minimum": 0.0,
+                          "maximum": 3.0
+                        },
+                        "session_risk_sum": {
+                          "type": "number",
+                          "minimum": 0.0
+                        },
+                        "session_risk_ewma": {
+                          "type": "number",
+                          "minimum": 0.0,
+                          "maximum": 3.0,
+                          "description": "Windowed session risk EWMA display score, alpha=0.3 (ewma_0 = score_0; ewma_n = 0.3 * score_n + 0.7 * ewma_(n-1)). Range is 0.0..3.0. A 0.0 value when no window events exist uses the no_data_not_confirmed_low_risk sentinel and must not be read as confirmed low risk. This is an observability/UI field and is non-decision-affecting."
+                        },
+                        "risk_points_sum": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "risk_velocity": {
+                          "type": "string"
+                        },
+                        "score_range": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2,
+                          "description": "Inclusive score range for session risk display values: [0.0, 3.0]."
+                        },
+                        "score_semantics": {
+                          "type": "object",
+                          "properties": {
+                            "zero_with_no_events": {
+                              "type": "string",
+                              "enum": [
+                                "no_data_not_confirmed_low_risk"
+                              ],
+                              "description": "0.0 with no events is a no-data sentinel, not confirmed low risk."
+                            },
+                            "decision_affecting": {
+                              "type": "boolean",
+                              "const": false,
+                              "description": "Session risk display metrics do not alter canonical Gateway decisions."
+                            }
+                          },
+                          "additionalProperties": true
+                        },
+                        "decision_affecting": {
+                          "type": "boolean",
+                          "const": false
+                        }
+                      },
+                      "additionalProperties": true
+                    },
+                    "score_range": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "description": "Inclusive score range for session risk display values: [0.0, 3.0]."
+                    },
+                    "score_semantics": {
+                      "type": "object",
+                      "properties": {
+                        "zero_with_no_events": {
+                          "type": "string",
+                          "enum": [
+                            "no_data_not_confirmed_low_risk"
+                          ],
+                          "description": "0.0 with no events is a no-data sentinel, not confirmed low risk."
+                        },
+                        "decision_affecting": {
+                          "type": "boolean",
+                          "const": false,
+                          "description": "Session risk display metrics do not alter canonical Gateway decisions."
+                        }
+                      },
+                      "additionalProperties": true
+                    },
+                    "event_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "high_or_critical_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "decision_distribution": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "additionalProperties": true
                 }
               }
             }
@@ -744,8 +1554,139 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3384",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3923",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-report-session-risk",
+        "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/report/session/{session_id}/post-action": {
+      "get": {
+        "tags": [
+          "报表与监控"
+        ],
+        "summary": "Post-action 安全围栏分与 session EWMA",
+        "description": "Service: `gateway`. Auth: `bearer-disabled-when-empty-token`. CS_AUTH_TOKEN empty disables Gateway bearer auth. See `api/reporting.md#get-report-session-post-action`.",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
+            "name": "window_seconds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 604800
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": {
+                  "session_id": "sess-001",
+                  "latest_post_action_score": 1.0,
+                  "post_action_score_sum": 2.4,
+                  "post_action_score_avg": 0.8,
+                  "post_action_score_ewma": 0.72,
+                  "post_action_event_count": 3,
+                  "score_range": [
+                    0.0,
+                    3.0
+                  ],
+                  "score_semantics": {
+                    "zero_with_no_events": "no_post_action_data_not_confirmed_low_risk",
+                    "decision_affecting": false,
+                    "aggregation": "latest, sum, avg, and EWMA are separate from session_risk_ewma; do not add raw channels"
+                  },
+                  "post_action_score_summary": {
+                    "window_seconds": 3600,
+                    "generated_at": "2026-03-23T10:31:00+00:00",
+                    "event_count": 3,
+                    "latest_post_action_score": 1.0,
+                    "post_action_score_sum": 2.4,
+                    "post_action_score_avg": 0.8,
+                    "post_action_score_ewma": 0.72,
+                    "score_range": [
+                      0.0,
+                      3.0
+                    ],
+                    "score_semantics": {
+                      "zero_with_no_events": "no_post_action_data_not_confirmed_low_risk",
+                      "decision_affecting": false
+                    },
+                    "decision_affecting": false
+                  },
+                  "decision_affecting": false,
+                  "post_action_scores": [
+                    {
+                      "event_id": "evt-post-001",
+                      "occurred_at": "2026-03-23T10:05:00+00:00",
+                      "tool_name": "read_file",
+                      "source_framework": "a3s-code",
+                      "tier": "escalate",
+                      "patterns_matched": [
+                        "indirect_injection"
+                      ],
+                      "score": 1.0,
+                      "handling": "broadcast"
+                    }
+                  ],
+                  "decision_path_io": {
+                    "record_path": {
+                      "calls": 25
+                    },
+                    "reporting": {
+                      "report_session_post_action": {
+                        "calls": 1
+                      }
+                    }
+                  },
+                  "generated_at": "2026-03-23T10:31:00+00:00",
+                  "window_seconds": 3600
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error 400"
+          },
+          "401": {
+            "description": "Error 401"
+          },
+          "404": {
+            "description": "Error 404"
+          },
+          "429": {
+            "description": "Error 429"
+          }
+        },
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3946",
+        "x-clawsentry-markdown-ref": "api/reporting.md#get-report-session-post-action",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
           {
@@ -768,6 +1709,17 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
             }
           },
           {
@@ -817,7 +1769,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3807",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4381",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-report-session",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -841,6 +1793,26 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
             }
           },
           {
@@ -881,7 +1853,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3855",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4429",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-report-session-page",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -941,7 +1913,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3919",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4493",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-report-alerts",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -993,7 +1965,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4002",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4576",
         "x-clawsentry-markdown-ref": "api/reporting.md#post-report-alerts-acknowledge",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "requestBody": {
@@ -1057,7 +2029,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4026",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4600",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-report-session-enforcement",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -1108,7 +2080,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4033",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4607",
         "x-clawsentry-markdown-ref": "api/reporting.md#post-report-session-enforcement",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "requestBody": {
@@ -1171,7 +2143,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4070",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4644",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-report-session-quarantine",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Quarantine is explicit session mark-blocked state, not guaranteed host termination.",
         "security": [
@@ -1221,7 +2193,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4080",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4654",
         "x-clawsentry-markdown-ref": "api/reporting.md#post-report-session-quarantine",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Release is explicit and audited separately from legacy enforcement cooldown.",
         "requestBody": {
@@ -1281,7 +2253,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4125",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4699",
         "x-clawsentry-markdown-ref": "api/reporting.md#get-ahp-patterns",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -1324,7 +2296,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4139",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4713",
         "x-clawsentry-markdown-ref": "api/reporting.md#post-ahp-patterns-confirm",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "requestBody": {
@@ -1505,7 +2477,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3407",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3969",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -1514,7 +2486,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -1571,7 +2543,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3447",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4009",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "security": [
@@ -1627,7 +2599,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3460",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4022",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "security": [
@@ -1674,7 +2646,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3480",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4042",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "security": [
@@ -1721,7 +2693,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3503",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4065",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -1730,7 +2702,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -1780,7 +2752,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3530",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4092",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -1789,7 +2761,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -1848,7 +2820,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3558",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4120",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -1857,7 +2829,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -1907,7 +2879,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3581",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4143",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -1916,7 +2888,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -1975,7 +2947,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3625",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4192",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -1984,7 +2956,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -2043,7 +3015,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3677",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4249",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -2052,7 +3024,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -2111,7 +3083,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3696",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4268",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -2120,7 +3092,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -2179,7 +3151,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3715",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4287",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -2188,7 +3160,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -2247,7 +3219,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3738",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4312",
         "x-clawsentry-markdown-ref": "api/reporting.md#l3-advisory-endpoints",
         "x-clawsentry-auth-note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
         "requestBody": {
@@ -2256,7 +3228,7 @@
             "application/json": {
               "example": {
                 "session_id": "sess-001",
-                "runner": "deterministic_local",
+                "runner": "llm_provider",
                 "queue_only": false
               }
             }
@@ -2302,7 +3274,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3115",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3651",
         "x-clawsentry-markdown-ref": "api/reporting.md#enterprise-endpoints",
         "x-clawsentry-auth-note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -2319,15 +3291,82 @@
         ],
         "summary": "Enterprise enriched summary",
         "description": "Service: `gateway-enterprise`. Auth: `bearer-disabled-when-empty-token`. Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth. See `api/reporting.md#enterprise-endpoints`.",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "window_seconds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 604800
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
             "content": {
               "application/json": {
                 "example": {
-                  "status": "ok",
-                  "data": {}
+                  "total_records": 1250,
+                  "by_source_framework": {
+                    "a3s-code": 800,
+                    "codex": 450
+                  },
+                  "by_risk_level": {
+                    "low": 800,
+                    "medium": 300,
+                    "high": 120,
+                    "critical": 30
+                  },
+                  "by_actual_tier": {
+                    "L1": 1100,
+                    "L2": 120,
+                    "L3": 30
+                  },
+                  "trinityguard": {
+                    "total_records": 1250,
+                    "mapped_records": 180,
+                    "unmapped_records": 1070,
+                    "by_tier": {
+                      "RT1": 120,
+                      "RT2": 40,
+                      "RT3": 20
+                    },
+                    "by_subtype": {
+                      "prompt_injection": 45,
+                      "sensitive_info_disclosure": 35,
+                      "unauthorized_code_execution": 25,
+                      "insecure_output_handling": 20,
+                      "cascading_failure": 12
+                    }
+                  },
+                  "enterprise": {
+                    "live_risk_overview": {
+                      "active_sessions": 18,
+                      "mapped_active_sessions": 6,
+                      "by_trinityguard_tier": {
+                        "RT1": 4,
+                        "RT2": 1,
+                        "RT3": 1
+                      },
+                      "by_trinityguard_subtype": {
+                        "prompt_injection": 2,
+                        "sensitive_info_disclosure": 1,
+                        "tool_misuse": 1,
+                        "insecure_output_handling": 1,
+                        "cascading_failure": 1
+                      },
+                      "system_security_posture": {
+                        "score_0_100": 72.5,
+                        "level": "elevated",
+                        "decision_affecting": false
+                      }
+                    }
+                  },
+                  "generated_at": "2026-04-25T12:00:05Z",
+                  "window_seconds": 3600
                 }
               }
             }
@@ -2345,7 +3384,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3150",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3686",
         "x-clawsentry-markdown-ref": "api/reporting.md#enterprise-endpoints",
         "x-clawsentry-auth-note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -2362,15 +3401,86 @@
         ],
         "summary": "Enterprise live snapshot",
         "description": "Service: `gateway-enterprise`. Auth: `bearer-disabled-when-empty-token`. Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth. See `api/reporting.md#enterprise-endpoints`.",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "cached",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
             "content": {
               "application/json": {
                 "example": {
-                  "status": "ok",
-                  "data": {}
+                  "generated_at": "2026-04-25T12:00:05Z",
+                  "active_sessions": 18,
+                  "high_risk_sessions": 3,
+                  "mapped_active_sessions": 6,
+                  "by_risk_level": {
+                    "low": 10,
+                    "medium": 5,
+                    "high": 2,
+                    "critical": 1
+                  },
+                  "by_trinityguard_tier": {
+                    "RT1": 4,
+                    "RT2": 1,
+                    "RT3": 1
+                  },
+                  "by_trinityguard_subtype": {
+                    "prompt_injection": 2,
+                    "sensitive_info_disclosure": 1,
+                    "tool_misuse": 1,
+                    "insecure_output_handling": 1,
+                    "cascading_failure": 1
+                  },
+                  "top_trinityguard_tiers": [
+                    {
+                      "tier": "RT1",
+                      "count": 4
+                    },
+                    {
+                      "tier": "RT2",
+                      "count": 1
+                    },
+                    {
+                      "tier": "RT3",
+                      "count": 1
+                    }
+                  ],
+                  "top_trinityguard_subtypes": [
+                    {
+                      "subtype": "prompt_injection",
+                      "count": 2
+                    },
+                    {
+                      "subtype": "sensitive_info_disclosure",
+                      "count": 1
+                    }
+                  ],
+                  "system_security_posture": {
+                    "score_0_100": 72.5,
+                    "level": "elevated",
+                    "drivers": [
+                      {
+                        "key": "high_sessions",
+                        "label": "High-risk sessions",
+                        "value": 2
+                      }
+                    ],
+                    "window_seconds": 3600,
+                    "decision_affecting": false
+                  },
+                  "cache_ttl_ms": 1000,
+                  "stale": false,
+                  "degraded": false,
+                  "degraded_reason": null
                 }
               }
             }
@@ -2388,7 +3498,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3170",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3706",
         "x-clawsentry-markdown-ref": "api/reporting.md#enterprise-endpoints",
         "x-clawsentry-auth-note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -2405,33 +3515,62 @@
         ],
         "summary": "Enterprise SSE stream",
         "description": "Service: `gateway-enterprise`. Auth: `bearer-disabled-when-empty-token`. Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth. See `api/reporting.md#enterprise-endpoints`.",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "example": {
-                  "status": "ok",
-                  "data": {}
-                }
-              }
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           },
-          "400": {
-            "description": "Error 400"
+          {
+            "name": "min_risk",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+              ]
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful text/event-stream response. See api-coverage.json for the curated text example.",
+            "x-clawsentry-text-example": "event: decision\ndata: {\"session_id\":\"sess-001\",\"risk_level\":\"high\",\"trinityguard_classification\":{\"tier\":\"RT1\",\"subtype\":\"tool_misuse\"},\"live_risk_overview\":{\"by_trinityguard_tier\":{\"RT1\":1}}}\n\n"
           },
           "401": {
             "description": "Error 401"
           },
-          "404": {
-            "description": "Error 404"
-          },
           "429": {
             "description": "Error 429"
+          },
+          "500": {
+            "description": "Error 500"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3235",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3773",
         "x-clawsentry-markdown-ref": "api/reporting.md#enterprise-endpoints",
         "x-clawsentry-auth-note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -2448,15 +3587,308 @@
         ],
         "summary": "Enterprise session list",
         "description": "Service: `gateway-enterprise`. Auth: `bearer-disabled-when-empty-token`. Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth. See `api/reporting.md#enterprise-endpoints`.",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "all"
+              ],
+              "default": "active"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "risk_level",
+                "last_event"
+              ],
+              "default": "risk_level"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000,
+              "default": 50
+            }
+          },
+          {
+            "name": "min_risk",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+              ]
+            }
+          },
+          {
+            "name": "window_seconds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 604800
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
             "content": {
               "application/json": {
                 "example": {
-                  "status": "ok",
-                  "data": {}
+                  "sessions": [
+                    {
+                      "session_id": "session-001",
+                      "source_framework": "codex",
+                      "workspace_root": "/workspace/repo-alpha",
+                      "current_risk_level": "high",
+                      "session_risk_ewma": 1.9,
+                      "trinityguard_classification": {
+                        "mapped": true,
+                        "tier": "RT1",
+                        "tier_label": "Atomic Risks",
+                        "subtype": "sensitive_info_disclosure",
+                        "label": "Sensitive Info Disclosure",
+                        "confidence": "high"
+                      }
+                    }
+                  ],
+                  "total_active": 1,
+                  "enterprise": {
+                    "live_risk_overview": {
+                      "active_sessions": 1,
+                      "mapped_active_sessions": 1,
+                      "by_trinityguard_tier": {
+                        "RT1": 1
+                      },
+                      "by_trinityguard_subtype": {
+                        "sensitive_info_disclosure": 1
+                      }
+                    }
+                  },
+                  "generated_at": "2026-04-25T12:00:05Z",
+                  "window_seconds": null
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sessions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "session_id": {
+                            "type": "string"
+                          },
+                          "agent_id": {
+                            "type": "string"
+                          },
+                          "source_framework": {
+                            "type": "string"
+                          },
+                          "caller_adapter": {
+                            "type": "string"
+                          },
+                          "workspace_root": {
+                            "type": "string"
+                          },
+                          "transcript_path": {
+                            "type": "string"
+                          },
+                          "current_risk_level": {
+                            "type": "string",
+                            "enum": [
+                              "low",
+                              "medium",
+                              "high",
+                              "critical"
+                            ]
+                          },
+                          "cumulative_score": {
+                            "type": "number"
+                          },
+                          "latest_composite_score": {
+                            "type": "number",
+                            "minimum": 0.0,
+                            "maximum": 3.0
+                          },
+                          "session_risk_sum": {
+                            "type": "number",
+                            "minimum": 0.0
+                          },
+                          "session_risk_ewma": {
+                            "type": "number",
+                            "minimum": 0.0,
+                            "maximum": 3.0,
+                            "description": "Windowed session risk EWMA display score, alpha=0.3 (ewma_0 = score_0; ewma_n = 0.3 * score_n + 0.7 * ewma_(n-1)). Range is 0.0..3.0. A 0.0 value when no window events exist uses the no_data_not_confirmed_low_risk sentinel and must not be read as confirmed low risk. This is an observability/UI field and is non-decision-affecting."
+                          },
+                          "risk_points_sum": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "risk_velocity": {
+                            "type": "string"
+                          },
+                          "window_risk_summary": {
+                            "type": "object",
+                            "properties": {
+                              "window_seconds": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 1
+                              },
+                              "generated_at": {
+                                "type": "string"
+                              },
+                              "event_count": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "high_or_critical_count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "Canonical high/critical event count. Do not expose legacy high_risk_event_count here."
+                              },
+                              "latest_composite_score": {
+                                "type": "number",
+                                "minimum": 0.0,
+                                "maximum": 3.0
+                              },
+                              "session_risk_sum": {
+                                "type": "number",
+                                "minimum": 0.0
+                              },
+                              "session_risk_ewma": {
+                                "type": "number",
+                                "minimum": 0.0,
+                                "maximum": 3.0,
+                                "description": "Windowed session risk EWMA display score, alpha=0.3 (ewma_0 = score_0; ewma_n = 0.3 * score_n + 0.7 * ewma_(n-1)). Range is 0.0..3.0. A 0.0 value when no window events exist uses the no_data_not_confirmed_low_risk sentinel and must not be read as confirmed low risk. This is an observability/UI field and is non-decision-affecting."
+                              },
+                              "risk_points_sum": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "risk_velocity": {
+                                "type": "string"
+                              },
+                              "score_range": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2,
+                                "description": "Inclusive score range for session risk display values: [0.0, 3.0]."
+                              },
+                              "score_semantics": {
+                                "type": "object",
+                                "properties": {
+                                  "zero_with_no_events": {
+                                    "type": "string",
+                                    "enum": [
+                                      "no_data_not_confirmed_low_risk"
+                                    ],
+                                    "description": "0.0 with no events is a no-data sentinel, not confirmed low risk."
+                                  },
+                                  "decision_affecting": {
+                                    "type": "boolean",
+                                    "const": false,
+                                    "description": "Session risk display metrics do not alter canonical Gateway decisions."
+                                  }
+                                },
+                                "additionalProperties": true
+                              },
+                              "decision_affecting": {
+                                "type": "boolean",
+                                "const": false
+                              }
+                            },
+                            "additionalProperties": true
+                          },
+                          "score_range": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "description": "Inclusive score range for session risk display values: [0.0, 3.0]."
+                          },
+                          "score_semantics": {
+                            "type": "object",
+                            "properties": {
+                              "zero_with_no_events": {
+                                "type": "string",
+                                "enum": [
+                                  "no_data_not_confirmed_low_risk"
+                                ],
+                                "description": "0.0 with no events is a no-data sentinel, not confirmed low risk."
+                              },
+                              "decision_affecting": {
+                                "type": "boolean",
+                                "const": false,
+                                "description": "Session risk display metrics do not alter canonical Gateway decisions."
+                              }
+                            },
+                            "additionalProperties": true
+                          },
+                          "event_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "high_or_critical_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "decision_distribution": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "total_active": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "generated_at": {
+                      "type": "string"
+                    },
+                    "window_seconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1
+                    }
+                  },
+                  "additionalProperties": true
                 }
               }
             }
@@ -2474,7 +3906,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3336",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3874",
         "x-clawsentry-markdown-ref": "api/reporting.md#enterprise-endpoints",
         "x-clawsentry-auth-note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -2499,6 +3931,27 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
+            "name": "window_seconds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 604800
+            }
           }
         ],
         "responses": {
@@ -2507,8 +3960,218 @@
             "content": {
               "application/json": {
                 "example": {
-                  "status": "ok",
-                  "data": {}
+                  "session_id": "sess-001",
+                  "current_risk_level": "high",
+                  "session_risk_ewma": 1.9,
+                  "actual_tier_distribution": {
+                    "L1": 23,
+                    "L2": 2,
+                    "L3": 1
+                  },
+                  "risk_timeline": [
+                    {
+                      "event_id": "evt-001",
+                      "risk_level": "high",
+                      "decision": "block",
+                      "trinityguard_classification": {
+                        "mapped": true,
+                        "tier": "RT1",
+                        "tier_label": "Atomic Risks",
+                        "subtype": "sensitive_info_disclosure",
+                        "label": "Sensitive Info Disclosure"
+                      }
+                    }
+                  ],
+                  "trinityguard_summary": {
+                    "mapped_records": 1,
+                    "unmapped_records": 0,
+                    "by_tier": {
+                      "RT1": 1
+                    },
+                    "by_subtype": {
+                      "sensitive_info_disclosure": 1
+                    }
+                  },
+                  "generated_at": "2026-04-25T12:00:05Z",
+                  "window_seconds": 3600
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session_id": {
+                      "type": "string"
+                    },
+                    "agent_id": {
+                      "type": "string"
+                    },
+                    "source_framework": {
+                      "type": "string"
+                    },
+                    "caller_adapter": {
+                      "type": "string"
+                    },
+                    "workspace_root": {
+                      "type": "string"
+                    },
+                    "transcript_path": {
+                      "type": "string"
+                    },
+                    "current_risk_level": {
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high",
+                        "critical"
+                      ]
+                    },
+                    "cumulative_score": {
+                      "type": "number"
+                    },
+                    "latest_composite_score": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 3.0
+                    },
+                    "session_risk_sum": {
+                      "type": "number",
+                      "minimum": 0.0
+                    },
+                    "session_risk_ewma": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 3.0,
+                      "description": "Windowed session risk EWMA display score, alpha=0.3 (ewma_0 = score_0; ewma_n = 0.3 * score_n + 0.7 * ewma_(n-1)). Range is 0.0..3.0. A 0.0 value when no window events exist uses the no_data_not_confirmed_low_risk sentinel and must not be read as confirmed low risk. This is an observability/UI field and is non-decision-affecting."
+                    },
+                    "risk_points_sum": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "risk_velocity": {
+                      "type": "string"
+                    },
+                    "window_risk_summary": {
+                      "type": "object",
+                      "properties": {
+                        "window_seconds": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1
+                        },
+                        "generated_at": {
+                          "type": "string"
+                        },
+                        "event_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "high_or_critical_count": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Canonical high/critical event count. Do not expose legacy high_risk_event_count here."
+                        },
+                        "latest_composite_score": {
+                          "type": "number",
+                          "minimum": 0.0,
+                          "maximum": 3.0
+                        },
+                        "session_risk_sum": {
+                          "type": "number",
+                          "minimum": 0.0
+                        },
+                        "session_risk_ewma": {
+                          "type": "number",
+                          "minimum": 0.0,
+                          "maximum": 3.0,
+                          "description": "Windowed session risk EWMA display score, alpha=0.3 (ewma_0 = score_0; ewma_n = 0.3 * score_n + 0.7 * ewma_(n-1)). Range is 0.0..3.0. A 0.0 value when no window events exist uses the no_data_not_confirmed_low_risk sentinel and must not be read as confirmed low risk. This is an observability/UI field and is non-decision-affecting."
+                        },
+                        "risk_points_sum": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "risk_velocity": {
+                          "type": "string"
+                        },
+                        "score_range": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2,
+                          "description": "Inclusive score range for session risk display values: [0.0, 3.0]."
+                        },
+                        "score_semantics": {
+                          "type": "object",
+                          "properties": {
+                            "zero_with_no_events": {
+                              "type": "string",
+                              "enum": [
+                                "no_data_not_confirmed_low_risk"
+                              ],
+                              "description": "0.0 with no events is a no-data sentinel, not confirmed low risk."
+                            },
+                            "decision_affecting": {
+                              "type": "boolean",
+                              "const": false,
+                              "description": "Session risk display metrics do not alter canonical Gateway decisions."
+                            }
+                          },
+                          "additionalProperties": true
+                        },
+                        "decision_affecting": {
+                          "type": "boolean",
+                          "const": false
+                        }
+                      },
+                      "additionalProperties": true
+                    },
+                    "score_range": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "description": "Inclusive score range for session risk display values: [0.0, 3.0]."
+                    },
+                    "score_semantics": {
+                      "type": "object",
+                      "properties": {
+                        "zero_with_no_events": {
+                          "type": "string",
+                          "enum": [
+                            "no_data_not_confirmed_low_risk"
+                          ],
+                          "description": "0.0 with no events is a no-data sentinel, not confirmed low risk."
+                        },
+                        "decision_affecting": {
+                          "type": "boolean",
+                          "const": false,
+                          "description": "Session risk display metrics do not alter canonical Gateway decisions."
+                        }
+                      },
+                      "additionalProperties": true
+                    },
+                    "event_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "high_or_critical_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "decision_distribution": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "additionalProperties": true
                 }
               }
             }
@@ -2526,7 +4189,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3781",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4355",
         "x-clawsentry-markdown-ref": "api/reporting.md#enterprise-endpoints",
         "x-clawsentry-auth-note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -2551,6 +4214,27 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
+            "name": "window_seconds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 604800
+            }
           }
         ],
         "responses": {
@@ -2559,8 +4243,37 @@
             "content": {
               "application/json": {
                 "example": {
-                  "status": "ok",
-                  "data": {}
+                  "session_id": "sess-001",
+                  "record_count": 1,
+                  "records": [
+                    {
+                      "event": {
+                        "event_id": "evt-001",
+                        "event_type": "pre_action",
+                        "tool_name": "bash"
+                      },
+                      "decision": {
+                        "decision": "block",
+                        "risk_level": "high"
+                      },
+                      "trinityguard_classification": {
+                        "mapped": true,
+                        "tier": "RT1",
+                        "subtype": "unauthorized_code_execution",
+                        "label": "Unauthorized Code Execution"
+                      }
+                    }
+                  ],
+                  "trinityguard_summary": {
+                    "mapped_records": 1,
+                    "unmapped_records": 0,
+                    "by_tier": {
+                      "RT1": 1
+                    },
+                    "by_subtype": {
+                      "unauthorized_code_execution": 1
+                    }
+                  }
                 }
               }
             }
@@ -2578,7 +4291,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3830",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4404",
         "x-clawsentry-markdown-ref": "api/reporting.md#enterprise-endpoints",
         "x-clawsentry-auth-note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -2603,6 +4316,36 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "window_seconds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 604800
+            }
           }
         ],
         "responses": {
@@ -2611,8 +4354,34 @@
             "content": {
               "application/json": {
                 "example": {
-                  "status": "ok",
-                  "data": {}
+                  "session_id": "sess-001",
+                  "records": [
+                    {
+                      "event": {
+                        "event_id": "evt-001",
+                        "event_type": "pre_action",
+                        "tool_name": "bash"
+                      },
+                      "trinityguard_classification": {
+                        "mapped": true,
+                        "tier": "RT1",
+                        "subtype": "tool_misuse",
+                        "label": "Tool Misuse"
+                      }
+                    }
+                  ],
+                  "trinityguard_summary": {
+                    "mapped_records": 1,
+                    "unmapped_records": 0,
+                    "by_tier": {
+                      "RT1": 1
+                    },
+                    "by_subtype": {
+                      "tool_misuse": 1
+                    }
+                  },
+                  "next_cursor": null,
+                  "has_more": false
                 }
               }
             }
@@ -2630,7 +4399,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3886",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4460",
         "x-clawsentry-markdown-ref": "api/reporting.md#enterprise-endpoints",
         "x-clawsentry-auth-note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [
@@ -2647,15 +4416,48 @@
         ],
         "summary": "Enterprise alerts",
         "description": "Service: `gateway-enterprise`. Auth: `bearer-disabled-when-empty-token`. Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth. See `api/reporting.md#enterprise-endpoints`.",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "window_seconds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 604800
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
             "content": {
               "application/json": {
                 "example": {
-                  "status": "ok",
-                  "data": {}
+                  "alerts": [
+                    {
+                      "alert_id": "alert-001",
+                      "severity": "high",
+                      "status": "open",
+                      "session_id": "sess-001",
+                      "trinityguard_classification": {
+                        "mapped": true,
+                        "tier": "RT1",
+                        "subtype": "tool_misuse",
+                        "label": "Tool Misuse"
+                      }
+                    }
+                  ],
+                  "enterprise": {
+                    "live_risk_overview": {
+                      "by_trinityguard_tier": {
+                        "RT1": 1
+                      },
+                      "by_trinityguard_subtype": {
+                        "tool_misuse": 1
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -2673,7 +4475,7 @@
             "description": "Error 429"
           }
         },
-        "x-clawsentry-source": "src/clawsentry/gateway/server.py:3959",
+        "x-clawsentry-source": "src/clawsentry/gateway/server.py:4533",
         "x-clawsentry-markdown-ref": "api/reporting.md#enterprise-endpoints",
         "x-clawsentry-auth-note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
         "security": [

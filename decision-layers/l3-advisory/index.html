@@ -248,7 +248,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../getting-started/quickstart/" class="md-tabs__link">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
           
   
   
@@ -288,7 +288,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../configuration/env-vars/" class="md-tabs__link">
+        <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
   
@@ -572,14 +572,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/quickstart/" class="md-nav__link">
+      <a href="../../getting-started/installation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    快速开始
+    安装
   
 
     
@@ -600,14 +600,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/installation/" class="md-nav__link">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    安装
+    快速开始
   
 
     
@@ -829,6 +829,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../integration/gemini-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gemini CLI 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/kimi-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kimi CLI 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../integration/openclaw/" class="md-nav__link">
         
   
@@ -946,6 +1002,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../configuration/configuration-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置概览
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../configuration/env-vars/" class="md-nav__link">
         
   
@@ -954,6 +1066,34 @@
     
   
     环境变量
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/session-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session scope 配置
   
 
     
@@ -1210,6 +1350,34 @@
     
   
     API 有效性报告
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/metric-dictionary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    指标字典
   
 
     
@@ -1600,6 +1768,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#operator-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator 合同：它会做什么、不会做什么
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1712,10 +1891,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#llm-backed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        默认：立即生成一份本地咨询报告
+        默认：立即生成一份 LLM-backed 咨询报告
       
     </span>
   </a>
@@ -1723,7 +1902,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
+  <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         只排队，不运行
@@ -1734,10 +1913,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#phase-3-queued-jobs" class="md-nav__link">
+  <a href="#queued-jobs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 3：查看并有界执行 queued jobs
+        查看并有界执行 queued jobs
       
     </span>
   </a>
@@ -1745,10 +1924,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#phase-3heartbeat-idle-aggregate-queueing" class="md-nav__link">
+  <a href="#heartbeat-idle-aggregate-queueing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 3：heartbeat / idle aggregate queueing
+        Heartbeat / idle aggregate queueing
       
     </span>
   </a>
@@ -1756,7 +1935,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_7" class="md-nav__link">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         固定审查范围
@@ -1822,7 +2001,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_8" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         边界与常见误解
@@ -1837,6 +2016,17 @@
     <span class="md-ellipsis">
       
         和同步 L3 Agent 有什么区别？
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recent-feature-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最近功能覆盖状态
       
     </span>
   </a>
@@ -1887,6 +2077,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../sanitizer-capability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sanitizer 当前能力
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scope-restrictions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope 限制
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../trajectory-analyzer/" class="md-nav__link">
         
   
@@ -1895,6 +2141,34 @@
     
   
     轨迹分析器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anti-bypass-guard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-bypass Guard
   
 
     
@@ -2288,6 +2562,118 @@
   
   
     <li class="md-nav__item">
+      <a href="../../operations/benchmark-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark 模式
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    文档覆盖审计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    执行审计 2026-04-27
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    最近功能覆盖矩阵
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../operations/troubleshooting/" class="md-nav__link">
         
   
@@ -2385,6 +2771,17 @@
     <span class="md-ellipsis">
       
         先看一个场景
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator 合同：它会做什么、不会做什么
       
     </span>
   </a>
@@ -2504,10 +2901,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#llm-backed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        默认：立即生成一份本地咨询报告
+        默认：立即生成一份 LLM-backed 咨询报告
       
     </span>
   </a>
@@ -2515,7 +2912,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
+  <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         只排队，不运行
@@ -2526,10 +2923,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#phase-3-queued-jobs" class="md-nav__link">
+  <a href="#queued-jobs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 3：查看并有界执行 queued jobs
+        查看并有界执行 queued jobs
       
     </span>
   </a>
@@ -2537,10 +2934,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#phase-3heartbeat-idle-aggregate-queueing" class="md-nav__link">
+  <a href="#heartbeat-idle-aggregate-queueing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 3：heartbeat / idle aggregate queueing
+        Heartbeat / idle aggregate queueing
       
     </span>
   </a>
@@ -2548,7 +2945,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_7" class="md-nav__link">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         固定审查范围
@@ -2614,7 +3011,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_8" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         边界与常见误解
@@ -2629,6 +3026,17 @@
     <span class="md-ellipsis">
       
         和同步 L3 Agent 有什么区别？
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recent-feature-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最近功能覆盖状态
       
     </span>
   </a>
@@ -2655,58 +3063,16 @@
   
 
 
-<style>
-  .l3-hero {
-    border: 1px solid var(--md-default-fg-color--lightest);
-    border-radius: 18px;
-    padding: 1.6rem;
-    margin: 1rem 0 1.5rem;
-    background: linear-gradient(135deg, rgba(3,105,161,.14), rgba(34,197,94,.08));
-  }
-  .l3-hero h2 { margin-top: 0; }
-  .l3-hero p { max-width: 52rem; }
-  .l3-card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: .9rem;
-    margin: 1rem 0 1.4rem;
-  }
-  .l3-card {
-    border: 1px solid var(--md-default-fg-color--lightest);
-    border-radius: 14px;
-    padding: 1rem 1.05rem;
-    background: var(--md-default-bg-color);
-  }
-  .l3-card h3 { margin: 0 0 .45rem; font-size: 1rem; }
-  .l3-card p { margin: 0; font-size: .88rem; }
-  .l3-pill-row { display: flex; flex-wrap: wrap; gap: .45rem; margin: .8rem 0 0; }
-  .l3-pill {
-    display: inline-block;
-    border-radius: 999px;
-    padding: .16rem .55rem;
-    font-size: .78rem;
-    border: 1px solid var(--md-accent-fg-color--transparent);
-    background: var(--md-code-bg-color);
-  }
-  .l3-flow {
-    border-left: 4px solid var(--md-primary-fg-color);
-    padding: .8rem 1rem;
-    background: var(--md-code-bg-color);
-    border-radius: 8px;
-    margin: 1rem 0;
-  }
-</style>
-
 <h1 id="l3">L3 咨询审查<a class="headerlink" href="#l3" title="Permanent link">&para;</a></h1>
-<div class="l3-hero">
+<div class="cs-doc-hero">
 <h2 id="session">高风险 session 的只读复盘报告<a class="headerlink" href="#session" title="Permanent link">&para;</a></h2>
 <p>当 ClawSentry 发现一个 session 风险很高时，L3 咨询审查会把当时已记录的证据固定下来，生成只读复盘报告，帮助 operator 判断：<strong>发生了什么、风险为什么高、下一步该 inspect / escalate / pause 还是继续观察</strong>。</p>
 <p>它不是新的拦截器，也不会重判历史事件；它只是基于固定证据做一次可追溯复盘，辅助后续处置。</p>
-<div class="l3-pill-row">
-<p><span class="l3-pill">只读复盘</span>
-<span class="l3-pill">不改写 allow/block/defer</span>
-<span class="l3-pill">可在 Web UI 点击触发</span>
-<span class="l3-pill">CLI / API 可自动化</span></p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">只读复盘</span>
+<span class="cs-pill">不改写 allow/block/defer</span>
+<span class="cs-pill">可在 Web UI 点击触发</span>
+<span class="cs-pill">CLI / API 可自动化</span></p>
 </div>
 </div>
 <hr />
@@ -2728,37 +3094,76 @@
 </span></code></pre></div>
 <p>意思是：系统已经基于固定证据做完复盘，建议 operator 进一步检查；但它没有把过去的判决改掉。</p>
 <hr />
+<h2 id="operator-contract">Operator 合同：它会做什么、不会做什么<a class="headerlink" href="#operator-contract" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>L3 咨询审查当前行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>什么时候用</td>
+<td>你已经有一个值得复盘的 session：Web UI 手动 full-review、CLI/API 显式请求，或在 feature gate 下自动冻结 high/critical evidence delta。</td>
+</tr>
+<tr>
+<td>输入是什么</td>
+<td>frozen trajectory record range。报告基于固定 records，不读取不断变化的 live workspace。</td>
+</tr>
+<tr>
+<td>输出是什么</td>
+<td><code>snapshot_id</code>、<code>job_id</code>、<code>review_id</code>、<code>risk_level</code>、recommended <code>Action</code>、可选 <code>analysis_summary</code> / <code>analysis_points</code> / <code>operator_next_steps</code>。</td>
+</tr>
+<tr>
+<td>会不会重判 allow/block/defer</td>
+<td>不会。响应和 action payload 必须保持 <code>advisory_only=true</code>、<code>canonical_decision_mutated=false</code>。</td>
+</tr>
+<tr>
+<td>会不会自动联网</td>
+<td>默认 runner 是 <code>llm_provider</code>；配置了有效 <code>CS_LLM_*</code> 和 API key 时会执行真实 LLM 复盘。缺少配置时生成明确 <code>degraded</code> review，不静默 fallback 到本地 runner。</td>
+</tr>
+<tr>
+<td>会不会后台扫所有 session</td>
+<td>不会。queued job drain 是有界 one-shot；heartbeat/idle aggregate 只自动冻结/排队，不启动 scheduler。</td>
+</tr>
+<tr>
+<td>在哪里查询</td>
+<td>Web UI Session Detail、<code>clawsentry l3 full-review</code> / <code>l3 jobs</code>、<code>/report/*/l3-advisory/*</code>、SSE/watch、<a href="../../api/reporting/#l3-advisory-endpoints">报表 API</a>。</td>
+</tr>
+</tbody>
+</table>
 <h2 id="_2">它解决什么问题？<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<div class="l3-card-grid">
-<div class="l3-card">
+<div class="cs-card-grid">
+<div class="cs-card">
 <h3 id="1">1. 证据固定<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
 <p>高风险 session 还在继续产生事件时，审查输入必须稳定。L3 咨询审查会冻结一段 record range，例如 <code>Records 4–8</code>。</p>
 </div>
-<div class="l3-card">
+<div class="cs-card">
 <h3 id="2">2. 结果可追溯<a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
 <p>每次复盘都有 <code>snapshot_id</code>、<code>job_id</code>、<code>review_id</code>。你可以在 UI、SSE、API、日志里追踪同一份报告。</p>
 </div>
-<div class="l3-card">
+<div class="cs-card">
 <h3 id="3">3. 不改历史判决<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
 <p>报告始终是 <code>advisory_only=true</code>。full-review 响应会明确返回 <code>canonical_decision_mutated=false</code>。</p>
 </div>
-<div class="l3-card">
+<div class="cs-card">
 <h3 id="4">4. 可按需升级<a class="headerlink" href="#4" title="Permanent link">&para;</a></h3>
 <p>默认用本地确定性 runner；需要时才显式打开 provider runner。不会因为配置了同步 LLM 就自动联网。</p>
 </div>
 </div>
 <hr />
 <h2 id="_3">工作流程<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
-<div class="l3-flow">
+<div class="cs-flow-strip">
 <p><strong>高风险 session</strong> → <strong>冻结证据 Snapshot</strong> → <strong>排队 Job</strong> → <strong>运行 Runner</strong> → <strong>生成 Review</strong> → <strong>展示结果</strong></p>
 </div>
 <pre class="mermaid"><code>graph LR
     A[High-risk session] --&gt; B[Freeze snapshot&lt;br/&gt;bounded records]
     B --&gt; C[Queue advisory job]
     C --&gt; D{Runner}
-    D --&gt;|default| E[deterministic_local]
-    D --&gt;|contract test| F[fake_llm]
-    D --&gt;|explicit opt-in| G[llm_provider]
+    D --&gt;|default| E[llm_provider]
+    D --&gt;|explicit local support| F[deterministic_local]
+    D --&gt;|missing CS_LLM_*| G[degraded review]
     E --&gt; H[Advisory review]
     F --&gt; H
     G --&gt; H
@@ -2828,6 +3233,18 @@
 <td>本次复盘只看了这段固定证据</td>
 </tr>
 <tr>
+<td><code>Analysis summary</code></td>
+<td>可选自然语言摘要，帮助 operator 快速理解“为什么值得看”</td>
+</tr>
+<tr>
+<td><code>Analysis points</code></td>
+<td>可选 2–5 条关键依据，来自 frozen evidence，不读取 live workspace</td>
+</tr>
+<tr>
+<td><code>Next steps</code></td>
+<td>可选 1–3 条操作建议，例如 inspect / pause / escalate</td>
+</tr>
+<tr>
 <td><code>canonical decision unchanged</code></td>
 <td>原始判决没有被修改</td>
 </tr>
@@ -2837,9 +3254,13 @@
 <p class="admonition-title">建议的值守路径</p>
 <p>先看 <code>Action</code>，再看 frozen record boundary，最后根据 <code>review_id</code> 去 API / replay 里查细节。不要把 advisory review 当成新的 block/allow 判决。</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">v0.5.10 自然语言字段</p>
+<p><code>analysis_summary</code>、<code>analysis_points</code>、<code>operator_next_steps</code> 都是 review/action payload 的可选扩展字段。它们会经过长度和条数限制，用于解释和交接；它们不会改写 canonical decision，也不会触发新的 enforcement。</p>
+</div>
 <hr />
 <h2 id="cli">在 CLI 里怎么用<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h2>
-<h3 id="_5">默认：立即生成一份本地咨询报告<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<h3 id="llm-backed">默认：立即生成一份 LLM-backed 咨询报告<a class="headerlink" href="#llm-backed" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span>full-review<span class="w"> </span>--session<span class="w"> </span>sess-001<span class="w"> </span>--token<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$CS_AUTH_TOKEN</span><span class="s2">&quot;</span>
 </span></code></pre></div>
 <p>典型输出：</p>
@@ -2850,15 +3271,16 @@
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>advisory_only: true
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>canonical_decision_mutated: false
 </span></code></pre></div>
-<h3 id="_6">只排队，不运行<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<p>如果 Gateway 没有解析到有效的 <code>CS_LLM_PROVIDER</code>、API key 或 <code>CS_LLM_MODEL</code>，命令仍会完成，但 review 会标记为 <code>l3_state=degraded</code>，并带 <code>provider_disabled</code> / <code>provider_missing_key</code> / <code>provider_missing_model</code> 等 reason code，提示补齐 LLM 配置。</p>
+<h3 id="_5">只排队，不运行<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span>full-review<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>--session<span class="w"> </span>sess-001<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--queue-only<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>--json
 </span></code></pre></div>
 <p>适合先冻结证据，再由另一个流程决定何时运行 worker。</p>
-<h3 id="phase-3-queued-jobs">Phase 3：查看并有界执行 queued jobs<a class="headerlink" href="#phase-3-queued-jobs" title="Permanent link">&para;</a></h3>
-<p>Phase 3 增加的是 <strong>bounded one-shot execution</strong>，不是 daemon。你可以查看当前 queued jobs：</p>
+<h3 id="queued-jobs">查看并有界执行 queued jobs<a class="headerlink" href="#queued-jobs" title="Permanent link">&para;</a></h3>
+<p>这个能力提供 <strong>bounded one-shot execution</strong>，不是 daemon。你可以查看当前 queued jobs：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>list<span class="w"> </span>--state<span class="w"> </span>queued<span class="w"> </span>--json
 </span></code></pre></div>
 <p>执行最旧的一条 queued job：</p>
@@ -2871,8 +3293,8 @@
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--runner<span class="w"> </span>deterministic_local<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--max-jobs<span class="w"> </span><span class="m">2</span>
 </span></code></pre></div>
-<p>这些命令只 claim <code>job_state=queued</code> 的 job；<code>running</code> / <code>completed</code> / <code>failed</code> 不会被 rerun。<code>llm_provider</code> runner 仍需要显式 advisory provider gates，默认不会真实联网。</p>
-<h3 id="phase-3heartbeat-idle-aggregate-queueing">Phase 3：heartbeat / idle aggregate queueing<a class="headerlink" href="#phase-3heartbeat-idle-aggregate-queueing" title="Permanent link">&para;</a></h3>
+<p>这些命令只选择 <code>job_state=queued</code> 的 job；<code>running</code> / <code>completed</code> / <code>failed</code> 不会被 rerun。省略 <code>--runner</code> 时默认执行 <code>llm_provider</code>。</p>
+<h3 id="heartbeat-idle-aggregate-queueing">Heartbeat / idle aggregate queueing<a class="headerlink" href="#heartbeat-idle-aggregate-queueing" title="Permanent link">&para;</a></h3>
 <p>当同时启用：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nv">CS_L3_ADVISORY_ASYNC_ENABLED</span><span class="o">=</span><span class="nb">true</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">CS_L3_HEARTBEAT_REVIEW_ENABLED</span><span class="o">=</span><span class="nb">true</span>
@@ -2885,7 +3307,7 @@
 <li>同一 <code>(session_id, runner)</code> 同时最多一个 queued/running <code>heartbeat_aggregate</code> job；</li>
 <li>输出始终标记 <code>advisory_only=true</code> 和 <code>canonical_decision_mutated=false</code>。</li>
 </ul>
-<h3 id="_7">固定审查范围<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
+<h3 id="_6">固定审查范围<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span>full-review<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>--session<span class="w"> </span>sess-001<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--from-record-id<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
@@ -2906,33 +3328,25 @@
 </thead>
 <tbody>
 <tr>
+<td><code>llm_provider</code></td>
+<td>是；使用共享 <code>CS_LLM_*</code> provider 配置</td>
+<td>默认 full-review / queued job</td>
+<td>继承 <code>CS_LLM_PROVIDER</code>、API key、<code>CS_LLM_MODEL</code>、<code>CS_LLM_BASE_URL</code>、<code>CS_LLM_TEMPERATURE</code>、<code>CS_LLM_PROVIDER_TIMEOUT_MS</code>；缺配置时写入 <code>degraded</code> review</td>
+</tr>
+<tr>
 <td><code>deterministic_local</code></td>
 <td>否</td>
-<td>大多数用户</td>
-<td>默认选择，稳定、可重复、无外部依赖</td>
-</tr>
-<tr>
-<td><code>fake_llm</code></td>
-<td>否</td>
-<td>集成测试 / 平台验证</td>
-<td>验证 job/review 流程，不代表真实模型判断</td>
-</tr>
-<tr>
-<td><code>llm_provider</code></td>
-<td>默认不联网；显式打开后可联网</td>
-<td>需要 LLM 审查的安全团队</td>
-<td>需要独立 <code>CS_L3_ADVISORY_PROVIDER_*</code> 配置，不继承同步 L2/L3 LLM 配置</td>
+<td>离线调试 / 审计管道验证</td>
+<td>只有显式传入 <code>runner=deterministic_local</code> 或 <code>--runner deterministic_local</code> 时运行</td>
 </tr>
 </tbody>
 </table>
 <div class="admonition warning">
-<p class="admonition-title">provider runner 必须显式打开</p>
-<p>即使你已经配置了 <code>CS_LLM_PROVIDER</code>，L3 咨询审查也不会自动用它联网。<code>llm_provider</code> 仍需要独立设置 provider、model、key，并把 <code>CS_L3_ADVISORY_PROVIDER_DRY_RUN=false</code>。</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">CS_L3_ADVISORY_PROVIDER_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nv">CS_L3_ADVISORY_PROVIDER</span><span class="o">=</span>openai<span class="w">        </span><span class="c1"># 或 anthropic</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="nv">CS_L3_ADVISORY_MODEL</span><span class="o">=</span>&lt;model&gt;
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nv">CS_L3_ADVISORY_PROVIDER_DRY_RUN</span><span class="o">=</span><span class="nb">false</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>&lt;key&gt;<span class="w">                  </span><span class="c1"># 或 CS_L3_ADVISORY_API_KEY</span>
+<p class="admonition-title">无 LLM 配置时会显式降级</p>
+<p><code>llm_provider</code> 不会静默改跑本地 deterministic review。没有有效 <code>CS_LLM_*</code> / API key 时，full-review 会生成 <code>degraded</code> review/action，并建议配置 LLM provider。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai<span class="w">        </span><span class="c1"># 或 anthropic</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>&lt;model&gt;
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>&lt;key&gt;<span class="w">          </span><span class="c1"># 或 CS_LLM_API_KEY</span>
 </span></code></pre></div>
 </div>
 <h3 id="readiness-smoke">手动 readiness / smoke 验证<a class="headerlink" href="#readiness-smoke" title="Permanent link">&para;</a></h3>
@@ -2944,13 +3358,9 @@
 </span></code></pre></div>
 <p>预期边界：</p>
 <ul>
-<li>默认 dry-run 或缺少 provider/key/model 时，结果应安全降级为 <code>degraded</code>，不会发起真实网络调用；</li>
-<li>只有显式配置 <code>CS_L3_ADVISORY_PROVIDER_ENABLED=true</code>、provider/model/key，并设置
-  <code>CS_L3_ADVISORY_PROVIDER_DRY_RUN=false</code> 后，<code>llm_provider</code> 才可能调用真实 provider；</li>
-<li>需要把真实 provider smoke 作为发布 gate 时，再加 <code>--require-completed</code>，让未完成的
-  review 以失败退出；</li>
-<li>readiness check 不启动 scheduler，不修改 canonical decision，仍只写
-  <code>advisory_only=true</code> 的 review 证据。</li>
+<li>缺少 <code>CS_LLM_PROVIDER</code>、API key 或 <code>CS_LLM_MODEL</code> 时，结果应安全降级为 <code>degraded</code>，并说明 provider/config 问题；</li>
+<li>需要把真实 provider smoke 作为发布 gate 时，再加 <code>--require-completed</code>，让未完成的 review 以失败退出；</li>
+<li>readiness check 不启动 scheduler，不修改 canonical decision，仍只写 <code>advisory_only=true</code> 的 review 证据。</li>
 </ul>
 <hr />
 <h2 id="api">API 速查<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
@@ -2964,7 +3374,7 @@
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">&quot;to_record_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span><span class="nt">&quot;max_records&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
 </span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="nt">&quot;max_tool_calls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">  </span><span class="nt">&quot;runner&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deterministic_local&quot;</span><span class="p">,</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">  </span><span class="nt">&quot;runner&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;llm_provider&quot;</span><span class="p">,</span>
 </span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">  </span><span class="nt">&quot;run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 </span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="p">}</span>
 </span></code></pre></div>
@@ -2994,7 +3404,7 @@
 </span></code></pre></div>
 <p>这三行对应：证据已冻结、任务已运行、报告已生成。</p>
 <hr />
-<h2 id="_8">边界与常见误解<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h2>
+<h2 id="_7">边界与常见误解<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -3057,12 +3467,24 @@
 <td>advisory review / recommended operator action</td>
 </tr>
 <tr>
+<td>延迟模型</td>
+<td>同步路径预算内返回，超时/失败降级</td>
+<td>job/review 生命周期，可排队、手动 run-next/drain</td>
+</tr>
+<tr>
+<td>LLM 配置</td>
+<td>继承同步 L2/L3 provider：<code>CS_LLM_PROVIDER</code>、<code>CS_LLM_MODEL</code> 等</td>
+<td>同样继承 <code>CS_LLM_*</code>；无有效配置时 loud degraded</td>
+</tr>
+<tr>
 <td>是否改历史判决</td>
 <td>不适用</td>
 <td>明确不改，<code>canonical_decision_mutated=false</code></td>
 </tr>
 </tbody>
 </table>
+<h2 id="recent-feature-coverage">最近功能覆盖状态<a class="headerlink" href="#recent-feature-coverage" title="Permanent link">&para;</a></h2>
+<p>本页覆盖 L3 advisory jobs/full-review、heartbeat/idle aggregate queueing、provider smoke gates、Web UI L3 surfaces 与 action summary。完整跨页面覆盖矩阵见 <a href="../../operations/recent-feature-coverage/">最近功能文档覆盖矩阵</a>。</p>
 <p>如果你想了解同步决策链里的 L3 审查器，继续看 <a href="../l3-agent/">L3 审查 Agent</a>。</p>
 
 
@@ -3086,7 +3508,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月23日 08:19:02 UTC">2026年4月23日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月30日 15:25:44 UTC">2026年4月30日</span>
   </span>
 
     

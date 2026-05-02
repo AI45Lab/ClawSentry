@@ -1,4 +1,19 @@
-/* ClawSentry docs visual system: enterprise security developer docs. */
+/* ClawSentry docs visual system: enterprise security developer docs.
+
+   Component contract:
+   - .cs-doc-hero: page opening summary; use one per page, with .cs-eyebrow.
+   - .cs-card-grid/.cs-card: operator choices, feature summaries, "what you get" blocks.
+   - .cs-metric-grid/.cs-metric: compact numeric or named metric summaries.
+   - .cs-flow: short left-to-right process strip; keep text scannable.
+   - .cs-operator-path: step-by-step action path for operators.
+   - .cs-before-after: two-column migration / old-vs-new comparison.
+   - .cs-api-example: payload/endpoint examples paired with reading guidance.
+   - .cs-pill-row/.cs-pill: stable labels only; do not use as decorative badges.
+
+   Anti-patterns: do not add page-local style islands for common hero/card/flow
+   shapes; do not encode critical meaning only in color; keep commands copyable
+   as fenced code blocks; keep tables readable on narrow screens.
+ */
 
 :root {
   --cs-ink: #0b1220;
@@ -8,6 +23,8 @@
   --cs-accent: #0891b2;
   --cs-accent-2: #16a34a;
   --cs-warning: #d97706;
+  --cs-danger: #dc2626;
+  --cs-muted: rgba(100, 116, 139, 0.88);
   --cs-radius: 18px;
   --cs-shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
 }
@@ -17,6 +34,7 @@
   --cs-panel: rgba(148, 163, 184, 0.10);
   --cs-panel-strong: rgba(148, 163, 184, 0.16);
   --cs-line: rgba(148, 163, 184, 0.24);
+  --cs-muted: rgba(203, 213, 225, 0.78);
   --cs-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
 }
 
@@ -66,7 +84,10 @@
 
 .md-typeset .cs-doc-hero > :last-child,
 .md-typeset .cs-card > :last-child,
-.md-typeset .cs-metric > :last-child {
+.md-typeset .cs-metric > :last-child,
+.md-typeset .cs-flow-strip > :last-child,
+.md-typeset .cs-operator-path > :last-child,
+.md-typeset .cs-api-example > :last-child {
   margin-bottom: 0;
 }
 
@@ -124,6 +145,26 @@
   margin: 1.25rem 0 2rem;
 }
 
+.md-typeset .cs-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.85rem 0 0;
+}
+
+.md-typeset .cs-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  border: 1px solid color-mix(in srgb, var(--cs-accent) 30%, var(--cs-line));
+  border-radius: 999px;
+  padding: 0.16rem 0.6rem;
+  background: var(--cs-panel);
+  color: var(--cs-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .md-typeset .card,
 .md-typeset .cs-card,
 .md-typeset .cs-metric,
@@ -151,6 +192,56 @@
   padding: 1rem 1.1rem;
 }
 
+.md-typeset .cs-flow,
+.md-typeset .cs-operator-path,
+.md-typeset .cs-api-example {
+  border: 1px solid var(--cs-line);
+  border-radius: var(--cs-radius);
+  padding: 1rem 1.1rem;
+  margin: 1rem 0 1.5rem;
+  background: linear-gradient(135deg, var(--cs-panel), transparent 130%);
+}
+
+.md-typeset .cs-flow {
+  border-left: 4px solid var(--cs-accent);
+  font-weight: 650;
+}
+
+.md-typeset .cs-operator-path {
+  counter-reset: cs-step;
+}
+
+.md-typeset .cs-operator-path > ol {
+  margin: 0;
+}
+
+.md-typeset .cs-operator-path li::marker {
+  color: var(--cs-accent);
+  font-weight: 800;
+}
+
+.md-typeset .cs-before-after {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 1.6rem;
+}
+
+.md-typeset .cs-before-after > * {
+  border: 1px solid var(--cs-line);
+  border-radius: var(--cs-radius);
+  padding: 1rem 1.05rem;
+  background: var(--cs-panel);
+}
+
+.md-typeset .cs-api-example {
+  border-left: 4px solid var(--cs-accent-2);
+}
+
+.md-typeset .cs-note-muted {
+  color: var(--cs-muted);
+}
+
 .md-typeset .cs-metric span,
 .md-typeset .cs-metric small {
   display: block;
@@ -166,13 +257,73 @@
   color: var(--cs-ink);
 }
 
-.md-typeset .cs-reference-toolbar {
+.md-typeset .cs-reference-toolbar,
+.md-typeset .cs-operator-path,
+.md-typeset .cs-api-example {
   padding: 0.2rem 1rem 0.05rem;
   margin: 1rem 0 1.4rem;
 }
 
 .md-typeset .cs-reference-toolbar table {
   margin: 0.7rem 0;
+}
+
+.md-typeset .cs-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.8rem 0 0;
+}
+
+.md-typeset .cs-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--cs-accent) 35%, var(--cs-line));
+  border-radius: 999px;
+  background: var(--md-code-bg-color);
+  padding: 0.16rem 0.58rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.md-typeset .cs-flow-strip {
+  border-left: 4px solid var(--md-primary-fg-color);
+  border-radius: 0.55rem;
+  background: var(--md-code-bg-color);
+  padding: 0.8rem 1rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.md-typeset .cs-operator-path {
+  border: 1px solid var(--cs-line);
+  border-radius: var(--cs-radius);
+  background:
+    linear-gradient(90deg, rgba(8, 145, 178, 0.08), transparent 72%),
+    var(--md-default-bg-color);
+  padding: 1rem 1.15rem;
+}
+
+.md-typeset .cs-before-after {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.md-typeset .cs-before-after > * {
+  border: 1px solid var(--cs-line);
+  border-radius: var(--cs-radius);
+  padding: 1rem 1.1rem;
+  background: var(--md-default-bg-color);
+}
+
+.md-typeset .cs-api-example {
+  border: 1px solid color-mix(in srgb, var(--cs-accent) 28%, var(--cs-line));
+  border-radius: var(--cs-radius);
+  background: linear-gradient(180deg, var(--cs-panel), transparent 140%);
+  padding: 1rem 1.15rem;
 }
 
 .md-typeset table:not([class]) th {
@@ -229,4 +380,70 @@
   .md-typeset .framework-card:hover {
     transform: none;
   }
+}
+
+/* Reusable docs component contract
+ * Use .cs-doc-hero for page introductions, .cs-card-grid/.cs-card for scannable choices,
+ * .cs-metric-grid/.cs-metric for numeric summaries, .cs-flow for ordered operator flows,
+ * .cs-operator-path/.cs-path-option for quickstart path comparisons, and .cs-pill for compact state tags.
+ * Avoid page-local <style> islands unless the component is truly one-off; prefer accessible text,
+ * copyable code blocks, dark-mode-safe borders, responsive grids, and reduced-motion behavior.
+ */
+.md-typeset .cs-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.8rem 0 0;
+}
+
+.md-typeset .cs-pill {
+  display: inline-block;
+  border: 1px solid color-mix(in srgb, var(--cs-accent) 35%, var(--cs-line));
+  border-radius: 999px;
+  padding: 0.16rem 0.58rem;
+  background: var(--md-code-bg-color);
+  color: var(--md-default-fg-color);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.md-typeset .cs-flow,
+.md-typeset .cs-api-example {
+  border: 1px solid var(--cs-line);
+  border-left: 4px solid var(--cs-accent);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+  background: linear-gradient(90deg, var(--cs-panel), transparent 78%);
+}
+
+.md-typeset .cs-operator-path,
+.md-typeset .cs-before-after {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 1rem;
+  margin: 1.1rem 0 1.6rem;
+}
+
+.md-typeset .cs-path-option,
+.md-typeset .cs-before-after > * {
+  border: 1px solid var(--cs-line);
+  border-radius: var(--cs-radius);
+  padding: 1rem 1.1rem;
+  background: linear-gradient(180deg, var(--cs-panel), transparent 140%);
+}
+
+.md-typeset .cs-path-option--recommended {
+  border-color: color-mix(in srgb, var(--cs-accent-2) 50%, var(--cs-line));
+  box-shadow: 0 12px 30px rgba(22, 163, 74, 0.10);
+}
+
+.md-typeset .cs-path-option h3,
+.md-typeset .cs-before-after h3 {
+  margin-top: 0;
+}
+
+.md-typeset .cs-card-grid + .cs-flow,
+.md-typeset .cs-operator-path + .admonition {
+  margin-top: 1rem;
 }
