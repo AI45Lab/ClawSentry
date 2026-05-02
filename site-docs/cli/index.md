@@ -47,6 +47,7 @@ clawsentry-stack     # 等价于 clawsentry stack
 | [`stack`](#clawsentry-stack) | 直接启动完整栈（高级） | `clawsentry stack` |
 | [`harness`](#clawsentry-harness) | stdio hook 处理器 | 由框架自动调用，通常无需手动使用 |
 | [`watch`](#clawsentry-watch) | 实时监控事件流 | `clawsentry watch --interactive` |
+| [`scope`](#clawsentry-scope) | 校验/预览 session scope 配置 | `clawsentry scope preview --profile profile.json --event event.json` |
 | [`audit`](#clawsentry-audit) | 离线查询审计日志 | `clawsentry audit --risk high --since 1h` |
 | [`doctor`](#clawsentry-doctor) | 诊断配置和连接（20 项检查） | `clawsentry doctor` |
 | [`test-llm`](#clawsentry-test-llm) | 验证 L2/L3 连通性、时延与当前运行模式 | `clawsentry test-llm --json` |
@@ -68,7 +69,7 @@ clawsentry-stack     # 等价于 clawsentry stack
     | `clawsentry-harness` | a3s-code stdio transport 自动调用 | 不是普通用户入口，通常只出现在 SDK transport 配置里 |
 
 !!! abstract "本页快速导航"
-    [start](#clawsentry-start) · [stop](#clawsentry-stop) · [status](#clawsentry-status) · [init](#clawsentry-init) · [gateway](#clawsentry-gateway) · [stack](#clawsentry-stack) · [harness](#clawsentry-harness) · [watch](#clawsentry-watch) · [audit](#clawsentry-audit) · [doctor](#clawsentry-doctor) · [test-llm](#clawsentry-test-llm) · [l3](#clawsentry-l3) · [service](#clawsentry-service) · [config](#clawsentry-config) · [rules](#clawsentry-rules) · [integrations](#clawsentry-integrations) · [latch](#clawsentry-latch)
+    [start](#clawsentry-start) · [stop](#clawsentry-stop) · [status](#clawsentry-status) · [init](#clawsentry-init) · [gateway](#clawsentry-gateway) · [stack](#clawsentry-stack) · [harness](#clawsentry-harness) · [watch](#clawsentry-watch) · [scope](#clawsentry-scope) · [audit](#clawsentry-audit) · [doctor](#clawsentry-doctor) · [test-llm](#clawsentry-test-llm) · [l3](#clawsentry-l3) · [service](#clawsentry-service) · [config](#clawsentry-config) · [rules](#clawsentry-rules) · [integrations](#clawsentry-integrations) · [latch](#clawsentry-latch)
 
 ---
 
@@ -704,6 +705,38 @@ clawsentry watch --interactive --token my-secret-token
 - 启动时显示 `Connected to <url>`
 - 连接断开后自动重连（间隔 3 秒）
 - `Ctrl+C` 优雅退出
+
+---
+
+## clawsentry scope
+
+在启用 session scope 前，对 `SessionScopeProfile` JSON 做本地校验，或用一条 canonical event 预览会命中的 allow/defer/deny 结果。该命令默认保持 dry-run 语义：它解释规则、状态和 reason codes，不声称已阻断动作；只有显式 `--confirm` 预览才展示 confirmed/enforced 边界。
+
+### 语法
+
+```bash
+clawsentry scope validate --profile profile.json [--json]
+clawsentry scope preview --profile profile.json --event event.json [--confirm] [--json]
+```
+
+### 选项
+
+| 选项 | 适用子命令 | 说明 |
+|------|------------|------|
+| `--profile PATH` | `validate`, `preview` | `SessionScopeProfile` JSON 文件 |
+| `--event PATH` | `preview` | `CanonicalEvent` JSON 文件 |
+| `--confirm` | `preview` | 以 confirmed/non-dry-run 边界预览，不写入任何配置 |
+| `--json` | `validate`, `preview` | 输出机器可读 JSON，便于 CI 或 runbook 记录 |
+
+### 示例
+
+```bash
+clawsentry scope validate --profile ./scope-profile.json
+clawsentry scope preview --profile ./scope-profile.json --event ./event.json --json
+clawsentry scope preview --profile ./scope-profile.json --event ./event.json --confirm
+```
+
+输出会包含 `dry_run` / `enforced`、命中的 `reason_codes` 与一段用户可读 protection statement。若需要 HTTP 预览入口，可使用 [Decision API 的 `/ahp/scope/preview`](../api/decisions.md#post-ahp-scope-preview)。
 
 ---
 

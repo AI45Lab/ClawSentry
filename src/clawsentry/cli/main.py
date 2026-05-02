@@ -57,6 +57,15 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Preview OpenClaw config changes without applying (use with --setup).",
     )
     init_parser.add_argument(
+        "--hardened-profile",
+        action="store_true",
+        default=False,
+        help=(
+            "Opt in to marker-managed OpenClaw native-tool hardening. "
+            "Use with --setup; dry-run is recommended first."
+        ),
+    )
+    init_parser.add_argument(
         "--openclaw-home",
         type=Path,
         default=None,
@@ -188,6 +197,57 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Use compact format without Unicode box drawing for session groups.",
+    )
+
+    # --- scope ---
+    scope_parser = sub.add_parser(
+        "scope",
+        help="Validate or preview deterministic session scope profiles.",
+    )
+    scope_sub = scope_parser.add_subparsers(dest="scope_command", required=True)
+    scope_validate = scope_sub.add_parser(
+        "validate",
+        help="Validate a session scope profile JSON file.",
+    )
+    scope_validate.add_argument(
+        "--profile",
+        type=Path,
+        required=True,
+        help="Path to a SessionScopeProfile JSON file.",
+    )
+    scope_validate.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Emit machine-readable JSON.",
+    )
+    scope_preview = scope_sub.add_parser(
+        "preview",
+        help="Preview a session scope profile against one canonical event.",
+    )
+    scope_preview.add_argument(
+        "--profile",
+        type=Path,
+        required=True,
+        help="Path to a SessionScopeProfile JSON file.",
+    )
+    scope_preview.add_argument(
+        "--event",
+        type=Path,
+        required=True,
+        help="Path to a CanonicalEvent JSON file.",
+    )
+    scope_preview.add_argument(
+        "--confirm",
+        action="store_true",
+        default=False,
+        help="Preview as confirmed/enforced instead of dry-run.",
+    )
+    scope_preview.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Emit machine-readable JSON.",
     )
 
     # --- audit ---
@@ -688,6 +748,7 @@ def main(argv: list[str] | None = None) -> None:
             auto_detect=getattr(args, "auto_detect", False),
             setup=getattr(args, "setup", False),
             dry_run=getattr(args, "dry_run", False),
+            hardened_profile=getattr(args, "hardened_profile", False),
             openclaw_home=getattr(args, "openclaw_home", None),
             codex_home=getattr(args, "codex_home", None),
             gemini_home=getattr(args, "gemini_home", None),
@@ -726,6 +787,25 @@ def main(argv: list[str] | None = None) -> None:
             no_emoji=args.no_emoji,
             compact=args.compact,
         )
+
+    elif args.command == "scope":
+        from .scope_command import run_scope_preview, run_scope_validate
+
+        if args.scope_command == "validate":
+            code = run_scope_validate(
+                profile_path=args.profile,
+                json_mode=args.json,
+            )
+            sys.exit(code)
+        if args.scope_command == "preview":
+            code = run_scope_preview(
+                profile_path=args.profile,
+                event_path=args.event,
+                confirm=args.confirm,
+                json_mode=args.json,
+            )
+            sys.exit(code)
+        parser.error("scope requires a subcommand")
 
     elif args.command == "audit":
         from .audit_command import run_audit

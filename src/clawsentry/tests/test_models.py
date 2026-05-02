@@ -632,3 +632,43 @@ class TestUtilities:
         from datetime import datetime
         dt = datetime.fromisoformat(ts)
         assert dt.tzinfo is not None
+
+
+class TestSessionScopeProfileModel:
+    def test_scope_profile_schema_validates_base_task_and_provenance(self):
+        from clawsentry.gateway.models import (
+            DecisionContext,
+            SessionScopeBaseRules,
+            SessionScopeProfile,
+            SessionScopeProvenance,
+            SessionScopeSource,
+            SessionScopeTaskRules,
+        )
+
+        profile = SessionScopeProfile(
+            profile_id="scope-docs-1",
+            source=SessionScopeSource.PROJECT_TEMPLATE,
+            confirmed=True,
+            dry_run=False,
+            base_rules=SessionScopeBaseRules(
+                denied_paths=["~/.ssh", "/etc"],
+                denied_domains=["evil.example"],
+                denied_command_prefixes=["sudo"],
+            ),
+            task_rules=SessionScopeTaskRules(
+                allowed_tools=["read_file"],
+                allowed_path_prefixes=["docs/"],
+                queued_categories=["network"],
+            ),
+            provenance=SessionScopeProvenance(
+                user_objective_hash="sha256:docs",
+                generated_by="project-template:test",
+                confirmed_by="operator:test",
+            ),
+        )
+        context = DecisionContext(session_scope_profile=profile)
+
+        assert context.session_scope_profile is not None
+        assert context.session_scope_profile.scope_version == "cs.session_scope.v1"
+        assert context.session_scope_profile.base_rules.denied_paths[0] == "~/.ssh"
+        assert context.session_scope_profile.task_rules.allowed_path_prefixes == ["docs/"]

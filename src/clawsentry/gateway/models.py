@@ -68,10 +68,29 @@ class RewriteTarget(str, enum.Enum):
     TOOL_INPUT = "tool_input"
 
 
+class SanitizeTarget(str, enum.Enum):
+    COMMAND = "command"
+    TOOL_INPUT = "tool_input"
+    TOOL_OUTPUT = "tool_output"
+
+
 class RewriteSource(str, enum.Enum):
     POLICY = "policy"
     OPERATOR = "operator"
     SYSTEM = "system"
+
+
+class SessionScopeSource(str, enum.Enum):
+    OPERATOR = "operator"
+    PROJECT_TEMPLATE = "project_template"
+    LLM_INDUCED = "llm_induced"
+
+
+class SessionScopeVerdict(str, enum.Enum):
+    ALLOW = "allow"
+    DEFER = "defer"
+    DENY = "deny"
+    NEUTRAL = "neutral"
 
 
 class EffectOutcome(str, enum.Enum):
@@ -79,6 +98,10 @@ class EffectOutcome(str, enum.Enum):
     SESSION_GRACEFUL_STOP = "session_graceful_stop"
     COMMAND_REWRITE = "command_rewrite"
     TOOL_INPUT_REWRITE = "tool_input_rewrite"
+    COMMAND_SANITIZE = "command_sanitize"
+    TOOL_INPUT_SANITIZE = "tool_input_sanitize"
+    TOOL_OUTPUT_SANITIZE = "tool_output_sanitize"
+    TOOL_OUTPUT_WOULD_SANITIZE = "tool_output_would_sanitize"
 
 
 class DecisionSource(str, enum.Enum):
@@ -149,6 +172,7 @@ class ClassifiedBy(str, enum.Enum):
 
 DECISION_EFFECTS_VERSION = "cs.decision_effects.v1"
 ADAPTER_EFFECT_RESULT_VERSION = "cs.adapter_effect_result.v1"
+SESSION_SCOPE_VERSION = "cs.session_scope.v1"
 
 
 # ---------------------------------------------------------------------------
@@ -172,6 +196,77 @@ class FrameworkMeta(BaseModel):
     deployment_env: Optional[str] = None
 
     model_config = {"extra": "allow"}
+
+
+class SessionScopeBaseRules(BaseModel):
+    """Non-overridable base restrictions for a session scope profile."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    denied_tools: list[str] = Field(default_factory=list)
+    denied_paths: list[str] = Field(default_factory=list)
+    denied_domains: list[str] = Field(default_factory=list)
+    denied_command_prefixes: list[str] = Field(default_factory=list)
+
+
+class SessionScopeTaskRules(BaseModel):
+    """Task-specific allow/defer rules layered under base restrictions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    allowed_tools: list[str] = Field(default_factory=list)
+    allowed_path_prefixes: list[str] = Field(default_factory=list)
+    allowed_domains: list[str] = Field(default_factory=list)
+    allowed_command_prefixes: list[str] = Field(default_factory=list)
+    queued_categories: list[str] = Field(default_factory=list)
+
+
+class SessionScopeProvenance(BaseModel):
+    """Audit provenance for an explicit or generated session scope."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    user_objective_hash: Optional[str] = None
+    generated_by: Optional[str] = None
+    confirmed_by: Optional[str] = None
+
+
+class SessionScopeProfile(BaseModel):
+    """AHP-native representation of Rbase ∪ Rtask session scope."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    scope_version: str = SESSION_SCOPE_VERSION
+    profile_id: str = Field(..., min_length=1)
+    source: SessionScopeSource = SessionScopeSource.OPERATOR
+    confirmed: bool = False
+    dry_run: bool = True
+    base_rules: SessionScopeBaseRules = Field(default_factory=SessionScopeBaseRules)
+    task_rules: SessionScopeTaskRules = Field(default_factory=SessionScopeTaskRules)
+    provenance: SessionScopeProvenance = Field(default_factory=SessionScopeProvenance)
+
+    @field_validator("scope_version")
+    @classmethod
+    def validate_scope_version(cls, v: str) -> str:
+        if v != SESSION_SCOPE_VERSION:
+            raise ValueError(
+                f"scope_version must be '{SESSION_SCOPE_VERSION}', got '{v}'"
+            )
+        return v
+
+
+class SessionScopeEvaluationSummary(BaseModel):
+    """Decision/report-safe summary of scope evaluation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    profile_id: str
+    source: SessionScopeSource
+    confirmed: bool
+    dry_run: bool
+    enforced: bool
+    verdict: SessionScopeVerdict
+    reason_codes: list[str] = Field(default_factory=list)
 
 
 class CanonicalEvent(BaseModel):
@@ -292,6 +387,42 @@ class RewriteEffectRequest(BaseModel):
     post_rewrite_validation_id: Optional[str] = None
 
 
+class SanitizeEffectRequest(BaseModel):
+    """Requested sanitizer effect; enforcement is recorded by adapters only."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    requested: bool = True
+    target: SanitizeTarget
+    original_hash: str
+    original_preview_redacted: str
+    sanitized_hash: Optional[str] = None
+    sanitized_preview_redacted: Optional[str] = None
+    replacement_payload: Optional[dict[str, Any]] = None
+    redaction_policy_version: str = "cs.redaction.v1"
+    sanitizer_source: RewriteSource = RewriteSource.POLICY
+    redaction_counts: dict[str, int] = Field(default_factory=dict)
+    redaction_types: list[str] = Field(default_factory=list)
+    advisory_only: bool = False
+    outcome: Optional[EffectOutcome] = None
+
+    @model_validator(mode="after")
+    def validate_sanitizer_contract(self) -> "SanitizeEffectRequest":
+        if self.target == SanitizeTarget.TOOL_OUTPUT:
+            if self.replacement_payload is not None:
+                raise ValueError("tool_output sanitizer cannot carry replacement_payload")
+            if self.outcome is None:
+                self.outcome = EffectOutcome.TOOL_OUTPUT_WOULD_SANITIZE
+            self.advisory_only = True
+        elif self.outcome is None:
+            self.outcome = (
+                EffectOutcome.COMMAND_SANITIZE
+                if self.target == SanitizeTarget.COMMAND
+                else EffectOutcome.TOOL_INPUT_SANITIZE
+            )
+        return self
+
+
 class DecisionEffects(BaseModel):
     """Request-only effect envelope attached to a canonical decision."""
 
@@ -302,6 +433,7 @@ class DecisionEffects(BaseModel):
     action_scope: ActionScope = ActionScope.ACTION
     session_effect: Optional[SessionEffectRequest] = None
     rewrite_effect: Optional[RewriteEffectRequest] = None
+    sanitize_effect: Optional[SanitizeEffectRequest] = None
 
     @field_validator("effect_version")
     @classmethod
@@ -388,6 +520,9 @@ def decision_effects_for_trajectory(
     rewrite_effect = payload.get("rewrite_effect")
     if isinstance(rewrite_effect, dict) and "replacement_payload" in rewrite_effect:
         rewrite_effect["replacement_payload"] = None
+    sanitize_effect = payload.get("sanitize_effect")
+    if isinstance(sanitize_effect, dict) and "replacement_payload" in sanitize_effect:
+        sanitize_effect["replacement_payload"] = None
     return payload
 
 
@@ -401,6 +536,7 @@ def decision_effect_summary(
         return None
     session_effect = safe.get("session_effect") or {}
     rewrite_effect = safe.get("rewrite_effect") or {}
+    sanitize_effect = safe.get("sanitize_effect") or {}
     summary: dict[str, Any] = {
         "effect_id": safe.get("effect_id"),
         "effect_version": safe.get("effect_version"),
@@ -435,6 +571,25 @@ def decision_effect_summary(
                 "post_rewrite_validation_id",
             )
             if rewrite_effect.get(key) is not None
+        }
+    if sanitize_effect:
+        summary["sanitize_effect"] = {
+            key: sanitize_effect.get(key)
+            for key in (
+                "requested",
+                "target",
+                "original_hash",
+                "original_preview_redacted",
+                "sanitized_hash",
+                "sanitized_preview_redacted",
+                "redaction_policy_version",
+                "sanitizer_source",
+                "redaction_counts",
+                "redaction_types",
+                "advisory_only",
+                "outcome",
+            )
+            if sanitize_effect.get(key) is not None
         }
     return summary
 
@@ -478,6 +633,7 @@ class CanonicalDecision(BaseModel):
     decision_latency_ms: Optional[float] = None
     modified_payload: Optional[dict[str, Any]] = None
     decision_effects: Optional[DecisionEffects] = None
+    scope_evaluation: Optional[SessionScopeEvaluationSummary] = None
     retry_after_ms: Optional[int] = None
     failure_class: FailureClass = FailureClass.NONE
     final: Optional[bool] = None
@@ -503,6 +659,21 @@ class CanonicalDecision(BaseModel):
                 and self.decision != DecisionVerdict.MODIFY
             ):
                 raise ValueError("rewrite_effect requires decision='modify'")
+            sanitize_effect = self.decision_effects.sanitize_effect
+            if sanitize_effect is not None:
+                if (
+                    sanitize_effect.target == SanitizeTarget.TOOL_OUTPUT
+                    and self.decision == DecisionVerdict.MODIFY
+                ):
+                    raise ValueError("tool_output sanitize_effect cannot produce decision='modify'")
+                if (
+                    sanitize_effect.target in (SanitizeTarget.COMMAND, SanitizeTarget.TOOL_INPUT)
+                    and sanitize_effect.replacement_payload is not None
+                    and self.decision != DecisionVerdict.MODIFY
+                ):
+                    raise ValueError(
+                        "input sanitize_effect with replacement_payload requires decision='modify'"
+                    )
             if (
                 self.decision_effects.action_scope == ActionScope.SESSION
                 and self.decision not in (DecisionVerdict.BLOCK, DecisionVerdict.DEFER)
@@ -652,6 +823,8 @@ class DecisionContext(BaseModel):
     planning_summary: Optional[str] = None
     reasoning_summary: Optional[str] = None
     cognition_hints: Optional[list[str]] = None
+    session_scope_profile_id: Optional[str] = None
+    session_scope_profile: Optional[SessionScopeProfile] = None
 
 
 class SyncDecisionRequest(BaseModel):

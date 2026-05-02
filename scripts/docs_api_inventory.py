@@ -35,7 +35,9 @@ ROUTES: list[dict[str, Any]] = [
     {"service":"gateway","method":"POST","path":"/ahp/a3s","source":"src/clawsentry/gateway/server.py:2441","group":"AHP 决策","audience":"developer","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.","markdown_ref":"api/decisions.md#post-ahp-a3s","summary":"a3s-code HTTP Transport 入口"},
     {"service":"gateway","method":"POST","path":"/ahp/codex","source":"src/clawsentry/gateway/server.py:2475","group":"AHP 决策","audience":"developer","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.","markdown_ref":"api/decisions.md#post-ahp-codex","summary":"Codex native hook / HTTP transport 入口"},
 
-    {"service":"gateway","method":"POST","path":"/ahp/adapter-effect-result","source":"src/clawsentry/gateway/server.py:2691","group":"AHP 决策","audience":"developer|operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; native hook subprocesses should authenticate when token is configured.","markdown_ref":"api/decisions.md#post-ahp-adapter-effect-result","summary":"记录 adapter-observed effect outcome，不修改 canonical decision"},    {"service":"stack","method":"POST","path":"/ahp/resolve","source":"src/clawsentry/gateway/stack.py:203","group":"AHP 决策","audience":"operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"Uses Gateway auth dependency; CS_AUTH_TOKEN empty disables Bearer auth.","markdown_ref":"api/decisions.md#post-ahp-resolve","summary":"DEFER/审批结果回写入口"},
+    {"service":"gateway","method":"POST","path":"/ahp/adapter-effect-result","source":"src/clawsentry/gateway/server.py:2691","group":"AHP 决策","audience":"developer|operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; native hook subprocesses should authenticate when token is configured.","markdown_ref":"api/decisions.md#post-ahp-adapter-effect-result","summary":"记录 adapter-observed effect outcome，不修改 canonical decision"},
+    {"service":"gateway","method":"POST","path":"/ahp/scope/preview","source":"src/clawsentry/gateway/server.py:3526","group":"AHP 决策","audience":"developer|operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth. Scope preview is capability-honest: dry-run profiles explain what would happen but do not enforce until confirmed.","markdown_ref":"api/decisions.md#post-ahp-scope-preview","summary":"预览 deterministic SessionScopeProfile 对单个 canonical event 的 allow/defer/deny reason codes"},
+    {"service":"stack","method":"POST","path":"/ahp/resolve","source":"src/clawsentry/gateway/stack.py:203","group":"AHP 决策","audience":"operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"Uses Gateway auth dependency; CS_AUTH_TOKEN empty disables Bearer auth.","markdown_ref":"api/decisions.md#post-ahp-resolve","summary":"DEFER/审批结果回写入口"},
     {"service":"gateway","method":"GET","path":"/health","source":"src/clawsentry/gateway/server.py:2514","group":"运行状态","audience":"operator","public_status":"public","auth":"none","auth_note":"Gateway health endpoint is intentionally unauthenticated.","markdown_ref":"api/reporting.md#get-health","summary":"Gateway 健康检查"},
     {"service":"gateway","method":"GET","path":"/metrics","source":"src/clawsentry/gateway/server.py:2528","group":"运行状态","audience":"operator","public_status":"public","auth":"metrics-conditional","auth_note":"CS_METRICS_AUTH=true requires Bearer token; false/empty exposes metrics without auth.","markdown_ref":"api/reporting.md#get-metrics","summary":"Prometheus 指标"},
     {"service":"gateway","method":"GET","path":"/report/summary","source":"src/clawsentry/gateway/server.py:2540","group":"报表与监控","audience":"operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth.","markdown_ref":"api/reporting.md#get-report-summary","summary":"聚合统计"},
@@ -178,6 +180,46 @@ def _apply_curated_examples(entry: dict[str, Any]) -> None:
             "reason": "Operator verified the command target is a disposable sandbox.",
         }
         entry["response_example"] = {"status": "resolved", "decision": "allow", "approval_id": "apr-001"}
+    elif method == "POST" and path == "/ahp/scope/preview":
+        entry["request_example"] = {
+            "profile": {
+                "profile_id": "docs-only",
+                "confirmed": False,
+                "dry_run": True,
+                "base_rules": {"denied_paths": ["~/.ssh"]},
+                "task_rules": {"allowed_tools": ["read_file"]},
+            },
+            "event": {
+                "event_id": "evt-scope-docs",
+                "trace_id": "trace-scope-docs",
+                "event_type": "pre_action",
+                "session_id": "sess-scope-docs",
+                "agent_id": "agent-scope-docs",
+                "source_framework": "test",
+                "occurred_at": "2026-05-02T00:00:00+00:00",
+                "tool_name": "read_file",
+                "payload": {"path": "~/.ssh/id_rsa"},
+            },
+        }
+        entry["response_example"] = {
+            "valid": True,
+            "mode": "dry_run_only",
+            "profile_id": "docs-only",
+            "scope_evaluation": {
+                "profile_id": "docs-only",
+                "source": "operator",
+                "confirmed": False,
+                "dry_run": True,
+                "enforced": False,
+                "verdict": "deny",
+                "reason_codes": ["scope_deny:path ~/.ssh"],
+            },
+            "protection_statement": (
+                "Protected today: scope preview validates rules and explains the decision "
+                "that would apply. Not protected today: dry-run scope profiles do not "
+                "block or defer actions until explicitly confirmed."
+            ),
+        }
     elif method == "GET" and path == "/health":
         entry["response_example"] = {"status": "healthy", "component": service}
         entry["errors"] = ["500"]
@@ -1023,7 +1065,7 @@ def write_openapi() -> None:
         "openapi": "3.1.0",
         "info": {
             "title": "ClawSentry Public API Reference",
-            "version": "0.6.4",
+            "version": "0.6.5",
             "description": "Docs-owned OpenAPI artifact generated from route inventory plus curated semantic metadata. It does not change runtime API behavior.",
         },
         "servers": [

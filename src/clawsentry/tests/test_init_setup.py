@@ -437,3 +437,88 @@ class TestSetupPartiallyConfigured:
 
         assert oc_dir / "openclaw.json" not in result.files_modified
         assert oc_dir / "exec-approvals.json" in result.files_modified
+
+
+class TestOpenClawHardenedProfile:
+    def test_hardened_profile_dry_run_writes_nothing(self, tmp_path: Path):
+        oc_dir = _make_openclaw_dir(tmp_path)
+        original = {"tools": {"exec": {"host": "sandbox"}}, "keep": True}
+        _write_json(oc_dir / "openclaw.json", original)
+
+        result = OpenClawInitializer().setup_openclaw_config(
+            openclaw_home=oc_dir,
+            dry_run=True,
+            hardened_profile=True,
+        )
+
+        assert result.dry_run is True
+        assert result.files_modified == []
+        assert result.files_backed_up == []
+        assert json.loads((oc_dir / "openclaw.json").read_text()) == original
+        assert not (oc_dir / "openclaw.json.bak").exists()
+        assert any("hardened profile" in change for change in result.changes_applied)
+
+    def test_hardened_profile_is_marker_managed_and_restore_reversible(self, tmp_path: Path):
+        oc_dir = _make_openclaw_dir(tmp_path)
+        original = {"tools": {"exec": {"host": "sandbox"}}, "keep": True}
+        _write_json(oc_dir / "openclaw.json", original)
+        _write_json(oc_dir / "exec-approvals.json", {"security": "deny", "ask": "never"})
+
+        init = OpenClawInitializer()
+        result = init.setup_openclaw_config(
+            openclaw_home=oc_dir,
+            hardened_profile=True,
+        )
+        config = json.loads((oc_dir / "openclaw.json").read_text())
+
+        assert oc_dir / "openclaw.json" in result.files_modified
+        assert oc_dir / "openclaw.json.bak" in result.files_backed_up
+        assert config["tools"]["exec"]["host"] == "gateway"
+        assert config["tools"]["native"]["deny"] == [
+            "exec", "write", "edit", "apply_patch", "process"
+        ]
+        hardened = config["clawsentry"]["hardened_profile"]
+        assert hardened["marker"] == "clawsentry.hardened_profile.v1"
+        assert hardened["mode"] == "ahp_mediated_wrappers"
+        assert hardened["reversible"] is True
+
+        restore = init.restore_openclaw_config(openclaw_home=oc_dir)
+
+        assert oc_dir / "openclaw.json" in restore.files_modified
+        assert json.loads((oc_dir / "openclaw.json").read_text()) == original
+
+    def test_cli_hardened_profile_dry_run_preview_uses_temp_openclaw_home(self, tmp_path: Path, capsys):
+        oc_dir = _make_openclaw_dir(tmp_path)
+        _write_json(oc_dir / "openclaw.json", {})
+
+        exit_code = run_init(
+            framework="openclaw",
+            target_dir=tmp_path,
+            force=False,
+            setup=True,
+            dry_run=True,
+            hardened_profile=True,
+            openclaw_home=oc_dir,
+        )
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "DRY RUN" in captured.out
+        assert "hardened profile" in captured.out
+        assert json.loads((oc_dir / "openclaw.json").read_text()) == {}
+
+    def test_hardened_profile_preserves_existing_native_denies(self, tmp_path: Path):
+        oc_dir = _make_openclaw_dir(tmp_path)
+        _write_json(oc_dir / "openclaw.json", {"tools": {"native": {"deny": ["dangerous_custom"]}}})
+
+        OpenClawInitializer().setup_openclaw_config(
+            openclaw_home=oc_dir,
+            hardened_profile=True,
+        )
+        config = json.loads((oc_dir / "openclaw.json").read_text())
+
+        deny = config["tools"]["native"]["deny"]
+        assert deny[0] == "dangerous_custom"
+        assert "dangerous_custom" in deny
+        assert "exec" in deny
+        assert config["clawsentry"]["hardened_profile"]["native_tool_policy"]["deny"] == deny

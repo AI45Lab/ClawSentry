@@ -32,6 +32,7 @@ def run_init(
     auto_detect: bool = False,
     setup: bool = False,
     dry_run: bool = False,
+    hardened_profile: bool = False,
     openclaw_home: Path | None = None,
     codex_home: Path | None = None,
     gemini_home: Path | None = None,
@@ -104,6 +105,8 @@ def run_init(
         setup_kwargs: dict[str, object] = {"dry_run": dry_run}
         if openclaw_home is not None:
             setup_kwargs["openclaw_home"] = openclaw_home
+        if hardened_profile:
+            setup_kwargs["hardened_profile"] = True
         setup_result = initializer.setup_openclaw_config(**setup_kwargs)
 
         if setup_result.dry_run:

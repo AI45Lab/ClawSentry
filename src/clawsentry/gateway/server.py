@@ -69,6 +69,7 @@ from .models import (
     SyncDecisionRequest,
     SyncDecisionResponse,
     SessionEffectRequest,
+    SessionScopeProfile,
     adapter_effect_result_summary,
     decision_effect_summary,
     decision_effects_for_trajectory,
@@ -86,6 +87,7 @@ from .l3_runtime import build_l3_runtime_info
 from .pattern_evolution import PatternEvolutionManager
 from .policy_engine import L1PolicyEngine
 from .post_action_analyzer import PostActionAnalyzer
+from .session_scope import evaluate_session_scope, scope_protection_statement
 from .metrics import LLMBudgetTracker, MetricsCollector
 from .trajectory_analyzer import TrajectoryAnalyzer
 from .session_enforcement import (
@@ -1083,7 +1085,7 @@ class SupervisionGateway:
                         "reason": f"post-action finding {finding.tier.value}",
                         "timestamp": occurred_at,
                     })
-                self.event_bus.broadcast({
+                finding_event = {
                     "type": "post_action_finding",
                     "event_id": event_id,
                     "session_id": session_id,
@@ -1093,7 +1095,10 @@ class SupervisionGateway:
                     "score": finding.score,
                     "handling": handling,
                     "timestamp": occurred_at,
-                })
+                }
+                if isinstance(finding.details, dict) and finding.details.get("sanitize_advisory"):
+                    finding_event["sanitize_advisory"] = finding.details["sanitize_advisory"]
+                self.event_bus.broadcast(finding_event)
         except Exception:
             logger.exception("post-action analysis failed for event %s", event_id)
 
@@ -1674,6 +1679,8 @@ class SupervisionGateway:
         if effect_summary is not None:
             decision_event["effect_summary"] = effect_summary
             decision_event["decision_effect_summary"] = effect_summary
+        if decision_dict.get("scope_evaluation") is not None:
+            decision_event["scope_evaluation"] = decision_dict["scope_evaluation"]
         for key in (
             "approval_kind",
             "approval_state",
@@ -3515,6 +3522,47 @@ def create_http_app(
             content=json.dumps(result),
             media_type="application/json",
         )
+
+    @app.post("/ahp/scope/preview")
+    async def scope_preview_endpoint(request: Request):
+        auth_result = await verify_auth(request)
+        if isinstance(auth_result, Response):
+            return auth_result
+        rl_result = _check_rate_limit(request)
+        if rl_result is not None:
+            return rl_result
+        try:
+            body = await request.json()
+            profile = SessionScopeProfile.model_validate(body.get("profile"))
+            if body.get("confirm") is True:
+                profile = profile.model_copy(update={"confirmed": True, "dry_run": False})
+            event = CanonicalEvent.model_validate(body.get("event"))
+            evaluation = evaluate_session_scope(
+                event,
+                DecisionContext(session_scope_profile=profile),
+            )
+        except ValidationError as exc:
+            return Response(
+                content=json.dumps({"error": f"scope preview validation failed: {exc.error_count()} error(s)"}),
+                status_code=400,
+                media_type="application/json",
+            )
+        except Exception as exc:  # noqa: BLE001
+            return Response(
+                content=json.dumps({"error": f"scope preview failed: {exc}"}),
+                status_code=400,
+                media_type="application/json",
+            )
+
+        summary = evaluation.summary().model_dump(mode="json") if evaluation else None
+        enforced = bool(summary and summary.get("enforced"))
+        return {
+            "valid": True,
+            "mode": "enforced" if enforced else "dry_run_only",
+            "profile_id": profile.profile_id,
+            "scope_evaluation": summary,
+            "protection_statement": scope_protection_statement(enforced=enforced),
+        }
 
     # --- a3s-code HTTP transport (B-1) ---
     from ..adapters.a3s_adapter import InProcessA3SAdapter

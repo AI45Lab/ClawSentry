@@ -9,6 +9,14 @@ from pathlib import Path
 from .base import LOCAL_ENV_FILE_EXAMPLE, InitResult, SetupResult, merge_project_framework_config
 
 _DEFAULT_WS_PORT = 18789
+HARDENED_MARKER = "clawsentry.hardened_profile.v1"
+HARDENED_NATIVE_DENY_TOOLS = ("exec", "write", "edit", "apply_patch", "process")
+HARDENED_WRAPPER_TOOLS = (
+    "cs_execute_command",
+    "cs_read_file",
+    "cs_write_file",
+    "cs_http_request",
+)
 
 
 class OpenClawInitializer:
@@ -159,6 +167,7 @@ class OpenClawInitializer:
         *,
         openclaw_home: Path | None = None,
         dry_run: bool = False,
+        hardened_profile: bool = False,
     ) -> SetupResult:
         """Auto-configure OpenClaw files for Monitor integration.
 
@@ -206,6 +215,17 @@ class OpenClawInitializer:
             bak = home / "exec-approvals.json.bak"
             if bak.exists():
                 files_backed_up.append(bak)
+
+        # --- optional hardened profile ---
+        if hardened_profile:
+            hp_modified = self._setup_hardened_profile(
+                home, changes=changes, dry_run=dry_run,
+            )
+            if hp_modified:
+                files_modified.append(hp_modified)
+                bak = home / "openclaw.json.bak"
+                if bak.exists() and bak not in files_backed_up:
+                    files_backed_up.append(bak)
 
         # If nothing was modified, inform the user
         if not files_modified and not dry_run:
@@ -278,6 +298,16 @@ class OpenClawInitializer:
     # ------------------------------------------------------------------
 
     @staticmethod
+    def _backup_once(path: Path) -> None:
+        """Create ``<name>.bak`` once so restore keeps the original config."""
+
+        if not path.exists():
+            return
+        bak_path = path.with_name(path.name + ".bak")
+        if not bak_path.exists():
+            bak_path.write_text(path.read_text())
+
+    @staticmethod
     def _setup_openclaw_json(
         openclaw_home: Path,
         *,
@@ -317,12 +347,66 @@ class OpenClawInitializer:
             return None
 
         # Backup
-        if config_path.exists():
-            bak_path = openclaw_home / "openclaw.json.bak"
-            bak_path.write_text(config_path.read_text())
+        OpenClawInitializer._backup_once(config_path)
 
         # Deep-set tools.exec.host
         config.setdefault("tools", {}).setdefault("exec", {})["host"] = "gateway"
+        config_path.write_text(json.dumps(config, indent=2))
+        return config_path
+
+    @staticmethod
+    def _setup_hardened_profile(
+        openclaw_home: Path,
+        *,
+        changes: list[str],
+        dry_run: bool,
+    ) -> Path | None:
+        """Enable marker-managed optional native deny/wrapper hardening."""
+
+        config_path = openclaw_home / "openclaw.json"
+        config: dict = {}
+        if config_path.exists():
+            try:
+                config = json.loads(config_path.read_text())
+            except (json.JSONDecodeError, OSError):
+                config = {}
+
+        existing = (config.get("clawsentry", {}) or {}).get("hardened_profile", {})
+        if isinstance(existing, dict) and existing.get("marker") == HARDENED_MARKER:
+            changes.append("openclaw.json: hardened profile already marker-managed.")
+            return None
+
+        changes.append(
+            "openclaw.json: enable ClawSentry hardened profile "
+            f"(marker {HARDENED_MARKER}; deny native tools: "
+            f"{', '.join(HARDENED_NATIVE_DENY_TOOLS)}; wrappers: "
+            f"{', '.join(HARDENED_WRAPPER_TOOLS)})."
+        )
+        if dry_run:
+            return None
+
+        OpenClawInitializer._backup_once(config_path)
+        native_tools = config.setdefault("tools", {}).setdefault("native", {})
+        existing_deny = native_tools.get("deny") or []
+        if not isinstance(existing_deny, list):
+            existing_deny = []
+        combined_deny = list(dict.fromkeys([*existing_deny, *HARDENED_NATIVE_DENY_TOOLS]))
+        native_tools["deny"] = combined_deny
+        config.setdefault("clawsentry", {})["hardened_profile"] = {
+            "marker": HARDENED_MARKER,
+            "enabled": True,
+            "mode": "ahp_mediated_wrappers",
+            "native_tool_policy": {"deny": combined_deny},
+            "wrappers": [
+                {
+                    "name": name,
+                    "policy": "forward_to_clawsentry_ahp_gateway",
+                    "enforcement_claim": "adapter_capability_required",
+                }
+                for name in HARDENED_WRAPPER_TOOLS
+            ],
+            "reversible": True,
+        }
         config_path.write_text(json.dumps(config, indent=2))
         return config_path
 
@@ -372,8 +456,7 @@ class OpenClawInitializer:
 
         # Backup (only if file existed)
         if existed:
-            bak_path = openclaw_home / "exec-approvals.json.bak"
-            bak_path.write_text(ea_path.read_text())
+            OpenClawInitializer._backup_once(ea_path)
 
         # Apply changes
         if need_security:

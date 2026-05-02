@@ -22,7 +22,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3117+ public regression tests**, with release-time CI/build evidence
+- **3152+ regression tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,12 +34,12 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
-## What's New in v0.6.4
+## What's New in v0.6.5
 
-- **Env-file discovery hints**: `clawsentry start` and `clawsentry config show --effective` now tell operators when `.clawsentry.env.local`, legacy `.env.clawsentry`, or `.clawsentry.env.example` exists but was not loaded.
-- **Strict source model preserved**: discovered env files remain advisory only; runtime values still require process env, `--env-file`, or `CLAWSENTRY_ENV_FILE`.
-- **Better first-run recovery**: auto-detection failures now print the exact `--env-file` command to try before asking users to manually inspect configuration.
-- **Docs and release status refreshed**: progress docs, online configuration docs, changelog, and API metadata are aligned for v0.6.4.
+- **Scope preview before enforcement**: `clawsentry scope validate/preview` and `POST /ahp/scope/preview` show dry-run/enforced boundaries and readable reason codes before operators opt in.
+- **Capability-honest sanitizer reporting**: watch/report output uses `would_sanitize`, redacted previews, and degraded/unsupported states instead of overclaiming output rewriting.
+- **Reversible OpenClaw hardening**: hardened profile setup remains opt-in, dry-run-first, marker-managed, and restore-tested.
+- **Docs and release status refreshed**: progress docs, online docs, changelog, and API metadata are aligned for v0.6.5.
 
 ## Quick Start
 

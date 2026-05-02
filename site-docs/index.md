@@ -399,7 +399,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3117 passed / 6 skipped**（v0.6.4 public release gate） |
+| 测试用例 | **3152 passed / 5 skipped**（v0.6.5 release gate） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |

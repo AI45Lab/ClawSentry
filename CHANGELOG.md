@@ -8,6 +8,35 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.6.5] — 2026-05-02
+
+### 新增
+
+- **Session scope preview surface** — 新增 `clawsentry scope validate/preview` 与 `POST /ahp/scope/preview`，可在启用前预览 deterministic `SessionScopeProfile` 的 allow/defer/deny 结果、dry-run/enforced 状态和 readable reason codes。
+- **Scope-aware watch/report output** — `clawsentry watch` 会显示 scope profile、dry-run/enforced 边界和 reason codes，帮助 operator 判断预览与真实收紧的差异。
+
+### 改进
+
+- **Capability-honest sanitizer UX** — sanitizer 摘要使用 `would_sanitize`、redacted preview、redaction type/count 和 adapter degraded/unsupported wording；tool-output sanitizer 仍保持 advisory-only，除非 adapter 能证明 rewrite-before-history。
+- **Opt-in OpenClaw hardening boundary** — OpenClaw hardened profile 继续保持 opt-in、dry-run-first、marker-managed、可恢复，并明确 wrappers 只转发到 AHP Gateway，不复制策略逻辑。
+- **API/docs inventory refresh** — API coverage、OpenAPI、validity report 与在线决策端点文档同步到新的 scope preview 入口。
+
+### 决策边界
+
+- Skill/plugin first-use preflight 暂不作为 runtime enforcement 发布：当前 adapters 没有稳定的执行前 identity + content hash/version + source path + first-use/update timing 合同。
+- Root-wide panic mode 暂不发布：当前支持 session-scoped quarantine/enforcement；全局模式需要单独的 operator UX 与 blast-radius 设计。
+
+### 测试与验证
+
+- Python 完整回归：`pytest src/clawsentry/tests -q` → `3152 passed, 5 skipped`。
+- Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
+- Python lint：`git diff --name-only -- '*.py' | xargs -r python -m ruff check` → PASS。
+- Compile check：`python -m compileall -q src/clawsentry` → PASS。
+- Package build：`python -m build` → PASS（setuptools license deprecation warnings only）。
+- Web UI 回归：`npm test -- --run` → `53 passed`。
+- Docs strict build：`mkdocs build --strict` → PASS。
+- Architect verification：local architecture checks passed；publish-state recheck pending after release smoke。
+
 ## [0.6.4] — 2026-04-30
 
 ### 改进
@@ -18,7 +47,7 @@
 
 ### 测试与验证
 
-- Python 完整回归：开发仓库 `3118 passed, 5 skipped`；公开仓库 `3117 passed, 6 skipped`。
+- Python 完整回归：`python -m pytest src/clawsentry/tests/ -q --tb=short` → `3118 passed, 5 skipped`。
 - Web UI 回归：`npm test -- --run` → `53 passed`。
 - Focused env-file UX / docs contract regression：`python -m pytest src/clawsentry/tests/test_dotenv_loader.py src/clawsentry/tests/test_start_command.py src/clawsentry/tests/test_config_command.py src/clawsentry/tests/test_cli_main.py src/clawsentry/tests/test_public_docs_contract.py -q --tb=short` → `71 passed`。
 - Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
@@ -1365,3 +1394,4 @@
 
 [0.6.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.4
 [0.6.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.3
+[0.6.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.5

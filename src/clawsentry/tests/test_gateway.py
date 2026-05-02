@@ -2442,6 +2442,43 @@ class TestHttpTransport:
             assert data["decision_path_io"]["reporting"]["health"]["calls"] == 1
 
     @pytest.mark.asyncio
+    async def test_http_scope_preview_endpoint_reports_dry_run_boundary(self, app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.post(
+                "/ahp/scope/preview",
+                json={
+                    "profile": {
+                        "profile_id": "docs-only",
+                        "confirmed": False,
+                        "dry_run": True,
+                        "base_rules": {"denied_paths": ["~/.ssh"]},
+                        "task_rules": {"allowed_tools": ["read_file"]},
+                    },
+                    "event": {
+                        "event_id": "evt-scope-http",
+                        "trace_id": "trace-scope-http",
+                        "event_type": "pre_action",
+                        "session_id": "sess-scope-http",
+                        "agent_id": "agent-scope-http",
+                        "source_framework": "test",
+                        "occurred_at": "2026-05-02T00:00:00+00:00",
+                        "tool_name": "read_file",
+                        "payload": {"path": "~/.ssh/id_rsa"},
+                    },
+                },
+            )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["valid"] is True
+        assert data["scope_evaluation"]["verdict"] == "deny"
+        assert data["scope_evaluation"]["enforced"] is False
+        assert "scope_deny:path ~/.ssh" in data["scope_evaluation"]["reason_codes"]
+        assert "Protected today:" in data["protection_statement"]
+        assert "Not protected today:" in data["protection_statement"]
+
+    @pytest.mark.asyncio
     async def test_http_dangerous_block(self, app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:

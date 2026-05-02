@@ -1488,3 +1488,83 @@ class TestRunWatchInteractive:
         watch_command.run_watch("http://gateway.test", interactive=False, color=False)
 
         assert handled is False
+
+
+class TestScopeCompletionWatchUX:
+    def test_decision_format_shows_scope_evaluation_boundary(self):
+        event = {
+            "type": "decision",
+            "timestamp": "2026-05-02T00:00:00+00:00",
+            "decision": "defer",
+            "command": "read_file ~/.ssh/id_rsa",
+            "risk_level": "medium",
+            "reason": "Session scope requires operator review",
+            "scope_evaluation": {
+                "profile_id": "docs-only",
+                "source": "operator",
+                "confirmed": False,
+                "dry_run": True,
+                "enforced": False,
+                "verdict": "deny",
+                "reason_codes": ["scope_deny:path ~/.ssh"],
+            },
+        }
+
+        result = format_decision(event, color=False)
+
+        assert "Scope: dry-run only" in result
+        assert "docs-only" in result
+        assert "scope_deny:path ~/.ssh" in result
+
+    def test_decision_format_shows_sanitize_would_not_enforced(self):
+        event = {
+            "type": "decision",
+            "timestamp": "2026-05-02T00:00:00+00:00",
+            "decision": "block",
+            "command": "tool output",
+            "risk_level": "high",
+            "reason": "secret-like output detected",
+            "effect_summary": {
+                "sanitize_effect": {
+                    "target": "tool_output",
+                    "advisory_only": True,
+                    "outcome": "tool_output_would_sanitize",
+                    "redaction_types": ["api_key"],
+                    "redaction_counts": {"api_key": 1},
+                    "original_preview_redacted": "sk-***",
+                    "sanitized_preview_redacted": "[REDACTED:api_key]",
+                }
+            },
+        }
+
+        result = format_decision(event, color=False)
+
+        assert "Sanitizer: would_sanitize tool_output" in result
+        assert "api_key=1" in result
+        assert "ENFORCED" not in result
+        assert "sk-live-secret" not in result
+
+    def test_post_action_finding_formats_sanitize_advisory_without_raw_secret(self):
+        event = {
+            "type": "post_action_finding",
+            "timestamp": "2026-05-02T00:00:00+00:00",
+            "session_id": "sess-1",
+            "tier": "emergency",
+            "score": 0.95,
+            "handling": "broadcast",
+            "patterns_matched": ["secret_output"],
+            "sanitize_advisory": {
+                "would_sanitize": True,
+                "target": "tool_output",
+                "redaction_types": ["api_key"],
+                "redaction_counts": {"api_key": 1},
+                "redacted_preview": "[REDACTED:api_key]",
+            },
+        }
+
+        result = format_event(event, color=False)
+
+        assert "Sanitizer: would_sanitize tool_output" in result
+        assert "api_key=1" in result
+        assert "[REDACTED:api_key]" in result
+        assert "sk-live-secret" not in result

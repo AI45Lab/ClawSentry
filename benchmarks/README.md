@@ -1,6 +1,6 @@
 # Benchmarks 工作区
 
-这个目录用于集中管理安全评测 benchmark，目标是评估 agent 框架在被攻击任务中的表现，以及 ClawSentry 等防御系统的拦截效果。
+这个目录用于集中管理安全评测 benchmark，目标是评估 agent 框架在被攻击任务中的表现，以及 ClawSentry 等防御系统的检测、拦截和审计效果。
 
 约定：上游 benchmark 仓库尽量保持干净，不直接在 clone 目录里写本地说明、实验记录和长期结果。外层 `benchmarks/` 负责统一索引、运行规范和结果归档。
 
@@ -16,72 +16,65 @@ benchmarks/
   results/<bench-slug>/         # 长期保存的运行结果，默认不入库
   skills-safety-bench/          # 上游 clone
   AgentDoG/                     # 上游 clone
+  MSB/                          # 上游 clone
+  skill-inject/                 # 上游 clone
 ```
 
-## 当前已接入的 Benchmark
+## 当前已 clone 的 Benchmark
 
-当前已 clone：
+| bench | 来源 | 本地路径 | 当前用途 |
+| --- | --- | --- | --- |
+| `skills-safety-bench` | `git@github.com:jinchang1223/skills-safety-bench.git` | `skills-safety-bench/` | Harbor/Codex 静态攻击任务；6 个 RD / 155 case。 |
+| `agentdog-atbench` | `https://github.com/AI45Lab/AgentDoG.git` | `AgentDoG/` | trajectory-level safety replay；适合先做 offline labeled detection/audit。 |
+| `MSB` | `https://github.com/dongsenzhang/MSB.git` | `MSB/` | MCP/tool-use 攻击 benchmark；适合评估 tool metadata/parameter/result/retrieval injection 防护。 |
+| `skill-inject` | `git@github.com:aisa-group/skill-inject.git` | `skill-inject/` | skill/package prompt injection benchmark；适合评估 skill static scan 与容器内 runtime hook/gateway 防护。 |
 
-```text
-skills-safety-bench/
-AgentDoG/
-```
+详细登记见 [BENCHMARKS.md](BENCHMARKS.md)。统一 ClawSentry 评测方案见 [notes/clawsentry-evaluation-plan.md](notes/clawsentry-evaluation-plan.md)。
 
-来源：
+## 本地说明文档
 
-```text
-git@github.com:jinchang1223/skills-safety-bench.git
-https://github.com/AI45Lab/AgentDoG.git
-```
-
-它是一个静态 Harbor / SkillsBench 风格 benchmark，包含 6 个风险域、30 个 category、155 个已准备好的攻击 case。详细结构见：
-
-- [BENCHMARKS.md](BENCHMARKS.md)
+- [notes/skills-safety-bench/SOURCE.md](notes/skills-safety-bench/SOURCE.md)
 - [notes/skills-safety-bench/BENCHMARK_NOTES.md](notes/skills-safety-bench/BENCHMARK_NOTES.md)
 - [notes/skills-safety-bench/RUNBOOK.md](notes/skills-safety-bench/RUNBOOK.md)
+- [notes/skills-safety-bench/EVALUATION.md](notes/skills-safety-bench/EVALUATION.md)
+- [notes/agentdog-atbench/SOURCE.md](notes/agentdog-atbench/SOURCE.md)
 - [notes/agentdog-atbench/BENCHMARK_NOTES.md](notes/agentdog-atbench/BENCHMARK_NOTES.md)
 - [notes/agentdog-atbench/RUNBOOK.md](notes/agentdog-atbench/RUNBOOK.md)
+- [notes/msb/SOURCE.md](notes/msb/SOURCE.md)
+- [notes/msb/BENCHMARK_NOTES.md](notes/msb/BENCHMARK_NOTES.md)
+- [notes/msb/RUNBOOK.md](notes/msb/RUNBOOK.md)
+- [notes/msb/EVALUATION.md](notes/msb/EVALUATION.md)
+- [notes/skill-inject/SOURCE.md](notes/skill-inject/SOURCE.md)
+- [notes/skill-inject/BENCHMARK_NOTES.md](notes/skill-inject/BENCHMARK_NOTES.md)
+- [notes/skill-inject/RUNBOOK.md](notes/skill-inject/RUNBOOK.md)
+- [notes/skill-inject/EVALUATION.md](notes/skill-inject/EVALUATION.md)
 
 ## 现在能确认什么
 
 已确认：
 
-- `skills-safety-bench` 仓库已 clone，当前 commit 为 `148133b`。
-- `skills-safety-bench` 自带的 runner 能 dry-run 解析 RD1-RD6 的所有 manifest。
-- 当前上游脚本是 Codex 专用批量入口：`scripts/start_codex_batch.sh` 内部通过 Harbor 调用 `harbor run -a codex`。
-- 任务目录本身包含 `attacked_task/`、Docker 环境、测试脚本和 `eval/verify_attack.py`，理论上可以被适配到其他 agent 框架。
-- 本机当前 Harbor/Docker 可用：`harbor --version` 为 `0.4.0`，Docker server 为 `29.1.5`。
-- AgentDoG 上游当前没有 `Dockerfile` / compose 环境；它更像 trajectory / prompt / XAI 评测素材仓库，本地通过 ClawSentry replay runner 承接。
+- `skills-safety-bench` 当前本地 commit 为 `148133b`，本地 manifest 统计仍是 6 个风险域、30 个 category、155 个 case；历史 dry-run 已验证 RD1-RD6。计划中的远端更新未完成：SSH fetch 被 22 端口连接关闭，HTTPS fetch 需要凭据。
+- `AgentDoG` 当前 commit 为 `09adfb8`，本地 ClawSentry offline replay runner 已有 sample smoke；正式分数仍需 labeled ATBench manifest。
+- `MSB` 当前 commit 为 `c1d6a70`，本地数据包含 12 attack type、5 attack task、10 agent 场景、64 task-tool 对；可用于 ClawSentry MCP/tool boundary 评估，但需 adapter。
+- `skill-inject` 当前 commit 为 `bf9fa1f`，本地数据包含 48 contextual injection、36 obvious injection、58 clean tasks、49 个 `SKILL.md`；可用于 ClawSentry skill injection 评估，但需容器内 hook/gateway 与 static scan。
 
 尚未确认：
 
-- Claude Code、OpenClaw、A3S-Code 的自动化 runner 还没有在这个仓库中出现。
-- 加入 ClawSentry 后的四框架自动化测试还需要对应框架的运行适配层。
-- skills-safety-bench 的完整真实执行仍未拿到有效业务输出；当前阻塞已不是 Harbor 缺失，而是 Codex/provider 真实执行链路稳定性与 Node 22 运行环境。
+- MSB 与 skill-inject 还没有运行 raw-vs-protected ClawSentry 正式样本。
+- skills-safety-bench 的完整真实执行仍未拿到有效业务输出；当前阻塞与 Codex/provider 真实执行链路稳定性有关。
+- Claude Code、OpenClaw、A3S-Code 的跨 benchmark 自动化 runner 仍需要对应框架的运行适配层。
 
-## 如何快速试用
+## 快速入口
 
-最安全的入口是本地 wrapper，默认只 dry-run，不会调用模型：
-
-```bash
-bash scripts/skills_safety_bench_codex.sh --rd 1 --case travel_planning_skill_name_decoy_singular_alias
-```
-
-真实执行需要安装 Harbor、切换 Node 22，并显式加 `--real-run`：
+### skills-safety-bench dry-run
 
 ```bash
-bash scripts/skills_safety_bench_codex.sh \
+bash benchmarks/scripts/skills_safety_bench_codex.sh \
   --rd 1 \
-  --case travel_planning_skill_name_decoy_singular_alias \
-  --defense raw \
-  --real-run
+  --case travel_planning_skill_name_decoy_singular_alias
 ```
 
-测试 ClawSentry 时，先启动 ClawSentry 的 OpenAI-compatible gateway，把 `.envrc` 或 shell 环境中的 `OPENAI_BASE_URL` / `OPENAI_API_KEY` 指向防御后的 endpoint，再运行同一个命令并把 `--defense` 标成 `clawsentry`。
-
-## AgentDoG / ATBench 快速试用
-
-AgentDoG/ATBench 适合作为 ClawSentry 的轨迹级安全评测源。第一阶段使用离线 replay，不直接启动真实 agent：
+### AgentDoG / ATBench offline replay smoke
 
 ```bash
 python benchmarks/scripts/agentdog_atbench_clawsentry.py \
@@ -91,36 +84,25 @@ python benchmarks/scripts/agentdog_atbench_clawsentry.py \
   --print-summary
 ```
 
-后续 live runner 再分别覆盖 `a3s-code`、`codex`、`claude-code`、`gemini-cli` 和可选 `openclaw`。
-
-当前已验证真实 API 单 case replay：
+### MSB 最小配置 smoke（后续执行阶段）
 
 ```bash
-env -u HTTPS_PROXY -u HTTP_PROXY -u ALL_PROXY -u https_proxy -u http_proxy -u all_proxy \
-python benchmarks/scripts/agentdog_atbench_clawsentry.py \
-  --trajectory benchmarks/AgentDoG/examples/trajectory_sample.json \
-  --output benchmarks/results/agentdog-atbench/2026-04-27_realapi_agentdog_singlecase_e91cd0f/events-converted.jsonl \
-  --framework agentdog-atbench \
-  --agent-hcl agent.hcl \
-  --llm-temperature 1 \
-  --llm-provider-timeout-ms 30000 \
-  --decision-tier L2 \
-  --replay \
-  --result-dir benchmarks/results/agentdog-atbench/2026-04-27_realapi_agentdog_singlecase_e91cd0f \
-  --print-summary
+cd benchmarks/MSB
+python agent_attack.py --cfg_path /tmp/msb-smoke.yml
+python metrics.py --attack_type prompt_injection --attack_task obtain_agent_interaction_data --llm openai/gpt-4o-mini --agent llm_enhancement --mode llm
 ```
 
-结果：`3` events / `3` decisions，全部 L2，max risk `medium`，API key 只以 `<redacted>` 写入 summary。该 sample 没有 ground-truth label，因此仍是基建 smoke，不是正式 ATBench 分数。
-
-## 五框架单 case smoke
-
-如果目标是先确认五个框架的 ClawSentry 接入链路都能跑通同一个 case，可以使用本地 deterministic ingress smoke：
+### skill-inject 干跑预览
 
 ```bash
-python benchmarks/scripts/framework_single_case_smoke.py \
-  --result-dir /tmp/clawsentry-framework-single-case \
-  --print-summary
+cd benchmarks/skill-inject
+python scripts/smoke_test_all.py --agent codex --model gpt-5.2-codex --dry-run
 ```
 
-这个脚本覆盖 `claude-code`、`codex`、`gemini-cli`、`a3s-code`、`openclaw`
-五条现有 adapter/harness/Gateway 路径。它不启动真实框架 CLI，因此只作为接入链路 smoke，不作为正式 benchmark 得分。
+## 安全边界
+
+- 不修改当前开发者 `~/.codex`、当前 `CODEX_HOME` 或 OMX/user hooks。
+- ClawSentry hooks 只安装到临时 `CODEX_HOME`、容器内 home 或 benchmark 专用配置目录。
+- 上游 clone 内不写本地长期说明。
+- `.env`、`docker/.env`、agent stdout、provider endpoint 和 API key 必须 redaction。
+- `benchmarks/RESULTS.md` 不伪造分数；未跑正式样本只登记为“待正式运行/未出分”。

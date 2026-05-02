@@ -34,7 +34,6 @@ except ImportError:
     from clawsentry.gateway.models import AdapterEffectResult, CanonicalDecision, DecisionVerdict  # type: ignore[no-redef]
 
 import time as _time
-from pathlib import Path as _Path
 
 logger = logging.getLogger("a3s-gateway-harness")
 
@@ -293,6 +292,21 @@ def _requested_effect_outcomes(decision_effects: dict[str, Any] | None) -> list[
         outcomes.append(
             "tool_input_rewrite" if target == "tool_input" else "command_rewrite"
         )
+    sanitize_effect = decision_effects.get("sanitize_effect")
+    if isinstance(sanitize_effect, dict) and sanitize_effect.get("requested"):
+        target = str(sanitize_effect.get("target") or "tool_output")
+        if target == "tool_output":
+            return outcomes
+        outcome = sanitize_effect.get("outcome")
+        if outcome:
+            outcomes.append(str(outcome))
+        else:
+            outcomes.append(
+                {
+                    "command": "command_sanitize",
+                    "tool_input": "tool_input_sanitize",
+                }.get(target, "tool_input_sanitize")
+            )
     return outcomes
 
 

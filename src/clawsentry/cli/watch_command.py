@@ -163,6 +163,55 @@ def _format_evidence_summary(summary: dict[str, Any] | None) -> str | None:
     return " · ".join(parts) if parts else None
 
 
+def _format_counts(counts: Any) -> str:
+    if not isinstance(counts, dict) or not counts:
+        return "none"
+    return ", ".join(f"{key}={value}" for key, value in sorted(counts.items()))
+
+
+def _format_scope_evaluation(scope: Any) -> list[str]:
+    if not isinstance(scope, dict):
+        return []
+    profile_id = str(scope.get("profile_id") or "unknown")
+    verdict = str(scope.get("verdict") or "neutral")
+    if scope.get("enforced"):
+        mode = "enforced"
+    elif scope.get("dry_run"):
+        mode = "dry-run only"
+    else:
+        mode = "not enforced"
+    reasons = ", ".join(str(item) for item in scope.get("reason_codes") or [])
+    line = f"Scope: {mode} profile={profile_id} verdict={verdict}"
+    if reasons:
+        line += f" reasons={reasons}"
+    return [line]
+
+
+def _format_sanitize_summary(sanitize: Any) -> list[str]:
+    if not isinstance(sanitize, dict):
+        return []
+    target = str(sanitize.get("target") or "tool_output")
+    advisory = bool(sanitize.get("advisory_only", sanitize.get("would_sanitize", False)))
+    outcome = str(sanitize.get("outcome") or "")
+    state = (
+        "would_sanitize"
+        if advisory or outcome.endswith("would_sanitize")
+        else "sanitize_requested"
+    )
+    lines = [f"Sanitizer: {state} {target}"]
+    counts = _format_counts(sanitize.get("redaction_counts"))
+    if counts != "none":
+        lines.append(f"Redactions: {counts}")
+    preview = (
+        sanitize.get("sanitized_preview_redacted")
+        or sanitize.get("redacted_preview")
+        or sanitize.get("original_preview_redacted")
+    )
+    if preview:
+        lines.append(f"Preview: {preview}")
+    return lines
+
+
 
 
 def _stringify_operator_hint(value: Any) -> str | None:
@@ -633,6 +682,11 @@ def format_decision(
                 detail_items.append(
                     f"Replacement: {_c('cyan', str(replacement_preview), color=color)}"
                 )
+        for sanitize_line in _format_sanitize_summary(effect_summary.get("sanitize_effect")):
+            detail_items.append(_c("yellow", sanitize_line, color=color))
+
+    for scope_line in _format_scope_evaluation(event.get("scope_evaluation")):
+        detail_items.append(_c("cyan", scope_line, color=color))
 
     adapter_summary = event.get("adapter_effect_result_summary")
     if isinstance(adapter_summary, dict):
@@ -962,6 +1016,8 @@ def _format_post_action_finding(
         f"Handling: {_c('grey', handling, color=color)}",
         f"Patterns: {_c('grey', patterns_text, color=color)}",
     ]
+    for sanitize_line in _format_sanitize_summary(event.get("sanitize_advisory")):
+        detail_items.append(_c("yellow", sanitize_line, color=color))
     for i, item in enumerate(detail_items):
         connector = "└─" if i == len(detail_items) - 1 else "├─"
         lines.append(f"{_TREE_INDENT}{connector} {item}")

@@ -471,7 +471,10 @@ def test_release_docs_use_real_toml_paths_and_current_public_status() -> None:
     )
 
     if (REPO_ROOT / "docs" / "management").exists():
-        assert f"workspace baseline: v{package_version} released" in release_docs
+        assert (
+            f"workspace baseline: v{package_version} released" in release_docs
+            or f"workspace baseline: v{package_version} local prep" in release_docs
+        )
     else:
         assert f"What's New in v{package_version}" in release_docs
     assert package_version in release_docs

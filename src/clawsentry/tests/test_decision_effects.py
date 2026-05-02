@@ -16,7 +16,6 @@ from clawsentry.gateway.models import (
     EffectOutcome,
     RiskLevel,
     RewriteEffectRequest,
-    SessionEffectRequest,
     decision_effects_for_trajectory,
 )
 from clawsentry.gateway.server import SupervisionGateway, create_http_app
@@ -348,3 +347,161 @@ class TestRewriteResolutionValidation:
 
         assert "rm -ri …" in rendered
         assert "rm -ri /tmp/example" not in rendered
+
+
+class TestScopePhase1DecisionEffectBaseline:
+    """Document pre-upgrade effect-contract boundaries."""
+
+    def test_effect_contract_exposes_request_only_sanitizer_surface(self):
+        fields = DecisionEffects.model_fields
+
+        assert "session_effect" in fields
+        assert "rewrite_effect" in fields
+        assert "sanitize_effect" in fields
+
+    def test_adapter_results_are_the_only_enforcement_evidence_surface(self):
+        effects = _rewrite_effect()
+        adapter_result = AdapterEffectResult(
+            effect_id=effects.effect_id,
+            framework="codex",
+            adapter="codex-native-hook",
+            requested=[EffectOutcome.COMMAND_REWRITE],
+            unsupported=[EffectOutcome.COMMAND_REWRITE],
+            degrade_reason="codex_pretool_updated_input_unsupported",
+            event_id="evt-cg-effect",
+        )
+
+        assert not hasattr(effects, "enforced")
+        assert adapter_result.unsupported == [EffectOutcome.COMMAND_REWRITE]
+        assert adapter_result.result_kind == "unsupported"
+
+
+class TestSanitizeEffectModel:
+    def test_output_sanitize_effect_is_advisory_without_modify(self):
+        from clawsentry.gateway.models import SanitizeEffectRequest, SanitizeTarget
+
+        effects = DecisionEffects(
+            effect_id="eff-sanitize-output",
+            action_scope="action",
+            sanitize_effect=SanitizeEffectRequest(
+                target=SanitizeTarget.TOOL_OUTPUT,
+                original_hash="sha256:orig",
+                original_preview_redacted="token=[REDACTED:secret]",
+                sanitized_hash="sha256:sanitized",
+                sanitized_preview_redacted="token=[REDACTED:secret]",
+                redaction_counts={"secret": 1},
+                redaction_types=["secret"],
+            ),
+        )
+        decision = CanonicalDecision(
+            decision=DecisionVerdict.ALLOW,
+            reason="post-action would sanitize",
+            policy_id="sanitize-advisory",
+            risk_level=RiskLevel.HIGH,
+            decision_source=DecisionSource.POLICY,
+            decision_effects=effects,
+        )
+
+        assert decision.decision_effects is not None
+        sanitize = decision.decision_effects.sanitize_effect
+        assert sanitize is not None
+        assert sanitize.advisory_only is True
+        assert sanitize.outcome == EffectOutcome.TOOL_OUTPUT_WOULD_SANITIZE
+
+    def test_tool_output_sanitize_cannot_claim_canonical_modify(self):
+        from clawsentry.gateway.models import SanitizeEffectRequest, SanitizeTarget
+
+        effects = DecisionEffects(
+            effect_id="eff-output-bad",
+            sanitize_effect=SanitizeEffectRequest(
+                target=SanitizeTarget.TOOL_OUTPUT,
+                original_hash="sha256:orig",
+                original_preview_redacted="[REDACTED:secret]",
+            ),
+        )
+
+        with pytest.raises(ValidationError, match="tool_output sanitize_effect"):
+            CanonicalDecision(
+                decision=DecisionVerdict.MODIFY,
+                reason="bad output modify",
+                policy_id="sanitize-bad",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.POLICY,
+                modified_payload={"output": "redacted"},
+                decision_effects=effects,
+            )
+
+    def test_input_sanitize_replacement_requires_modify(self):
+        from clawsentry.gateway.models import SanitizeEffectRequest, SanitizeTarget
+
+        effects = DecisionEffects(
+            effect_id="eff-input-sanitize",
+            sanitize_effect=SanitizeEffectRequest(
+                target=SanitizeTarget.COMMAND,
+                original_hash="sha256:orig",
+                original_preview_redacted="curl [REDACTED:secret]",
+                sanitized_hash="sha256:safe",
+                sanitized_preview_redacted="curl [REDACTED:secret]",
+                replacement_payload={"command": "curl https://safe.example"},
+            ),
+        )
+
+        with pytest.raises(ValidationError, match="requires decision='modify'"):
+            CanonicalDecision(
+                decision=DecisionVerdict.ALLOW,
+                reason="bad input sanitize",
+                policy_id="sanitize-bad",
+                risk_level=RiskLevel.MEDIUM,
+                decision_source=DecisionSource.POLICY,
+                decision_effects=effects,
+            )
+
+    def test_sanitizer_outcome_cannot_be_both_enforced_and_degraded(self):
+        with pytest.raises(ValidationError, match="both enforced and degraded"):
+            AdapterEffectResult(
+                effect_id="eff-sanitize-1",
+                framework="a3s-code",
+                adapter="a3s-gateway-harness",
+                requested=[EffectOutcome.COMMAND_SANITIZE],
+                enforced=[EffectOutcome.COMMAND_SANITIZE],
+                degraded=[EffectOutcome.COMMAND_SANITIZE],
+                degrade_reason="conflicting evidence",
+            )
+
+    def test_sanitize_effect_summary_strips_replacement_payload(self):
+        from clawsentry.gateway.models import SanitizeEffectRequest, SanitizeTarget, decision_effect_summary
+
+        effects = DecisionEffects(
+            effect_id="eff-input-sanitize",
+            sanitize_effect=SanitizeEffectRequest(
+                target=SanitizeTarget.COMMAND,
+                original_hash="sha256:orig",
+                original_preview_redacted="curl [REDACTED:secret]",
+                sanitized_hash="sha256:safe",
+                sanitized_preview_redacted="curl [REDACTED:secret]",
+                replacement_payload={"command": "curl https://safe.example"},
+            ),
+        )
+
+        summary = decision_effect_summary(effects)
+
+        assert summary is not None
+        assert "replacement_payload" not in summary["sanitize_effect"]
+        assert summary["sanitize_effect"]["outcome"] == "command_sanitize"
+
+    def test_output_sanitize_advisory_is_not_recorded_as_enforced_adapter_outcome(self):
+        from clawsentry.adapters.a3s_gateway_harness import _requested_effect_outcomes
+        from clawsentry.gateway.models import SanitizeEffectRequest, SanitizeTarget
+
+        effects = DecisionEffects(
+            effect_id="eff-output-advisory",
+            sanitize_effect=SanitizeEffectRequest(
+                target=SanitizeTarget.TOOL_OUTPUT,
+                original_hash="sha256:orig",
+                original_preview_redacted="[REDACTED:secret]",
+                sanitized_hash="sha256:safe",
+                sanitized_preview_redacted="[REDACTED:secret]",
+            ),
+        )
+
+        assert _requested_effect_outcomes(effects.model_dump(mode="json")) == []

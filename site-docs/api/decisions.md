@@ -767,3 +767,63 @@ async def send_uds_request(uds_path: str, request: dict) -> dict:
 - 当结果是 `degraded` 或 `unsupported` 时，必须提供 `degrade_reason`。
 - 重复回写会命中幂等键（`idempotency_key`），并返回已存在结果。
 - 该端点不需要完整 rewrite 替换载荷，不应发送敏感替换正文。
+
+## POST /ahp/scope/preview — Session scope 预览 {#post-ahp-scope-preview}
+
+该端点用于在启用 session scope 前，预览一个 deterministic
+`SessionScopeProfile` 对单个 `CanonicalEvent` 的判定。它是用户友好的
+dry-run/API 入口：默认只解释 `scope_allow` / `scope_defer` /
+`scope_deny` reason codes，不会声称已经阻断动作。只有请求显式传入
+`"confirm": true` 时，响应才会把该预览标记为 confirmed/non-dry-run。
+
+请求示例：
+
+```json
+{
+  "profile": {
+    "profile_id": "docs-only",
+    "confirmed": false,
+    "dry_run": true,
+    "base_rules": {"denied_paths": ["~/.ssh"]},
+    "task_rules": {"allowed_tools": ["read_file"]}
+  },
+  "event": {
+    "event_id": "evt-scope-docs",
+    "trace_id": "trace-scope-docs",
+    "event_type": "pre_action",
+    "session_id": "sess-scope-docs",
+    "agent_id": "agent-scope-docs",
+    "source_framework": "test",
+    "occurred_at": "2026-05-02T00:00:00+00:00",
+    "tool_name": "read_file",
+    "payload": {"path": "~/.ssh/id_rsa"}
+  }
+}
+```
+
+响应示例：
+
+```json
+{
+  "valid": true,
+  "mode": "dry_run_only",
+  "profile_id": "docs-only",
+  "scope_evaluation": {
+    "profile_id": "docs-only",
+    "source": "operator",
+    "confirmed": false,
+    "dry_run": true,
+    "enforced": false,
+    "verdict": "deny",
+    "reason_codes": ["scope_deny:path ~/.ssh"]
+  },
+  "protection_statement": "Protected today: scope preview validates rules and explains the decision that would apply. Not protected today: dry-run scope profiles do not block or defer actions until explicitly confirmed."
+}
+```
+
+用户保护边界：
+
+- **Protected today:** confirmed non-dry-run scope profiles can tighten Gateway
+  decisions to `defer` or `block` through the existing AHP policy path.
+- **Not protected today:** dry-run previews do not enforce, and ClawSentry does
+  not infer scopes automatically from LLM output in this phase.

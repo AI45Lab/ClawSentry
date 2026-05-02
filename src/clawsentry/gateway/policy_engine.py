@@ -29,10 +29,12 @@ from .models import (
     RiskLevel,
     RiskOverride,
     RiskSnapshot,
+    SessionScopeVerdict,
     utc_now_iso,
 )
 from .detection_config import DetectionConfig
 from .risk_snapshot import DANGEROUS_TOOLS, SessionRiskTracker, compute_risk_snapshot
+from .session_scope import evaluate_session_scope
 from .semantic_analyzer import (
     KEY_DOMAIN_PATTERN,
     L2Result,
@@ -185,7 +187,7 @@ class L1PolicyEngine:
 
         l1_snapshot = compute_risk_snapshot(event, context, self._session_tracker, effective_config)
         snapshot = l1_snapshot
-        decision = self._decide(event, snapshot)
+        decision = self._decide(event, snapshot, context)
         actual_tier = DecisionTier.L1
 
         if self._should_run_l2(event, context, l1_snapshot, requested_tier):
@@ -195,7 +197,7 @@ class L1PolicyEngine:
                     requested_tier=requested_tier,
                     config_override=effective_config,
                 )
-                decision = self._decide(event, snapshot)
+                decision = self._decide(event, snapshot, context)
             except Exception:
                 logging.getLogger(__name__).warning(
                     "L2 analysis failed; falling back to L1", exc_info=True,
@@ -217,6 +219,7 @@ class L1PolicyEngine:
         self,
         event: CanonicalEvent,
         snapshot: RiskSnapshot,
+        context: Optional[DecisionContext] = None,
     ) -> CanonicalDecision:
         """Map risk level to decision for the given event type."""
         risk = snapshot.risk_level
@@ -255,52 +258,132 @@ class L1PolicyEngine:
 
         # pre_action: decide based on risk level
         if risk == RiskLevel.CRITICAL:
-            return CanonicalDecision(
-                decision=DecisionVerdict.BLOCK,
-                reason=self._build_reason(event, snapshot, "Critical risk: action blocked"),
-                policy_id=self.POLICY_ID,
-                risk_level=risk,
-                decision_source=DecisionSource.POLICY,
-                policy_version=self.POLICY_VERSION,
-                failure_class=FailureClass.NONE,
-                final=True,
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.BLOCK,
+                    reason=self._build_reason(event, snapshot, "Critical risk: action blocked"),
+                    policy_id=self.POLICY_ID,
+                    risk_level=risk,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=True,
+                ),
+                event,
+                context,
             )
 
         if risk == RiskLevel.HIGH:
-            return CanonicalDecision(
-                decision=DecisionVerdict.BLOCK,
-                reason=self._build_reason(event, snapshot, "High risk: action blocked"),
-                policy_id=self.POLICY_ID,
-                risk_level=risk,
-                decision_source=DecisionSource.POLICY,
-                policy_version=self.POLICY_VERSION,
-                failure_class=FailureClass.NONE,
-                final=True,
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.BLOCK,
+                    reason=self._build_reason(event, snapshot, "High risk: action blocked"),
+                    policy_id=self.POLICY_ID,
+                    risk_level=risk,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=True,
+                ),
+                event,
+                context,
             )
 
         if risk == RiskLevel.MEDIUM:
-            return CanonicalDecision(
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.ALLOW,
+                    reason=self._build_reason(event, snapshot, "Medium risk: allowed with audit"),
+                    policy_id=self.POLICY_ID,
+                    risk_level=risk,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=True,
+                ),
+                event,
+                context,
+            )
+
+        # LOW risk
+        return self._with_scope_evaluation(
+            CanonicalDecision(
                 decision=DecisionVerdict.ALLOW,
-                reason=self._build_reason(event, snapshot, "Medium risk: allowed with audit"),
+                reason=self._build_reason(event, snapshot, "Low risk: safe operation"),
                 policy_id=self.POLICY_ID,
                 risk_level=risk,
                 decision_source=DecisionSource.POLICY,
                 policy_version=self.POLICY_VERSION,
                 failure_class=FailureClass.NONE,
                 final=True,
+            ),
+            event,
+            context,
+        )
+
+    def _with_scope_evaluation(
+        self,
+        decision: CanonicalDecision,
+        event: CanonicalEvent,
+        context: Optional[DecisionContext],
+    ) -> CanonicalDecision:
+        """Apply confirmed scope restrictions without ever lowering risk blocks."""
+
+        if event.event_type != EventType.PRE_ACTION:
+            return decision
+        scope_eval = evaluate_session_scope(event, context)
+        if scope_eval is None:
+            return decision
+
+        summary = scope_eval.summary()
+        reason_suffix = (
+            f" | scope={summary.verdict.value}"
+            f" enforced={str(summary.enforced).lower()}"
+            f" source={summary.source.value}"
+            f" confirmed={str(summary.confirmed).lower()}"
+            f" dry_run={str(summary.dry_run).lower()}"
+            f" reasons={','.join(summary.reason_codes)}"
+        )
+
+        if not summary.enforced:
+            return decision.model_copy(update={
+                "reason": decision.reason + reason_suffix,
+                "scope_evaluation": summary,
+            })
+
+        if summary.verdict == SessionScopeVerdict.DENY:
+            return CanonicalDecision(
+                decision=DecisionVerdict.BLOCK,
+                reason="Session scope denied action" + reason_suffix + f" | prior={decision.reason}",
+                policy_id="session-scope",
+                risk_level=decision.risk_level,
+                decision_source=DecisionSource.POLICY,
+                policy_version=self.POLICY_VERSION,
+                failure_class=FailureClass.NONE,
+                final=True,
+                scope_evaluation=summary,
             )
 
-        # LOW risk
-        return CanonicalDecision(
-            decision=DecisionVerdict.ALLOW,
-            reason=self._build_reason(event, snapshot, "Low risk: safe operation"),
-            policy_id=self.POLICY_ID,
-            risk_level=risk,
-            decision_source=DecisionSource.POLICY,
-            policy_version=self.POLICY_VERSION,
-            failure_class=FailureClass.NONE,
-            final=True,
-        )
+        if (
+            summary.verdict == SessionScopeVerdict.DEFER
+            and decision.decision not in (DecisionVerdict.BLOCK, DecisionVerdict.DEFER)
+        ):
+            return CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason="Session scope requires operator review" + reason_suffix + f" | prior={decision.reason}",
+                policy_id="session-scope",
+                risk_level=decision.risk_level,
+                decision_source=DecisionSource.POLICY,
+                policy_version=self.POLICY_VERSION,
+                failure_class=FailureClass.NONE,
+                final=False,
+                scope_evaluation=summary,
+            )
+
+        return decision.model_copy(update={
+            "reason": decision.reason + reason_suffix,
+            "scope_evaluation": summary,
+        })
 
     def _build_reason(
         self,

@@ -16,9 +16,11 @@ from __future__ import annotations
 import logging
 import math
 import re
+import hashlib
+from dataclasses import dataclass
 from typing import Optional
 
-from .models import PostActionFinding, PostActionResponseTier
+from .models import PostActionFinding, PostActionResponseTier, SanitizeTarget
 from .risk_signals import (
     has_decode_pipe_exec_command,
     has_eval_decode_command,
@@ -114,6 +116,74 @@ def detect_secret_exposure(text: str) -> float:
     normalized = normalize_text(text)
     count = sum(1 for p in _SECRET_PATTERNS if p.search(normalized))
     return min(count * 0.5, 1.0)
+
+
+@dataclass(frozen=True)
+class SanitizeAdvisory:
+    """Capability-honest sanitizer advisory for post-action output."""
+
+    target: SanitizeTarget
+    would_sanitize: bool
+    original_hash: str
+    sanitized_hash: str
+    original_preview_redacted: str
+    sanitized_preview_redacted: str
+    redaction_counts: dict[str, int]
+    redaction_types: list[str]
+    adapter_outcome: str = "would_sanitize"
+    enforcement: str = "advisory_only"
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "target": self.target.value,
+            "would_sanitize": self.would_sanitize,
+            "original_hash": self.original_hash,
+            "sanitized_hash": self.sanitized_hash,
+            "original_preview_redacted": self.original_preview_redacted,
+            "sanitized_preview_redacted": self.sanitized_preview_redacted,
+            "redaction_counts": dict(self.redaction_counts),
+            "redaction_types": list(self.redaction_types),
+            "adapter_outcome": self.adapter_outcome,
+            "enforcement": self.enforcement,
+        }
+
+
+def build_tool_output_sanitize_advisory(text: str) -> SanitizeAdvisory:
+    """Return redacted advisory metadata without claiming output enforcement."""
+
+    sanitized, redaction_counts = _redact_sanitizer_text(text)
+    redaction_types = sorted(redaction_counts)
+    would_sanitize = sanitized != text
+    return SanitizeAdvisory(
+        target=SanitizeTarget.TOOL_OUTPUT,
+        would_sanitize=would_sanitize,
+        original_hash=_sha256_label(text),
+        sanitized_hash=_sha256_label(sanitized),
+        original_preview_redacted=_preview(sanitized),
+        sanitized_preview_redacted=_preview(sanitized),
+        redaction_counts=redaction_counts,
+        redaction_types=redaction_types,
+    )
+
+
+def _sha256_label(text: str) -> str:
+    return "sha256:" + hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest()
+
+
+def _preview(text: str, limit: int = 160) -> str:
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1] + "…"
+
+
+def _redact_sanitizer_text(text: str) -> tuple[str, dict[str, int]]:
+    redacted = normalize_text(text)
+    counts: dict[str, int] = {}
+    for pattern in _SECRET_PATTERNS:
+        redacted, count = pattern.subn("[REDACTED:secret]", redacted)
+        if count:
+            counts["secret"] = counts.get("secret", 0) + count
+    return redacted, counts
 
 
 # ---------------------------------------------------------------------------
@@ -359,19 +429,24 @@ class PostActionAnalyzer:
 
         tier = _max_post_action_tier(score_tier, severity_floor)
 
+        details = {
+            "event_id": event_id,
+            "tool_name": tool_name,
+            "instructional": round(instr_score, 3),
+            "exfiltration": round(exfil_score, 3),
+            "secret_exposure": round(secret_score, 3),
+            "obfuscation": round(obfusc_score, 3),
+            "severity_floor": severity_floor.value,
+        }
+        sanitize_advisory = build_tool_output_sanitize_advisory(tool_output)
+        if sanitize_advisory.would_sanitize:
+            details["sanitize_advisory"] = sanitize_advisory.to_dict()
+
         return PostActionFinding(
             tier=tier,
             patterns_matched=patterns_matched,
             score=min(round(combined, 3), 3.0),
-            details={
-                "event_id": event_id,
-                "tool_name": tool_name,
-                "instructional": round(instr_score, 3),
-                "exfiltration": round(exfil_score, 3),
-                "secret_exposure": round(secret_score, 3),
-                "obfuscation": round(obfusc_score, 3),
-                "severity_floor": severity_floor.value,
-            },
+            details=details,
         )
 
     def _is_whitelisted(self, path: str) -> bool:
