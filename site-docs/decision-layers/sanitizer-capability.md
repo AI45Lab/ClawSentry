@@ -14,6 +14,21 @@ description: ClawSentry 当前是否有 sanitizer、它能做什么、在哪里�
 
 如果你只是日常使用 ClawSentry，最需要理解的是第一项：它会告诉你“工具输出里出现了本应被净化的敏感内容”，并用安全摘要展示给 operator。
 
+## 对 a3s-code：到底能不能改写？
+
+**能，但只限执行前输入：command / tool input。不能强制改写已经返回的 tool output。**
+
+| 接入路径 / 目标 | 现在能否改写 | 用户该怎么理解 |
+|-----------------|--------------|----------------|
+| `a3s-code` 显式 AHP transport：command | **能** | Gateway 返回 `decision=modify` + `modified_payload`，a3s-code 按 `modified_payload.command` 执行替换后的命令。 |
+| `a3s-code` 显式 AHP transport：tool input | **能** | Gateway 返回 `decision=modify` + `modified_payload`，a3s-code 使用替换后的 tool input。 |
+| `a3s-code` 显式 AHP transport：tool output | **不能强制改写** | ClawSentry 只在报告/监控里显示 `would_sanitize`、redacted preview 和 redaction counts。 |
+| Codex native hook path | **当前不能按 ClawSentry effect 强制改写** | 会记录为 degraded/unsupported，而不是声称执行了 rewrite。 |
+| Kimi native hook path | **不能** | Kimi 当前没有 native modify/defer parity；`modify` 不会改写工具输入。 |
+| Gemini `BeforeTool` path | **可以表达 tool input 修改** | ClawSentry 会把 `modified_payload.tool_input` 映射到 Gemini hook output；是否实际替换由 Gemini hook 执行结果决定。 |
+
+所以，如果你问的是 **a3s-code reference / AHP 显式接入**：答案是 **可以改写执行前的 command/tool input**。如果你问的是 **工具已经输出了 secret 以后能不能把宿主 history 里的输出改掉**：答案是 **不能统一保证，当前只做 would-sanitize 报告和安全展示**。
+
 ## 我应该启用它吗？
 
 **不需要单独启用。**
