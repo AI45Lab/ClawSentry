@@ -77,8 +77,8 @@ hide:
 ---
 
 
-!!! tip "v0.6.4: Env-file discovery hints"
-    `clawsentry start` 和 `clawsentry config show --effective` 现在会提示已发现但未自动加载的 `.clawsentry.env.local`、legacy `.env.clawsentry` 或 `.clawsentry.env.example`，并给出显式 `--env-file` 下一步命令；严格 env-first 来源模型不变。
+!!! tip "v0.6.5: Scope preview and sanitizer clarity"
+    `clawsentry scope validate/preview` 与 `POST /ahp/scope/preview` 现在可在启用前展示 dry-run/enforced 边界和 readable reason codes；watch/report sanitizer 摘要使用 `would_sanitize`、redacted preview 与 degraded/unsupported 状态，避免夸大未证明的输出改写能力。
 
 <div class="grid-cards" markdown>
 
