@@ -22,7 +22,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3152+ regression tests**, with release-time CI/build evidence
+- **3155+ public regression tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,12 +34,12 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
-## What's New in v0.6.5
+## What's New in v0.6.6
 
-- **Scope preview before enforcement**: `clawsentry scope validate/preview` and `POST /ahp/scope/preview` show dry-run/enforced boundaries and readable reason codes before operators opt in.
-- **Capability-honest sanitizer reporting**: watch/report output uses `would_sanitize`, redacted previews, and degraded/unsupported states instead of overclaiming output rewriting.
-- **Reversible OpenClaw hardening**: hardened profile setup remains opt-in, dry-run-first, marker-managed, and restore-tested.
-- **Docs and release status refreshed**: progress docs, online docs, changelog, and API metadata are aligned for v0.6.5.
+- **Default scope profile enforcement**: `CS_SESSION_SCOPE_PROFILE_FILE` can load a confirmed `SessionScopeProfile` at Gateway startup and apply it to `pre_action` decisions that do not carry an explicit scope.
+- **Scope-aware decision tightening**: scope evaluation now also applies to externally composed decisions before persistence/SSE, so timeout/auto-resolution paths cannot bypass enforced scope boundaries.
+- **Web UI operator clarity**: dashboard risk charts use the documented D1–D6 scoring range, local API calls avoid empty query strings, and missing-token login does not show a misleading invalid-token error.
+- **Docs and release status refreshed**: progress docs, online docs, changelog, and API metadata are aligned for v0.6.6.
 
 ## Quick Start
 

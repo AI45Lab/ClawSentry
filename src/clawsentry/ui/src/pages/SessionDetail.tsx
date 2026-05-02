@@ -54,12 +54,14 @@ const DIMENSION_LABELS: Record<string, Record<'en' | 'zh', string>> = {
   d6: { en: 'Injection', zh: '注入' },
 }
 
+const RISK_SCORE_MAX = 3
+
 const DIMENSION_MAX: Record<string, number> = {
-  d1: 1,
-  d2: 1,
-  d3: 1,
-  d4: 1,
-  d5: 1,
+  d1: 3,
+  d2: 3,
+  d3: 3,
+  d4: 2,
+  d5: 2,
   d6: 3,
 }
 
@@ -851,8 +853,8 @@ export default function SessionDetail() {
                       </defs>
                       <PolarGrid stroke="rgba(120, 196, 255, 0.16)" radialLines={false} />
                       <PolarAngleAxis dataKey="dimension" tick={{ fill: '#b8c7dd', fontSize: 11, fontWeight: 600 }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 1]} tick={false} axisLine={false} />
-                      <Radar dataKey="normalizedValue" stroke="#67e8f9" fill="url(#riskRadarFill)" fillOpacity={0.88} strokeWidth={2.5} />
+                      <PolarRadiusAxis angle={90} domain={[0, RISK_SCORE_MAX]} tick={false} axisLine={false} />
+                      <Radar dataKey="value" stroke="#67e8f9" fill="url(#riskRadarFill)" fillOpacity={0.88} strokeWidth={2.5} />
                       <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(_, __, item) => {
                         const payload = item?.payload as { value?: number; max?: number } | undefined
                         return [payload ? `${formatMetricScore(payload.value)} / ${payload.max}` : '—', 'score']
@@ -898,7 +900,7 @@ export default function SessionDetail() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 196, 255, 0.08)" />
                     <XAxis dataKey="time" tick={{ fill: '#89a4bd', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#89a4bd', fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 1]} />
+                    <YAxis tick={{ fill: '#89a4bd', fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, RISK_SCORE_MAX]} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} />
                     <Area
                       type="monotone"

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from clawsentry.cli.config_command import (
@@ -159,6 +161,6 @@ class TestEnvTemplateSecretSafety:
     def test_env_template_is_secret_safe(self, tmp_path):
         run_config_init(target_dir=tmp_path)
         text = (tmp_path / ".clawsentry.env.example").read_text(encoding="utf-8")
-        assert "sk-" not in text
+        assert re.search(r"\bsk-[A-Za-z0-9_-]{20,}\b", text) is None
         assert "CS_LLM_API_KEY" + "=" not in text
         assert "Set CS_LLM_API_KEY in local env/secrets manager" in text

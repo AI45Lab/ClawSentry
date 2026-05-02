@@ -227,7 +227,7 @@ collected 3226 items
 src/clawsentry/tests/test_models.py::test_valid_canonical_event PASSED
 src/clawsentry/tests/test_models.py::test_schema_version_format PASSED
 ...
-========================= 3152 passed, 5 skipped ===============
+========================= 3155 passed, 6 skipped ===============
 ```
 
 !!! success "全部通过即安装成功"

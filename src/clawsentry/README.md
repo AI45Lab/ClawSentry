@@ -1,12 +1,12 @@
 # ClawSentry — AHP Supervision Gateway
 
-> **Python 3.11+** | **3152 regression tests** | Protocol `ahp.1.0`
+> **Python 3.11+** | **3155 public regression tests** | Protocol `ahp.1.0`
 
 **ClawSentry** is the Python reference implementation of AHP (Agent Harness Protocol) — a unified security supervision gateway for multi-agent frameworks. Deployed as a sidecar, it normalizes runtime events from different frameworks (a3s-code, Claude Code, Codex, Gemini CLI, Kimi CLI, OpenClaw) into a unified protocol, passes them through a three-layer progressive risk evaluation pipeline, and produces real-time decisions (allow / block / modify / defer) with complete audit trails.
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.6.5)**: scope preview and sanitizer reporting are now more operator-friendly without weakening capability boundaries. `clawsentry scope validate/preview` and `POST /ahp/scope/preview` expose dry-run/enforced state and reason codes, while output sanitizer reporting remains advisory unless adapter capability proves rewrite-before-history.
+**Current release highlight (v0.6.6)**: default session-scope enforcement can now be configured with `CS_SESSION_SCOPE_PROFILE_FILE`, so confirmed non-dry-run `SessionScopeProfile` rules apply to incoming `pre_action` decisions that do not provide an explicit scope. The release also keeps scope tightening attached to composed decisions, refreshes sanitizer capability docs, and improves Web UI auth/risk-chart clarity.
 
 ---
 
@@ -479,7 +479,7 @@ src/clawsentry/
 |-- ui/                                # Web security dashboard (React SPA)
 |   |-- src/                           # TypeScript source
 |   +-- dist/                          # Pre-built artifacts (shipped with pip)
-+-- tests/                             # Test suite (3152 regression tests)
++-- tests/                             # Test suite (3155 public regression tests)
 ```
 
 ---
@@ -620,7 +620,7 @@ pip install -e ".[dev]"
 
 # Full suite
 python -m pytest src/clawsentry/tests/ -v --tb=short
-# Expected: 3152 passed, 5 skipped
+# Expected: public repo 3155 passed, 6 skipped
 
 # E2E (requires LLM API key)
 A3S_SDK_E2E=1 python -m pytest src/clawsentry/tests/ -v --tb=short

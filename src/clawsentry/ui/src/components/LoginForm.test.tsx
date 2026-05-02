@@ -24,6 +24,13 @@ describe('LoginForm', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/not a bad token/i)
   })
 
+  it('does not label a first-time missing token as a rejected token', () => {
+    render(<LoginForm onLogin={vi.fn()} authFailure="missing_token" />)
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByText(/enter your AHP auth token/i)).toBeInTheDocument()
+  })
+
   it('submits the trimmed token and disables duplicate submits while checking', () => {
     const onLogin = vi.fn()
 

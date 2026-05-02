@@ -77,8 +77,8 @@ hide:
 ---
 
 
-!!! tip "v0.6.5: Scope preview and sanitizer clarity"
-    [`clawsentry scope validate/preview`](configuration/session-scope.md) 与 [`POST /ahp/scope/preview`](api/decisions.md#post-ahp-scope-preview) 现在可在启用前展示 dry-run/enforced 边界和 readable reason codes；watch/report sanitizer 摘要会展示 [`would_sanitize`](decision-layers/sanitizer-capability.md)、redacted preview 与 redaction counts，让用户知道当前有没有发现敏感输出、该如何处理。
+!!! tip "v0.6.6: Default scope profile and Web UI clarity"
+    `CS_SESSION_SCOPE_PROFILE_FILE=scope.json clawsentry start ...` 现在可以在 Gateway 启动时加载默认 [`SessionScopeProfile`](configuration/session-scope.md)，并自动应用到没有显式 scope 的 `pre_action` 决策；Web UI 风险雷达/趋势图同步使用 D1–D6 文档化评分范围，登录页也会区分缺失 token 与真正的 401。
 
 <div class="grid-cards" markdown>
 
@@ -399,7 +399,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3152 passed / 5 skipped**（v0.6.5 release gate） |
+| 测试用例 | **3155 passed / 6 skipped**（v0.6.6 public release；dev workspace 3156 / 5 skipped） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |

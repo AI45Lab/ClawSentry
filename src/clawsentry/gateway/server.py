@@ -1067,10 +1067,22 @@ class SupervisionGateway:
             )
         if context.session_scope_profile is not None:
             return context
-        updates: dict[str, Any] = {"session_scope_profile": profile}
-        if not context.session_scope_profile_id:
-            updates["session_scope_profile_id"] = profile.profile_id
-        return context.model_copy(update=updates)
+        return context.model_copy(update={
+            "session_scope_profile_id": profile.profile_id,
+            "session_scope_profile": profile,
+        })
+
+    def _apply_missing_session_scope_evaluation(
+        self,
+        decision: CanonicalDecision,
+        event: CanonicalEvent,
+        context: DecisionContext | None,
+    ) -> CanonicalDecision:
+        """Tighten override decisions with session scope if they lost scope metadata."""
+
+        if decision.scope_evaluation is not None:
+            return decision
+        return self.policy_engine.apply_scope_evaluation(decision, event, context)
 
     async def _run_post_action_async(
         self,
@@ -1565,6 +1577,13 @@ class SupervisionGateway:
                     snapshot_dict["risk_level"] = decision.risk_level.value
         except Exception:
             logger.exception("trajectory analysis failed for event %s", req.event.event_id)
+
+        decision = self._apply_missing_session_scope_evaluation(
+            decision,
+            req.event,
+            req.context,
+        )
+        decision_dict = decision.model_dump(mode="json")
 
         # --- Benchmark mode: no human DEFER waits ---
         # Apply before persistence/SSE so audit records and live events carry

@@ -42,6 +42,11 @@ export class ApiError extends Error {
   }
 }
 
+function withQuery(path: string, qs: URLSearchParams): string {
+  const query = qs.toString()
+  return query ? `${path}?${query}` : path
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken()
   const headers: Record<string, string> = {
@@ -73,7 +78,7 @@ export const api = {
     if (params?.sort) qs.set('sort', params.sort)
     if (params?.limit) qs.set('limit', String(params.limit))
     if (params?.min_risk) qs.set('min_risk', params.min_risk)
-    const result = await apiFetch<{ sessions: SessionSummary[] }>(`/report/sessions?${qs}`)
+    const result = await apiFetch<{ sessions: SessionSummary[] }>(withQuery('/report/sessions', qs))
     return result.sessions ?? []
   },
   sessionRisk: (id: string, params?: { windowSeconds?: number | null }) => {
@@ -137,7 +142,7 @@ export const api = {
     if (params?.acknowledged !== undefined)
       qs.set('acknowledged', String(params.acknowledged))
     if (params?.limit) qs.set('limit', String(params.limit))
-    const result = await apiFetch<{ alerts: Alert[] }>(`/report/alerts?${qs}`)
+    const result = await apiFetch<{ alerts: Alert[] }>(withQuery('/report/alerts', qs))
     return result.alerts ?? []
   },
   acknowledgeAlert: (id: string) =>

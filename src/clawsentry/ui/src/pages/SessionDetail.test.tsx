@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import { Children, isValidElement } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -16,6 +17,11 @@ vi.mock('../api/client', () => ({
 
 vi.mock('recharts', () => {
   const Stub = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>
+  const ChartStub = ({ children }: { children?: React.ReactNode }) => (
+    <div>
+      {Children.toArray(children).filter(child => isValidElement(child) && child.type !== 'defs')}
+    </div>
+  )
   const ResponsiveContainerStub = ({
     children,
     width,
@@ -38,16 +44,20 @@ vi.mock('recharts', () => {
   )
   return {
     ResponsiveContainer: ResponsiveContainerStub,
-    AreaChart: () => null,
+    AreaChart: ChartStub,
     CartesianGrid: () => null,
     PolarAngleAxis: () => null,
     PolarGrid: () => null,
-    PolarRadiusAxis: () => null,
+    PolarRadiusAxis: ({ domain }: { domain?: unknown }) => (
+      <div data-testid="risk-radar-radius-axis" data-domain={JSON.stringify(domain ?? null)} />
+    ),
     Radar: () => null,
-    RadarChart: () => null,
+    RadarChart: ChartStub,
     Tooltip: () => null,
     XAxis: () => null,
-    YAxis: () => null,
+    YAxis: ({ domain }: { domain?: unknown }) => (
+      <div data-testid="risk-timeline-y-axis" data-domain={JSON.stringify(domain ?? null)} />
+    ),
     Area: () => null,
   }
 })
@@ -217,6 +227,27 @@ describe('SessionDetail', () => {
     expect(within(contextRegion).getByText('sess-123')).toBeInTheDocument()
     expect(within(contextRegion).getByText('Agent ID')).toBeInTheDocument()
     expect(within(contextRegion).getByText('agent-1')).toBeInTheDocument()
+  })
+
+  it('uses canonical 0-3 risk scale for charts instead of compressing high-risk values', async () => {
+    vi.mocked(api.sessionRisk).mockResolvedValueOnce(makeRiskResponse({
+      dimensions_latest: { d1: 2.5, d2: 2.0, d3: 1.5, d4: 1.0, d5: 0.5, d6: 2.8 },
+      risk_timeline: [
+        {
+          event_id: 'evt-high-scale',
+          occurred_at: '2026-04-15T07:05:00Z',
+          composite_score: 2.4,
+          risk_level: 'high',
+          dimensions: { d1: 2.5, d2: 2.0, d3: 1.5, d4: 1.0, d5: 0.5, d6: 2.8 },
+        },
+      ],
+    }) as never)
+
+    renderSessionDetail()
+
+    expect(await screen.findByRole('heading', { level: 3, name: 'Risk composition' })).toBeInTheDocument()
+    expect(screen.getByTestId('risk-radar-radius-axis')).toHaveAttribute('data-domain', '[0,3]')
+    expect(screen.getByTestId('risk-timeline-y-axis')).toHaveAttribute('data-domain', '[0,3]')
   })
 
   it('renders an investigation workbench brief before charts and replay controls', async () => {

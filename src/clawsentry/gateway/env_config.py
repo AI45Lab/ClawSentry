@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping, MutableMapping
+from typing import Any, Mapping
 
 from clawsentry.cli.dotenv_loader import ParsedEnvFile
 
@@ -89,7 +89,7 @@ CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("features.l2", "CS_L2_ENABLED", False, bool, "features", "L2 request flag"),
     ConfigField("features.l3", "CS_L3_ENABLED", False, bool, "features", "L3 request flag"),
     ConfigField("features.enterprise", "CS_ENTERPRISE_ENABLED", False, bool, "features", "Enterprise analysis flag"),
-    ConfigField("scope.profile_file", "CS_SESSION_SCOPE_PROFILE_FILE", "", str, "scope", "Default session scope profile file"),
+    ConfigField("scope.profile_file", "CS_SESSION_SCOPE_PROFILE_FILE", "", str, "scope", "Default session scope profile file", deprecated_aliases=("CS_SESSION_SCOPE_PROFILE",)),
     ConfigField("budgets.llm_token_budget_enabled", "CS_LLM_TOKEN_BUDGET_ENABLED", False, bool, "budgets", "Enable LLM token budget"),
     ConfigField("budgets.llm_daily_token_budget", "CS_LLM_DAILY_TOKEN_BUDGET", 0, int, "budgets", "Daily LLM token budget"),
     ConfigField("budgets.llm_token_budget_scope", "CS_LLM_TOKEN_BUDGET_SCOPE", "total", str, "budgets", "Budget scope"),
@@ -212,29 +212,33 @@ def resolve_effective_config(
             except (TypeError, ValueError):
                 warnings.append(f"Ignoring invalid {source} {env_key}={raw!r}")
 
-    apply_env_map(file_values, "env-file", env_file)
-    apply_env_map(env, "process-env", None)
+    def apply_alias_map(raw_values: Mapping[str, str], source: str, parsed: ParsedEnvFile | None = None) -> None:
+        alias_source = "deprecated-env-file-alias" if source == "env-file" else "deprecated-env-alias"
+        for alias, (field, canonical) in _ALIAS_TO_FIELD.items():
+            raw = raw_values.get(alias)
+            if raw is None or str(raw).strip() == "":
+                continue
+            if canonical in raw_values or sources.get(field.key) in {"process-env", "env-file", "cli"}:
+                warnings.append(f"Ignoring deprecated {alias}; canonical {canonical} wins")
+                continue
+            try:
+                _set_value(
+                    key=field.key,
+                    value=_coerce(field, raw),
+                    source=alias_source,
+                    detail=_detail(parsed, alias) if source == "env-file" else alias,
+                    values=values,
+                    sources=sources,
+                    source_details=source_details,
+                )
+                warnings.append(f"Deprecated {alias}; use {canonical}")
+            except (TypeError, ValueError):
+                warnings.append(f"Ignoring invalid {alias}={raw!r}")
 
-    for alias, (field, canonical) in _ALIAS_TO_FIELD.items():
-        raw = env.get(alias)
-        if raw is None or str(raw).strip() == "":
-            continue
-        if canonical in env or sources.get(field.key) in {"process-env", "env-file", "cli"}:
-            warnings.append(f"Ignoring deprecated {alias}; canonical {canonical} wins")
-            continue
-        try:
-            _set_value(
-                key=field.key,
-                value=_coerce(field, raw),
-                source="deprecated-env-alias",
-                detail=alias,
-                values=values,
-                sources=sources,
-                source_details=source_details,
-            )
-            warnings.append(f"Deprecated {alias}; use {canonical}")
-        except (TypeError, ValueError):
-            warnings.append(f"Ignoring invalid {alias}={raw!r}")
+    apply_env_map(file_values, "env-file", env_file)
+    apply_alias_map(file_values, "env-file", env_file)
+    apply_env_map(env, "process-env", None)
+    apply_alias_map(env, "process-env", None)
 
     for key, raw in cli.items():
         if raw is None or str(raw).strip() == "" or key not in _FIELDS_BY_KEY:

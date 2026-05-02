@@ -28,6 +28,9 @@ export default function Layout() {
 
   return (
     <div className="app-layout">
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-brand-row">
@@ -79,7 +82,7 @@ export default function Layout() {
           </div>
           <StatusBar />
         </header>
-        <main className="page-content fade-in" role="main">
+        <main id="main-content" className="page-content fade-in" role="main" tabIndex={-1}>
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>

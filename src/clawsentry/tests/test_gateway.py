@@ -2508,6 +2508,67 @@ class TestHttpTransport:
         assert "scope_deny:path /tmp" in decision["scope_evaluation"]["reason_codes"]
 
     @pytest.mark.asyncio
+    async def test_default_scope_profile_tightens_anti_bypass_defer_before_auto_allow(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        profile_path = tmp_path / "scope.json"
+        profile_path.write_text(
+            json.dumps({
+                "profile_id": "auto-scope",
+                "confirmed": True,
+                "dry_run": False,
+                "base_rules": {"denied_paths": ["/tmp"]},
+            }),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SESSION_SCOPE_PROFILE_FILE", str(profile_path))
+        gw = SupervisionGateway(detection_config=DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_exact_repeat_action="defer",
+            defer_timeout_s=0.01,
+            defer_timeout_action="allow",
+        ))
+
+        event = {
+            "event_id": "evt-scope-anti-bypass-1",
+            "trace_id": "trace-scope-anti-bypass",
+            "event_type": "pre_action",
+            "session_id": "sess-scope-anti-bypass",
+            "agent_id": "agent-001",
+            "source_framework": "test",
+            "occurred_at": "2026-03-19T12:00:00+00:00",
+            "payload": {"command": "rm -rf /tmp/target", "path": "/tmp/target"},
+            "tool_name": "bash",
+        }
+        await gw.handle_jsonrpc(_jsonrpc_request(
+            "ahp/sync_decision",
+            _sync_decision_params(
+                request_id="req-scope-anti-bypass-1",
+                event=event,
+            ),
+        ))
+
+        repeated_event = dict(event, event_id="evt-scope-anti-bypass-2")
+        result = await gw.handle_jsonrpc(_jsonrpc_request(
+            "ahp/sync_decision",
+            _sync_decision_params(
+                request_id="req-scope-anti-bypass-2",
+                event=repeated_event,
+            ),
+        ))
+
+        decision = result["result"]["decision"]
+        assert decision["decision"] == "block"
+        assert decision["policy_id"] == "session-scope"
+        assert decision["scope_evaluation"]["profile_id"] == "auto-scope"
+        assert decision["scope_evaluation"]["enforced"] is True
+        assert "scope_deny:path /tmp" in decision["scope_evaluation"]["reason_codes"]
+        assert decision["scope_evaluation"]["verdict"] == "deny"
+        assert gw.trajectory_store.records[-1]["decision"]["decision"] == "block"
+
+    @pytest.mark.asyncio
     async def test_http_dangerous_block(self, app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:

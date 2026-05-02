@@ -62,6 +62,28 @@ def test_secret_redaction_preserves_source_detail(tmp_path):
     assert effective.source_detail_for("llm.api_key") == f"{env_file}:2"
 
 
+def test_scope_profile_file_deprecated_alias_resolves_from_process_env():
+    effective = resolve_effective_config(
+        environ={"CS_SESSION_SCOPE_PROFILE": "scope.json"},
+    )
+
+    assert effective.values["scope.profile_file"] == "scope.json"
+    assert effective.sources["scope.profile_file"] == "deprecated-env-alias"
+    assert "Deprecated CS_SESSION_SCOPE_PROFILE" in "\n".join(effective.warnings)
+
+
+def test_scope_profile_file_deprecated_alias_resolves_from_env_file(tmp_path):
+    env_file = tmp_path / "local.env"
+    env_file.write_text("CS_SESSION_SCOPE_PROFILE=scope-from-file.json\n", encoding="utf-8")
+    parsed = parse_env_file(env_file)
+
+    effective = resolve_effective_config(environ={}, env_file=parsed)
+
+    assert effective.values["scope.profile_file"] == "scope-from-file.json"
+    assert effective.sources["scope.profile_file"] == "deprecated-env-file-alias"
+    assert effective.source_detail_for("scope.profile_file") == f"{env_file}:1"
+
+
 def test_frameworks_parse_from_env_without_toml(tmp_path):
     legacy_toml = tmp_path / (".clawsentry" + ".toml")
     legacy_toml.write_text('[frameworks]\nenabled = ["openclaw"]\n', encoding="utf-8")

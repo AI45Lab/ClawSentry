@@ -385,6 +385,16 @@ class L1PolicyEngine:
             "scope_evaluation": summary,
         })
 
+    def apply_scope_evaluation(
+        self,
+        decision: CanonicalDecision,
+        event: CanonicalEvent,
+        context: Optional[DecisionContext],
+    ) -> CanonicalDecision:
+        """Apply session-scope tightening to externally composed decisions."""
+
+        return self._with_scope_evaluation(decision, event, context)
+
     def _build_reason(
         self,
         event: CanonicalEvent,

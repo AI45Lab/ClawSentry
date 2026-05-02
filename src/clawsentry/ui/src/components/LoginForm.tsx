@@ -8,6 +8,9 @@ interface LoginFormProps {
 }
 
 function failureMessage(authFailure: AuthFailure): string | null {
+  if (authFailure === 'missing_token') {
+    return null
+  }
   if (authFailure === 'invalid_token') {
     return 'Token was rejected (401). Paste the exact CS_AUTH_TOKEN value printed by clawsentry start, set in process env, or passed with --env-file.'
   }

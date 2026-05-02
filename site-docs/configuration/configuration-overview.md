@@ -138,10 +138,10 @@ clawsentry service validate --env-file /etc/clawsentry/gateway.env
 
 ## 发布状态核对 {#release-status}
 
-截至 2026-05-02，本仓库发布面刷新到 `v0.6.5`：
+截至 2026-05-02，本仓库发布面刷新到 `v0.6.6`：
 
-- GitHub latest release / tags：`v0.6.5 — Scope preview and sanitizer clarity`
-- PyPI：`clawsentry` 最新版本为 `0.6.5`
-- 运行时配置来源仍保持 env-first strict split；v0.6.5 新增的 Session scope 属于任务级 profile，需要显式 preview/传入决策上下文，不会从环境变量或自然语言任务里自动推断
+- GitHub latest release / tags：`v0.6.6 — Default scope profile and Web UI clarity`
+- PyPI：`clawsentry` 发布目标版本为 `0.6.6`（以 PyPI 页面实际刷新为准）
+- 运行时配置来源仍保持 env-first strict split；Session scope 不会从自然语言任务自动推断，但可以通过请求上下文显式传入，或用 `CS_SESSION_SCOPE_PROFILE_FILE` 在 Gateway 启动时加载默认 profile
 
 若你看到更早版本，优先清浏览器/CDN 缓存，并确认访问的是 <https://github.com/Elroyper/ClawSentry> 与 <https://pypi.org/project/clawsentry/>。

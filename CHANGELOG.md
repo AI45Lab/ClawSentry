@@ -8,6 +8,31 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.6.6] — 2026-05-02
+
+### 新增
+
+- **默认 Session scope profile** — 新增 `CS_SESSION_SCOPE_PROFILE_FILE`（兼容别名 `CS_SESSION_SCOPE_PROFILE`），Gateway 启动时可加载默认 `SessionScopeProfile` JSON，并自动应用到没有显式 scope 的 `pre_action` 决策。
+- **Scope 配置模板入口** — `.clawsentry.env.example` 与在线环境变量文档加入默认 scope profile 示例，方便 operator 把 dry-run 后确认的任务边界纳入启动配置。
+
+### 改进
+
+- **Scope tightening covers composed decisions** — 外部/异步路径组合出的 Gateway decision 如果缺少 `scope_evaluation`，会在持久化、SSE 与 benchmark auto-resolution 前补做 scope 收紧，避免 confirmed non-dry-run profile 被后续路径绕过。
+- **Web UI 风险图表口径修正** — Session Detail 的风险雷达与趋势图改用文档化 D1-D6 评分范围（D1/D2/D3/D6 为 0..3，D4/D5 为 0..2），不再按 0..1 归一化轴展示。
+- **Web UI 登录与 API 请求细节** — 缺失 token 时不再展示误导性的 invalid-token 文案；sessions/alerts API 查询为空时不拼接裸 `?`。
+- **Sanitizer 能力页刷新** — 在线文档进一步区分 `would_sanitize` 观察面、adapter effect result 与真正 rewrite-before-history 能力，避免把 advisory-only tool-output sanitizer 说成强制改写。
+
+### 测试与验证
+
+- Focused config/Gateway regression：`python -m pytest src/clawsentry/tests/test_env_config.py src/clawsentry/tests/test_config_command.py src/clawsentry/tests/test_gateway.py::TestHttpTransport::test_default_scope_profile_file_applies_to_sync_decisions src/clawsentry/tests/test_gateway.py::TestHttpTransport::test_default_scope_profile_tightens_anti_bypass_defer_before_auto_allow -q --tb=short` → `25 passed`。
+- Python 完整回归：`python -m pytest src/clawsentry/tests/ -q --tb=short` → 开发仓库 `3156 passed, 5 skipped`；公开仓库 `3155 passed, 6 skipped`。
+- Web UI 回归：`npm test -- --run` → `55 passed`。
+- Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
+- Python lint：`git diff --name-only -- '*.py' | xargs -r python -m ruff check` → PASS。
+- Compile check：`python -m compileall -q src/clawsentry` → PASS。
+- Package build：`python -m build` → PASS（setuptools license deprecation warnings only）。
+- Docs strict build：`mkdocs build --strict` → PASS。
+
 ## [0.6.5] — 2026-05-02
 
 ### 新增
@@ -1395,3 +1420,4 @@
 [0.6.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.4
 [0.6.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.3
 [0.6.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.5
+[0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6

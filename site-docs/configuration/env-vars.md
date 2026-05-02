@@ -196,7 +196,7 @@ Anti-bypass guard 用于检测 `PRE_ACTION` 中对 prior final risky decision �
 
 ---
 
-## Scope 限制
+## Scope 限制 {#scope-restrictions-env}
 
 Scope 限制用来给 ClawSentry 配置默认任务边界。设置后，Gateway 会在每个没有显式 scope 的 `pre_action` 决策中自动套用这份 profile。
 

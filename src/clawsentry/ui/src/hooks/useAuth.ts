@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { getToken, setToken, clearToken, api, AuthError } from '../api/client'
 
-export type AuthFailure = 'invalid_token' | 'gateway_unavailable' | null
+export type AuthFailure = 'missing_token' | 'invalid_token' | 'gateway_unavailable' | null
 
 function isGatewayUnavailable(error: unknown): boolean {
   if (error instanceof TypeError) return true
@@ -17,6 +17,7 @@ export function useAuth() {
   const check = useCallback(async () => {
     setChecking(true)
     setAuthFailure(null)
+    const token = getToken()
     try {
       await api.summary()
       setAuthenticated(true)
@@ -24,7 +25,7 @@ export function useAuth() {
     } catch (e) {
       if (e instanceof AuthError) {
         setAuthenticated(false)
-        setAuthFailure('invalid_token')
+        setAuthFailure(token ? 'invalid_token' : 'missing_token')
         return false
       } else if (isGatewayUnavailable(e)) {
         setAuthenticated(false)
