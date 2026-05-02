@@ -35,7 +35,7 @@
 - Package build：`python -m build` → PASS（setuptools license deprecation warnings only）。
 - Web UI 回归：`npm test -- --run` → `53 passed`。
 - Docs strict build：`mkdocs build --strict` → PASS。
-- Architect verification：local architecture checks passed；publish-state recheck pending after release smoke。
+- Architect verification：APPROVED after post-publish smoke。
 
 ## [0.6.4] — 2026-04-30
 
