@@ -710,7 +710,7 @@ clawsentry watch --interactive --token my-secret-token
 
 ## clawsentry scope
 
-在启用 session scope 前，对 `SessionScopeProfile` JSON 做本地校验，或用一条 canonical event 预览会命中的 allow/defer/deny 结果。该命令默认保持 dry-run 语义：它解释规则、状态和 reason codes，不声称已阻断动作；只有显式 `--confirm` 预览才展示 confirmed/enforced 边界。
+在启用 session scope 前，对 `SessionScopeProfile` JSON 做本地校验，或用一条 canonical event 预览会命中的 allow/defer/deny 结果。完整 profile 写法与调试流程见 [Session scope 配置](../configuration/session-scope.md)。该命令默认保持 dry-run 语义：它解释规则、状态和 reason codes，不声称已阻断动作；只有显式 `--confirm` 预览才展示 confirmed/enforced 边界。
 
 ### 语法
 

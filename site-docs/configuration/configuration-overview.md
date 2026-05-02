@@ -34,6 +34,7 @@ clawsentry config show --effective --env-file .clawsentry.env.local
 | 精确理解某个检测字段、校验约束、代码位置 | [DetectionConfig 详表](detection-config.md) | 配置模板 |
 | 判断误报/漏报应该调哪些旋钮 | [策略调优方法](policy-tuning.md) | 环境变量索引 |
 | 配置 LLM provider、L2/L3 成本和降级语义 | [LLM 配置](llm-config.md) | Gateway 核心变量 |
+| 为单次任务限制工具、路径、域名、命令前缀 | [Session scope 配置](session-scope.md) | 全局环境变量 |
 
 ---
 
@@ -102,6 +103,14 @@ clawsentry start --env-file .clawsentry.env.local
 
 ---
 
+## 任务范围配置：Session scope {#session-scope}
+
+当你想限制“这次任务”能访问的工具、路径、域名或命令前缀时，使用 [Session scope 配置](session-scope.md)。推荐先在 `dry_run: true` 下运行 `clawsentry scope validate/preview`，读懂 `scope_allow:*`、`scope_defer:*`、`scope_deny:*` reason codes；只有确认不会误伤后，才把 `confirmed: true` 与 `dry_run: false` 用到真实决策上下文中。
+
+Session scope 是任务级约束，不是全局 env 配置。AHP / Gateway 集成需要把 profile 显式放入决策上下文；CLI preview 只负责离线校验和预览。
+
+---
+
 ## 常用检查命令 {#checks}
 
 ```bash
@@ -129,10 +138,10 @@ clawsentry service validate --env-file /etc/clawsentry/gateway.env
 
 ## 发布状态核对 {#release-status}
 
-截至 2026-04-30，本仓库发布面刷新到 `v0.6.4`：
+截至 2026-05-02，本仓库发布面刷新到 `v0.6.5`：
 
-- GitHub latest release / tags：`v0.6.4 — Env-file discovery hints`
-- PyPI：`clawsentry` 最新版本为 `0.6.4`
-- 运行时配置来源仍保持 env-first strict split；本地 env 文件只会被提示，不会被自动加载
+- GitHub latest release / tags：`v0.6.5 — Scope preview and sanitizer clarity`
+- PyPI：`clawsentry` 最新版本为 `0.6.5`
+- 运行时配置来源仍保持 env-first strict split；v0.6.5 新增的 Session scope 属于任务级 profile，需要显式 preview/传入决策上下文，不会从环境变量或自然语言任务里自动推断
 
 若你看到更早版本，优先清浏览器/CDN 缓存，并确认访问的是 <https://github.com/Elroyper/ClawSentry> 与 <https://pypi.org/project/clawsentry/>。

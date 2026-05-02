@@ -413,3 +413,8 @@ class PostActionFinding:
 - [L1 规则引擎 → D6](l1-rules.md#d6) — 同步路径中的注入检测（Post-action 的前置层）
 - [检测管线配置](../configuration/detection-config.md) — Post-action 检测等级的 CS_ 参数
 - [报表与监控 → SSE](../api/reporting.md) — `post_action_finding` 事件的 SSE 订阅格式
+
+
+---
+
+更多 sanitizer 的能力边界、`would_sanitize` 与 `advisory_only` 解释，见 [Sanitizer 能力边界](sanitizer-capability.md)。

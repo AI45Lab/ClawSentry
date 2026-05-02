@@ -78,7 +78,7 @@ hide:
 
 
 !!! tip "v0.6.5: Scope preview and sanitizer clarity"
-    `clawsentry scope validate/preview` 与 `POST /ahp/scope/preview` 现在可在启用前展示 dry-run/enforced 边界和 readable reason codes；watch/report sanitizer 摘要使用 `would_sanitize`、redacted preview 与 degraded/unsupported 状态，避免夸大未证明的输出改写能力。
+    [`clawsentry scope validate/preview`](configuration/session-scope.md) 与 [`POST /ahp/scope/preview`](api/decisions.md#post-ahp-scope-preview) 现在可在启用前展示 dry-run/enforced 边界和 readable reason codes；watch/report sanitizer 摘要使用 [`would_sanitize`](decision-layers/sanitizer-capability.md)、redacted preview 与 degraded/unsupported 状态，避免夸大未证明的输出改写能力。
 
 <div class="grid-cards" markdown>
 

@@ -771,7 +771,7 @@ async def send_uds_request(uds_path: str, request: dict) -> dict:
 ## POST /ahp/scope/preview — Session scope 预览 {#post-ahp-scope-preview}
 
 该端点用于在启用 session scope 前，预览一个 deterministic
-`SessionScopeProfile` 对单个 `CanonicalEvent` 的判定。它是用户友好的
+`SessionScopeProfile` 对单个 `CanonicalEvent` 的判定。profile 字段说明与 CLI 调试流程见 [Session scope 配置](../configuration/session-scope.md)。它是用户友好的
 dry-run/API 入口：默认只解释 `scope_allow` / `scope_defer` /
 `scope_deny` reason codes，不会声称已经阻断动作。只有请求显式传入
 `"confirm": true` 时，响应才会把该预览标记为 confirmed/non-dry-run。
