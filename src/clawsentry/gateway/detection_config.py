@@ -12,6 +12,8 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 
+from .llm_settings import resolve_llm_settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -103,7 +105,14 @@ class DetectionConfig:
     anti_bypass_normalized_destructive_repeat_action: str = "defer"
     anti_bypass_cross_tool_similarity_action: str = "force_l3"
     anti_bypass_similarity_threshold: float = 0.92
+    anti_bypass_same_tool_similarity_threshold: float = 0.88
     anti_bypass_record_allow_decisions: bool = False
+    anti_bypass_llm_recognition_enabled: bool = False
+    anti_bypass_llm_candidate_threshold: float = 0.55
+    anti_bypass_llm_confidence_threshold: float = 0.75
+    anti_bypass_llm_timeout_ms: float = 800.0
+    anti_bypass_llm_max_priors: int = 3
+    anti_bypass_llm_action: str = "force_l3"
 
     # --- E-5: Self-evolving pattern repository ---
     evolving_enabled: bool = False
@@ -272,6 +281,36 @@ class DetectionConfig:
                 "anti_bypass_similarity_threshold must be between 0.0 and 1.0, "
                 f"got {self.anti_bypass_similarity_threshold}"
             )
+        if not (0.0 <= self.anti_bypass_same_tool_similarity_threshold <= 1.0):
+            raise ValueError(
+                "anti_bypass_same_tool_similarity_threshold must be between 0.0 and 1.0, "
+                f"got {self.anti_bypass_same_tool_similarity_threshold}"
+            )
+        if not (0.0 <= self.anti_bypass_llm_candidate_threshold <= 1.0):
+            raise ValueError(
+                "anti_bypass_llm_candidate_threshold must be between 0.0 and 1.0, "
+                f"got {self.anti_bypass_llm_candidate_threshold}"
+            )
+        if not (0.0 <= self.anti_bypass_llm_confidence_threshold <= 1.0):
+            raise ValueError(
+                "anti_bypass_llm_confidence_threshold must be between 0.0 and 1.0, "
+                f"got {self.anti_bypass_llm_confidence_threshold}"
+            )
+        if self.anti_bypass_llm_timeout_ms <= 0:
+            raise ValueError(
+                f"anti_bypass_llm_timeout_ms must be > 0, got {self.anti_bypass_llm_timeout_ms}"
+            )
+        if self.anti_bypass_llm_max_priors < 1:
+            raise ValueError(
+                f"anti_bypass_llm_max_priors must be >= 1, got {self.anti_bypass_llm_max_priors}"
+            )
+        llm_actions = {"observe", "force_l2", "force_l3", "defer"}
+        if self.anti_bypass_llm_action not in llm_actions:
+            logger.warning(
+                "Invalid anti_bypass_llm_action=%r, falling back to 'force_l3'",
+                self.anti_bypass_llm_action,
+            )
+            object.__setattr__(self, "anti_bypass_llm_action", "force_l3")
         if self.threshold_critical > 3.0:
             logger.warning(
                 "threshold_critical=%.2f exceeds max achievable score (3.0) with default weights; "
@@ -341,6 +380,12 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION", "anti_bypass_normalized_destructive_repeat_action", str),
     ("CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION", "anti_bypass_cross_tool_similarity_action", str),
     ("CS_ANTI_BYPASS_SIMILARITY_THRESHOLD", "anti_bypass_similarity_threshold", float),
+    ("CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD", "anti_bypass_same_tool_similarity_threshold", float),
+    ("CS_ANTI_BYPASS_LLM_CANDIDATE_THRESHOLD", "anti_bypass_llm_candidate_threshold", float),
+    ("CS_ANTI_BYPASS_LLM_CONFIDENCE_THRESHOLD", "anti_bypass_llm_confidence_threshold", float),
+    ("CS_ANTI_BYPASS_LLM_TIMEOUT_MS", "anti_bypass_llm_timeout_ms", float),
+    ("CS_ANTI_BYPASS_LLM_MAX_PRIORS", "anti_bypass_llm_max_priors", int),
+    ("CS_ANTI_BYPASS_LLM_ACTION", "anti_bypass_llm_action", str),
 ]
 
 _ENV_ALIAS_MAP: list[tuple[str, str, type, str]] = [
@@ -353,6 +398,16 @@ _ENV_LIST_MAP: list[tuple[str, str]] = [
     ("CS_POST_ACTION_WHITELIST", "post_action_whitelist"),
     ("CS_ANTI_BYPASS_PRIOR_VERDICTS", "anti_bypass_prior_verdicts"),
 ]
+
+
+def _anti_bypass_llm_auto_enable_allowed(params: dict[str, object]) -> bool:
+    if str(params.get("mode") or "normal").strip().lower() == "benchmark":
+        return False
+    for env_key in ("CS_DRY_RUN", "CS_NO_NETWORK", "CS_LLM_NO_NETWORK"):
+        raw = os.getenv(env_key, "").strip().lower()
+        if raw in ("1", "true", "yes", "on"):
+            return False
+    return True
 
 
 def build_detection_config_from_env() -> DetectionConfig:
@@ -404,14 +459,18 @@ def build_detection_config_from_env() -> DetectionConfig:
             overrides[field_name] = tuple(items)
 
     # Bool env vars (special handling: "1"/"true"/"yes" → True)
-    def _parse_bool_env(env_key: str, field_name: str) -> None:
+    def _parse_bool_env(env_key: str, field_name: str) -> bool:
         raw = os.getenv(env_key, "").strip().lower()
         if raw in ("1", "true", "yes"):
             overrides[field_name] = True
-        elif raw in ("0", "false", "no"):
+            return True
+        if raw in ("0", "false", "no"):
             overrides[field_name] = False
-        elif raw:
+            return True
+        if raw:
             logger.warning("Invalid value for %s=%r, using default", env_key, raw)
+            return True
+        return False
 
     _parse_bool_env("CS_EVOLVING_ENABLED", "evolving_enabled")
     _parse_bool_env("CS_D4_FREQ_ENABLED", "d4_freq_enabled")
@@ -423,6 +482,17 @@ def build_detection_config_from_env() -> DetectionConfig:
     _parse_bool_env("CS_BENCHMARK_AUTO_RESOLVE_DEFER", "benchmark_auto_resolve_defer")
     _parse_bool_env("CS_ANTI_BYPASS_GUARD_ENABLED", "anti_bypass_guard_enabled")
     _parse_bool_env("CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS", "anti_bypass_record_allow_decisions")
+    explicit_anti_bypass_llm = _parse_bool_env(
+        "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED",
+        "anti_bypass_llm_recognition_enabled",
+    )
+    if (
+        not explicit_anti_bypass_llm
+        and bool(overrides.get("anti_bypass_guard_enabled", False))
+        and _anti_bypass_llm_auto_enable_allowed(overrides)
+        and resolve_llm_settings() is not None
+    ):
+        overrides["anti_bypass_llm_recognition_enabled"] = True
 
     # Deprecated USD budgets are migration telemetry only on the env/runtime
     # path.  Enforcement uses provider-reported token usage, so the legacy
@@ -558,14 +628,18 @@ def build_detection_config_with_preset(
         if items:
             params[field_name] = tuple(items)
 
-    def _parse_bool_env(env_key: str, field_name: str) -> None:
+    def _parse_bool_env(env_key: str, field_name: str) -> bool:
         raw = os.getenv(env_key, "").strip().lower()
         if raw in ("1", "true", "yes"):
             params[field_name] = True
-        elif raw in ("0", "false", "no"):
+            return True
+        if raw in ("0", "false", "no"):
             params[field_name] = False
-        elif raw:
+            return True
+        if raw:
             logger.warning("Invalid value for %s=%r, using default", env_key, raw)
+            return True
+        return False
 
     _parse_bool_env("CS_EVOLVING_ENABLED", "evolving_enabled")
     _parse_bool_env("CS_D4_FREQ_ENABLED", "d4_freq_enabled")
@@ -577,6 +651,17 @@ def build_detection_config_with_preset(
     _parse_bool_env("CS_BENCHMARK_AUTO_RESOLVE_DEFER", "benchmark_auto_resolve_defer")
     _parse_bool_env("CS_ANTI_BYPASS_GUARD_ENABLED", "anti_bypass_guard_enabled")
     _parse_bool_env("CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS", "anti_bypass_record_allow_decisions")
+    explicit_anti_bypass_llm = _parse_bool_env(
+        "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED",
+        "anti_bypass_llm_recognition_enabled",
+    )
+    if (
+        not explicit_anti_bypass_llm
+        and bool(params.get("anti_bypass_guard_enabled", False))
+        and _anti_bypass_llm_auto_enable_allowed(params)
+        and resolve_llm_settings() is not None
+    ):
+        params["anti_bypass_llm_recognition_enabled"] = True
 
     # Keep legacy USD budgets informational on the env/runtime path.
     if "llm_daily_budget_usd" in params:

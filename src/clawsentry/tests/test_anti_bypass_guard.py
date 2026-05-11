@@ -85,6 +85,46 @@ def _sync_params(*, request_id: str, event_id: str, session_id: str = "sess-gw",
     }
 
 
+class _FakeAntiBypassLLMProvider:
+    provider_id = "fake-anti-bypass"
+
+    def __init__(self, response: str) -> None:
+        self.response = response
+        self.calls: list[dict[str, object]] = []
+
+    async def complete(
+        self,
+        system_prompt: str,
+        user_message: str,
+        timeout_ms: float,
+        max_tokens: int = 256,
+    ) -> str:
+        self.calls.append({
+            "system_prompt": system_prompt,
+            "user_message": user_message,
+            "timeout_ms": timeout_ms,
+            "max_tokens": max_tokens,
+        })
+        return self.response
+
+
+class _TimeoutAntiBypassLLMProvider(_FakeAntiBypassLLMProvider):
+    async def complete(
+        self,
+        system_prompt: str,
+        user_message: str,
+        timeout_ms: float,
+        max_tokens: int = 256,
+    ) -> str:
+        self.calls.append({
+            "system_prompt": system_prompt,
+            "user_message": user_message,
+            "timeout_ms": timeout_ms,
+            "max_tokens": max_tokens,
+        })
+        raise TimeoutError("provider timed out")
+
+
 class TestAntiBypassConfig:
     def test_defaults_are_behavior_preserving(self):
         cfg = DetectionConfig()
@@ -97,6 +137,13 @@ class TestAntiBypassConfig:
         assert cfg.anti_bypass_normalized_destructive_repeat_action == "defer"
         assert cfg.anti_bypass_cross_tool_similarity_action == "force_l3"
         assert cfg.anti_bypass_record_allow_decisions is False
+        assert cfg.anti_bypass_same_tool_similarity_threshold == 0.88
+        assert cfg.anti_bypass_llm_recognition_enabled is False
+        assert cfg.anti_bypass_llm_candidate_threshold == 0.55
+        assert cfg.anti_bypass_llm_confidence_threshold == 0.75
+        assert cfg.anti_bypass_llm_timeout_ms == 800
+        assert cfg.anti_bypass_llm_max_priors == 3
+        assert cfg.anti_bypass_llm_action == "force_l3"
 
     def test_env_mapping_and_list_parsing(self):
         env = {
@@ -109,7 +156,14 @@ class TestAntiBypassConfig:
             "CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION": "force_l2",
             "CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION": "observe",
             "CS_ANTI_BYPASS_SIMILARITY_THRESHOLD": "0.5",
+            "CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD": "0.7",
+            "CS_ANTI_BYPASS_LLM_CANDIDATE_THRESHOLD": "0.4",
+            "CS_ANTI_BYPASS_LLM_CONFIDENCE_THRESHOLD": "0.8",
+            "CS_ANTI_BYPASS_LLM_TIMEOUT_MS": "250",
+            "CS_ANTI_BYPASS_LLM_MAX_PRIORS": "2",
+            "CS_ANTI_BYPASS_LLM_ACTION": "force_l2",
             "CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS": "yes",
+            "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED": "yes",
         }
         with patch.dict(os.environ, env, clear=True):
             cfg = build_detection_config_from_env()
@@ -123,12 +177,116 @@ class TestAntiBypassConfig:
         assert cfg.anti_bypass_cross_tool_similarity_action == "observe"
         assert cfg.anti_bypass_similarity_threshold == 0.5
         assert cfg.anti_bypass_record_allow_decisions is True
+        assert cfg.anti_bypass_same_tool_similarity_threshold == 0.7
+        assert cfg.anti_bypass_llm_candidate_threshold == 0.4
+        assert cfg.anti_bypass_llm_confidence_threshold == 0.8
+        assert cfg.anti_bypass_llm_timeout_ms == 250
+        assert cfg.anti_bypass_llm_max_priors == 2
+        assert cfg.anti_bypass_llm_action == "force_l2"
+        assert cfg.anti_bypass_llm_recognition_enabled is True
+
+    def test_shared_llm_config_auto_enables_recognition_when_guard_enabled(self):
+        env = {
+            "CS_ANTI_BYPASS_GUARD_ENABLED": "true",
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY": "sk-shared-test-key",
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            cfg = build_detection_config_from_env()
+
+        assert cfg.anti_bypass_guard_enabled is True
+        assert cfg.anti_bypass_llm_recognition_enabled is True
+
+    def test_explicit_llm_recognition_false_overrides_shared_llm_config(self):
+        env = {
+            "CS_ANTI_BYPASS_GUARD_ENABLED": "true",
+            "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED": "false",
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY": "sk-shared-test-key",
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            cfg = build_detection_config_from_env()
+
+        assert cfg.anti_bypass_llm_recognition_enabled is False
+
+    def test_custom_llm_api_key_env_participates_in_auto_enable(self):
+        env = {
+            "CS_ANTI_BYPASS_GUARD_ENABLED": "true",
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY_ENV": "CUSTOM_LLM_KEY",
+            "CUSTOM_LLM_KEY": "sk-custom-test-key",
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            cfg = build_detection_config_from_env()
+
+        assert cfg.anti_bypass_llm_recognition_enabled is True
+
+    def test_shared_llm_config_without_guard_does_not_auto_enable_recognition(self):
+        env = {
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY": "sk-shared-test-key",
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            cfg = build_detection_config_from_env()
+
+        assert cfg.anti_bypass_guard_enabled is False
+        assert cfg.anti_bypass_llm_recognition_enabled is False
+
+    def test_benchmark_mode_does_not_auto_enable_external_llm_unless_explicit(self):
+        env = {
+            "CS_MODE": "benchmark",
+            "CS_ANTI_BYPASS_GUARD_ENABLED": "true",
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY": "sk-shared-test-key",
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            cfg = build_detection_config_from_env()
+
+        assert cfg.mode == "benchmark"
+        assert cfg.anti_bypass_llm_recognition_enabled is False
+
+        env["CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED"] = "true"
+        with patch.dict(os.environ, env, clear=True):
+            explicit_cfg = build_detection_config_from_env()
+
+        assert explicit_cfg.anti_bypass_llm_recognition_enabled is True
+
+    @pytest.mark.parametrize("mode_env_key", ["CS_DRY_RUN", "CS_NO_NETWORK"])
+    def test_no_network_modes_do_not_auto_enable_external_llm_unless_explicit(self, mode_env_key):
+        env = {
+            mode_env_key: "true",
+            "CS_ANTI_BYPASS_GUARD_ENABLED": "true",
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY": "sk-shared-test-key",
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            cfg = build_detection_config_from_env()
+
+        assert cfg.anti_bypass_llm_recognition_enabled is False
+
+        env["CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED"] = "true"
+        with patch.dict(os.environ, env, clear=True):
+            explicit_cfg = build_detection_config_from_env()
+
+        assert explicit_cfg.anti_bypass_llm_recognition_enabled is True
 
     def test_cross_tool_block_is_coerced_to_force_l3(self, caplog):
         with caplog.at_level("WARNING"):
             cfg = DetectionConfig(anti_bypass_cross_tool_similarity_action="block")
         assert cfg.anti_bypass_cross_tool_similarity_action == "force_l3"
         assert "anti_bypass_cross_tool_similarity_action" in caplog.text
+
+    def test_llm_block_action_config_is_coerced_to_force_l3(self, caplog):
+        with caplog.at_level("WARNING"):
+            cfg = DetectionConfig(anti_bypass_llm_action="block")
+        assert cfg.anti_bypass_llm_action == "force_l3"
+        assert "anti_bypass_llm_action" in caplog.text
 
 
 class TestAntiBypassMemory:
@@ -187,6 +345,298 @@ class TestAntiBypassMemory:
         assert cross_tool is not None
         assert cross_tool.match_type == "cross_tool_script_similarity"
         assert cross_tool.action != "block"
+
+    def test_priority_ranking_prefers_older_exact_raw_over_newer_cross_tool_match(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-older-exact",
+                tool_name="bash",
+                payload={"command": "rm -rf /tmp/target"},
+            ),
+            decision=_decision(policy_id="older-exact-policy"),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-newer-weak",
+                tool_name="python",
+                payload={"command": "python -c \"import shutil; shutil.rmtree('/tmp/target')\""},
+            ),
+            decision=_decision(policy_id="newer-cross-tool-policy"),
+            snapshot=None,
+            meta={},
+            record_id=2,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-current",
+                tool_name="bash",
+                payload={"command": "rm -rf /tmp/target"},
+            ),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        assert match.match_type == "exact_raw_repeat"
+        assert match.prior_record_id == 1
+        assert match.prior_policy_id == "older-exact-policy"
+
+    def test_normalized_destructive_repeat_metadata_identifies_exact_fingerprint(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(event_id="evt-1", payload={"command": "sudo bash -c 'rm -rf /tmp/target'"}),
+            decision=_decision(),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(event_id="evt-2", payload={"command": "env FOO=bar rm -rf /tmp/target"}),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        assert match.to_metadata()["recognition_source"] == "deterministic"
+        assert match.to_metadata()["similarity_mode"] == "normalized_hash"
+        assert match.to_metadata()["match_reason"] == "exact_normalized_fingerprint"
+
+    def test_normalized_repeat_ignores_benign_read_like_prior(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(event_id="evt-benign-1", payload={"command": "sudo bash -c 'ls /tmp/target'"}),
+            decision=_decision(risk_level=RiskLevel.HIGH),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(event_id="evt-benign-2", payload={"command": "env FOO=bar ls /tmp/target"}),
+            None,
+            cfg,
+        )
+
+        assert match is None
+
+    def test_same_tool_soft_similarity_matches_destructive_variants(self):
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_same_tool_similarity_threshold=0.88,
+        )
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(event_id="evt-soft-1", payload={"command": "rm -rf /tmp/target/cache"}),
+            decision=_decision(),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(event_id="evt-soft-2", payload={"command": "rm -rf /tmp/target/cache/"}),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        assert match.match_type == "normalized_destructive_repeat"
+        assert match.to_metadata()["similarity_mode"] == "same_tool_jaccard"
+        assert match.to_metadata()["match_reason"] == "same_tool_feature_similarity"
+
+    def test_same_tool_soft_similarity_ignores_non_destructive_overlap(self):
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_same_tool_similarity_threshold=0.88,
+        )
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(event_id="evt-read-1", payload={"command": "cat /tmp/target/cache"}),
+            decision=_decision(risk_level=RiskLevel.HIGH),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(event_id="evt-read-2", payload={"command": "cat /tmp/target/cache/"}),
+            None,
+            cfg,
+        )
+
+        assert match is None
+
+    def test_cross_tool_python_deletion_api_matches_prior_rm_scope(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-python-api-1",
+                tool_name="bash",
+                payload={"command": "rm -rf /tmp/target"},
+            ),
+            decision=_decision(),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-python-api-2",
+                tool_name="python",
+                payload={"command": "python -c \"import shutil; shutil.rmtree('/tmp/target')\""},
+            ),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        assert match.match_type == "cross_tool_script_similarity"
+        assert match.action == "force_l3"
+        meta = match.to_metadata()
+        assert meta["similarity_mode"] == "operation_scope"
+        assert "similarity" not in meta
+
+    def test_unrelated_cross_tool_curl_labels_do_not_match_without_shared_scope(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-curl-1",
+                tool_name="bash",
+                payload={"command": "curl https://updates.example/releases/app.tar.gz"},
+            ),
+            decision=_decision(),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-curl-2",
+                tool_name="python",
+                payload={"command": "curl https://metrics.example/ping/health"},
+            ),
+            None,
+            cfg,
+        )
+
+        assert match is None
+
+    def test_cross_tool_intent_label_metadata_does_not_report_fake_jaccard(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-intent-1",
+                tool_name="bash",
+                payload={"command": "delete /tmp/target"},
+            ),
+            decision=_decision(),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-intent-2",
+                tool_name="python",
+                payload={"command": "python -c \"open('/tmp/target', 'w').truncate(0)\""},
+            ),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        meta = match.to_metadata()
+        assert meta["similarity_mode"] == "intent_label"
+        assert meta["match_reason"] == "destructive_intent_label"
+        assert "similarity" not in meta
+
+    def test_llm_candidates_reject_scope_only_overlap(self):
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.99,
+        )
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-scope-1",
+                tool_name="bash",
+                payload={"command": "curl https://updates.example/project"},
+            ),
+            decision=_decision(),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+
+        candidates = guard.llm_candidates(
+            _event(
+                event_id="evt-scope-2",
+                tool_name="python",
+                payload={"command": "python -c \"print('/tmp/project')\""},
+            ),
+            None,
+            cfg,
+        )
+
+        assert candidates == []
+
+    def test_llm_candidates_reject_current_non_destructive_action(self):
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.1,
+        )
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-nondestructive-1",
+                tool_name="bash",
+                payload={"command": "rm -rf /tmp/project/cache"},
+            ),
+            decision=_decision(),
+            snapshot=None,
+            meta={},
+            record_id=1,
+            config=cfg,
+        )
+
+        candidates = guard.llm_candidates(
+            _event(
+                event_id="evt-nondestructive-2",
+                tool_name="python",
+                payload={"command": "python -c \"print('/tmp/project/cache')\""},
+            ),
+            None,
+            cfg,
+        )
+
+        assert candidates == []
 
     def test_ttl_and_cap_eviction(self):
         cfg = DetectionConfig(
@@ -357,3 +807,405 @@ class TestAntiBypassGatewayIntegration:
         assert record["meta"]["anti_bypass"]["action"] == "defer"
         assert record["meta"]["auto_resolved"] is True
         assert len(gw.anti_bypass_guard.records_for_session("sess-gw")) == 1
+
+    @pytest.mark.asyncio
+    async def test_llm_assisted_cross_tool_candidate_forces_l3_with_redacted_prompt(self):
+        provider = _FakeAntiBypassLLMProvider(json.dumps({
+            "schema": "cs.anti_bypass.recognition.v1",
+            "matched": True,
+            "confidence": 0.91,
+            "action": "force_l3",
+            "prior_record_id": 1,
+            "reason_codes": ["same_destructive_followup"],
+            "evidence_categories": ["operation_overlap", "scope_overlap"],
+        }))
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.1,
+        )
+        gw = SupervisionGateway(
+            detection_config=cfg,
+            anti_bypass_llm_provider=provider,
+        )
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-llm-1",
+            event_id="evt-llm-1",
+            session_id="sess-llm",
+            tool_name="bash",
+            payload={"command": "rm -rf /tmp/project/cache"},
+        )))
+        canary = "SECRET-CANARY-LLM"
+        result = await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-llm-2",
+            event_id="evt-llm-2",
+            session_id="sess-llm",
+            tool_name="python",
+            payload={
+                "command": (
+                    "python -c \""
+                    "print('remove /tmp/project/cache'); "
+                    f"print('Authorization: Bearer {canary}')\""
+                )
+            },
+        )))
+
+        meta = gw.trajectory_store.records[-1]["meta"]["anti_bypass"]
+        assert meta["recognition_source"] == "llm_assisted"
+        assert meta["similarity_mode"] == "llm_capsule"
+        assert meta["llm_state"] == "matched"
+        assert meta["llm_confidence"] == 0.91
+        assert meta["action"] == "force_l3"
+        assert result["result"]["l3_requested"] is True
+        assert len(provider.calls) == 1
+        prompt = json.dumps(provider.calls[0])
+        assert canary not in prompt
+        assert "Authorization" not in prompt
+        assert "remove /tmp/project/cache" not in prompt
+        assert "rm -rf /tmp/project/cache" not in prompt
+        assert "sha256:" not in prompt
+        assert "same_destructive_followup" not in meta["reason_codes"]
+
+    @pytest.mark.asyncio
+    async def test_llm_recognizer_is_not_called_when_deterministic_match_exists(self):
+        provider = _FakeAntiBypassLLMProvider(json.dumps({
+            "schema": "cs.anti_bypass.recognition.v1",
+            "matched": True,
+            "confidence": 0.99,
+            "action": "force_l3",
+            "prior_record_id": 1,
+            "reason_codes": ["should_not_run"],
+            "evidence_categories": ["exact_match"],
+        }))
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+        )
+        gw = SupervisionGateway(
+            detection_config=cfg,
+            anti_bypass_llm_provider=provider,
+        )
+
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-exact-llm-1",
+            event_id="evt-exact-llm-1",
+            session_id="sess-exact-llm",
+            payload={"command": "rm -rf /tmp/target"},
+        )))
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-exact-llm-2",
+            event_id="evt-exact-llm-2",
+            session_id="sess-exact-llm",
+            payload={"command": "rm -rf /tmp/target"},
+        )))
+
+        assert provider.calls == []
+        meta = gw.trajectory_store.records[-1]["meta"]["anti_bypass"]
+        assert meta["recognition_source"] == "deterministic"
+        assert meta["similarity_mode"] == "raw_hash"
+
+    @pytest.mark.asyncio
+    async def test_llm_block_response_cannot_create_local_block(self):
+        provider = _FakeAntiBypassLLMProvider(json.dumps({
+            "schema": "cs.anti_bypass.recognition.v1",
+            "matched": True,
+            "confidence": 0.96,
+            "action": "block",
+            "prior_record_id": 1,
+            "reason_codes": ["model_attempted_block"],
+            "evidence_categories": ["operation_overlap"],
+        }))
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.1,
+            anti_bypass_llm_action="force_l2",
+        )
+        gw = SupervisionGateway(
+            detection_config=cfg,
+            anti_bypass_llm_provider=provider,
+        )
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-block-llm-1",
+            event_id="evt-block-llm-1",
+            session_id="sess-block-llm",
+            tool_name="bash",
+            payload={"command": "rm -rf /tmp/project/cache"},
+        )))
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-block-llm-2",
+            event_id="evt-block-llm-2",
+            session_id="sess-block-llm",
+            tool_name="python",
+            payload={"command": "python -c \"print('remove /tmp/project/cache')\""},
+        )))
+
+        meta = gw.trajectory_store.records[-1]["meta"]["anti_bypass"]
+        assert meta["recognition_source"] == "llm_assisted"
+        assert meta["action"] == "force_l2"
+        assert gw.trajectory_store.records[-1]["decision"]["policy_id"] != "anti-bypass-cross-tool-review"
+
+    @pytest.mark.asyncio
+    async def test_auto_enabled_llm_recognizer_runs_with_injected_provider(self):
+        provider = _FakeAntiBypassLLMProvider(json.dumps({
+            "schema": "cs.anti_bypass.recognition.v1",
+            "matched": True,
+            "confidence": 0.96,
+            "action": "force_l3",
+            "prior_record_id": 1,
+            "reason_codes": ["destructive_label_overlap"],
+            "evidence_categories": ["operation_overlap"],
+        }))
+        env = {
+            "CS_ANTI_BYPASS_GUARD_ENABLED": "true",
+            "CS_ANTI_BYPASS_LLM_CANDIDATE_THRESHOLD": "0.1",
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY": "sk-shared-test-key",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            cfg = build_detection_config_from_env()
+        gw = SupervisionGateway(detection_config=cfg, anti_bypass_llm_provider=provider)
+
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-auto-llm-1",
+            event_id="evt-auto-llm-1",
+            session_id="sess-auto-llm",
+            tool_name="bash",
+            payload={"command": "rm -rf /tmp/project/cache"},
+        )))
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-auto-llm-2",
+            event_id="evt-auto-llm-2",
+            session_id="sess-auto-llm",
+            tool_name="python",
+            payload={"command": "python -c \"print('remove /tmp/project/cache')\""},
+        )))
+
+        assert cfg.anti_bypass_llm_recognition_enabled is True
+        assert len(provider.calls) == 1
+        assert gw.trajectory_store.records[-1]["meta"]["anti_bypass"]["recognition_source"] == "llm_assisted"
+
+    @pytest.mark.asyncio
+    async def test_llm_observe_response_cannot_weaken_configured_force_l3(self):
+        provider = _FakeAntiBypassLLMProvider(json.dumps({
+            "schema": "cs.anti_bypass.recognition.v1",
+            "matched": True,
+            "confidence": 0.96,
+            "action": "observe",
+            "prior_record_id": 1,
+            "reason_codes": ["destructive_label_overlap"],
+            "evidence_categories": ["operation_overlap"],
+        }))
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.1,
+            anti_bypass_llm_action="force_l3",
+        )
+        gw = SupervisionGateway(detection_config=cfg, anti_bypass_llm_provider=provider)
+
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-observe-llm-1",
+            event_id="evt-observe-llm-1",
+            session_id="sess-observe-llm",
+            tool_name="bash",
+            payload={"command": "rm -rf /tmp/project/cache"},
+        )))
+        result = await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-observe-llm-2",
+            event_id="evt-observe-llm-2",
+            session_id="sess-observe-llm",
+            tool_name="python",
+            payload={"command": "python -c \"print('remove /tmp/project/cache')\""},
+        )))
+
+        meta = gw.trajectory_store.records[-1]["meta"]["anti_bypass"]
+        assert meta["action"] == "force_l3"
+        assert result["result"]["l3_requested"] is True
+
+    @pytest.mark.asyncio
+    async def test_llm_defer_response_cannot_create_local_defer_when_config_forces_l3(self):
+        provider = _FakeAntiBypassLLMProvider(json.dumps({
+            "schema": "cs.anti_bypass.recognition.v1",
+            "matched": True,
+            "confidence": 0.96,
+            "action": "defer",
+            "prior_record_id": 1,
+            "reason_codes": ["destructive_label_overlap"],
+            "evidence_categories": ["operation_overlap"],
+        }))
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.1,
+            anti_bypass_llm_action="force_l3",
+        )
+        gw = SupervisionGateway(detection_config=cfg, anti_bypass_llm_provider=provider)
+
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-defer-llm-1",
+            event_id="evt-defer-llm-1",
+            session_id="sess-defer-llm",
+            tool_name="bash",
+            payload={"command": "rm -rf /tmp/project/cache"},
+        )))
+        result = await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-defer-llm-2",
+            event_id="evt-defer-llm-2",
+            session_id="sess-defer-llm",
+            tool_name="python",
+            payload={"command": "python -c \"print('remove /tmp/project/cache')\""},
+        )))
+
+        meta = gw.trajectory_store.records[-1]["meta"]["anti_bypass"]
+        assert meta["action"] == "force_l3"
+        assert result["result"]["decision"]["decision"] != "defer"
+        assert result["result"]["l3_requested"] is True
+
+    @pytest.mark.asyncio
+    async def test_llm_scope_only_candidate_is_skipped_with_safe_probe_metadata(self):
+        provider = _FakeAntiBypassLLMProvider(json.dumps({
+            "schema": "cs.anti_bypass.recognition.v1",
+            "matched": True,
+            "confidence": 0.99,
+            "action": "force_l3",
+            "prior_record_id": 1,
+            "reason_codes": ["target_scope_overlap"],
+            "evidence_categories": ["scope_overlap"],
+        }))
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.99,
+        )
+        gw = SupervisionGateway(detection_config=cfg, anti_bypass_llm_provider=provider)
+
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-scope-only-1",
+            event_id="evt-scope-only-1",
+            session_id="sess-scope-only",
+            tool_name="bash",
+            payload={"command": "curl https://updates.example/project"},
+        )))
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-scope-only-2",
+            event_id="evt-scope-only-2",
+            session_id="sess-scope-only",
+            tool_name="python",
+            payload={"command": "python -c \"print('/tmp/project')\""},
+        )))
+
+        meta = gw.trajectory_store.records[-1]["meta"]
+        assert provider.calls == []
+        assert "anti_bypass" not in meta
+        assert meta["anti_bypass_probe"] == {
+            "candidate_count": 0,
+            "llm_state": "not_matched",
+            "reason": "no_candidate",
+            "budget_skipped": False,
+        }
+
+    @pytest.mark.asyncio
+    async def test_llm_current_non_destructive_action_does_not_force_review(self):
+        provider = _FakeAntiBypassLLMProvider(json.dumps({
+            "schema": "cs.anti_bypass.recognition.v1",
+            "matched": True,
+            "confidence": 0.99,
+            "action": "force_l3",
+            "prior_record_id": 1,
+            "reason_codes": ["destructive_label_overlap"],
+            "evidence_categories": ["operation_overlap"],
+        }))
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.1,
+        )
+        gw = SupervisionGateway(detection_config=cfg, anti_bypass_llm_provider=provider)
+
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-nondestructive-llm-1",
+            event_id="evt-nondestructive-llm-1",
+            session_id="sess-nondestructive-llm",
+            tool_name="bash",
+            payload={"command": "rm -rf /tmp/project/cache"},
+        )))
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-nondestructive-llm-2",
+            event_id="evt-nondestructive-llm-2",
+            session_id="sess-nondestructive-llm",
+            tool_name="python",
+            payload={"command": "python -c \"print('/tmp/project/cache')\""},
+        )))
+
+        meta = gw.trajectory_store.records[-1]["meta"]
+        assert provider.calls == []
+        assert "anti_bypass" not in meta
+        assert meta["anti_bypass_probe"]["reason"] == "no_candidate"
+
+    @pytest.mark.asyncio
+    async def test_llm_timeout_records_safe_probe_metadata(self):
+        provider = _TimeoutAntiBypassLLMProvider("")
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.1,
+            anti_bypass_llm_timeout_ms=10,
+        )
+        gw = SupervisionGateway(detection_config=cfg, anti_bypass_llm_provider=provider)
+
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-timeout-llm-1",
+            event_id="evt-timeout-llm-1",
+            session_id="sess-timeout-llm",
+            tool_name="bash",
+            payload={"command": "rm -rf /tmp/project/cache"},
+        )))
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-timeout-llm-2",
+            event_id="evt-timeout-llm-2",
+            session_id="sess-timeout-llm",
+            tool_name="python",
+            payload={"command": "python -c \"print('remove /tmp/project/cache')\""},
+        )))
+
+        meta = gw.trajectory_store.records[-1]["meta"]
+        assert len(provider.calls) == 1
+        assert "anti_bypass" not in meta
+        assert meta["anti_bypass_probe"] == {
+            "candidate_count": 1,
+            "llm_state": "degraded",
+            "reason": "timeout",
+            "budget_skipped": False,
+        }
+
+    @pytest.mark.asyncio
+    async def test_llm_provider_unavailable_records_safe_probe_metadata(self):
+        cfg = DetectionConfig(
+            anti_bypass_guard_enabled=True,
+            anti_bypass_llm_recognition_enabled=True,
+            anti_bypass_llm_candidate_threshold=0.1,
+        )
+        gw = SupervisionGateway(detection_config=cfg, anti_bypass_llm_provider=None)
+
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-provider-missing-1",
+            event_id="evt-provider-missing-1",
+            session_id="sess-provider-missing",
+            tool_name="bash",
+            payload={"command": "rm -rf /tmp/project/cache"},
+        )))
+        await gw.handle_jsonrpc(_jsonrpc_request(_sync_params(
+            request_id="req-provider-missing-2",
+            event_id="evt-provider-missing-2",
+            session_id="sess-provider-missing",
+            tool_name="python",
+            payload={"command": "python -c \"print('remove /tmp/project/cache')\""},
+        )))
+
+        assert gw.trajectory_store.records[-1]["meta"]["anti_bypass_probe"] == {
+            "candidate_count": 1,
+            "llm_state": "disabled",
+            "reason": "provider_unavailable",
+            "budget_skipped": False,
+        }

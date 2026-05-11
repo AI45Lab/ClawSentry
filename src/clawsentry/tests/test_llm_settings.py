@@ -16,6 +16,7 @@ def _clean_env() -> dict[str, str]:
         "CS_LLM_BASE_URL": "",
         "CS_LLM_TEMPERATURE": "",
         "CS_LLM_PROVIDER_TIMEOUT_MS": "",
+        "CS_LLM_API_KEY_ENV": "",
         "CS_L3_ENABLED": "",
         "CS_LLM_L3_ENABLED": "",
         "CS_ENTERPRISE_ENABLED": "",
@@ -84,6 +85,19 @@ class TestResolveLlmSettings:
         assert settings is not None
         assert settings.api_key == "sk-legacy-key"
         assert settings.provider == "openai"
+
+    def test_custom_api_key_env_is_honored(self):
+        env = {
+            **_clean_env(),
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY_ENV": "CUSTOM_LLM_KEY",
+            "CUSTOM_LLM_KEY": "sk-custom-key",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            settings = resolve_llm_settings()
+
+        assert settings is not None
+        assert settings.api_key == "sk-custom-key"
 
     def test_legacy_anthropic_key_is_still_supported(self):
         env = {

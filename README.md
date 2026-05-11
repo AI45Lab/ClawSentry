@@ -22,7 +22,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3170+ public regression tests**, with release-time CI/build evidence
+- **3199+ public regression tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,12 +34,12 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
-## What's New in v0.6.7
+## What's New in v0.6.8
 
-- **Codex hooks are now default on start**: `clawsentry start --framework codex` installs or refreshes ClawSentry-managed Codex hooks, writes Codex trust state, enables the session watcher, and prints the uninstall command.
-- **Codex CLI 0.130 host dispatch fixed**: managed `PreToolUse` hooks now carry the trusted hash Codex requires, so real `codex exec` sessions dispatch ClawSentry instead of leaving hooks discovered-but-untrusted.
-- **Safer uninstall coverage**: Codex, Gemini CLI, and Kimi CLI uninstall paths now have regression coverage proving user-managed hook entries are preserved.
-- **Docs and release status refreshed**: progress docs, online docs, changelog, and API metadata are aligned for v0.6.7.
+- **Anti-bypass follow-up recognition is more precise**: exact destructive repeats now outrank weaker cross-tool similarities, so older high-confidence matches are not hidden by newer low-confidence ones.
+- **Cross-tool LLM recognition stays review-only**: sanitized LLM recognition is admitted only for cross-tool destructive candidates with multiple weak evidence signals, and it can request L2/L3 review or defer instead of producing a local hard block.
+- **Safer operator metadata**: `anti_bypass_probe` reports compact candidate and degradation state without raw commands, payloads, secrets, environment values, deterministic token hashes, or L3 traces.
+- **Docs and release status refreshed**: anti-bypass docs now explain when to enable the guard, what each action means, and how to read recognition metadata without relying on vague launch phrasing.
 
 ## Quick Start
 

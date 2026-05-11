@@ -77,8 +77,8 @@ hide:
 ---
 
 
-!!! tip "v0.6.7: Codex managed hooks by default"
-    `clawsentry start --framework codex` 现在会默认安装/刷新 ClawSentry-managed Codex hooks、写入 Codex trust state、启用 session watcher，并在启动输出中给出 `clawsentry init codex --uninstall` 卸载命令。Codex CLI 0.130 的真实 `codex exec` smoke 已验证 host `PreToolUse` 阻断生效。
+!!! tip "v0.6.8: Anti-bypass recognition is clearer and safer"
+    Anti-bypass Follow-up Guard 现在先按确定性候选排序，再把符合条件的跨工具 destructive 候选交给 sanitized LLM recognition 作为复核信号。LLM 路径不会产生本地 hard block，`anti_bypass_probe` 只暴露候选数量和降级原因等安全 metadata。
 
 <div class="grid-cards" markdown>
 
@@ -399,7 +399,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3170 passed / 6 skipped**（v0.6.7 public release；dev workspace 3171 / 5 skipped） |
+| 测试用例 | **3199 passed / 6 skipped**（v0.6.8 public release；dev workspace 3207 / 5 skipped） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |

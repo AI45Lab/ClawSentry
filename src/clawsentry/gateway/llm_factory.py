@@ -51,6 +51,14 @@ def _build_provider(settings: LLMSettings) -> AnthropicProvider | OpenAIProvider
     raise ValueError(f"Unsupported LLM provider: {settings.provider!r}")
 
 
+def build_provider_from_env() -> AnthropicProvider | OpenAIProvider | None:
+    """Build a raw LLM provider from shared env settings, or None if unset."""
+    settings = resolve_llm_settings()
+    if settings is None:
+        return None
+    return _build_provider(settings)
+
+
 def build_analyzer_from_env(
     *,
     trajectory_store: Any = None,

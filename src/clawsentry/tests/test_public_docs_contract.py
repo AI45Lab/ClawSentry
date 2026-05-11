@@ -450,11 +450,55 @@ def test_clawsentry_config_docs_use_dotenv_templates_not_section_configs() -> No
     for term in [
         "CS_ANTI_BYPASS_GUARD_ENABLED=true",
         "CS_ANTI_BYPASS_EXACT_REPEAT_ACTION=block",
+        "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED=true",
         "CS_DEFER_BRIDGE_ENABLED=true",
         "CS_POST_ACTION_FINDING_ACTION=broadcast",
         "CS_MODE=benchmark",
     ]:
         assert term in templates
+
+    anti_bypass_doc_paths = [
+        "site-docs/decision-layers/anti-bypass-guard.md",
+        "site-docs/configuration/env-vars.md",
+        "site-docs/configuration/detection-config.md",
+        "site-docs/configuration/templates.md",
+        "site-docs/operations/recent-feature-coverage.md",
+        "docs/PROJECT_STATUS.md",
+        "docs/guides/a3s-code-integration.md",
+        "docs/management/DEVELOPMENT_DYNAMIC_LOG.md",
+        "docs/validation/anti-bypass-recognition-optimization-2026-05-11.md",
+    ]
+    anti_bypass_docs = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (REPO_ROOT / relative_path for relative_path in anti_bypass_doc_paths)
+        if path.exists()
+    )
+    for term in [
+        "CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD",
+        "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED",
+        "CS_ANTI_BYPASS_LLM_CANDIDATE_THRESHOLD",
+        "CS_ANTI_BYPASS_LLM_CONFIDENCE_THRESHOLD",
+        "sanitized semantic capsules",
+        "不能产生本地 `block`",
+        "raw command、raw payload、secret、env value 或 L3 trace",
+        "anti_bypass_probe",
+        "scope-only",
+        "benchmark / dry-run / no-network",
+    ]:
+        assert term in anti_bypass_docs
+
+    for stale_term in [
+        "上线最稳",
+        "最稳",
+        "一句话理解",
+        "快速启用",
+        "灰区",
+        "LLM recognition is default-off",
+        "默认关闭的 sanitized LLM recognizer",
+    ]:
+        assert stale_term not in anti_bypass_docs
+
+    assert "CS_LLM_API_KEY_ENV" in ENV_VARS_DOC.read_text(encoding="utf-8")
 
     overview = (
         REPO_ROOT / "site-docs" / "configuration" / "configuration-overview.md"

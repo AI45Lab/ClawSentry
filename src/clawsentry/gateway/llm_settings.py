@@ -74,6 +74,11 @@ def _resolve_api_key(provider: str, *, environ: Optional[Mapping[str, str]] = No
     shared = _env("CS_LLM_API_KEY", environ=environ).strip()
     if shared:
         return shared
+    custom_env_name = _env("CS_LLM_API_KEY_ENV", environ=environ).strip()
+    if custom_env_name:
+        custom_value = _env(custom_env_name, environ=environ).strip()
+        if custom_value:
+            return custom_value
     if provider == "anthropic":
         return _env("ANTHROPIC_API_KEY", environ=environ).strip()
     if provider == "openai":

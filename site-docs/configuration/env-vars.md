@@ -78,6 +78,7 @@ clawsentry config show --effective --env-file .clawsentry.env.local
 | `ANTHROPIC_API_KEY` | - | Anthropic API 密钥。`CS_LLM_PROVIDER=anthropic` 时必填 |
 | `OPENAI_API_KEY` | - | OpenAI API 密钥。`CS_LLM_PROVIDER=openai` 时必填 |
 | `CS_LLM_API_KEY` | - | 通用 LLM API 密钥。作为 `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` 的替代方案，`doctor` 检查时也会检测此变量 |
+| `CS_LLM_API_KEY_ENV` | - | 指向自定义 API key 环境变量名；当 `CS_LLM_API_KEY` 为空时读取该变量，适合 secret manager 注入 |
 
 !!! warning "API 密钥安全"
     API 密钥属于敏感信息，建议通过进程/部署环境、密钥管理系统，或显式 `--env-file .clawsentry.env.local` 注入，切勿写入 `.clawsentry.env.example`、脚本或版本控制。
@@ -172,10 +173,20 @@ Anti-bypass guard 用于检测 `PRE_ACTION` 中对 prior final risky decision �
 | `CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION` | `defer` | same normalized destructive intent 的动作 |
 | `CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION` | `force_l3` | cross-tool/script similarity 的动作；`block` 无效并回退到 `force_l3` |
 | `CS_ANTI_BYPASS_SIMILARITY_THRESHOLD` | `0.92` | cross-tool/script similarity 阈值，范围 `0.0..1.0` |
+| `CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD` | `0.88` | same-tool destructive soft similarity 阈值，范围 `0.0..1.0` |
 | `CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS` | `false` | 是否记录 compact allow-decision fingerprints |
+| `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` | unset / auto | 显式覆盖 sanitized LLM recognizer：`true` 强制启用（需 provider 可用），`false` 强制关闭；未设置时，guard 已启用且共享 `CS_LLM_PROVIDER` + API key 有效则自动启用，benchmark / dry-run / no-network 模式除外 |
+| `CS_ANTI_BYPASS_LLM_CANDIDATE_THRESHOLD` | `0.55` | 生成跨工具 LLM 候选的弱相似阈值 |
+| `CS_ANTI_BYPASS_LLM_CONFIDENCE_THRESHOLD` | `0.75` | LLM follow-up 判定生效的最低 confidence |
+| `CS_ANTI_BYPASS_LLM_TIMEOUT_MS` | `800` | LLM recognizer 单次调用超时 |
+| `CS_ANTI_BYPASS_LLM_MAX_PRIORS` | `3` | 单次最多发送多少条 sanitized prior capsules |
+| `CS_ANTI_BYPASS_LLM_ACTION` | `force_l3` | LLM 命中或模型返回非法动作时采用的动作：`observe` / `force_l2` / `force_l3` / `defer` |
 
 !!! warning "Cross-tool/script 不本地 hard-block"
-    `cross_tool_script_similarity` 可 `observe` / `force_l2` / `force_l3` / `defer`，但不能本地 `block`。若配置为 `block`，会被校验逻辑回退到 `force_l3`。
+    `cross_tool_script_similarity` 可 `observe` / `force_l2` / `force_l3` / `defer`，但不能本地 `block`。若 deterministic 或 LLM action 配置为 `block`，会被校验逻辑回退到 `force_l3`；LLM 返回的 `action` 不参与执法，Gateway 始终按 `CS_ANTI_BYPASS_LLM_ACTION` 处理 LLM-assisted match。
+
+!!! note "LLM recognizer 的隐私边界"
+    未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，只有同时启用 guard、共享 `CS_LLM_*` provider 配置有效、非 benchmark / dry-run / no-network、命中跨工具候选且 LLM budget 未耗尽，Gateway 才会发送 sanitized semantic capsules。候选必须至少有两个弱证据信号，scope-only 不会触发；当前 `non-destructive` 动作不会触发 LLM-assisted force review。显式 `false` 会关闭该路径。capsule 不包含 raw command、raw payload、secret、env value 或 L3 trace；也不会包含 deterministic token hashes。
 
 !!! note "与 AHP_SESSION_ENFORCEMENT_* 的关系"
     `AHP_SESSION_ENFORCEMENT_*` 仍只控制会话阈值执法；anti-bypass guard 只使用 `CS_ANTI_BYPASS_*`。

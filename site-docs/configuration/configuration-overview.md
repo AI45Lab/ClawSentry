@@ -138,10 +138,10 @@ clawsentry service validate --env-file /etc/clawsentry/gateway.env
 
 ## 发布状态核对 {#release-status}
 
-截至 2026-05-11，本仓库发布面刷新到 `v0.6.7`：
+截至 2026-05-11，本仓库发布面刷新到 `v0.6.8`：
 
-- GitHub latest release / tags：`v0.6.7 — Codex managed hooks by default`
-- PyPI：`clawsentry` 最新版本为 `0.6.7`
-- 运行时配置来源仍保持 env-first strict split；Codex hooks 由 `clawsentry start --framework codex` 默认安装到 Codex host 配置，并只管理 ClawSentry-owned hook/trust entries
+- GitHub latest release / tags：`v0.6.8 — Anti-bypass recognition precision and docs clarity`
+- PyPI：`clawsentry` 最新版本为 `0.6.8`
+- 运行时配置来源仍保持 env-first strict split；Anti-bypass LLM recognition 复用共享 `CS_LLM_*` 配置，可通过 `CS_LLM_API_KEY_ENV` 指向自定义 key 环境变量，且 benchmark / dry-run / no-network 模式默认不自动启用外部 LLM recognition
 
 若你看到更早版本，优先清浏览器/CDN 缓存，并确认访问的是 <https://github.com/Elroyper/ClawSentry> 与 <https://pypi.org/project/clawsentry/>。

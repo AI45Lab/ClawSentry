@@ -34,8 +34,13 @@ from pydantic import ValidationError
 
 from .alert_registry import AlertRegistry
 from .anti_bypass_guard import AntiBypassGuard, AntiBypassMatch
+from .anti_bypass_llm_recognizer import (
+    AntiBypassLLMProvider,
+    recognize_anti_bypass_candidate,
+)
 from .event_bus import EventBus
 from .idempotency import IdempotencyCache, periodic_cleanup
+from .llm_provider import InstrumentedProvider
 from .session_registry import (
     DISPLAY_SCORE_RANGE,
     DISPLAY_SCORE_SEMANTICS,
@@ -82,7 +87,7 @@ from .detection_config import (
     build_detection_config_from_env,
     build_detection_config_with_preset,
 )
-from .llm_factory import build_analyzer_from_env
+from .llm_factory import build_analyzer_from_env, build_provider_from_env
 from .l3_runtime import build_l3_runtime_info
 from .pattern_evolution import PatternEvolutionManager
 from .policy_engine import L1PolicyEngine
@@ -774,6 +779,7 @@ class SupervisionGateway:
         analyzer=None,
         session_enforcement: Optional[SessionEnforcementPolicy] = None,
         detection_config: Optional[DetectionConfig] = None,
+        anti_bypass_llm_provider: Optional[AntiBypassLLMProvider] = None,
     ) -> None:
         self._detection_config = detection_config if detection_config is not None else DetectionConfig()
         self.policy_engine = L1PolicyEngine(analyzer=analyzer, config=self._detection_config)
@@ -790,6 +796,7 @@ class SupervisionGateway:
         self.alert_registry = AlertRegistry()
         self.session_enforcement = session_enforcement or SessionEnforcementPolicy()
         self.anti_bypass_guard = AntiBypassGuard()
+        self.anti_bypass_llm_provider = anti_bypass_llm_provider
         self.default_session_scope_profile = _load_default_session_scope_profile()
         self.post_action_analyzer = PostActionAnalyzer(
             whitelist_patterns=self._detection_config.post_action_whitelist,
@@ -828,6 +835,17 @@ class SupervisionGateway:
             budget_tracker=self.budget_tracker,
             budget_exhausted_callback=self._handle_budget_exhausted,
         )
+        if (
+            self.anti_bypass_llm_provider is None
+            and self._detection_config.anti_bypass_llm_recognition_enabled
+        ):
+            raw_anti_bypass_provider = build_provider_from_env()
+            if raw_anti_bypass_provider is not None:
+                self.anti_bypass_llm_provider = InstrumentedProvider(
+                    raw_anti_bypass_provider,
+                    self.metrics,
+                    tier="anti_bypass",
+                )
         self._io_metrics = {
             "record_path": {
                 "calls": 0,
@@ -1275,6 +1293,7 @@ class SupervisionGateway:
         l3_runtime_reason_code_override: str | None = None
         effective_config = project_config or self._detection_config
         anti_bypass_match: AntiBypassMatch | None = None
+        anti_bypass_probe: dict[str, object] | None = None
         if quarantine_applied:
             pass
         elif (
@@ -1358,6 +1377,53 @@ class SupervisionGateway:
                 req.context,
                 effective_config,
             )
+            if (
+                anti_bypass_match is None
+                and effective_config.anti_bypass_llm_recognition_enabled
+                and req.event.event_type == EventType.PRE_ACTION
+            ):
+                if budget_exhausted:
+                    anti_bypass_probe = {
+                        "candidate_count": 0,
+                        "llm_state": "skipped",
+                        "reason": "budget_exhausted",
+                        "budget_skipped": True,
+                    }
+                else:
+                    candidates = self.anti_bypass_guard.llm_candidates(
+                        req.event,
+                        req.context,
+                        effective_config,
+                    )
+                    if self.anti_bypass_llm_provider is None:
+                        anti_bypass_probe = {
+                            "candidate_count": len(candidates),
+                            "llm_state": "disabled",
+                            "reason": "provider_unavailable",
+                            "budget_skipped": False,
+                        }
+                    elif not candidates:
+                        anti_bypass_probe = {
+                            "candidate_count": 0,
+                            "llm_state": "not_matched",
+                            "reason": "no_candidate",
+                            "budget_skipped": False,
+                        }
+                    else:
+                        recognition = await recognize_anti_bypass_candidate(
+                            provider=self.anti_bypass_llm_provider,
+                            candidates=candidates,
+                            config=effective_config,
+                        )
+                        if recognition.match is not None:
+                            anti_bypass_match = recognition.match
+                        else:
+                            anti_bypass_probe = {
+                                "candidate_count": len(candidates),
+                                "llm_state": recognition.state,
+                                "reason": recognition.reason or recognition.state,
+                                "budget_skipped": False,
+                            }
             # --- P3: LLM budget check — force L1 if exhausted ---
             requested_tier = req.decision_tier
             if budget_exhausted:
@@ -1479,6 +1545,8 @@ class SupervisionGateway:
         if anti_bypass_match is not None:
             meta_dict["anti_bypass"] = anti_bypass_match.to_metadata()
             meta_dict["anti_bypass_memory_evictions"] = self.anti_bypass_guard.memory_evictions
+        if anti_bypass_probe is not None:
+            meta_dict["anti_bypass_probe"] = anti_bypass_probe
         compat_evidence_summary = build_compatibility_evidence_summary(event_dict)
         if compat_evidence_summary is not None:
             # Operator-facing replay/session summaries only; not a canonical
@@ -1740,6 +1808,8 @@ class SupervisionGateway:
         if meta_dict.get("anti_bypass") is not None:
             decision_event["anti_bypass"] = meta_dict["anti_bypass"]
             decision_event["anti_bypass_memory_evictions"] = self.anti_bypass_guard.memory_evictions
+        if meta_dict.get("anti_bypass_probe") is not None:
+            decision_event["anti_bypass_probe"] = meta_dict["anti_bypass_probe"]
         effect_summary = decision_effect_summary(decision_dict.get("decision_effects"))
         if effect_summary is not None:
             decision_event["effect_summary"] = effect_summary

@@ -49,6 +49,8 @@ class AntiBypassRecord:
     normalized_action_fingerprint: str
     destructive_intent_label: str
     destructive_intent_fingerprint: str
+    destructive_operation_category: str
+    target_scope_categories: tuple[str, ...]
     normalized_feature_hashes: tuple[str, ...]
     policy_id: str
     decision: str
@@ -71,13 +73,22 @@ class AntiBypassMatch:
     normalized_action_fingerprint: str
     destructive_intent_fingerprint: str
     destructive_intent_label: str = ""
+    destructive_operation_category: str = ""
     similarity: float | None = None
+    recognition_source: str = "deterministic"
+    match_reason: str = ""
+    similarity_mode: str = ""
+    llm_confidence: float | None = None
+    llm_state: str | None = None
+    reason_codes: tuple[str, ...] = ()
+    evidence_categories: tuple[str, ...] = ()
 
     def to_metadata(self) -> dict[str, Any]:
         meta = {
             "matched": True,
             "match_type": self.match_type,
             "action": self.action,
+            "recognition_source": self.recognition_source,
             "prior_event_id": self.prior_event_id,
             "prior_record_id": self.prior_record_id,
             "prior_policy_id": self.prior_policy_id,
@@ -86,13 +97,41 @@ class AntiBypassMatch:
             "normalized_action_fingerprint": self.normalized_action_fingerprint,
             "destructive_intent_fingerprint": self.destructive_intent_fingerprint,
         }
+        if self.match_reason:
+            meta["match_reason"] = self.match_reason
+        if self.similarity_mode:
+            meta["similarity_mode"] = self.similarity_mode
         if self.destructive_intent_label:
             meta["destructive_intent_label"] = self.destructive_intent_label
+        if self.destructive_operation_category:
+            meta["destructive_operation_category"] = self.destructive_operation_category
         if self.similarity is not None:
             meta["similarity"] = round(self.similarity, 4)
+        if self.llm_confidence is not None:
+            meta["llm_confidence"] = round(self.llm_confidence, 4)
+        if self.llm_state:
+            meta["llm_state"] = self.llm_state
+        if self.reason_codes:
+            meta["reason_codes"] = list(self.reason_codes)
+        if self.evidence_categories:
+            meta["evidence_categories"] = list(self.evidence_categories)
         if self.action in ("force_l2", "force_l3"):
             meta["forced_tier"] = "L2" if self.action == "force_l2" else "L3"
         return meta
+
+
+@dataclass(frozen=True)
+class AntiBypassLLMCandidate:
+    prior_record: AntiBypassRecord
+    similarity: float
+    reason_codes: tuple[str, ...]
+    evidence_categories: tuple[str, ...]
+    current_raw_payload_hash: str
+    current_normalized_action_fingerprint: str
+    current_destructive_intent_fingerprint: str
+    current_destructive_intent_label: str
+    current_destructive_operation_category: str
+    capsule: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -101,7 +140,11 @@ class _EventFingerprints:
     normalized_action_fingerprint: str
     destructive_intent_fingerprint: str
     destructive_intent_label: str
+    destructive_operation_category: str
     normalized_feature_hashes: frozenset[str]
+    normalized_text: str
+    command_head_category: str
+    target_scope_categories: frozenset[str]
 
 
 class AntiBypassGuard:
@@ -127,92 +170,264 @@ class AntiBypassGuard:
         self._evict(session_id, config)
         current = _fingerprints_for_event(event)
         tool_name = str(event.tool_name or "")
-        for prior in reversed(self._records.get(session_id, ())):
+        ranked_matches: list[tuple[int, int, AntiBypassMatch]] = []
+        for index, prior in enumerate(self._records.get(session_id, ())):
             if not _eligible_prior(prior, config):
                 continue
             if prior.tool_name == tool_name and prior.raw_payload_hash == current.raw_payload_hash:
-                return AntiBypassMatch(
-                    match_type="exact_raw_repeat",
-                    action=config.anti_bypass_exact_repeat_action,
-                    prior_event_id=prior.event_id,
-                    prior_record_id=prior.record_id,
-                    prior_policy_id=prior.policy_id,
-                    prior_risk_level=prior.risk_level,
-                    raw_payload_hash=current.raw_payload_hash,
-                    normalized_action_fingerprint=current.normalized_action_fingerprint,
-                    destructive_intent_fingerprint=current.destructive_intent_fingerprint,
-                    destructive_intent_label=current.destructive_intent_label,
-                    similarity=1.0,
+                ranked_matches.append(
+                    (
+                        0,
+                        -index,
+                        AntiBypassMatch(
+                            match_type="exact_raw_repeat",
+                            action=config.anti_bypass_exact_repeat_action,
+                            prior_event_id=prior.event_id,
+                            prior_record_id=prior.record_id,
+                            prior_policy_id=prior.policy_id,
+                            prior_risk_level=prior.risk_level,
+                            raw_payload_hash=current.raw_payload_hash,
+                            normalized_action_fingerprint=current.normalized_action_fingerprint,
+                            destructive_intent_fingerprint=current.destructive_intent_fingerprint,
+                            destructive_intent_label=current.destructive_intent_label,
+                            destructive_operation_category=current.destructive_operation_category,
+                            match_reason="raw_payload_hash",
+                            similarity_mode="raw_hash",
+                        ),
+                    )
                 )
             if (
                 prior.normalized_action_fingerprint
                 and prior.normalized_action_fingerprint == current.normalized_action_fingerprint
+                and prior.destructive_intent_label != "non-destructive"
+                and current.destructive_intent_label != "non-destructive"
             ):
                 if prior.tool_name == tool_name:
-                    return AntiBypassMatch(
-                        match_type="normalized_destructive_repeat",
-                        action=config.anti_bypass_normalized_destructive_repeat_action,
-                        prior_event_id=prior.event_id,
-                        prior_record_id=prior.record_id,
-                        prior_policy_id=prior.policy_id,
-                        prior_risk_level=prior.risk_level,
-                        raw_payload_hash=current.raw_payload_hash,
-                        normalized_action_fingerprint=current.normalized_action_fingerprint,
-                        destructive_intent_fingerprint=current.destructive_intent_fingerprint,
-                        destructive_intent_label=current.destructive_intent_label,
-                        similarity=1.0,
+                    ranked_matches.append(
+                        (
+                            1,
+                            -index,
+                            AntiBypassMatch(
+                                match_type="normalized_destructive_repeat",
+                                action=config.anti_bypass_normalized_destructive_repeat_action,
+                                prior_event_id=prior.event_id,
+                                prior_record_id=prior.record_id,
+                                prior_policy_id=prior.policy_id,
+                                prior_risk_level=prior.risk_level,
+                                raw_payload_hash=current.raw_payload_hash,
+                                normalized_action_fingerprint=current.normalized_action_fingerprint,
+                                destructive_intent_fingerprint=current.destructive_intent_fingerprint,
+                                destructive_intent_label=current.destructive_intent_label,
+                                destructive_operation_category=current.destructive_operation_category,
+                                match_reason="exact_normalized_fingerprint",
+                                similarity_mode="normalized_hash",
+                            ),
+                        )
                     )
-                return AntiBypassMatch(
-                    match_type="cross_tool_script_similarity",
-                    action=config.anti_bypass_cross_tool_similarity_action,
-                    prior_event_id=prior.event_id,
-                    prior_record_id=prior.record_id,
-                    prior_policy_id=prior.policy_id,
-                    prior_risk_level=prior.risk_level,
-                    raw_payload_hash=current.raw_payload_hash,
-                    normalized_action_fingerprint=current.normalized_action_fingerprint,
-                    destructive_intent_fingerprint=current.destructive_intent_fingerprint,
-                    destructive_intent_label=current.destructive_intent_label,
-                    similarity=1.0,
+                else:
+                    ranked_matches.append(
+                        (
+                            3,
+                            -index,
+                            AntiBypassMatch(
+                                match_type="cross_tool_script_similarity",
+                                action=config.anti_bypass_cross_tool_similarity_action,
+                                prior_event_id=prior.event_id,
+                                prior_record_id=prior.record_id,
+                                prior_policy_id=prior.policy_id,
+                                prior_risk_level=prior.risk_level,
+                                raw_payload_hash=current.raw_payload_hash,
+                                normalized_action_fingerprint=current.normalized_action_fingerprint,
+                                destructive_intent_fingerprint=current.destructive_intent_fingerprint,
+                                destructive_intent_label=current.destructive_intent_label,
+                                destructive_operation_category=current.destructive_operation_category,
+                                match_reason="exact_normalized_fingerprint",
+                                similarity_mode="normalized_hash",
+                            ),
+                        )
                 )
             if (
                 prior.tool_name != tool_name
                 and prior.destructive_intent_label != "non-destructive"
+                and current.destructive_intent_label != "non-destructive"
                 and prior.destructive_intent_fingerprint == current.destructive_intent_fingerprint
+                and _has_cross_tool_label_support(prior, current, similarity=None, config=config)
             ):
-                return AntiBypassMatch(
-                    match_type="cross_tool_script_similarity",
-                    action=config.anti_bypass_cross_tool_similarity_action,
-                    prior_event_id=prior.event_id,
-                    prior_record_id=prior.record_id,
-                    prior_policy_id=prior.policy_id,
-                    prior_risk_level=prior.risk_level,
-                    raw_payload_hash=current.raw_payload_hash,
-                    normalized_action_fingerprint=current.normalized_action_fingerprint,
-                    destructive_intent_fingerprint=current.destructive_intent_fingerprint,
-                    destructive_intent_label=current.destructive_intent_label,
-                    similarity=1.0,
+                ranked_matches.append(
+                    (
+                        5,
+                        -index,
+                        AntiBypassMatch(
+                            match_type="cross_tool_script_similarity",
+                            action=config.anti_bypass_cross_tool_similarity_action,
+                            prior_event_id=prior.event_id,
+                            prior_record_id=prior.record_id,
+                            prior_policy_id=prior.policy_id,
+                            prior_risk_level=prior.risk_level,
+                            raw_payload_hash=current.raw_payload_hash,
+                            normalized_action_fingerprint=current.normalized_action_fingerprint,
+                            destructive_intent_fingerprint=current.destructive_intent_fingerprint,
+                            destructive_intent_label=current.destructive_intent_label,
+                            destructive_operation_category=current.destructive_operation_category,
+                            match_reason="destructive_intent_label",
+                            similarity_mode="intent_label",
+                        ),
+                    )
+                )
+            if (
+                prior.tool_name != tool_name
+                and _same_destructive_operation_family(
+                    prior.destructive_operation_category,
+                    current.destructive_operation_category,
+                )
+                and set(_record_scope_categories(prior)) & set(current.target_scope_categories)
+            ):
+                ranked_matches.append(
+                    (
+                        4,
+                        -index,
+                        AntiBypassMatch(
+                            match_type="cross_tool_script_similarity",
+                            action=config.anti_bypass_cross_tool_similarity_action,
+                            prior_event_id=prior.event_id,
+                            prior_record_id=prior.record_id,
+                            prior_policy_id=prior.policy_id,
+                            prior_risk_level=prior.risk_level,
+                            raw_payload_hash=current.raw_payload_hash,
+                            normalized_action_fingerprint=current.normalized_action_fingerprint,
+                            destructive_intent_fingerprint=current.destructive_intent_fingerprint,
+                            destructive_intent_label=current.destructive_intent_label,
+                            destructive_operation_category=current.destructive_operation_category,
+                            match_reason="destructive_operation_scope",
+                            similarity_mode="operation_scope",
+                        ),
+                    )
                 )
 
             similarity = _jaccard(
                 frozenset(prior.normalized_feature_hashes),
                 current.normalized_feature_hashes,
             )
-            if prior.tool_name != tool_name and similarity >= config.anti_bypass_similarity_threshold:
-                return AntiBypassMatch(
-                    match_type="cross_tool_script_similarity",
-                    action=config.anti_bypass_cross_tool_similarity_action,
-                    prior_event_id=prior.event_id,
-                    prior_record_id=prior.record_id,
-                    prior_policy_id=prior.policy_id,
-                    prior_risk_level=prior.risk_level,
-                    raw_payload_hash=current.raw_payload_hash,
-                    normalized_action_fingerprint=current.normalized_action_fingerprint,
-                    destructive_intent_fingerprint=current.destructive_intent_fingerprint,
-                    destructive_intent_label=current.destructive_intent_label,
-                    similarity=similarity,
+            if (
+                prior.tool_name == tool_name
+                and prior.destructive_intent_label != "non-destructive"
+                and current.destructive_intent_label != "non-destructive"
+                and similarity >= config.anti_bypass_same_tool_similarity_threshold
+            ):
+                ranked_matches.append(
+                    (
+                        2,
+                        -index,
+                        AntiBypassMatch(
+                            match_type="normalized_destructive_repeat",
+                            action=config.anti_bypass_normalized_destructive_repeat_action,
+                            prior_event_id=prior.event_id,
+                            prior_record_id=prior.record_id,
+                            prior_policy_id=prior.policy_id,
+                            prior_risk_level=prior.risk_level,
+                            raw_payload_hash=current.raw_payload_hash,
+                            normalized_action_fingerprint=current.normalized_action_fingerprint,
+                            destructive_intent_fingerprint=current.destructive_intent_fingerprint,
+                            destructive_intent_label=current.destructive_intent_label,
+                            destructive_operation_category=current.destructive_operation_category,
+                            similarity=similarity,
+                            match_reason="same_tool_feature_similarity",
+                            similarity_mode="same_tool_jaccard",
+                        ),
+                    )
                 )
-        return None
+            if (
+                prior.tool_name != tool_name
+                and prior.destructive_intent_label != "non-destructive"
+                and current.destructive_intent_label != "non-destructive"
+                and similarity >= config.anti_bypass_similarity_threshold
+                and _has_cross_tool_label_support(prior, current, similarity=similarity, config=config)
+            ):
+                ranked_matches.append(
+                    (
+                        6,
+                        -index,
+                        AntiBypassMatch(
+                            match_type="cross_tool_script_similarity",
+                            action=config.anti_bypass_cross_tool_similarity_action,
+                            prior_event_id=prior.event_id,
+                            prior_record_id=prior.record_id,
+                            prior_policy_id=prior.policy_id,
+                            prior_risk_level=prior.risk_level,
+                            raw_payload_hash=current.raw_payload_hash,
+                            normalized_action_fingerprint=current.normalized_action_fingerprint,
+                            destructive_intent_fingerprint=current.destructive_intent_fingerprint,
+                            destructive_intent_label=current.destructive_intent_label,
+                            destructive_operation_category=current.destructive_operation_category,
+                            similarity=similarity,
+                            match_reason="cross_tool_feature_similarity",
+                            similarity_mode="cross_tool_jaccard",
+                        ),
+                    )
+                )
+        if not ranked_matches:
+            return None
+        return min(ranked_matches, key=lambda item: (item[0], item[1]))[2]
+
+    def llm_candidates(
+        self,
+        event: CanonicalEvent,
+        context: Any,
+        config: DetectionConfig,
+    ) -> list[AntiBypassLLMCandidate]:
+        del context
+        if not config.anti_bypass_guard_enabled:
+            return []
+        if event.event_type != EventType.PRE_ACTION:
+            return []
+        session_id = str(event.session_id or "")
+        self._evict(session_id, config)
+        current = _fingerprints_for_event(event)
+        if current.destructive_intent_label == "non-destructive":
+            return []
+        tool_name = str(event.tool_name or "")
+        candidates: list[AntiBypassLLMCandidate] = []
+        for prior in reversed(self._records.get(session_id, ())):
+            if len(candidates) >= config.anti_bypass_llm_max_priors:
+                break
+            if not _eligible_prior(prior, config):
+                continue
+            if prior.tool_name == tool_name:
+                continue
+            similarity = _jaccard(
+                frozenset(prior.normalized_feature_hashes),
+                current.normalized_feature_hashes,
+            )
+            reason_codes, evidence_categories = _weak_similarity_signals(
+                prior,
+                current,
+                similarity,
+                config,
+            )
+            if not _llm_candidate_admissible(reason_codes):
+                continue
+            candidates.append(
+                AntiBypassLLMCandidate(
+                    prior_record=prior,
+                    similarity=similarity,
+                    reason_codes=tuple(reason_codes),
+                    evidence_categories=tuple(evidence_categories),
+                    current_raw_payload_hash=current.raw_payload_hash,
+                    current_normalized_action_fingerprint=current.normalized_action_fingerprint,
+                    current_destructive_intent_fingerprint=current.destructive_intent_fingerprint,
+                    current_destructive_intent_label=current.destructive_intent_label,
+                    current_destructive_operation_category=current.destructive_operation_category,
+                    capsule=_semantic_capsule(
+                        prior=prior,
+                        current=current,
+                        current_tool_name=tool_name,
+                        similarity=similarity,
+                        reason_codes=reason_codes,
+                        evidence_categories=evidence_categories,
+                    ),
+                )
+            )
+        return candidates
 
     def record_final_decision(
         self,
@@ -256,6 +471,8 @@ class AntiBypassGuard:
             normalized_action_fingerprint=fp.normalized_action_fingerprint,
             destructive_intent_fingerprint=fp.destructive_intent_fingerprint,
             destructive_intent_label=fp.destructive_intent_label,
+            destructive_operation_category=fp.destructive_operation_category,
+            target_scope_categories=tuple(sorted(fp.target_scope_categories)),
             normalized_feature_hashes=tuple(sorted(fp.normalized_feature_hashes)),
             policy_id=str(decision.policy_id or ""),
             decision=decision_value,
@@ -301,12 +518,17 @@ def _fingerprints_for_event(event: CanonicalEvent) -> _EventFingerprints:
     normalized_text = _normalized_action_text(event)
     normalized_feature_hashes = frozenset(_sha256(token) for token in _tokenize(normalized_text))
     destructive_intent = _destructive_intent_label(normalized_text)
+    destructive_operation = _destructive_operation_category(normalized_text, destructive_intent)
     return _EventFingerprints(
         raw_payload_hash=_sha256_json(raw_projection),
         normalized_action_fingerprint=_sha256(normalized_text),
         destructive_intent_label=destructive_intent,
         destructive_intent_fingerprint=_sha256(destructive_intent),
+        destructive_operation_category=destructive_operation,
         normalized_feature_hashes=normalized_feature_hashes,
+        normalized_text=normalized_text,
+        command_head_category=_command_head_category(normalized_text),
+        target_scope_categories=frozenset(_scope_categories(normalized_text)),
     )
 
 
@@ -349,9 +571,222 @@ def _destructive_intent_label(normalized_text: str) -> str:
     head = tokens[0] if tokens else ""
     if head in _DESTRUCTIVE_HEADS:
         return head
-    if any(token in {"delete", "remove", "destroy", "exfiltrate", "download", "upload"} for token in tokens):
+    if _contains_python_delete_api(tokens):
+        return "destructive-generic"
+    if any(token in {"delete", "remove", "destroy", "exfiltrate", "download", "upload", "unlink", "truncate"} for token in tokens):
         return "destructive-generic"
     return "non-destructive"
+
+
+def _contains_python_delete_api(tokens: list[str]) -> bool:
+    token_set = set(tokens)
+    return (
+        {"shutil", "rmtree"} <= token_set
+        or "unlink" in token_set
+        or "rmdir" in token_set
+        or {"os", "remove"} <= token_set
+        or {"os", "unlink"} <= token_set
+        or {"os", "rmdir"} <= token_set
+        or "truncate" in token_set
+        or "ftruncate" in token_set
+    )
+
+
+def _destructive_operation_category(normalized_text: str, destructive_intent: str) -> str:
+    tokens = _tokenize(normalized_text)
+    token_set = set(tokens)
+    if destructive_intent == "non-destructive":
+        return "none"
+    if destructive_intent in {"curl", "wget", "scp", "rsync", "ssh"}:
+        return "network_transfer"
+    if destructive_intent == "git":
+        return "vcs_operation"
+    if destructive_intent in {"chmod", "chown"}:
+        return "permission_change"
+    if destructive_intent in {"dd", "mkfs", "shred"}:
+        return "destructive_storage"
+    if destructive_intent in {"rm", "rmdir", "unlink"}:
+        if destructive_intent == "rm" and ("rf" in token_set or "r" in token_set):
+            return "delete_tree"
+        if destructive_intent == "rmdir":
+            return "delete_tree"
+        return "delete_path"
+    if {"shutil", "rmtree"} <= token_set:
+        return "delete_tree"
+    if "rmdir" in token_set:
+        return "delete_tree"
+    if "unlink" in token_set or {"os", "remove"} <= token_set:
+        return "delete_path"
+    if "truncate" in token_set or "ftruncate" in token_set:
+        return "truncate_path"
+    return "destructive_generic"
+
+
+def _weak_similarity_signals(
+    prior: AntiBypassRecord,
+    current: _EventFingerprints,
+    similarity: float,
+    config: DetectionConfig,
+) -> tuple[list[str], list[str]]:
+    reason_codes: list[str] = []
+    evidence_categories: list[str] = []
+    if similarity >= config.anti_bypass_llm_candidate_threshold:
+        reason_codes.append("candidate_feature_similarity")
+        evidence_categories.append("feature_overlap")
+    if (
+        prior.destructive_intent_label != "non-destructive"
+        and current.destructive_intent_label != "non-destructive"
+    ):
+        reason_codes.append("destructive_label_overlap")
+        evidence_categories.append("operation_overlap")
+    if prior.destructive_intent_label == current.destructive_intent_label:
+        reason_codes.append("intent_label_match")
+        evidence_categories.append("intent_label")
+    if (
+        prior.destructive_operation_category != "none"
+        and _same_destructive_operation_family(
+            prior.destructive_operation_category,
+            current.destructive_operation_category,
+        )
+    ):
+        reason_codes.append("operation_category_match")
+        evidence_categories.append("operation_overlap")
+    prior_scope = set(_record_scope_categories(prior))
+    current_scope = set(current.target_scope_categories)
+    if prior_scope and current_scope and prior_scope & current_scope:
+        reason_codes.append("target_scope_overlap")
+        evidence_categories.append("scope_overlap")
+    return reason_codes, list(dict.fromkeys(evidence_categories))
+
+
+def _llm_candidate_admissible(reason_codes: list[str]) -> bool:
+    unique_reasons = set(reason_codes)
+    if len(unique_reasons) < 2:
+        return False
+    if unique_reasons == {"target_scope_overlap"}:
+        return False
+    return True
+
+
+def _semantic_capsule(
+    *,
+    prior: AntiBypassRecord,
+    current: _EventFingerprints,
+    current_tool_name: str,
+    similarity: float,
+    reason_codes: list[str],
+    evidence_categories: list[str],
+) -> dict[str, Any]:
+    prior_scope = set(_record_scope_categories(prior))
+    current_scope = set(current.target_scope_categories)
+    prior_features = set(prior.normalized_feature_hashes)
+    current_features = set(current.normalized_feature_hashes)
+    return {
+        "prior": {
+            "record_id": prior.record_id,
+            "risk_level": prior.risk_level,
+            "decision": prior.decision,
+            "destructive_intent_label": prior.destructive_intent_label,
+            "destructive_operation_category": prior.destructive_operation_category,
+            "target_scope_categories": sorted(prior_scope),
+        },
+        "current": {
+            "tool_category": _tool_category(current_tool_name),
+            "destructive_intent_label": current.destructive_intent_label,
+            "destructive_operation_category": current.destructive_operation_category,
+            "command_head_category": current.command_head_category,
+            "target_scope_categories": sorted(current.target_scope_categories),
+        },
+        "overlap": {
+            "feature_count": len(prior_features & current_features),
+            "scope_categories": sorted(prior_scope & current_scope),
+            "same_operation_category": _same_destructive_operation_family(
+                prior.destructive_operation_category,
+                current.destructive_operation_category,
+            ),
+            "same_intent_label": prior.destructive_intent_label == current.destructive_intent_label,
+        },
+        "similarity_score": round(similarity, 4),
+        "reason_codes": list(reason_codes),
+        "evidence_categories": list(evidence_categories),
+    }
+
+
+def _record_scope_categories(record: AntiBypassRecord) -> frozenset[str]:
+    return frozenset(record.target_scope_categories)
+
+
+def _scope_categories(text: str) -> list[str]:
+    lowered = text.lower()
+    categories: list[str] = []
+    if "/tmp" in lowered or " tmp " in f" {lowered} ":
+        categories.append("tmp_path")
+    if "project" in lowered or "workspace" in lowered:
+        categories.append("project_workspace")
+    if "cache" in lowered:
+        categories.append("cache_path")
+    if "secret" in lowered or "token" in lowered or "authorization" in lowered:
+        categories.append("credential_related")
+    if any(token in _tokenize(lowered) for token in ("target", "path", "file")):
+        categories.append("file_target")
+    return list(dict.fromkeys(categories))
+
+
+def _has_cross_tool_label_support(
+    prior: AntiBypassRecord,
+    current: _EventFingerprints,
+    *,
+    similarity: float | None,
+    config: DetectionConfig,
+) -> bool:
+    if (
+        prior.destructive_operation_category != "none"
+        and _same_destructive_operation_family(
+            prior.destructive_operation_category,
+            current.destructive_operation_category,
+        )
+        and set(_record_scope_categories(prior)) & set(current.target_scope_categories)
+    ):
+        return True
+    if set(_record_scope_categories(prior)) & set(current.target_scope_categories):
+        return True
+    if similarity is not None and similarity >= config.anti_bypass_similarity_threshold:
+        return True
+    return False
+
+
+def _same_destructive_operation_family(left: str, right: str) -> bool:
+    if left == "none" or right == "none":
+        return False
+    if left == right:
+        return True
+    delete_family = {"delete_tree", "delete_path"}
+    return left in delete_family and right in delete_family
+
+
+def _tool_category(tool_name: str) -> str:
+    value = str(tool_name or "").strip().lower()
+    if value in {"bash", "sh", "zsh"}:
+        return "shell"
+    if value.startswith("python"):
+        return "python"
+    if value:
+        return "tool"
+    return "unknown"
+
+
+def _command_head_category(text: str) -> str:
+    tokens = _tokenize(text)
+    if not tokens:
+        return "unknown"
+    head = tokens[0]
+    if head in _DESTRUCTIVE_HEADS:
+        return f"destructive:{head}"
+    if head.startswith("python"):
+        return "script:python"
+    if head in {"bash", "sh", "zsh"}:
+        return "script:shell"
+    return f"tool:{head}"
 
 
 def _tokenize(text: str) -> list[str]:

@@ -8,6 +8,32 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.6.8] — 2026-05-11
+
+### 新增
+
+- **Anti-bypass LLM-assisted recognition** — 新增隐私边界内的跨工具候选识别路径，只向 LLM 发送脱敏 capsule，且只作为 `observe` / `force_l2` / `force_l3` / `defer` 的复核信号，不触发本地 hard block。
+- **LLM probe observability** — Gateway 在安全 metadata 中补充紧凑的 `anti_bypass_probe` 状态，覆盖候选数量、provider unavailable、timeout / invalid JSON / low confidence、budget skipped 等降级原因，不包含原始命令、payload、secret、环境值或确定性 token hash。
+- **Shared LLM key indirection** — `resolve_llm_settings()` 现在支持 `CS_LLM_API_KEY_ENV`，operator 可用自定义环境变量承载 provider key，同时保留显式 provider 配置边界。
+
+### 改进
+
+- **Anti-bypass matching precedence** — recent-prior 检测改为先收集候选再按确定性排序，优先级为 exact raw repeat、same-tool normalized、same-tool Jaccard、cross-tool normalized、operation+scope、intent+support、cross-tool Jaccard，避免新的弱 cross-tool 命中遮住更早的精确重复。
+- **LLM candidate gate tightened** — LLM recognition 只接收跨工具候选，必须至少具备两个弱证据信号；仅有 target scope overlap 不会进入 LLM；当前动作非 destructive 时不会触发 LLM-assisted force review。
+- **Similarity metadata corrected** — `similarity` 只在真实 Jaccard 路径写入，其他路径使用准确的 `similarity_mode`（如 `raw_hash`、`normalized_hash`、`operation_scope`、`intent_label`、`llm_capsule`）。
+- **User-facing docs refreshed** — Anti-bypass 在线文档、配置模板、环境变量页和进度文档改为按使用场景、动作边界和安全 metadata 解释行为，移除口号式表述。
+
+### 测试与验证
+
+- Anti-bypass / DetectionConfig 聚焦回归：`python -m pytest src/clawsentry/tests/test_anti_bypass_guard.py src/clawsentry/tests/test_detection_config.py -q --tb=short` → `115 passed`。
+- Gateway / public docs contract 聚焦回归：`python -m pytest src/clawsentry/tests/test_gateway.py src/clawsentry/tests/test_public_docs_contract.py -q --tb=short` → `193 passed`。
+- LLM settings regression：`python -m pytest src/clawsentry/tests/test_llm_settings.py -q --tb=short` → `9 passed`。
+- Python 完整回归：`python -m pytest src/clawsentry/tests/ -q --tb=short` → 开发仓库 `3207 passed, 5 skipped`；公开仓库 `3199 passed, 6 skipped`。
+- Web UI regression：`npm test -- --run` → `55 passed`。
+- Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
+- Docs/package build：`mkdocs build --strict` 与 `python -m build` → PASS。
+- Compile/check：`python -m compileall -q src/clawsentry` 与 `git diff --check` → PASS.
+
 ## [0.6.7] — 2026-05-11
 
 ### 新增
@@ -1445,3 +1471,4 @@
 [0.6.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.5
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
+[0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8

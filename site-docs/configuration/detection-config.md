@@ -69,7 +69,7 @@ DetectionConfig（frozen dataclass）
 # CS_EVOLVING_ENABLED=false
 # CS_EVOLVED_PATTERNS_PATH=/var/lib/clawsentry/evolved_patterns.yaml
 
-# ── Anti-bypass follow-up guard（默认关闭，显式 opt-in）────────────────────
+# ── Anti-bypass follow-up guard（guard 默认关闭）──────────────────────────
 # CS_ANTI_BYPASS_GUARD_ENABLED=false
 # CS_ANTI_BYPASS_EXACT_REPEAT_ACTION=block
 # CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION=defer
@@ -282,7 +282,7 @@ CS_EVOLVED_PATTERNS_PATH=/var/lib/clawsentry/evolved_patterns.yaml
 
 Anti-bypass follow-up guard 是默认关闭的 `PRE_ACTION` 重试/绕过检测层。启用后，Gateway 会在 quarantine 与 session enforcement 之后、normal policy 之前检查当前操作是否复用了 prior final risky decision 的紧凑指纹。
 
-如果你想先理解机制、匹配类型与推荐 rollout，请先阅读 [Anti-bypass Guard 决策引擎说明](../decision-layers/anti-bypass-guard.md)。
+如果你想先理解适用场景、匹配类型与动作选择，请先阅读 [Anti-bypass Guard 决策引擎说明](../decision-layers/anti-bypass-guard.md)。
 
 它只保存 compact evidence：hashes / fingerprints / tool / policy id / risk / record ids / timestamps / labels；不会保存 raw payload、raw command、secret、完整路径内容或 L3 trace。
 
@@ -297,7 +297,14 @@ Anti-bypass follow-up guard 是默认关闭的 `PRE_ACTION` 重试/绕过检测�
 | `anti_bypass_normalized_destructive_repeat_action` | `str` | `"defer"` | `CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION` | same tool + same normalized action fingerprint 的动作 |
 | `anti_bypass_cross_tool_similarity_action` | `str` | `"force_l3"` | `CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION` | cross-tool/script similarity 的动作；`block` 无效并回退到 `force_l3` |
 | `anti_bypass_similarity_threshold` | `float` | `0.92` | `CS_ANTI_BYPASS_SIMILARITY_THRESHOLD` | 非精确 cross-tool/script similarity 阈值，范围 `0.0..1.0` |
+| `anti_bypass_same_tool_similarity_threshold` | `float` | `0.88` | `CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD` | same-tool destructive feature Jaccard 阈值，范围 `0.0..1.0` |
 | `anti_bypass_record_allow_decisions` | `bool` | `False` | `CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS` | 是否也记录 compact allow-decision fingerprints |
+| `anti_bypass_llm_recognition_enabled` | `bool` | `False` | `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` | 显式覆盖 sanitized LLM recognizer；未设置 env 时，guard 已启用且共享 `CS_LLM_*` provider 配置有效则自动启用 |
+| `anti_bypass_llm_candidate_threshold` | `float` | `0.55` | `CS_ANTI_BYPASS_LLM_CANDIDATE_THRESHOLD` | 生成跨工具 LLM 候选的弱相似阈值 |
+| `anti_bypass_llm_confidence_threshold` | `float` | `0.75` | `CS_ANTI_BYPASS_LLM_CONFIDENCE_THRESHOLD` | LLM 命中生效的最低 confidence |
+| `anti_bypass_llm_timeout_ms` | `float` | `800.0` | `CS_ANTI_BYPASS_LLM_TIMEOUT_MS` | LLM recognizer 单次调用超时 |
+| `anti_bypass_llm_max_priors` | `int` | `3` | `CS_ANTI_BYPASS_LLM_MAX_PRIORS` | 单次最多发送多少条 sanitized prior capsules |
+| `anti_bypass_llm_action` | `str` | `"force_l3"` | `CS_ANTI_BYPASS_LLM_ACTION` | LLM 命中或非法返回时采用的动作；`block` 无效并回退 |
 
 **动作权限边界：**
 
@@ -306,6 +313,8 @@ Anti-bypass follow-up guard 是默认关闭的 `PRE_ACTION` 重试/绕过检测�
 | `exact_raw_repeat` | `observe` / `force_l2` / `force_l3` / `defer` / `block` | 可按配置本地 BLOCK |
 | `normalized_destructive_repeat` | `observe` / `force_l2` / `force_l3` / `defer` / `block` | 仅在显式配置 `block` 时可本地 BLOCK |
 | `cross_tool_script_similarity` | `observe` / `force_l2` / `force_l3` / `defer` | 永不本地 hard-block；`block` 配置会被拒绝/回退 |
+
+**LLM recognizer 条件：** 未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，会随有效共享 `CS_LLM_PROVIDER` + API key 自动启用；benchmark / dry-run / no-network 模式不会自动启用外部 LLM recognition，除非显式 `true`。显式 `false` 强制关闭。实际调用仍要求 `CS_ANTI_BYPASS_GUARD_ENABLED=true`、事件为 `PRE_ACTION`、deterministic 路径未确认、当前动作不是 `non-destructive`、已生成跨工具候选、至少两个弱证据信号（scope-only 不够）、provider 可用且 LLM budget 未耗尽。它只判断 follow-up 关系，不做风险评分，也不能产生本地 `block`。请求只包含 sanitized semantic capsules，不包含 raw command、raw payload、secret、env value、deterministic token hashes 或 L3 trace；LLM 返回的 `action` 不参与执法，命中后使用 `CS_ANTI_BYPASS_LLM_ACTION`。
 
 **Rollout 示例：**
 
@@ -545,7 +554,8 @@ Fail-open 行为：
 | LLM 预算非负 | `llm_daily_budget_usd < 0` 或 `llm_daily_token_budget < 0` |
 | Anti-bypass memory TTL | `anti_bypass_memory_ttl_s <= 0` |
 | Anti-bypass per-session 上限 | `anti_bypass_memory_max_records_per_session < 1` |
-| Anti-bypass similarity 阈值 | `anti_bypass_similarity_threshold` 不在 `0.0..1.0` 范围内 |
+| Anti-bypass similarity 阈值 | `anti_bypass_similarity_threshold`、`anti_bypass_same_tool_similarity_threshold`、`anti_bypass_llm_candidate_threshold` 或 `anti_bypass_llm_confidence_threshold` 不在 `0.0..1.0` 范围内 |
+| Anti-bypass LLM timeout / priors | `anti_bypass_llm_timeout_ms <= 0` 或 `anti_bypass_llm_max_priors < 1` |
 
 ### 记录 Warning 日志（不抛出错误）
 
@@ -559,7 +569,7 @@ Fail-open 行为：
 | `llm_token_budget_scope` 非法 | 回退到 `total` |
 | token budget 启用但 limit 非正 | 禁用 token budget enforcement |
 | `benchmark_defer_action` / `benchmark_persist_scope` 非法 | 回退到 `block` / `project` |
-| anti-bypass prior risk/verdict/action 非法 | prior risk 回退到 `high`；prior verdicts 回退到 `block,defer`；exact/normalized/cross-tool action 分别回退到安全默认值 |
+| anti-bypass prior risk/verdict/action 非法 | prior risk 回退到 `high`；prior verdicts 回退到 `block,defer`；exact/normalized/cross-tool/LLM action 分别回退到安全默认值 |
 
 ### 环境变量整体回退机制
 

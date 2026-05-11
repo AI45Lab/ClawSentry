@@ -25,7 +25,7 @@ clawsentry start --env-file .clawsentry.env.local --framework codex --open-brows
 | 先跑起来看 Gateway / Web UI | [基础骨架](#base-skeleton) + [L1 only](#template-l1-only) | `clawsentry start --framework codex`；如已有本机 env 文件则加 `--env-file .clawsentry.env.local` |
 | 团队共享 L2 语义分析 | [基础骨架](#base-skeleton) + [L2 + token budget](#template-l2-budgeted) | 配本机 `CS_LLM_API_KEY` |
 | 高风险操作同步审查 | [严格 L3](#template-l3-strict) + [DEFER 审批](#template-defer-bridge) | 先小仓库试运行 |
-| 防重试/绕过 | [Anti-bypass Guard](#template-anti-bypass) | 从 observe rollout 开始 |
+| 防重试/绕过 | [Anti-bypass Guard](#template-anti-bypass) | 先记录命中，再按审计结果调整动作 |
 | 处理工具输出泄露/外部指令 | [Post-action / trajectory](#template-runtime-detectors) | 观察 SSE/UI finding |
 | CI / benchmark | [CI / benchmark](#template-benchmark) | 使用临时 `CODEX_HOME` |
 | systemd / Docker 常驻 | [生产环境变量骨架](#template-production-env) | `service validate --env-file` |
@@ -153,7 +153,7 @@ CS_LLM_API_KEY=sk-ant-...
 
 ## Anti-bypass Guard：防重试/绕过机制 {#template-anti-bypass}
 
-Anti-bypass follow-up guard 用于检测 `PRE_ACTION` 中对 prior final risky decision 的重复、规范化等价或跨工具近似绕过。默认关闭；建议按 observe → review → enforce 三阶段启用。完整机制见 [Anti-bypass Guard](../decision-layers/anti-bypass-guard.md)，字段详表见 [DetectionConfig](detection-config.md#anti-bypass-guard)。
+Anti-bypass follow-up guard 用于检测 `PRE_ACTION` 中对 prior final risky decision 的重复、规范化等价或跨工具近似绕过。默认关闭；下面按“只记录”“要求复核”“本地阻断 exact repeat”给出可复制配置。完整机制见 [Anti-bypass Guard](../decision-layers/anti-bypass-guard.md)，字段详表见 [DetectionConfig](detection-config.md#anti-bypass-guard)。
 
 ### Observe only：只记录，不改变 verdict
 
@@ -167,6 +167,8 @@ CS_ANTI_BYPASS_EXACT_REPEAT_ACTION=observe
 CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION=observe
 CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=observe
 CS_ANTI_BYPASS_SIMILARITY_THRESHOLD=0.92
+CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD=0.88
+CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED=false
 CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS=false
 ```
 
@@ -178,8 +180,24 @@ CS_ANTI_BYPASS_EXACT_REPEAT_ACTION=defer
 CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION=defer
 CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=force_l3
 CS_ANTI_BYPASS_SIMILARITY_THRESHOLD=0.92
+CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD=0.88
 CS_ANTI_BYPASS_MIN_PRIOR_RISK=high
 CS_ANTI_BYPASS_PRIOR_VERDICTS=block,defer
+```
+
+### Review + LLM-assisted cross-tool 候选识别
+
+`CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 可以省略；只要 guard 已启用且共享 `CS_LLM_PROVIDER` + API key 有效，recognizer 会自动启用。benchmark / dry-run / no-network 模式不会自动启用外部 LLM recognition，除非显式 `true`。保留显式 `true` 适合模板化 rollout；显式 `false` 可强制关闭。
+
+```bash
+CS_ANTI_BYPASS_GUARD_ENABLED=true
+CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=force_l3
+CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED=true
+CS_ANTI_BYPASS_LLM_CANDIDATE_THRESHOLD=0.55
+CS_ANTI_BYPASS_LLM_CONFIDENCE_THRESHOLD=0.75
+CS_ANTI_BYPASS_LLM_TIMEOUT_MS=800
+CS_ANTI_BYPASS_LLM_MAX_PRIORS=3
+CS_ANTI_BYPASS_LLM_ACTION=force_l3
 ```
 
 ### Enforce：只对 exact repeat 本地阻断
@@ -193,7 +211,7 @@ CS_ANTI_BYPASS_SIMILARITY_THRESHOLD=0.92
 ```
 
 !!! warning "cross-tool/script 不本地 hard-block"
-    `CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=block` 无效，会回退到 `force_l3`。跨工具近似匹配可选 `observe` / `force_l2` / `force_l3` / `defer`。
+    `CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=block` 无效，会回退到 `force_l3`。跨工具近似匹配可选 `observe` / `force_l2` / `force_l3` / `defer`。LLM recognizer 自动启用仍需要 guard、有效 provider、跨工具候选、至少两个弱证据信号、非 `non-destructive` 当前动作和可用 budget；它只接收 sanitized capsules，不能产生本地 `block`。
 
 ---
 
