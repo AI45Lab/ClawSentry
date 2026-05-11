@@ -403,7 +403,7 @@ Prometheus 指标导出配置，需安装 `clawsentry[metrics]` 可选依赖。
 
 ## Codex Session Watcher
 
-Codex 默认通过 Session Watcher 监控 JSONL 日志实现安全评估；`clawsentry init codex --setup` 可额外安装 managed native hooks。
+`clawsentry start --framework codex` 默认启用 Session Watcher 并安装/刷新 managed native hooks；`clawsentry init codex --setup` 可作为修复或手动刷新入口。
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|

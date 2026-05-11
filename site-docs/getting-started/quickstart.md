@@ -131,15 +131,15 @@ curl http://127.0.0.1:8080/health
 | 能力 | Claude Code | a3s-code | OpenClaw | Codex |
 |------|:-----------:|:--------:|:--------:|:-----:|
 | 实时风险评估 | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| **自动拦截高危操作** | :white_check_mark: | :white_check_mark: | :white_check_mark: | 默认 :x:；可选 `PreToolUse(Bash)` |
+| **自动拦截高危操作** | :white_check_mark: | :white_check_mark: | :white_check_mark: | 默认 managed `PreToolUse(Bash)` / approval gate |
 | 审计记录 | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | clawsentry watch 监控 | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | Web UI 仪表板 | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| DEFER 交互审批 | :white_check_mark: | :white_check_mark: | :white_check_mark: | 默认 :x:；native hook 可返回 host deny |
-| 集成方式 | Hook 注入 | 显式 AHP Transport | WebSocket | Session 日志监控 + 可选 managed native hooks |
+| DEFER 交互审批 | :white_check_mark: | :white_check_mark: | :white_check_mark: | Native hook approval gate 可返回 host deny |
+| 集成方式 | Hook 注入 | 显式 AHP Transport | WebSocket | Session 日志监控 + managed native hooks |
 
-!!! info "为什么 Codex 默认仍按监控模式使用？"
-    ClawSentry 默认通过监控 Codex session 日志实现实时评估和推荐。你可以用 `clawsentry init codex --setup` 非破坏式安装 managed native hooks。同步防护主要覆盖 Bash preflight / approval gate；其他 native events 仍按异步观察处理，生产上建议继续配合 `--approval-policy untrusted` 使用。
+!!! info "Codex 的默认防护边界"
+    `clawsentry start --framework codex` 会默认非破坏式安装 managed native hooks，并同时启用 Codex session watcher。同步防护主要覆盖 Bash preflight / approval gate；其他 native events 仍按异步观察处理，生产上建议继续配合 `--approval-policy untrusted` 使用。
 
 ## 第一次打开 Web UI，先看什么？
 
@@ -453,8 +453,8 @@ export NO_PROXY=localhost,127.0.0.1,::1
 
 === "Codex"
 
-    !!! warning "默认监控模式"
-        ClawSentry 默认通过监控 Codex session 日志实现**实时风险评估和推荐**。可选的 `clawsentry init codex --setup` 会安装 managed native hooks；同步防护主要覆盖 `PreToolUse(Bash)` / `PermissionRequest(Bash)`；其他 Codex native events 仍为异步观察/建议。建议配合 `--approval-policy untrusted` 使用。
+    !!! warning "默认 managed hooks + watcher"
+        `clawsentry start --framework codex` 默认安装/刷新 ClawSentry-managed Codex native hooks，并启用 session watcher。同步防护主要覆盖 `PreToolUse(Bash)` / `PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)`；其他 Codex native events 仍为异步观察/建议。建议配合 `--approval-policy untrusted` 使用。
 
     **前置条件**
 
@@ -474,8 +474,8 @@ export NO_PROXY=localhost,127.0.0.1,::1
 
         ```bash
         clawsentry init codex
-        # 可选：安装 managed Codex native hooks
-        # PreToolUse(Bash) 同步 preflight；其他 native events best-effort 异步观察
+        # 修复/刷新 managed Codex native hooks
+        # start --framework codex 已默认执行这一步
         clawsentry init codex --setup
         ```
 
@@ -499,7 +499,7 @@ export NO_PROXY=localhost,127.0.0.1,::1
         clawsentry watch
         ```
 
-        `clawsentry watch` 会实时显示风险评估结果；如果启用了 managed native hooks，`PreToolUse(Bash)` 在 Gateway 判为 block/defer 时可让 Codex host deny 该 Bash 调用。其他 native events 只做异步观察/建议。
+        `clawsentry watch` 会实时显示风险评估结果；默认 managed native hooks 让 `PreToolUse(Bash)` 在 Gateway 判为 block/defer 时可让 Codex host deny 该 Bash 调用。其他 native events 只做异步观察/建议。
 
     ### 验证
 
