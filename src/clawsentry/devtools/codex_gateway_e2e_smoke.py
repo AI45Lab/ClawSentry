@@ -39,9 +39,13 @@ class SmokeResult:
     uds_path: Path
     trajectory_db_path: Path
     gateway_log_path: Path
+    codex_sandbox: str
     codex_returncode: int | None
     codex_stdout_jsonl: list[str] = field(default_factory=list)
     codex_stderr: str = ""
+    direct_hook_returncode: int | None = None
+    direct_hook_stdout: str = ""
+    direct_hook_stderr: str = ""
     gateway_summary: dict[str, Any] = field(default_factory=dict)
     report_sessions: dict[str, Any] = field(default_factory=dict)
     evidence: dict[str, Any] = field(default_factory=dict)
@@ -66,6 +70,7 @@ def build_codex_exec_command(
     codex_home: Path,
     work_dir: Path,
     prompt: str,
+    sandbox: str = "workspace-write",
 ) -> list[str]:
     """Build the bounded Codex CLI invocation used by the smoke."""
 
@@ -80,7 +85,7 @@ def build_codex_exec_command(
         "-C",
         str(work_dir),
         "--sandbox",
-        "workspace-write",
+        sandbox,
         "--json",
         prompt,
     ]
@@ -115,6 +120,7 @@ def render_validation_report(result: SmokeResult) -> str:
         f"- Status: **{status}**",
         f"- Generated at (UTC): {generated_at_utc}",
         f"- Codex CLI: `{result.codex_version or 'unknown'}`",
+        f"- Codex sandbox: `{result.codex_sandbox}`",
         f"- Smoke root: `<SMOKE_ROOT>`",
         f"- UDS: `{redact(str(result.uds_path))}`",
         f"- Trajectory DB: `{redact(str(result.trajectory_db_path))}`",
@@ -141,6 +147,18 @@ def render_validation_report(result: SmokeResult) -> str:
         "",
         "```text",
         str(redact(result.codex_stderr))[-4000:],
+        "```",
+        "",
+        "## Direct native hook stdout excerpt",
+        "",
+        "```text",
+        str(redact(result.direct_hook_stdout))[-4000:],
+        "```",
+        "",
+        "## Direct native hook stderr excerpt",
+        "",
+        "```text",
+        str(redact(result.direct_hook_stderr))[-4000:],
         "```",
     ]
     if result.failure_reason:
@@ -199,20 +217,27 @@ def run_smoke(
     repo_root: Path,
     codex_bin: str = "codex",
     prompt: str = DEFAULT_PROMPT,
+    codex_sandbox: str = "workspace-write",
     keep_artifacts: bool = False,
     output_report: Path | None = None,
 ) -> SmokeResult:
     """Run the real E2E smoke and return captured evidence."""
 
-    smoke_root = Path(tempfile.mkdtemp(prefix="clawsentry-codex-gateway-e2e."))
+    smoke_parent = repo_root / ".clawsentry-smoke"
+    smoke_parent.mkdir(parents=True, exist_ok=True)
+    smoke_root = Path(
+        tempfile.mkdtemp(prefix="codex-gateway-e2e.", dir=str(smoke_parent))
+    )
     codex_home = smoke_root / "codex-home"
     work_dir = smoke_root / "work"
     bin_dir = smoke_root / "bin"
-    uds_path = smoke_root / "clawsentry.sock"
+    uds_path = Path(tempfile.gettempdir()) / f"cs-{os.getpid()}-{int(time.time() * 1000)}.sock"
     trajectory_db_path = smoke_root / "trajectory.sqlite3"
     gateway_log_path = smoke_root / "gateway.log"
     codex_stdout_path = smoke_root / "codex-stdout.jsonl"
     codex_stderr_path = smoke_root / "codex-stderr.log"
+    direct_hook_stdout_path = smoke_root / "direct-hook-stdout.json"
+    direct_hook_stderr_path = smoke_root / "direct-hook-stderr.log"
     gateway_proc: subprocess.Popen[str] | None = None
     result: SmokeResult | None = None
 
@@ -274,12 +299,14 @@ def run_smoke(
             codex_home=codex_home,
             work_dir=work_dir,
             prompt=prompt,
+            sandbox=codex_sandbox,
         )
         codex_run = subprocess.run(
             codex_cmd,
             cwd=work_dir,
             env={**env, "CS_HTTP_PORT": str(port)},
             text=True,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             timeout=180,
@@ -287,6 +314,13 @@ def run_smoke(
         )
         codex_stdout_path.write_text(codex_run.stdout, encoding="utf-8")
         codex_stderr_path.write_text(codex_run.stderr, encoding="utf-8")
+
+        direct_hook_run = _run_direct_native_hook(
+            work_dir=work_dir,
+            env={**env, "CS_HTTP_PORT": str(port)},
+        )
+        direct_hook_stdout_path.write_text(direct_hook_run.stdout, encoding="utf-8")
+        direct_hook_stderr_path.write_text(direct_hook_run.stderr, encoding="utf-8")
 
         # Give the gateway a short moment to persist and surface report state.
         time.sleep(0.5)
@@ -303,10 +337,13 @@ def run_smoke(
             codex_returncode=codex_run.returncode,
             codex_stdout_lines=stdout_lines,
             codex_stderr=codex_run.stderr,
+            direct_hook_stdout=direct_hook_run.stdout,
+            direct_hook_stderr=direct_hook_run.stderr,
+            direct_hook_returncode=direct_hook_run.returncode,
             gateway_summary=summary,
             report_sessions=sessions,
         )
-        status = "pass" if all(evidence.values()) else "fail"
+        status = "pass" if _required_evidence_pass(evidence) else "fail"
         failure_reason = None if status == "pass" else "One or more E2E evidence checks failed."
         result = SmokeResult(
             status=status,
@@ -317,9 +354,13 @@ def run_smoke(
             uds_path=uds_path,
             trajectory_db_path=trajectory_db_path,
             gateway_log_path=gateway_log_path,
+            codex_sandbox=codex_sandbox,
             codex_returncode=codex_run.returncode,
             codex_stdout_jsonl=stdout_lines,
             codex_stderr=codex_run.stderr,
+            direct_hook_returncode=direct_hook_run.returncode,
+            direct_hook_stdout=direct_hook_run.stdout,
+            direct_hook_stderr=direct_hook_run.stderr,
             gateway_summary=summary,
             report_sessions=sessions,
             evidence=evidence,
@@ -342,6 +383,7 @@ def run_smoke(
                 uds_path=uds_path,
                 trajectory_db_path=trajectory_db_path,
                 gateway_log_path=gateway_log_path,
+                codex_sandbox=codex_sandbox,
                 codex_returncode=None,
                 codex_stdout_jsonl=(
                     codex_stdout_path.read_text(encoding="utf-8").splitlines()
@@ -353,6 +395,17 @@ def run_smoke(
                     if codex_stderr_path.exists()
                     else ""
                 ),
+                direct_hook_returncode=None,
+                direct_hook_stdout=(
+                    direct_hook_stdout_path.read_text(encoding="utf-8")
+                    if direct_hook_stdout_path.exists()
+                    else ""
+                ),
+                direct_hook_stderr=(
+                    direct_hook_stderr_path.read_text(encoding="utf-8")
+                    if direct_hook_stderr_path.exists()
+                    else ""
+                ),
                 failure_reason=str(exc),
             )
             if output_report is not None:
@@ -362,6 +415,7 @@ def run_smoke(
     finally:
         if gateway_proc is not None:
             _stop_process(gateway_proc)
+        uds_path.unlink(missing_ok=True)
         if not keep_artifacts:
             shutil.rmtree(smoke_root, ignore_errors=True)
 
@@ -483,11 +537,15 @@ def _build_evidence(
     codex_returncode: int,
     codex_stdout_lines: list[str],
     codex_stderr: str,
+    direct_hook_stdout: str,
+    direct_hook_stderr: str,
+    direct_hook_returncode: int | None,
     gateway_summary: dict[str, Any],
     report_sessions: dict[str, Any],
 ) -> dict[str, bool]:
     joined_stdout = "\n".join(codex_stdout_lines)
     joined = f"{joined_stdout}\n{codex_stderr}"
+    _ = direct_hook_stderr
     sessions = report_sessions.get("sessions")
     if not isinstance(sessions, list):
         sessions = []
@@ -503,10 +561,19 @@ def _build_evidence(
         or sum(int(value or 0) for value in by_decision.values())
         or 0
     )
+    host_pretool_blocked = "Command blocked by PreToolUse hook" in joined
+    direct_native_hook_blocked = direct_hook_returncode == 0 and _direct_native_hook_denied(
+        direct_hook_stdout
+    )
     return {
         "codex_process_completed": codex_returncode == 0,
-        "codex_blocked_by_pretool_hook": "Command blocked by PreToolUse hook" in joined,
-        "deny_contract_seen": "permissionDecision" in joined or "Command blocked by PreToolUse hook" in joined,
+        "codex_host_pretool_hook_blocked": host_pretool_blocked,
+        "direct_native_hook_blocked": direct_native_hook_blocked,
+        "deny_contract_seen": (
+            "permissionDecision" in joined
+            or host_pretool_blocked
+            or direct_native_hook_blocked
+        ),
         "gateway_recorded_decision": total_records >= 1,
         "gateway_recorded_session": len(sessions) >= 1,
         "gateway_saw_block": (
@@ -516,6 +583,64 @@ def _build_evidence(
             or int(by_risk_level.get("critical") or 0) >= 1
         ),
     }
+
+
+def _required_evidence_pass(evidence: dict[str, bool]) -> bool:
+    required_keys = (
+        "codex_process_completed",
+        "codex_host_pretool_hook_blocked",
+        "deny_contract_seen",
+        "gateway_recorded_decision",
+        "gateway_recorded_session",
+        "gateway_saw_block",
+    )
+    return all(evidence.get(key) is True for key in required_keys)
+
+
+def _direct_native_hook_denied(stdout: str) -> bool:
+    try:
+        payload = json.loads(stdout)
+    except json.JSONDecodeError:
+        return False
+    if not isinstance(payload, dict):
+        return False
+    hook_output = payload.get("hookSpecificOutput")
+    if not isinstance(hook_output, dict):
+        return False
+    return (
+        hook_output.get("hookEventName") == "PreToolUse"
+        and hook_output.get("permissionDecision") == "deny"
+    )
+
+
+def _run_direct_native_hook(
+    *,
+    work_dir: Path,
+    env: dict[str, str],
+) -> subprocess.CompletedProcess[str]:
+    message = {
+        "session_id": "sess-codex-direct-native-hook",
+        "turn_id": "turn-direct-native-hook",
+        "transcript_path": str(work_dir / "direct-native-hook.jsonl"),
+        "cwd": str(work_dir),
+        "hook_event_name": "PreToolUse",
+        "model": "gpt-5.5",
+        "permission_mode": "workspace-write",
+        "tool_name": "Bash",
+        "tool_input": {"command": 'grep -R "api_key" .'},
+        "tool_use_id": "tool-direct-native-hook",
+    }
+    return subprocess.run(
+        ["clawsentry", "harness", "--framework", "codex"],
+        cwd=work_dir,
+        env=env,
+        input=json.dumps(message) + "\n",
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=30,
+        check=False,
+    )
 
 
 def _codex_version(codex_bin: str, env: dict[str, str]) -> str:
@@ -561,6 +686,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--codex-bin", default="codex")
     parser.add_argument("--prompt", default=DEFAULT_PROMPT)
+    parser.add_argument(
+        "--codex-sandbox",
+        default="workspace-write",
+        choices=("workspace-write", "danger-full-access"),
+        help="Sandbox mode passed to `codex exec` (default: workspace-write).",
+    )
     parser.add_argument("--keep-artifacts", action="store_true", default=False)
     parser.add_argument("--output-report", type=Path, default=None)
     parser.add_argument(
@@ -578,6 +709,7 @@ def main(argv: list[str] | None = None) -> int:
             repo_root=args.repo_root.resolve(),
             codex_bin=args.codex_bin,
             prompt=args.prompt,
+            codex_sandbox=args.codex_sandbox,
             keep_artifacts=args.keep_artifacts,
             output_report=args.output_report,
         )

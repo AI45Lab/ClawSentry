@@ -8,6 +8,29 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.6.7] — 2026-05-11
+
+### 新增
+
+- **Codex CLI 0.130 managed hook trust** — Codex installer now computes the host `currentHash` identity for ClawSentry-managed command hooks and writes matching trust state, so `codex exec` dispatches the managed `PreToolUse` gate instead of silently treating it as an untrusted host hook.
+- **One-command Codex start path** — `clawsentry start --framework codex` now installs or refreshes managed Codex hooks by default, creates the session-log directory, enables the Codex watcher for the Gateway child process, and prints the exact uninstall command.
+
+### 改进
+
+- **Codex hook coverage refreshed** — Codex managed hooks cover current non-Bash tool matcher forms, `PermissionRequest`, session start observation, compact lifecycle events, and doctor diagnostics for missing trust state.
+- **Uninstall safety tightened** — Codex uninstall removes only ClawSentry-owned hook/trust sections and prunes stale ClawSentry trust entries from the same hooks source; Gemini and Kimi now have explicit regression tests proving user-managed hook config is preserved.
+- **Public Codex docs simplified** — Codex integration docs, README quickstart, compatibility matrix, and release-status pages now describe the default managed-hook path first, with manual `init codex --setup` kept as an advanced/repair path.
+
+### 测试与验证
+
+- Python 完整回归：`python -m pytest src/clawsentry/tests/ -q --tb=short` → 开发仓库 `3171 passed, 5 skipped`；公开仓库 `3170 passed, 6 skipped`。
+- Codex focused regression：`python -m pytest src/clawsentry/tests/test_start_command.py src/clawsentry/tests/test_codex_initializer.py src/clawsentry/tests/test_codex_doctor.py src/clawsentry/tests/test_benchmark_command.py src/clawsentry/tests/test_gemini_initializer.py src/clawsentry/tests/test_kimi_initializer.py src/clawsentry/tests/test_codex_gateway_e2e_smoke.py src/clawsentry/tests/test_public_docs_contract.py -q` → `79 passed`。
+- Real Codex CLI E2E：`python scripts/run_codex_gateway_e2e_smoke.py --output-report docs/validation/codex-gateway-daemon-e2e-smoke-2026-05-11.md` → PASS on Codex CLI `0.130.0` with workspace-write sandbox and host `PreToolUse` block evidence.
+- Web UI regression：`npm test -- --run` → `55 passed`。
+- Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
+- Docs/package build：`mkdocs build --strict` 与 `python -m build` → PASS（setuptools license deprecation warnings only）。
+- Compile/check：`python -m compileall -q src/clawsentry` 与 `git diff --check` → PASS.
+
 ## [0.6.6] — 2026-05-02
 
 ### 新增
@@ -1421,3 +1444,4 @@
 [0.6.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.3
 [0.6.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.5
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
+[0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7

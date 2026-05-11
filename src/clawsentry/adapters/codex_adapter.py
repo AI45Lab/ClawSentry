@@ -38,11 +38,15 @@ _NATIVE_HOOK_TYPE_MAP: dict[str, EventType] = {
     "UserPromptSubmit": EventType.PRE_PROMPT,
     "SessionStart": EventType.SESSION,
     "Stop": EventType.SESSION,
+    "PreCompact": EventType.SESSION,
+    "PostCompact": EventType.SESSION,
 }
 
 _NATIVE_SESSION_SUBTYPES: dict[str, str] = {
     "SessionStart": "session:start",
     "Stop": "session:stop",
+    "PreCompact": "session:pre_compact",
+    "PostCompact": "session:post_compact",
 }
 
 
@@ -178,7 +182,7 @@ class CodexAdapter:
             unified_payload["raw_tool_name"] = raw_tool_name
         if arguments:
             unified_payload["arguments"] = arguments
-            for key in ("command", "file_path", "path", "target"):
+            for key in ("command", "file_path", "path", "target", "target_path"):
                 if key in arguments and key not in unified_payload:
                     unified_payload[key] = arguments[key]
 

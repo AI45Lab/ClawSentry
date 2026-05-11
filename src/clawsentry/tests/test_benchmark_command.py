@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -61,7 +62,13 @@ def test_benchmark_enable_is_idempotent_for_codex_temp_home(tmp_path: Path) -> N
     env_path = tmp_path / BENCHMARK_ENV_FILE_NAME
     assert env_path.exists()
     assert "CS_MODE=benchmark" in env_path.read_text(encoding="utf-8")
-    assert _count_clawsentry_hook_entries(codex_home / "hooks.json") == 6
+    config_text = (codex_home / "config.toml").read_text(encoding="utf-8")
+    assert "[features]" in config_text
+    assert "hooks = true" in config_text
+    assert "codex_hooks = true" not in config_text
+    config = tomllib.loads(config_text)
+    assert len(config["hooks"]["state"]) == 11
+    assert _count_clawsentry_hook_entries(codex_home / "hooks.json") == 11
 
 
 def test_benchmark_enable_rejects_active_user_codex_home(tmp_path: Path) -> None:
@@ -92,6 +99,8 @@ def test_benchmark_disable_removes_benchmark_env_and_codex_hooks(tmp_path: Path)
 
     assert not (tmp_path / BENCHMARK_ENV_FILE_NAME).exists()
     assert not (codex_home / "hooks.json").exists()
+    config = tomllib.loads((codex_home / "config.toml").read_text(encoding="utf-8"))
+    assert config.get("hooks", {}).get("state", {}) == {}
 
 
 def test_benchmark_run_uses_temp_codex_home_and_passes_env(tmp_path: Path) -> None:

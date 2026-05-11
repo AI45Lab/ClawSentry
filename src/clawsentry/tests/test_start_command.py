@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import os
+import tomllib
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -25,6 +27,7 @@ def _isolate_start_command_tests(tmp_path, monkeypatch):
             "CS_ENABLED_FRAMEWORKS",
             "CS_CODEX_WATCH_ENABLED",
             "CS_CODEX_SESSION_DIR",
+            "CODEX_HOME",
             "CS_GEMINI_HOOKS_ENABLED",
             "CS_GEMINI_SETTINGS_PATH",
             "CS_KIMI_HOOKS_ENABLED",
@@ -33,6 +36,7 @@ def _isolate_start_command_tests(tmp_path, monkeypatch):
             "CLAWSENTRY_ENV_FILE",
         ):
             monkeypatch.delenv(key, raising=False)
+        monkeypatch.setenv("CODEX_HOME", str(tmp_path / ".codex"))
         yield
 
 
@@ -111,6 +115,63 @@ class TestRunStart:
         assert child_env["CS_AUTH_TOKEN"] == "file-token"
         assert child_env["CS_FRAMEWORK"] == "codex"
         assert child_env["CS_ENABLED_FRAMEWORKS"] == "codex"
+
+    def test_start_codex_installs_native_hooks_by_default(self, tmp_path, monkeypatch, capsys):
+        codex_home = tmp_path / ".codex"
+        monkeypatch.setenv("CODEX_HOME", str(codex_home))
+        proc = MagicMock()
+        proc.pid = 12345
+        proc.poll.return_value = None
+        with (
+            patch("clawsentry.cli.start_command.launch_gateway", return_value=proc),
+            patch("clawsentry.cli.start_command.wait_for_health", return_value=True),
+        ):
+            run_start(framework="codex", target_dir=tmp_path, no_watch=True)
+
+        out = capsys.readouterr().out
+        hooks = json.loads((codex_home / "hooks.json").read_text(encoding="utf-8"))
+        config = tomllib.loads((codex_home / "config.toml").read_text(encoding="utf-8"))
+        assert "clawsentry harness --framework codex" in str(hooks)
+        assert len(config["hooks"]["state"]) == 11
+        assert (codex_home / "sessions").is_dir()
+        assert "Codex hooks: installed" in out
+        assert "clawsentry init codex --uninstall" in out
+        assert "codex: ready" in out
+
+    def test_start_multiple_frameworks_installs_codex_hooks_by_default(self, tmp_path, monkeypatch):
+        codex_home = tmp_path / ".codex"
+        monkeypatch.setenv("CODEX_HOME", str(codex_home))
+        proc = MagicMock()
+        proc.pid = 12345
+        proc.poll.return_value = None
+        with (
+            patch("clawsentry.cli.start_command.launch_gateway", return_value=proc) as launch,
+            patch("clawsentry.cli.start_command.wait_for_health", return_value=True),
+        ):
+            run_start(
+                framework="a3s-code",
+                enabled_frameworks=["a3s-code", "codex"],
+                target_dir=tmp_path,
+                no_watch=True,
+            )
+
+        assert (codex_home / "hooks.json").exists()
+        assert "clawsentry harness --framework codex" in (codex_home / "hooks.json").read_text(encoding="utf-8")
+        assert launch.call_args.kwargs["extra_env"]["CS_CODEX_WATCH_ENABLED"] == "true"
+
+    def test_start_non_codex_does_not_install_codex_hooks(self, tmp_path, monkeypatch):
+        codex_home = tmp_path / ".codex"
+        monkeypatch.setenv("CODEX_HOME", str(codex_home))
+        proc = MagicMock()
+        proc.pid = 12345
+        proc.poll.return_value = None
+        with (
+            patch("clawsentry.cli.start_command.launch_gateway", return_value=proc),
+            patch("clawsentry.cli.start_command.wait_for_health", return_value=True),
+        ):
+            run_start(framework="a3s-code", target_dir=tmp_path, no_watch=True)
+
+        assert not codex_home.exists()
 
     def test_start_frameworks_cli_sets_multiple_frameworks(self, tmp_path):
         proc = MagicMock()

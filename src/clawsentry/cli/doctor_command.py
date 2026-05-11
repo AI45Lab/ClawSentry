@@ -14,6 +14,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from .initializers.codex import _codex_hook_state_trust_issues
+
 
 @dataclass
 class DoctorCheck:
@@ -249,10 +251,9 @@ def check_trajectory_db() -> DoctorCheck:
 
 
 def check_codex_config() -> DoctorCheck:
-    framework = _env("CS_FRAMEWORK")
-    if framework != "codex":
+    if not _framework_enabled("codex"):
         return DoctorCheck("CODEX_CONFIG", "PASS",
-                           "CS_FRAMEWORK is not 'codex' (Codex check skipped).")
+                           "Codex is not enabled (Codex check skipped).")
     token = _env("CS_AUTH_TOKEN")
     port = _env("CS_HTTP_PORT") or "8080"
     if not token:
@@ -297,13 +298,19 @@ def check_gemini_config() -> DoctorCheck:
 _CODEX_HOOK_MARKER = "clawsentry harness --framework codex"
 _CODEX_HOOK_SYNC_COMMAND = "clawsentry harness --framework codex"
 _CODEX_HOOK_ASYNC_COMMAND = "clawsentry harness --framework codex --async"
+_CODEX_NON_BASH_TOOL_MATCHER = "apply_patch|Edit|Write|mcp__.*"
 _CODEX_REQUIRED_HOOK_SHAPES: tuple[tuple[str, str | None, str, str], ...] = (
     ("PreToolUse", "Bash", _CODEX_HOOK_SYNC_COMMAND, "synchronous"),
+    ("PreToolUse", _CODEX_NON_BASH_TOOL_MATCHER, _CODEX_HOOK_ASYNC_COMMAND, "--async"),
     ("PermissionRequest", "Bash", _CODEX_HOOK_SYNC_COMMAND, "synchronous"),
+    ("PermissionRequest", _CODEX_NON_BASH_TOOL_MATCHER, _CODEX_HOOK_SYNC_COMMAND, "synchronous"),
     ("PostToolUse", "Bash", _CODEX_HOOK_ASYNC_COMMAND, "--async"),
+    ("PostToolUse", _CODEX_NON_BASH_TOOL_MATCHER, _CODEX_HOOK_ASYNC_COMMAND, "--async"),
     ("UserPromptSubmit", None, _CODEX_HOOK_ASYNC_COMMAND, "--async"),
     ("Stop", None, _CODEX_HOOK_ASYNC_COMMAND, "--async"),
-    ("SessionStart", "startup|resume", _CODEX_HOOK_ASYNC_COMMAND, "--async"),
+    ("SessionStart", "startup|resume|clear", _CODEX_HOOK_ASYNC_COMMAND, "--async"),
+    ("PreCompact", None, _CODEX_HOOK_ASYNC_COMMAND, "--async"),
+    ("PostCompact", None, _CODEX_HOOK_ASYNC_COMMAND, "--async"),
 )
 
 _GEMINI_HOOK_MARKER = "clawsentry harness --framework gemini-cli"
@@ -416,6 +423,23 @@ def _codex_native_hook_shape_detail(hooks_payload: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _codex_feature_flag_enabled(config_text: str, name: str) -> bool:
+    in_features = False
+    for line in config_text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("[") and stripped.endswith("]"):
+            in_features = stripped == "[features]"
+            continue
+        if not in_features or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        if key.strip() == name and value.strip().lower() == "true":
+            return True
+    return False
+
+
 def check_codex_native_hooks() -> DoctorCheck:
     if not _framework_enabled("codex"):
         return DoctorCheck("CODEX_NATIVE_HOOKS", "PASS",
@@ -443,24 +467,30 @@ def check_codex_native_hooks() -> DoctorCheck:
             detail="Run clawsentry init codex --setup to repair managed hook entries.",
         )
 
-    has_feature = "codex_hooks = true" in config_text
+    has_feature = _codex_feature_flag_enabled(config_text, "hooks")
     shape_issues = _codex_native_hook_shape_issues(hooks_payload)
+    trust_issues = _codex_hook_state_trust_issues(
+        config_text,
+        hooks_path=hooks_path,
+        hooks_payload=hooks_payload,
+    )
     shape_detail = _codex_native_hook_shape_detail(hooks_payload)
-    if has_feature and not shape_issues:
+    if has_feature and not shape_issues and not trust_issues:
         return DoctorCheck(
             "CODEX_NATIVE_HOOKS",
             "PASS",
             (
                 f"Codex native hooks installed: {hooks_path}; "
-                "PreToolUse(Bash) and PermissionRequest(Bash) sync + advisory hooks async."
+                "managed entries are trusted; PreToolUse(Bash) and PermissionRequest(Bash) sync + advisory hooks async."
             ),
             detail=shape_detail,
         )
 
     missing: list[str] = []
     if not has_feature:
-        missing.append("[features].codex_hooks = true")
+        missing.append("[features].hooks = true")
     missing.extend(shape_issues)
+    missing.extend(trust_issues)
     detail = (
         f"{shape_detail}\n"
         f"Missing: {', '.join(missing)}. Run clawsentry init codex --setup."

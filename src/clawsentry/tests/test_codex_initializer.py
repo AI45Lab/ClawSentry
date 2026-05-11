@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import tomllib
 
 from clawsentry.cli.initializers.codex import CodexInitializer
 from clawsentry.cli.start_command import detect_framework
@@ -54,6 +55,47 @@ class TestCodexInitializerHooks:
         assert result.files_modified
         hooks = json.loads((codex_home / "hooks.json").read_text())
         assert "clawsentry harness --framework codex" in str(hooks)
+        config = tomllib.loads((codex_home / "config.toml").read_text(encoding="utf-8"))
+        hook_state = config["hooks"]["state"]
+        assert len(hook_state) == 11
+        assert all(
+            isinstance(state.get("trusted_hash"), str)
+            and state["trusted_hash"].startswith("sha256:")
+            for state in hook_state.values()
+        )
+
+    def test_setup_codex_hooks_writes_current_feature_flag_without_deprecated_alias(self, tmp_path):
+        codex_home = tmp_path / ".codex"
+        CodexInitializer().setup_codex_hooks(codex_home=codex_home, dry_run=False)
+
+        config_text = (codex_home / "config.toml").read_text(encoding="utf-8")
+        config_lines = set(config_text.splitlines())
+
+        assert "hooks = true" in config_lines
+        assert "codex_hooks = true" not in config_lines
+
+    def test_setup_codex_hooks_covers_current_codex_hook_surface(self, tmp_path):
+        codex_home = tmp_path / ".codex"
+        CodexInitializer().setup_codex_hooks(codex_home=codex_home, dry_run=False)
+
+        payload = json.loads((codex_home / "hooks.json").read_text(encoding="utf-8"))
+        hooks = payload["hooks"]
+
+        assert hooks["SessionStart"][0]["matcher"] == "startup|resume|clear"
+        assert "PreCompact" in hooks
+        assert "PostCompact" in hooks
+        assert any(
+            entry.get("matcher") == "apply_patch|Edit|Write|mcp__.*"
+            for entry in hooks["PreToolUse"]
+        )
+        assert any(
+            entry.get("matcher") == "apply_patch|Edit|Write|mcp__.*"
+            for entry in hooks["PermissionRequest"]
+        )
+        assert any(
+            entry.get("matcher") == "apply_patch|Edit|Write|mcp__.*"
+            for entry in hooks["PostToolUse"]
+        )
 
     def test_uninstall_removes_only_clawsentry_hooks_from_temp_home(self, tmp_path):
         codex_home = tmp_path / ".codex"
@@ -62,3 +104,58 @@ class TestCodexInitializerHooks:
         result = init.uninstall(codex_home=codex_home)
         assert result.next_steps
         assert "clawsentry harness --framework codex" not in (codex_home / "hooks.json").read_text()
+        config = tomllib.loads((codex_home / "config.toml").read_text(encoding="utf-8"))
+        assert config.get("hooks", {}).get("state", {}) == {}
+
+    def test_uninstall_preserves_user_codex_hooks_and_unrelated_config(self, tmp_path):
+        codex_home = tmp_path / ".codex"
+        hooks_path = codex_home / "hooks.json"
+        config_path = codex_home / "config.toml"
+        codex_home.mkdir()
+        config_path.write_text(
+            "[features]\nexperimental_widget = true\n\n"
+            f"[hooks.state.\"{hooks_path}:pre_tool_use:0:0\"]\n"
+            'trusted_hash = "sha256:user"\n',
+            encoding="utf-8",
+        )
+        hooks_path.write_text(
+            json.dumps(
+                {
+                    "hooks": {
+                        "PreToolUse": [
+                            {
+                                "matcher": "Bash",
+                                "hooks": [
+                                    {
+                                        "type": "command",
+                                        "command": "python /tmp/user-hook.py",
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        init = CodexInitializer()
+        init.setup_codex_hooks(codex_home=codex_home, dry_run=False)
+        init.uninstall(codex_home=codex_home)
+
+        hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
+        config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+        assert hooks["hooks"]["PreToolUse"] == [
+            {
+                "matcher": "Bash",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "python /tmp/user-hook.py",
+                    }
+                ],
+            }
+        ]
+        assert config["features"]["experimental_widget"] is True
+        assert config["hooks"]["state"][f"{hooks_path}:pre_tool_use:0:0"]["trusted_hash"] == "sha256:user"
+        assert all("clawsentry" not in str(state).lower() for state in config["hooks"]["state"].values())

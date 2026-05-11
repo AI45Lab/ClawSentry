@@ -250,3 +250,67 @@ class TestCodexAdapter:
         assert event.payload["arguments"]["description"] == (
             "requires approval because it scans files"
         )
+
+    def test_normalize_native_apply_patch_pretooluse_fixture(self):
+        """Codex PreToolUse(apply_patch) keeps patch command fields for audit."""
+        adapter = CodexAdapter()
+
+        event = adapter.normalize_native_hook_event(
+            {
+                "session_id": "sess-codex-patch",
+                "turn_id": "turn-patch",
+                "transcript_path": "/tmp/codex/session.jsonl",
+                "cwd": "/workspace/project",
+                "hook_event_name": "PreToolUse",
+                "model": "gpt-5.5",
+                "permission_mode": "default",
+                "tool_name": "apply_patch",
+                "tool_input": {
+                    "command": "*** Begin Patch\n*** Update File: app.py\n",
+                    "file_path": "app.py",
+                },
+                "tool_use_id": "tool-patch-1",
+            }
+        )
+
+        assert event is not None
+        assert event.event_type.value == "pre_action"
+        assert event.event_subtype == "PreToolUse"
+        assert event.tool_name == "apply_patch"
+        assert event.payload["command"].startswith("*** Begin Patch")
+        assert event.payload["file_path"] == "app.py"
+
+    def test_normalize_native_pre_and_post_compact_as_session_observation(self):
+        adapter = CodexAdapter()
+
+        pre = adapter.normalize_native_hook_event(
+            {
+                "session_id": "sess-codex-compact",
+                "turn_id": "turn-compact-1",
+                "transcript_path": "/tmp/codex/session.jsonl",
+                "cwd": "/workspace/project",
+                "hook_event_name": "PreCompact",
+                "model": "gpt-5.5",
+                "trigger": "auto",
+            }
+        )
+        post = adapter.normalize_native_hook_event(
+            {
+                "session_id": "sess-codex-compact",
+                "turn_id": "turn-compact-2",
+                "transcript_path": "/tmp/codex/session.jsonl",
+                "cwd": "/workspace/project",
+                "hook_event_name": "PostCompact",
+                "model": "gpt-5.5",
+                "trigger": "manual",
+            }
+        )
+
+        assert pre is not None
+        assert pre.event_type.value == "session"
+        assert pre.event_subtype == "session:pre_compact"
+        assert pre.payload["trigger"] == "auto"
+        assert post is not None
+        assert post.event_type.value == "session"
+        assert post.event_subtype == "session:post_compact"
+        assert post.payload["trigger"] == "manual"

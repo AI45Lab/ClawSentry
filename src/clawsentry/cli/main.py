@@ -54,7 +54,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         default=False,
-        help="Preview OpenClaw config changes without applying (use with --setup).",
+        help="Preview supported framework setup changes without applying (use with --setup).",
     )
     init_parser.add_argument(
         "--hardened-profile",

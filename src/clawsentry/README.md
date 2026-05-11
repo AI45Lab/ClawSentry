@@ -1,12 +1,12 @@
 # ClawSentry — AHP Supervision Gateway
 
-> **Python 3.11+** | **3155 public regression tests** | Protocol `ahp.1.0`
+> **Python 3.11+** | **3170 public regression tests** | Protocol `ahp.1.0`
 
 **ClawSentry** is the Python reference implementation of AHP (Agent Harness Protocol) — a unified security supervision gateway for multi-agent frameworks. Deployed as a sidecar, it normalizes runtime events from different frameworks (a3s-code, Claude Code, Codex, Gemini CLI, Kimi CLI, OpenClaw) into a unified protocol, passes them through a three-layer progressive risk evaluation pipeline, and produces real-time decisions (allow / block / modify / defer) with complete audit trails.
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.6.6)**: default session-scope enforcement can now be configured with `CS_SESSION_SCOPE_PROFILE_FILE`, so confirmed non-dry-run `SessionScopeProfile` rules apply to incoming `pre_action` decisions that do not provide an explicit scope. The release also keeps scope tightening attached to composed decisions, refreshes sanitizer capability docs, and improves Web UI auth/risk-chart clarity.
+**Current release highlight (v0.6.7)**: Codex CLI 0.130 managed hooks now install by default through `clawsentry start --framework codex`, including host trust state, session watcher setup, and an explicit uninstall command. Real `codex exec` E2E verifies ClawSentry-managed `PreToolUse` blocking under workspace-write sandbox.
 
 ---
 
@@ -278,7 +278,7 @@ High-risk events automatically extract candidate attack patterns. Patterns progr
 | Centralized decisions | All final decisions from Gateway; adapters don't decide |
 | Dual-channel | pre-action sync blocking, post-action async audit |
 | Escalate only | L2/L3 can only raise risk level, never lower it |
-| Fail-closed | High-risk ops blocked when Gateway unreachable |
+| Adapter-specific fallback | Direct AHP endpoints can fail closed; native CLI hooks may fail open when required to preserve host usability |
 
 ---
 
@@ -324,14 +324,14 @@ clawsentry watch
 |---------|-------------------|-------------------------|-------------------------|-----------------|----------|
 | `a3s-code` | Explicit SDK transport + `clawsentry-harness` | Yes | Yes | Agent code must wire `SessionOptions.ahp_transport` | High |
 | `openclaw` | WebSocket approvals + webhook receiver | Yes | Yes | `~/.openclaw/` must be configured for gateway exec + callbacks | Medium-high |
-| `codex` | Session JSONL watcher + optional native hooks | No by default; optional tested `PreToolUse(Bash)` preflight | Yes | Session logs / optional `.codex/hooks.json` must be reachable | Medium |
+| `codex` | Session JSONL watcher + managed native hooks | Managed `PreToolUse(Bash)` preflight response path + `PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)` approval gate when started through `clawsentry start --framework codex` | Yes, including async compact observation | Session logs / `$CODEX_HOME/hooks.json` managed entries must be reachable | Medium-high |
 | `gemini-cli` | Gemini CLI native command hooks | Yes; `BeforeTool` can deny shell commands | Yes, with post-tool caveat | Project `.gemini/settings.json` managed hooks; global home only with explicit `--gemini-home` | Medium-high (`real_beforetool_block_supported`) |
 | `kimi-cli` | Kimi CLI native `[[hooks]]` | Yes; `PreToolUse` / prompt deny via Kimi permission decision | Yes, observation-only for post/session/subagent/compact/notification | `$KIMI_SHARE_DIR/config.toml` or `~/.kimi/config.toml` marker-managed hooks | Medium-high (`native_hook_allow_block_supported`) |
 | `claude-code` | Host hooks + `clawsentry-harness` | Yes | Yes | `~/.claude/settings.json` hooks must remain installed | Medium |
 
 Operational boundary notes:
 
-- `codex` remains an observation-first path by default; `clawsentry init codex --setup` can add managed native hooks without replacing user/OMX hooks. The tested host-blocking surface is intentionally narrow: `PreToolUse(Bash)` can deny when Gateway returns block/defer; other Codex native events stay async advisory/observational.
+- `codex` now gets managed native hooks by default through `clawsentry start --framework codex`, without replacing user or third-party hooks. The startup banner prints `clawsentry init codex --uninstall` for removal. The synchronous response surface is intentionally narrow: `PreToolUse(Bash)` sends a deny response when Gateway returns block/defer, and `PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)` can allow/deny approval requests; non-Bash `PreToolUse`, `PostToolUse`, `UserPromptSubmit`, `Stop`, `SessionStart(startup|resume|clear)`, `PreCompact`, and `PostCompact` stay async advisory/observational.
 - `gemini-cli` uses Gemini native command hooks via `clawsentry init gemini-cli --setup`, defaulting to project-local `.gemini/settings.json`. Shell-tool events are canonicalized before policy evaluation. Do not treat Kimi/OpenAI-compatible endpoints as directly supported by Gemini CLI.
 - Gemini managed hook commands redirect diagnostics away from stderr and fail open if the harness process itself cannot start, because Gemini can interpret plain stderr text as hook output.
 - `kimi-cli` uses Kimi native `[[hooks]]` through `clawsentry init kimi-cli --setup`. It can block dangerous tool calls through `PreToolUse`, block prompts through `UserPromptSubmit`, and record safe Shell plus lifecycle observation events. Native tool-input rewrite and true `defer` parity with `a3s-code` are not supported; those effects are reported as degraded/unsupported in adapter reporting.
@@ -479,7 +479,7 @@ src/clawsentry/
 |-- ui/                                # Web security dashboard (React SPA)
 |   |-- src/                           # TypeScript source
 |   +-- dist/                          # Pre-built artifacts (shipped with pip)
-+-- tests/                             # Test suite (3155 public regression tests)
++-- tests/                             # Test suite (3170 public regression tests)
 ```
 
 ---
@@ -620,7 +620,7 @@ pip install -e ".[dev]"
 
 # Full suite
 python -m pytest src/clawsentry/tests/ -v --tb=short
-# Expected: public repo 3155 passed, 6 skipped
+# Expected: public repo 3170 passed, 6 skipped
 
 # E2E (requires LLM API key)
 A3S_SDK_E2E=1 python -m pytest src/clawsentry/tests/ -v --tb=short

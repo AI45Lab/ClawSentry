@@ -18,11 +18,11 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Multi-step attack trajectory detection**: 5 built-in sequences with sliding-window analysis, SSE `trajectory_alert` broadcast
 - **Self-evolving pattern library (E-5)**: auto-extract candidates from high-risk events, CANDIDATE→EXPERIMENTAL→STABLE lifecycle, confidence scoring, REST API feedback loop
 - **Tunable detection pipeline**: `DetectionConfig` frozen dataclass with explicit `CS_` / project-level overrides, including high-level L3 routing and trigger controls
-- **Six-framework support with explicit boundaries**: a3s-code (explicit SDK transport) + OpenClaw (WS approval + webhook) + Claude Code (host hooks) + Codex CLI (session-log watcher + optional tested `PreToolUse(Bash)` preflight / `PermissionRequest(Bash)` approval gate) + Gemini CLI (native hooks; real provider `BeforeTool` deny smoke proven for `run_shell_command`) + Kimi CLI (native hooks; real `kimi-k2.5` E2E proven for prompt deny, safe Shell observation, and dangerous Shell `PreToolUse` deny; no native modify/defer parity)
+- **Six-framework support with explicit boundaries**: a3s-code (explicit SDK transport) + OpenClaw (WS approval + webhook) + Claude Code (host hooks) + Codex CLI (session-log watcher + default managed `PreToolUse(Bash)` preflight / `PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)` approval gate / async compact observation via `clawsentry start --framework codex`) + Gemini CLI (native hooks; real provider `BeforeTool` deny smoke proven for `run_shell_command`) + Kimi CLI (native hooks; real `kimi-k2.5` E2E proven for prompt deny, safe Shell observation, and dangerous Shell `PreToolUse` deny; no native modify/defer parity)
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3155+ public regression tests**, with release-time CI/build evidence
+- **3170+ public regression tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,12 +34,12 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
-## What's New in v0.6.6
+## What's New in v0.6.7
 
-- **Default scope profile enforcement**: `CS_SESSION_SCOPE_PROFILE_FILE` can load a confirmed `SessionScopeProfile` at Gateway startup and apply it to `pre_action` decisions that do not carry an explicit scope.
-- **Scope-aware decision tightening**: scope evaluation now also applies to externally composed decisions before persistence/SSE, so timeout/auto-resolution paths cannot bypass enforced scope boundaries.
-- **Web UI operator clarity**: dashboard risk charts use the documented D1–D6 scoring range, local API calls avoid empty query strings, and missing-token login does not show a misleading invalid-token error.
-- **Docs and release status refreshed**: progress docs, online docs, changelog, and API metadata are aligned for v0.6.6.
+- **Codex hooks are now default on start**: `clawsentry start --framework codex` installs or refreshes ClawSentry-managed Codex hooks, writes Codex trust state, enables the session watcher, and prints the uninstall command.
+- **Codex CLI 0.130 host dispatch fixed**: managed `PreToolUse` hooks now carry the trusted hash Codex requires, so real `codex exec` sessions dispatch ClawSentry instead of leaving hooks discovered-but-untrusted.
+- **Safer uninstall coverage**: Codex, Gemini CLI, and Kimi CLI uninstall paths now have regression coverage proving user-managed hook entries are preserved.
+- **Docs and release status refreshed**: progress docs, online docs, changelog, and API metadata are aligned for v0.6.7.
 
 ## Quick Start
 
@@ -48,6 +48,7 @@ Requires Python >= 3.11.
 ```bash
 clawsentry start                   # auto-detect framework + init + gateway + watch
 # or specify framework:
+clawsentry start --framework codex       # installs/refreshes Codex managed hooks by default
 clawsentry start --framework openclaw
 clawsentry start --framework a3s-code --interactive  # enable DEFER interaction
 ```
@@ -85,6 +86,12 @@ Start multiple integrations together:
 ```bash
 clawsentry start --frameworks a3s-code,codex,openclaw --no-watch
 clawsentry integrations status
+```
+
+Codex `start` installs only ClawSentry-managed hooks and trust state, preserving user hooks. The startup banner prints the removal command:
+
+```bash
+clawsentry init codex --uninstall
 ```
 
 If you want `start` to also patch OpenClaw-side approval config, opt in explicitly:
@@ -149,12 +156,12 @@ clawsentry init openclaw --restore
 |---|---|---|---|---|
 | `a3s-code` | Explicit SDK transport + `clawsentry-harness` | Yes | Yes | Agent code must wire `SessionOptions.ahp_transport` |
 | `openclaw` | WebSocket approvals + webhook receiver | Yes | Yes | `~/.openclaw/` must be configured for gateway exec + callbacks |
-| `codex` | Session JSONL watcher + optional native hooks | No by default; optional tested `PreToolUse(Bash)` preflight + `PermissionRequest(Bash)` approval gate | Yes | Session logs / optional `.codex/hooks.json` must be reachable |
+| `codex` | Session JSONL watcher + managed native hooks | Managed `PreToolUse(Bash)` preflight response path + `PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)` approval gate when started through `clawsentry start --framework codex` | Yes, including async `PreCompact` / `PostCompact` observation | Session logs and `$CODEX_HOME/hooks.json` managed entries must be reachable |
 | `gemini-cli` | Gemini CLI native command hooks | Yes; real `BeforeTool` deny smoke proven for `run_shell_command` | Yes, with post-action side-effect caveat | Project `.gemini/settings.json` managed hooks; global home only with explicit `--gemini-home` |
 | `kimi-cli` | Kimi CLI native `[[hooks]]` | Yes; `PreToolUse` and prompt deny via Kimi permission decision | Yes, observation-only for post/session/subagent/compact/notification | `$KIMI_SHARE_DIR/config.toml` or `~/.kimi/config.toml` marker-managed hooks |
 | `claude-code` | Host hooks + `clawsentry-harness` | Yes | Yes | `~/.claude/settings.json` hooks must remain installed |
 
-`codex` should be understood as observation-first by default; optional managed native hooks now provide narrow `PreToolUse(Bash)` deny and `PermissionRequest(Bash)` approval-gate paths, while `PostToolUse`, `UserPromptSubmit`, `Stop`, and `SessionStart` remain advisory/observational by default. `a3s-code`
+`codex` should be understood as observation plus narrow managed native hooks by default when launched through `clawsentry start --framework codex`: `PreToolUse(Bash)` can deny and `PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)` can gate approvals, while non-Bash `PreToolUse`, `PostToolUse`, `UserPromptSubmit`, `Stop`, `SessionStart(startup|resume|clear)`, `PreCompact`, and `PostCompact` remain advisory/observational by default. `a3s-code`
 should be understood as explicit transport wiring, not `.a3s-code/settings.json`
 auto-loading. `claude-code` and `openclaw` remain more host-config-dependent than
 `a3s-code`.

@@ -77,14 +77,14 @@ hide:
 ---
 
 
-!!! tip "v0.6.6: Default scope profile and Web UI clarity"
-    `CS_SESSION_SCOPE_PROFILE_FILE=scope.json clawsentry start ...` 现在可以在 Gateway 启动时加载默认 [`SessionScopeProfile`](configuration/session-scope.md)，并自动应用到没有显式 scope 的 `pre_action` 决策；Web UI 风险雷达/趋势图同步使用 D1–D6 文档化评分范围，登录页也会区分缺失 token 与真正的 401。
+!!! tip "v0.6.7: Codex managed hooks by default"
+    `clawsentry start --framework codex` 现在会默认安装/刷新 ClawSentry-managed Codex hooks、写入 Codex trust state、启用 session watcher，并在启动输出中给出 `clawsentry init codex --uninstall` 卸载命令。Codex CLI 0.130 的真实 `codex exec` smoke 已验证 host `PreToolUse` 阻断生效。
 
 <div class="grid-cards" markdown>
 
 <div class="card" markdown>
 ### :shield: 拦截优先，监控兜底
-Claude Code、a3s-code 和 OpenClaw 支持高危操作前阻断；Codex 默认监控，可显式启用 Bash preflight / approval gate；Gemini CLI 和 Kimi CLI 通过 native hooks 接入。每个集成页都会说明可阻断范围、监控范围和 fallback 行为。
+Claude Code、a3s-code 和 OpenClaw 支持高危操作前阻断；Codex 通过默认 managed hooks + session watcher 接入；Gemini CLI 和 Kimi CLI 通过 native hooks 接入。每个集成页都会说明可阻断范围、监控范围和 fallback 行为。
 </div>
 
 <div class="card" markdown>
@@ -399,7 +399,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3155 passed / 6 skipped**（v0.6.6 public release；dev workspace 3156 / 5 skipped） |
+| 测试用例 | **3170 passed / 6 skipped**（v0.6.7 public release；dev workspace 3171 / 5 skipped） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |

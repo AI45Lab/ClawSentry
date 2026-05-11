@@ -185,6 +185,38 @@ def ensure_openclaw_setup(
     return initializer.setup_openclaw_config(openclaw_home=openclaw_home)
 
 
+def ensure_codex_setup(
+    *,
+    codex_home: Path | None = None,
+):
+    """Install/refresh Codex managed native hooks for one-command start."""
+    from .initializers.codex import CodexInitializer
+
+    initializer = CodexInitializer()
+    result = initializer.setup_codex_hooks(codex_home=codex_home)
+    effective_home = codex_home or Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
+    (effective_home / "sessions").mkdir(parents=True, exist_ok=True)
+    return result
+
+
+def _codex_home_from_env(effective_env: dict[str, str]) -> Path | None:
+    raw = effective_env.get("CODEX_HOME", "").strip()
+    return Path(raw).expanduser() if raw else None
+
+
+def _print_codex_setup_summary(setup_result) -> None:
+    if setup_result.files_modified:
+        print(
+            "  Codex hooks: installed/updated managed hooks "
+            f"({len(setup_result.files_modified)} file(s))"
+        )
+    else:
+        print("  Codex hooks: already configured")
+    print("  Codex hooks: uninstall with 'clawsentry init codex --uninstall'")
+    for warning in setup_result.warnings:
+        print(f"  WARNING:    {warning}")
+
+
 def launch_gateway(
     *,
     host: str = "127.0.0.1",
@@ -416,13 +448,23 @@ def run_start(
     active_frameworks = enabled_frameworks or env_frameworks or [framework]
     if not framework and env_default:
         framework = env_default
+    codex_setup_result = None
+    if "codex" in active_frameworks:
+        codex_setup_result = ensure_codex_setup(
+            codex_home=_codex_home_from_env(effective_env),
+        )
     openclaw_setup_result = None
     if setup_openclaw and "openclaw" in active_frameworks:
         openclaw_setup_result = ensure_openclaw_setup(openclaw_home=openclaw_home)
+    status_env = dict(effective_env)
+    status_env["CS_FRAMEWORK"] = framework
+    status_env["CS_ENABLED_FRAMEWORKS"] = ",".join(active_frameworks)
+    if "codex" in active_frameworks:
+        status_env.setdefault("CS_CODEX_WATCH_ENABLED", "true")
     integration_status = collect_integration_status(
         target_dir,
         openclaw_home=openclaw_home,
-        env_values=effective_env,
+        env_values=status_env,
         env_file_present=parsed_env.path is not None,
     )
     framework_readiness = integration_status["framework_readiness"]
@@ -457,6 +499,7 @@ def run_start(
             open_browser=open_browser,
             auto_detected=auto_detected,
             setup_openclaw=setup_openclaw,
+            codex_setup_result=codex_setup_result,
         )
         return
 
@@ -500,6 +543,8 @@ def run_start(
             print("  OpenClaw setup: already configured")
         for warning in openclaw_setup_result.warnings:
             print(f"  WARNING:    {warning}")
+    if codex_setup_result is not None:
+        _print_codex_setup_summary(codex_setup_result)
     has_next_actions = _print_framework_readiness(
         active_frameworks=active_frameworks,
         readiness=framework_readiness,
@@ -524,6 +569,8 @@ def run_start(
         cli_overrides=cli_overrides,
     )
     child_env["CS_AUTH_TOKEN"] = token
+    if "codex" in active_frameworks:
+        child_env["CS_CODEX_WATCH_ENABLED"] = "true"
     proc = launch_gateway(host=host, port=port, log_path=log_path, extra_env=child_env)
     _write_pid_file(_PID_FILE, proc.pid)
 
@@ -584,6 +631,7 @@ def _run_start_with_latch(
     open_browser: bool,
     auto_detected: bool,
     setup_openclaw: bool,
+    codex_setup_result=None,
 ) -> None:
     """Start gateway + Latch Hub via ProcessManager."""
     from ..latch.binary_manager import BinaryManager
@@ -618,6 +666,8 @@ def _run_start_with_latch(
     print(f"  Latch Hub:  {hub_url}")
     print(f"  Web UI:     {ui_url}")
     print(f"  Log file:   {log_path}")
+    if codex_setup_result is not None:
+        _print_codex_setup_summary(codex_setup_result)
     has_next_actions = _print_framework_readiness(
         active_frameworks=active_frameworks,
         readiness=framework_readiness,

@@ -117,7 +117,7 @@ def test_sample_events_cover_representative_rule_governance_cases() -> None:
     assert "| bash" in sample_events[2]["payload"]["command"]
 
 
-def test_codex_docs_describe_optional_native_hook_setup() -> None:
+def test_codex_docs_describe_default_native_hook_setup() -> None:
     codex_doc = (REPO_ROOT / "site-docs" / "integration" / "codex.md").read_text(
         encoding="utf-8"
     )
@@ -125,9 +125,15 @@ def test_codex_docs_describe_optional_native_hook_setup() -> None:
         encoding="utf-8"
     )
 
+    assert "clawsentry start --framework codex" in codex_doc
     assert "clawsentry init codex --setup" in codex_doc
-    assert ".codex/hooks.json" in codex_doc
+    assert "$CODEX_HOME/hooks.json" in codex_doc
+    assert "clawsentry init codex --uninstall" in codex_doc
     assert "PreToolUse(Bash)" in codex_doc
+    assert "PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)" in codex_doc
+    assert "PreCompact" in codex_doc
+    assert "PostCompact" in codex_doc
+    assert "hooks = true" in codex_doc
     assert "permissionDecision: \"deny\"" in codex_doc
     assert "--codex-home PATH" in cli_doc
 
@@ -273,6 +279,8 @@ def test_recent_user_facing_features_have_online_docs_journey_anchors() -> None:
     codex_terms = [
         "clawsentry init codex --setup",
         "PreToolUse(Bash)",
+        "PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)",
+        "PreCompact",
         "PostToolUse(Bash): async",
         "Gateway 不可达",
         "clawsentry doctor",
