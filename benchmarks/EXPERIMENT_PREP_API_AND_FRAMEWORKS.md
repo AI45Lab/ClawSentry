@@ -56,7 +56,7 @@ python benchmarks/scripts/api_connectivity.py --chat --soft-fail \
 | `repo-agent-hcl` | 博越 | ✓ | OpenAI-compatible | `http://35.220.164.252:3888/v1` | `kimi-k2.5` | `<redacted>` | `agent.hcl` 本地值 | 当前仓库本地运行配置；脚本会读取 key 测试，但不会打印。 |
 | `boyue-gemini-3-flash-preview` | 博越 | ✓ | OpenAI-compatible | `http://35.220.164.252:3888/v1` | `gemini-3-flash-preview` | `<redacted>` | `agent.hcl` 本地值 | 与 `repo-agent-hcl` 共用博越 base URL 和本地 key。 |
 | `repo-example-kimi-k2.5` | 博越 | ✗ | OpenAI-compatible | `http://35.220.164.252:3888/v1` | `kimi-k2.5` | `<not configured>` | 需要用户/env 提供 | 示例配置；未配置 key 时 chat 返回 401。 |
-| `user-minimax-2.7-w8a8` | ailab本地配置 | ✗ | OpenAI-compatible | `http://10.140.158.149:18027/v1` | `-MiniMax-2.7-w8a8` | `<not configured>` | 未提供 | 原始 URL 带 `/v1/-MiniMax-2.7-w8a8`；脚本会拆成 base URL 和 model。 |
+| `user-minimax-2.7-w8a8` | ailab本地配置 | ✗ | OpenAI-compatible | `http://10.140.158.149:18027/v1` | `MiniMax-2.7-w8a8` | `<not configured>` | 未提供 | 原始 URL 带 `/v1/-MiniMax-2.7-w8a8`；脚本会拆成 base URL 和去掉前导 `-` 的 model。 |
 | `user-minimax-2.7-w8a8-alt-15002` | ailab本地配置 | ✓ | OpenAI-compatible | `http://10.140.158.149:15002/v1` | `MiniMax-2.7-w8a8` | `<not configured>` | 未提供 | 15002 endpoint 可用；18027 同模型变体 chat HTTP 404。 |
 | `user-ailab-202603-glm-5-actual-5.1` | ailab本地配置 | ✓ | OpenAI-compatible | `http://s-20260304151647-c9kjf.ailab-pj.pjh-service.org.cn/v1` | `glm-5` | `<not configured>` | 未提供 | 用户说明：`glm-5` 实际为 5.1。 |
 | `user-ailab-202603-kimi-k2.5` | ailab本地配置 | ✗ | OpenAI-compatible | `http://s-20260304151647-c9kjf.ailab-pj.pjh-service.org.cn/v1` | `kimi-k2.5` | `<not configured>` | 未提供 | 与上一个 endpoint 共用 base URL，换模型测试；chat HTTP 404。 |

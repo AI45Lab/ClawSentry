@@ -12,6 +12,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -94,7 +95,8 @@ def normalize_openai_target(url: str, *, fallback_model: str) -> NormalizedTarge
         before, after = path.split(marker, 1)
         base_path = f"{before}/v1"
         base_url = urllib.parse.urlunparse((parsed.scheme, parsed.netloc, base_path, "", "", ""))
-        return NormalizedTarget(base_url=normalize_base_url(base_url), model=after.strip("/") or fallback_model)
+        model = after.strip("/").lstrip("-").strip()
+        return NormalizedTarget(base_url=normalize_base_url(base_url), model=model or fallback_model.strip())
     return NormalizedTarget(base_url=normalize_base_url(raw), model=fallback_model.strip())
 
 
@@ -138,9 +140,12 @@ def _target_from_url(
 
 def default_targets() -> list[ApiTarget]:
     targets: list[ApiTarget] = []
+    key_by_base_url: dict[str, str] = {}
     agent_hcl = REPO_ROOT / "agent.hcl"
     if agent_hcl.exists():
         agent_target = target_from_agent_hcl(agent_hcl)
+        if agent_target.api_key:
+            key_by_base_url[agent_target.base_url] = agent_target.api_key
         targets.append(agent_target)
         targets.append(
             ApiTarget(
@@ -206,6 +211,13 @@ def default_targets() -> list[ApiTarget]:
             ),
         ]
     )
+    if key_by_base_url:
+        targets = [
+            replace(target, api_key=key_by_base_url[target.base_url])
+            if not target.api_key and target.provider == "openai-compatible" and target.base_url in key_by_base_url
+            else target
+            for target in targets
+        ]
     return targets
 
 

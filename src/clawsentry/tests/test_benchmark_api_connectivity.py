@@ -27,7 +27,7 @@ def test_normalize_openai_url_splits_model_suffix() -> None:
     )
 
     assert normalized.base_url == "http://10.140.158.149:18027/v1"
-    assert normalized.model == "-MiniMax-2.7-w8a8"
+    assert normalized.model == "MiniMax-2.7-w8a8"
 
 
 def test_normalize_openai_url_keeps_base_url_model() -> None:
@@ -94,7 +94,7 @@ def test_default_targets_include_user_supplied_endpoints(tmp_path: Path) -> None
     assert targets["boyue-gemini-3-flash-preview"].model == "gemini-3-flash-preview"
     assert targets["boyue-gemini-3-flash-preview"].api_key
     assert "user-minimax-2.7-w8a8" in targets
-    assert targets["user-minimax-2.7-w8a8"].model == "-MiniMax-2.7-w8a8"
+    assert targets["user-minimax-2.7-w8a8"].model == "MiniMax-2.7-w8a8"
     assert "user-minimax-2.7-w8a8-alt-15002" in targets
     assert targets["user-minimax-2.7-w8a8-alt-15002"].base_url == "http://10.140.158.149:15002/v1"
     assert targets["user-minimax-2.7-w8a8-alt-15002"].model == "MiniMax-2.7-w8a8"
@@ -102,3 +102,26 @@ def test_default_targets_include_user_supplied_endpoints(tmp_path: Path) -> None
     assert "user-ailab-202603-kimi-k2.5" in targets
     assert "user-ailab-202602-glm-5-actual-5.1" in targets
     assert "user-ailab-202602-kimi-k2.5" in targets
+
+
+def test_default_targets_reuse_repo_key_for_matching_openai_base_url(tmp_path: Path) -> None:
+    module = load_script_module()
+    agent_hcl = tmp_path / "agent.hcl"
+    agent_hcl.write_text(
+        '\n'.join(
+            [
+                'default_model = "openai/kimi-k2.5"',
+                'providers {',
+                '  name = "openai"',
+                '  api_key = "sk-test-value"',
+                '  base_url = "http://35.220.164.252:3888/v1/"',
+                '}',
+            ]
+        ),
+        encoding="utf-8",
+    )
+    module.REPO_ROOT = tmp_path
+
+    targets = {target.name: target for target in module.default_targets()}
+
+    assert targets["repo-example-kimi-k2.5"].api_key == "sk-test-value"
