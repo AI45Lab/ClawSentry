@@ -417,4 +417,4 @@ class PostActionFinding:
 
 ---
 
-更多 sanitizer 当前能力、`would_sanitize` 与 `advisory_only` 解释，见 [Sanitizer 当前能力](sanitizer-capability.md)。
+`would_sanitize` 表示 ClawSentry 在 post-action 观察面发现并安全展示了本应清洗的 tool output；它不表示 AHP 已把清洗后的 tool response 写回宿主框架历史记录。

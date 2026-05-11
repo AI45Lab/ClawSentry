@@ -2,9 +2,9 @@
 
 ## 结论
 
-MSB 可以作为 ClawSentry 的 MCP/tool-use 安全评测源，优先价值是验证 ClawSentry 能否覆盖 tool metadata、tool parameters、tool response 和 retrieval injection 四类边界。它不是当前 ClawSentry 仓库可直接一键运行的 benchmark；需要先实现 MCP adapter 或至少 gateway/log replay 层。
+MSB 可以作为 ClawSentry 的 MCP/tool-use 安全评测源，优先价值是验证 ClawSentry 能否覆盖 tool metadata、tool parameters、tool response 和 retrieval injection 四类边界。按当前路线，它放在第三阶段，与 ATBench 并行推进：原因是它需要先实现 MCP adapter 或至少 gateway/log replay 层，不如 `skills-safety-bench` 和 `skill-inject` 方便直接启动。
 
-## 推荐阶段
+## 第三阶段推荐步骤
 
 1. **本地数据审计**：固定当前 commit `c1d6a70`，记录 12 attack type、5 attack task、10 agent 场景、64 task-tool 对。
 2. **12 attack type smoke**：每类 attack type 选 1 个最小实例，raw 与 ClawSentry gateway 各跑一次，确认日志和指标可落盘。

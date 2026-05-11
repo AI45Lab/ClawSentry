@@ -1,6 +1,8 @@
 .omx/
 /skills-safety-bench/
 /AgentDoG/
+/MSB/
+/skill-inject/
 results/**
 !results/
 !results/README.md

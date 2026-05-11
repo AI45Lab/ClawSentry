@@ -447,3 +447,68 @@
 .md-typeset .cs-operator-path + .admonition {
   margin-top: 1rem;
 }
+
+.md-typeset .cs-scenario-grid,
+.md-typeset .cs-config-map,
+.md-typeset .cs-step-flow {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.1rem 0 1.5rem;
+}
+
+.md-typeset .cs-scenario-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.md-typeset .cs-config-map {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.md-typeset .cs-step-flow {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.md-typeset .cs-scenario,
+.md-typeset .cs-config-map > *,
+.md-typeset .cs-step-flow > * {
+  border: 1px solid var(--cs-line);
+  border-radius: 14px;
+  padding: 1rem 1.05rem;
+  background:
+    linear-gradient(180deg, var(--cs-panel), transparent 135%),
+    var(--md-default-bg-color);
+}
+
+.md-typeset .cs-step-flow > * {
+  min-height: 8rem;
+}
+
+.md-typeset .cs-step-flow span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  margin-bottom: 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cs-accent) 14%, var(--md-default-bg-color));
+  color: var(--cs-accent);
+  font-weight: 800;
+}
+
+.md-typeset .cs-step-flow strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--cs-ink);
+}
+
+.md-typeset .cs-card-title {
+  margin: 0 0 0.65rem !important;
+  color: var(--cs-ink);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.md-typeset .cs-scenario strong {
+  color: var(--cs-accent);
+}

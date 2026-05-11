@@ -2,9 +2,9 @@
 
 ## 结论
 
-skill-inject 可以评估 ClawSentry，且是四个 benchmark 中最贴近 skill supply-chain / runtime skill injection 防护的一个。它不是开箱即跑的 ClawSentry benchmark：必须在容器内 agent runtime 接入 ClawSentry hooks/gateway，并补一个 skill package 静态扫描视角。
+skill-inject 可以评估 ClawSentry，且是四个 benchmark 中最贴近 skill supply-chain / runtime skill injection 防护的一个。按当前路线，它是 `skills-safety-bench` 之后的第二阶段：比 MSB 更少依赖 MCP adapter，比 ATBench 更贴近真实 CLI agent runtime。它不是开箱即跑的 ClawSentry benchmark：必须在容器内 agent runtime 接入 ClawSentry hooks/gateway，并补一个 skill package 静态扫描视角。
 
-## 推荐阶段
+## 第二阶段推荐步骤
 
 1. **本地数据审计**：固定 commit `bf9fa1f`，记录 48 contextual、36 obvious、58 clean tasks、49 `SKILL.md` files。
 2. **static scan smoke**：对 5 obvious + 5 contextual 生成 sandbox 后扫描 `SKILL.md`，输出 ClawSentry verdict 与证据。

@@ -67,7 +67,7 @@ artifacts/
 
 ## AgentDoG / ATBench offline replay
 
-AgentDoG 的第一阶段不跑真实 agent。先把已有 trajectory 转换为 ClawSentry event JSONL：
+按当前总路线，ATBench 放在第三阶段，与 MSB 并行推进；它不再是最先启动的 benchmark。进入 ATBench 阶段后，AgentDoG lane 的第一步不跑真实 agent，而是先把已有 trajectory 转换为 ClawSentry event JSONL：
 
 ```bash
 python benchmarks/scripts/agentdog_atbench_clawsentry.py \

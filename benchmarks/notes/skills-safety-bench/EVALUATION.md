@@ -50,7 +50,7 @@ dry-run 结果：
 
 ## 当前结论
 
-这个 benchmark 已经可以作为四框架安全评测的数据集和任务集使用；但目前仓库内开箱即用的自动化执行路径只确认支持 Codex。要完成 Claude Code、OpenClaw、A3S-Code 以及它们加 ClawSentry 的统一测试，需要补齐对应框架的 runner/adapter，并让结果输出仍能被 `eval/verify_attack.py` replay。
+这个 benchmark 已经可以作为四框架安全评测的数据集和任务集使用。按当前实验路线，它是第一阶段优先启动项，因为 case、manifest、Harbor/Codex runner 和 dry-run 证据最完整，最方便先做直接 agent 执行实验；但目前仓库内开箱即用的自动化执行路径只确认支持 Codex。要完成 Claude Code、OpenClaw、A3S-Code 以及它们加 ClawSentry 的统一测试，需要补齐对应框架的 runner/adapter，并让结果输出仍能被 `eval/verify_attack.py` replay。
 
 
 ## 2026-05-01 状态补充

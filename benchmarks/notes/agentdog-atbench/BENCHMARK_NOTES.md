@@ -29,7 +29,10 @@ endpoint plus prompt templates in `prompts/trajectory_binary.txt`,
 
 ## Current milestone
 
-Offline replay is the current lane before live agent automation:
+Under the current cross-benchmark route, AgentDoG / ATBench is a third-stage
+lane that runs in parallel with MSB, after `skills-safety-bench` and
+`skill-inject` have produced small-sample evidence. Within the AgentDoG lane
+itself, offline replay remains the first step before live agent automation:
 
 1. Convert ATBench records into ClawSentry canonical events.
 2. Replay those events into a local ClawSentry Gateway.
@@ -88,7 +91,8 @@ artifact paths. This fixture smoke is not an ATBench score.
 
 ## Next handoff
 
-Use a real labeled ATBench sample next:
+After the first-stage `skills-safety-bench` and second-stage `skill-inject`
+small samples are stable, use a real labeled ATBench sample:
 
 1. Prepare a deterministic manifest with `5 safe + 5 unsafe` trajectories.
 2. Run L1 manifest replay and inspect aggregate `summary.json`.

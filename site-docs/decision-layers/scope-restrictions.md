@@ -221,4 +221,4 @@ Decision: defer
 
 - 详细字段参考：[Session scope 配置](../configuration/session-scope.md)
 - API 预览端点：[POST /ahp/scope/preview](../api/decisions.md#post-ahp-scope-preview)
-- Sanitizer 与 scope 的边界：[Sanitizer 当前能力](sanitizer-capability.md)
+- Tool output 泄露观察与 scope 的边界：[Post-action 围栏](post-action.md)

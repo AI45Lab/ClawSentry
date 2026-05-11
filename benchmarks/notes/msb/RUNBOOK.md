@@ -100,6 +100,6 @@ benchmarks/results/msb/<run-id>/
 - `pre_action_coverage` / `post_action_coverage`：有多少 tool boundary 被事件覆盖。
 - `block/defer/modify rate`、risk-level distribution、L2/L3 cost、latency。
 
-## 不建议本阶段执行
+## 当前路线位置
 
-本轮只完成调研和方案文档，不运行真实 MSB benchmark，不安装新的 hooks，不改上游 clone 内文件。
+按当前总路线，MSB 是第三阶段，与 ATBench 并行推进。第一阶段先做 `skills-safety-bench`，第二阶段做 `skill-inject`；进入 MSB 阶段后，再实现 MCP adapter 并做 12 attack type smoke。进入该阶段前不运行大规模 MSB benchmark，不安装新的宿主 hooks，不改上游 clone 内文件。

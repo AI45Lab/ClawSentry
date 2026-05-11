@@ -86,6 +86,6 @@ python experiments/contextual.py --agent codex --model gpt-5.2-codex --smoke-tes
 - pre-action/post-action coverage。
 - latency、timeout、retry、L2/L3 cost。
 
-## 不建议本阶段执行
+## 当前路线位置
 
-本轮只完成调研和方案文档，不运行真实 skill-inject benchmark，不构建 Docker image，不安装 hooks。
+按当前总路线，skill-inject 是第二阶段：在 `skills-safety-bench` 单 case / 单 RD 路线稳定后，优先做 static scan 和容器内 Codex 小样本。仍然不要修改宿主当前 `~/.codex` 或当前 `CODEX_HOME`；真实运行前先用 `--dry-run` / `--smoke-test` 控制 API 成本和技术失败。

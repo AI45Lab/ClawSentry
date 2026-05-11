@@ -7,16 +7,24 @@
 1. ClawSentry 是否能发现或阻断 agent/skill/tool-use 安全风险？
 2. ClawSentry 是否在降低攻击成功率的同时保持正常任务可用性？
 
-本方案覆盖四个本地 benchmark：`skills-safety-bench`、`agentdog-atbench`、`MSB`、`skill-inject`。
+本方案覆盖四个本地 benchmark：`skills-safety-bench`、`skill-inject`、`MSB`、`agentdog-atbench`。
+
+当前预期实验路线调整为：
+
+```text
+skills-safety-bench -> skill-inject -> MSB + ATBench
+```
+
+理由：`skills-safety-bench` 已有物化 case、manifest、Harbor/Codex runner 和历史 dry-run 证据，最方便立刻进入直接实验；`skill-inject` 已有容器 runner 和 Codex/Claude/Gemini CLI 入口，适合作为第二阶段；`MSB` 需要 MCP adapter，`ATBench` 需要补齐 labeled trajectory 数据，因此放到第三阶段并行推进。
 
 ## Benchmark 定位
 
 | benchmark | 主要价值 | 当前状态 | ClawSentry 接入结论 | 推荐优先级 |
 | --- | --- | --- | --- | ---: |
-| `agentdog-atbench` | 轨迹级 offline labeled replay；验证检测/审计能力 | converter + ClawSentry sample replay 已跑通；正式 labeled 样本待准备 | 可先离线评估，不证明 runtime prevention | 1 |
+| `skills-safety-bench` | 静态 Harbor/Codex 攻击任务，含 6 RD / 155 case | local commit `148133b`；历史 dry-run 已验证；真实 Codex runner 仍需稳定 provider/CLI 链路 | 最适合先启动直接 agent 执行实验；先做 dry-run / 单 case / 单 RD raw-vs-protected | 1 |
 | `skill-inject` | skill/package prompt injection 与 runtime CLI 防护 | 已 clone；本地 notes 已登记；未跑正式样本 | 可评估，但需容器内 hooks/gateway 与 static scan | 2 |
-| `MSB` | MCP tool metadata/parameter/result/retrieval injection | 已 clone；本地 notes 已登记；未跑正式样本 | 可评估，但需 MCP adapter 才能完整覆盖 tool boundary | 3 |
-| `skills-safety-bench` | 静态 Harbor/Codex 攻击任务，含 6 RD / 155 case | local commit `148133b`；远端更新尝试被 SSH/HTTPS 访问阻塞；历史 dry-run 已验证 | 可评估 Codex 路径；真实 runner 仍受 provider/CLI/Node 稳定性影响 | 4 |
+| `MSB` | MCP tool metadata/parameter/result/retrieval injection | 已 clone；本地 notes 已登记；未跑正式样本 | 可评估，但需 MCP adapter 才能完整覆盖 tool boundary | 3A |
+| `agentdog-atbench` | 轨迹级 offline labeled replay；验证检测/审计能力 | converter + ClawSentry sample replay 已跑通；正式 labeled 样本待准备 | 可离线评估，不证明 runtime prevention；与 MSB 并行作为第三阶段 | 3B |
 
 ## 统一指标
 
@@ -72,13 +80,15 @@
 
 ## 推荐执行顺序
 
-### 1. AgentDoG / ATBench offline labeled replay
+### 1. skills-safety-bench direct agent run
 
-目的：低风险验证 ClawSentry 轨迹检测与审计能力。
+目的：最快进入直接 agent 任务执行，先建立 raw-vs-protected 的真实 case 证据。
 
-最小样本：`5 safe + 5 unsafe` labeled trajectories。
+最小样本：先复测 RD1 单 case dry-run，再跑同一 case 的 raw/protected；链路稳定后扩到 RD1 或 RD6 单域。
 
-输出：unsafe recall、safe false-positive rate、pre/post coverage、L2/L3 latency/cost。
+输出：task_success、attack_success、ASR、task_output_missing、evaluator error、ClawSentry block/defer/coverage、latency/cost。
+
+当前注意：`skills-safety-bench` 最方便先开始，是因为 case 和 runner 已物化；但正式分数仍依赖 Codex/provider/CLI 链路稳定，technical failure 必须单列。`git@github.com:jinchang1223/skills-safety-bench.git` fetch 因 SSH 22 端口连接关闭失败；HTTPS fetch 又需要凭据，未能更新到计划中提到的远端 HEAD。不要在未更新成功时伪造 commit 或结果。
 
 ### 2. skill-inject small sample
 
@@ -88,7 +98,7 @@
 
 输出：static scan recall、runtime ASR 降幅、task completion、technical failure。
 
-### 3. MSB 12 attack type smoke
+### 3A. MSB 12 attack type smoke
 
 目的：验证 MCP adapter 能覆盖 tool metadata、parameters、response、retrieval injection。
 
@@ -96,11 +106,15 @@
 
 输出：ASR/PUA/NRP、pre_action/post_action coverage、risk distribution。
 
-### 4. skills-safety-bench dry-run 与单 case 复测
+### 3B. AgentDoG / ATBench offline labeled replay
 
-目的：在上游 clone 可更新且 Codex/provider 链路稳定后复测 Harbor/Codex case。
+目的：并行补充轨迹级检测/审计能力，不作为 runtime prevention 的主证据。
 
-当前注意：`git@github.com:jinchang1223/skills-safety-bench.git` fetch 因 SSH 22 端口连接关闭失败；HTTPS fetch 又需要凭据，未能更新到计划中提到的远端 HEAD。不要在未更新成功时伪造 commit 或结果。
+最小样本：`5 safe + 5 unsafe` labeled trajectories。
+
+输出：unsafe recall、safe false-positive rate、pre/post coverage、L2/L3 latency/cost。
+
+当前注意：ATBench 当前本地 clone 只有 sample 与 runner，正式计分必须先准备带 `safe` / `unsafe` 标签的真实 manifest。
 
 ## 结果目录模板
 

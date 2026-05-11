@@ -20,11 +20,14 @@
 - wrapper 默认强制 Codex API-key auth，并通过 Docker exec env inheritance (`-e OPENAI_API_KEY`) 传递密钥，避免 `OPENAI_API_KEY=<value>` 出现在进程 argv 中。
 - 当前真实执行的新阻塞转移到 Codex agent execution：Codex CLI 连接 OpenAI-compatible provider 持续 reconnect timeout，`--network-mode host` 复测仍未产出 `/app/output/itinerary.json`。下一步应诊断 Codex CLI 与该 provider endpoint/model 的兼容性，而不是扩展到更多 case。
 - `skills-safety-bench/.envrc` 包含看起来是真实的 API 配置，应视为敏感信息，避免写入日志或提交。
-- AgentDoG sample smoke 已能完成 converter -> ClawSentry replay -> summary/risk report 全链路；下一步应从 ATBench 数据集选取带 `safe/unsafe` 标签的最小评测集，再计算 unsafe recall 和 safe false-positive rate。
+- AgentDoG sample smoke 已能完成 converter -> ClawSentry replay -> summary/risk report 全链路；但按新的实验路线，ATBench 放到第三阶段与 MSB 并行，下一步是在 SSB 和 skill-inject 小样本稳定后再准备带 `safe/unsafe` 标签的最小评测集。
 
 
 ## 新增 benchmark 待执行项
 
-- `MSB`：先设计 ClawSentry MCP adapter，做 12 attack type smoke；正式结果必须同时记录 ASR、PUA、NRP 与 ClawSentry block/defer/coverage。
-- `skill-inject`：先做 static skill-package scan 和容器内 Codex 小样本；不得修改当前开发者 `~/.codex` 或当前 `CODEX_HOME`。
-- `skills-safety-bench`：计划更新远端 HEAD 未完成，当前仍按本地 `148133b` 记录；远端访问恢复后再执行 `git pull --ff-only` 并复测 dry-run。
+预期实验路线：`skills-safety-bench -> skill-inject -> MSB + ATBench`。
+
+- `skills-safety-bench`：第一阶段优先启动；基于现有 manifest 和 Harbor/Codex runner，复测 dry-run、单 case raw/protected，再扩到单 RD。计划更新远端 HEAD 未完成，当前仍按本地 `148133b` 记录；远端访问恢复后再执行 `git pull --ff-only` 并复测 dry-run。
+- `skill-inject`：第二阶段做 static skill-package scan 和容器内 Codex 小样本；不得修改当前开发者 `~/.codex` 或当前 `CODEX_HOME`。
+- `MSB`：第三阶段与 ATBench 并行；先设计 ClawSentry MCP adapter，做 12 attack type smoke；正式结果必须同时记录 ASR、PUA、NRP 与 ClawSentry block/defer/coverage。
+- `agentdog-atbench` / `ATBench`：第三阶段与 MSB 并行；准备真实 labeled manifest 后跑 offline replay，报告 unsafe recall、safe false-positive rate 和 coverage，不把 offline replay 表述成 runtime prevention。
