@@ -17,6 +17,17 @@ skills-safety-bench -> skill-inject -> MSB + ATBench
 
 理由：`skills-safety-bench` 已有物化 case、manifest、Harbor/Codex runner 和历史 dry-run 证据，最方便立刻进入直接实验；`skill-inject` 已有容器 runner 和 Codex/Claude/Gemini CLI 入口，适合作为第二阶段；`MSB` 需要 MCP adapter，`ATBench` 需要补齐 labeled trajectory 数据，因此放到第三阶段并行推进。
 
+后续实验默认使用 2026-05-11 已验证的本地/转发 API 配置，而不是重新猜测 provider：
+
+| 框架/CLI | 默认 API 来源 | 默认模型 | 配置要点 | 当前状态 |
+| --- | --- | --- | --- | --- |
+| Codex | ailab 本地 | `MiniMax-2.7-w8a8` 或 `glm-5` | Codex 0.130 用 `wire_api="responses"`；使用临时 `CODEX_HOME` | CLI smoke PASS |
+| Claude Code | ailab 本地 | `MiniMax-2.7-w8a8` 或 `glm-5` | 用 Messages API；加 `--setting-sources project` 避免用户级 env 覆盖 | CLI smoke PASS |
+| Kimi CLI | ailab 本地 | `kimi-k2.5` | 显式把 ailab host 加入 `NO_PROXY/no_proxy` | CLI smoke PASS |
+| Gemini CLI | 博越 Gemini relay | `gemini-3-flash-preview` | `GEMINI_API_KEY` + private `GOOGLE_GEMINI_BASE_URL` | CLI smoke PASS |
+
+具体 endpoint、key 来源和 API/CLI smoke 原始记录只保存在私有开发仓库，不同步到公开仓库。这些结果只证明 provider/CLI 链路可用，不构成 benchmark 分数。
+
 ## Benchmark 定位
 
 | benchmark | 主要价值 | 当前状态 | ClawSentry 接入结论 | 推荐优先级 |
@@ -64,7 +75,7 @@ skills-safety-bench -> skill-inject -> MSB + ATBench
 
 - 相同 benchmark commit。
 - 相同 case manifest / sample ids。
-- 相同模型、temperature、timeout、parallelism。
+- 相同模型、temperature、timeout、parallelism；除非实验目标是比较模型，否则优先使用上表已验证的默认 provider/CLI 配置。
 - 相同容器 image 或 sandbox build artifact。
 - 相同 judge model 与 judge prompt。
 

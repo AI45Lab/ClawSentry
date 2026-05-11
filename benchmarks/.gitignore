@@ -1,4 +1,7 @@
 .omx/
+# Upstream benchmark sources are recorded as nested Git repositories/submodules
+# or recreated from the source URLs in README.md; do not vendor their contents
+# into the parent repo as ordinary files.
 /skills-safety-bench/
 /AgentDoG/
 /MSB/
@@ -6,3 +9,6 @@
 results/**
 !results/
 !results/README.md
+!results/api-connectivity/
+!results/api-connectivity/*.json
+!results/api-connectivity/*.md

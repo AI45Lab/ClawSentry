@@ -115,11 +115,11 @@ class TestBuildProvider:
     def test_anthropic_custom_base_url(self, monkeypatch):
         monkeypatch.setenv("CS_LLM_PROVIDER", "anthropic")
         monkeypatch.setenv("CS_LLM_API_KEY", "sk-ant-test-key-1234567890abcdef")
-        monkeypatch.setenv("CS_LLM_BASE_URL", "http://35.220.164.252:3888/v1/")
+        monkeypatch.setenv("CS_LLM_BASE_URL", "http://llm-gateway.example/v1/")
         provider, info = _build_provider()
         assert provider is not None
-        assert provider._config.base_url == "http://35.220.164.252:3888/v1/"
-        assert info["base_url"] == "http://35.220.164.252:3888/v1/"
+        assert provider._config.base_url == "http://llm-gateway.example/v1/"
+        assert info["base_url"] == "http://llm-gateway.example/v1/"
 
     def test_key_preview_masking(self, monkeypatch):
         monkeypatch.setenv("CS_LLM_PROVIDER", "anthropic")

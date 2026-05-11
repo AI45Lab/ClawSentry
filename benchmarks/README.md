@@ -13,11 +13,11 @@ benchmarks/
   RESULTS.md                    # 跨 benchmark 的结果索引
   scripts/                      # 本地便捷运行脚本
   notes/<bench-slug>/           # 每个 benchmark 的本地说明
-  results/<bench-slug>/         # 长期保存的运行结果，默认不入库
-  skills-safety-bench/          # 上游 clone
-  AgentDoG/                     # 上游 clone
-  MSB/                          # 上游 clone
-  skill-inject/                 # 上游 clone
+  results/<bench-slug>/         # 长期保存的运行结果，默认不入库；api-connectivity 脱敏证据可入库
+  skills-safety-bench/          # 上游 clone/submodule
+  AgentDoG/                     # 上游 clone/submodule
+  MSB/                          # 上游 clone/submodule
+  skill-inject/                 # 上游 clone/submodule
 ```
 
 ## 当前已 clone 的 Benchmark
@@ -29,9 +29,24 @@ benchmarks/
 | `MSB` | `https://github.com/dongsenzhang/MSB.git` | `MSB/` | MCP/tool-use 攻击 benchmark；第三阶段评估 tool metadata/parameter/result/retrieval injection 防护。 |
 | `agentdog-atbench` | `https://github.com/AI45Lab/AgentDoG.git` | `AgentDoG/` | trajectory-level safety replay；第三阶段与 MSB 并行做 offline labeled detection/audit。 |
 
-详细登记见 [BENCHMARKS.md](BENCHMARKS.md)。统一 ClawSentry 评测方案见 [notes/clawsentry-evaluation-plan.md](notes/clawsentry-evaluation-plan.md)。
+详细登记见 [BENCHMARKS.md](BENCHMARKS.md)。统一 ClawSentry 评测方案见 [notes/clawsentry-evaluation-plan.md](notes/clawsentry-evaluation-plan.md)。私有实验 API/CLI 配置基线保存在开发仓库本地材料中，不同步到公开仓库。
 
 当前预期实验路线：`skills-safety-bench -> skill-inject -> MSB + ATBench`。优先从 `skills-safety-bench` 开始，因为它已有物化 case、manifest、Harbor/Codex runner 和历史 dry-run 证据，最方便先做直接 agent 执行实验。
+
+2026-05-11 起，正式实验默认使用已验证的用户指定本地/转发 provider 配置。具体 endpoint、key 来源、隔离方式和排查结论只保存在私有开发仓库，不同步到公开仓库。
+
+## 新开发机恢复
+
+私有开发仓库 `origin` 允许保存 benchmark 复现所需的根目录 `agent.hcl` 和 `.env.clawsentry`。另一台开发机 clone 后，先恢复 submodule，再跑 API connectivity smoke：
+
+```bash
+git clone git@github.com:Elroyper/A3S-Monitor.git
+cd A3S-Monitor
+git submodule update --init --recursive
+python benchmarks/scripts/api_connectivity.py --chat --soft-fail
+```
+
+注意：`skill-inject` 与 `skills-safety-bench` 使用私有 SSH URL，clone 机器的 GitHub 账号需要对应访问权限。公开仓库同步仍排除这些上游源码、raw results 和所有真实 key/token。
 
 ## 本地说明文档
 
@@ -113,5 +128,6 @@ python benchmarks/scripts/agentdog_atbench_clawsentry.py \
 - 不修改当前开发者 `~/.codex`、当前 `CODEX_HOME` 或 OMX/user hooks。
 - ClawSentry hooks 只安装到临时 `CODEX_HOME`、容器内 home 或 benchmark 专用配置目录。
 - 上游 clone 内不写本地长期说明。
-- `.env`、`docker/.env`、agent stdout、provider endpoint 和 API key 必须 redaction。
+- 私有开发仓库 `origin` 可以保存根目录 `agent.hcl` / `.env.clawsentry` 以复现实验；公开仓库、公开文档、raw stdout/transcript 和长期结果摘要仍必须 redaction。
+- `.env`、`docker/.env`、agent stdout、provider endpoint 和 API key 不进入 `clawsentry-public`。
 - `benchmarks/RESULTS.md` 不伪造分数；未跑正式样本只登记为“待正式运行/未出分”。
