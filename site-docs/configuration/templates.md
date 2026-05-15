@@ -1,6 +1,6 @@
 ---
 title: 配置模板
-description: 按功能块复制 ClawSentry dotenv 配置：L1、L2、L3、Anti-bypass、DEFER、生产部署
+description: 按功能块复制 ClawSentry dotenv 配置：L1、L2、L3、Anti-bypass、DEFER、Benchmark、生产部署
 ---
 
 # 配置模板
@@ -26,7 +26,9 @@ clawsentry start --env-file .clawsentry.env.local --framework codex --open-brows
 | 团队共享 L2 语义分析 | [基础骨架](#base-skeleton) + [L2 + token budget](#template-l2-budgeted) | 配本机 `CS_LLM_API_KEY` |
 | 高风险操作同步审查 | [严格 L3](#template-l3-strict) + [DEFER 审批](#template-defer-bridge) | 先小仓库试运行 |
 | 防重试/绕过 | [Anti-bypass Guard](#template-anti-bypass) | 先记录命中，再按审计结果调整动作 |
+| Skill 供应链治理 | [Skill Trust / roadmap controls](#template-skill-trust-roadmap) | 先 `clawsentry skill-trust register-dir` 生成 registry |
 | 处理工具输出泄露/外部指令 | [Post-action / trajectory](#template-runtime-detectors) | 观察 SSE/UI finding |
+| CI / benchmark | [CI / benchmark](#template-benchmark) | 使用临时 `CODEX_HOME` |
 | systemd / Docker 常驻 | [生产环境变量骨架](#template-production-env) | `service validate --env-file` |
 
 ---
@@ -36,7 +38,7 @@ clawsentry start --env-file .clawsentry.env.local --framework codex --open-brows
 ```bash title=".clawsentry.env.example — 可提交基础策略"
 CS_FRAMEWORK=codex
 CS_ENABLED_FRAMEWORKS=codex
-CS_MODE=normal                  # normal | strict | permissive
+CS_MODE=normal                  # normal | strict | permissive | benchmark
 CS_PRESET=medium                # low | medium | high | strict
 
 CS_HTTP_HOST=127.0.0.1
@@ -186,7 +188,7 @@ CS_ANTI_BYPASS_PRIOR_VERDICTS=block,defer
 
 ### Review + LLM-assisted cross-tool 候选识别
 
-`CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 可以省略；只要 guard 已启用且共享 `CS_LLM_PROVIDER` + API key 有效，recognizer 会自动启用。dry-run / no-network 等不应外联的运行环境不会自动启用外部 LLM recognition，除非显式 `true`。保留显式 `true` 适合模板化 rollout；显式 `false` 可强制关闭。
+`CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 可以省略；只要 guard 已启用且共享 `CS_LLM_PROVIDER` + API key 有效，recognizer 会自动启用。benchmark / dry-run / no-network 模式不会自动启用外部 LLM recognition，除非显式 `true`。保留显式 `true` 适合模板化 rollout；显式 `false` 可强制关闭。
 
 ```bash
 CS_ANTI_BYPASS_GUARD_ENABLED=true
@@ -211,6 +213,38 @@ CS_ANTI_BYPASS_SIMILARITY_THRESHOLD=0.92
 
 !!! warning "cross-tool/script 不本地 hard-block"
     `CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=block` 无效，会回退到 `force_l3`。跨工具近似匹配可选 `observe` / `force_l2` / `force_l3` / `defer`。LLM recognizer 自动启用仍需要 guard、有效 provider、跨工具候选、至少两个弱证据信号、非 `non-destructive` 当前动作和可用 budget；它只接收 sanitized capsules，不能产生本地 `block`。
+
+---
+
+## Skill Trust / roadmap controls {#template-skill-trust-roadmap}
+
+适合 benchmark、敏感仓库和团队共享 skill registry。先生成 registry/runtime metadata，再通过 env 启用 Gateway 解析。完整说明见 [Skill Trust / Registry](../advanced/skill-trust.md)。
+
+```bash
+clawsentry skill-trust register-dir \
+  --skills-dir ~/.codex/skills \
+  --registry .clawsentry/skill-trust-registry.json \
+  --metadata .clawsentry/skill-trust-runtime.json \
+  --framework codex \
+  --scope workspace \
+  --json
+```
+
+```bash title=".clawsentry.env.example — 可提交策略"
+CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json
+CS_SKILL_TRUST_METADATA_PATH=.clawsentry/skill-trust-runtime.json
+
+CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION=audit
+CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION=block
+CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=defer
+CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION=audit
+
+CS_CAPABILITY_NARROWING_ENABLED=true
+CS_AGENT_SAFETY_FEEDBACK_ENABLED=true
+```
+
+!!! note "边界"
+    Agent safety feedback 只在 supported host hooks 上进入 response；不支持交互反馈的框架会保留 audit-only metadata。Capability narrowing 会收紧后续 scope，不回写历史 canonical decision。
 
 ---
 
@@ -294,6 +328,32 @@ clawsentry l3 jobs run-next --runner deterministic_local --json
 ```
 
 边界：advisory review 冻结证据、排队/运行 job、生成 review；不会修改已经发生的 canonical allow/block/defer 判决。
+
+---
+
+## CI / benchmark：无人值守且可审计 {#template-benchmark}
+<span id="ci-benchmark-operator"></span>
+
+
+```bash
+CS_MODE=benchmark
+CS_PRESET=high
+CS_FRAMEWORK=codex
+CS_ENABLED_FRAMEWORKS=codex
+CS_BENCHMARK_AUTO_RESOLVE_DEFER=true
+CS_BENCHMARK_DEFER_ACTION=block
+CS_BENCHMARK_PERSIST_SCOPE=project
+CS_DEFER_BRIDGE_ENABLED=true
+CS_DEFER_TIMEOUT_ACTION=block
+```
+
+Codex benchmark 必须使用临时 `CODEX_HOME`，不要复用正在工作的 `~/.codex`。
+
+```bash
+TMP_CODEX_HOME="$(mktemp -d)"
+CODEX_HOME="$TMP_CODEX_HOME" clawsentry benchmark run -- codex --approval-policy untrusted
+rm -rf "$TMP_CODEX_HOME"
+```
 
 ---
 

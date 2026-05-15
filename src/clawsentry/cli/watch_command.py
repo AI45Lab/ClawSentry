@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import sys
 import time
 import urllib.request
@@ -884,11 +885,65 @@ def _format_defer_pending(
     lines = [line1]
     if reason:
         lines.append(f"{_TREE_INDENT}  Reason: {reason}")
+    prompt = event.get("approval_prompt")
+    if isinstance(prompt, dict):
+        field_sources = prompt.get("field_sources")
+        if not isinstance(field_sources, dict):
+            field_sources = {}
+        prompt_fields = [
+            (
+                "Target",
+                "affected_target",
+                _redact_prompt_context_value(prompt.get("affected_target")),
+            ),
+            ("Operation", "operation", prompt.get("operation")),
+            (
+                "Consequence",
+                "consequence",
+                _redact_prompt_context_value(prompt.get("consequence")),
+            ),
+            (
+                "Safer option",
+                "dry_run_or_narrower_scope_suggestion",
+                prompt.get("dry_run_or_narrower_scope_suggestion"),
+            ),
+            (
+                "Rollback",
+                "rollback_hint",
+                _redact_prompt_context_value(prompt.get("rollback_hint")),
+            ),
+        ]
+        for label_text, source_key, value in prompt_fields:
+            text = str(value or "").strip()
+            if text:
+                source_label = _approval_prompt_source_label(field_sources.get(source_key))
+                suffix = f" [{source_label}]" if source_label else ""
+                lines.append(f"{_TREE_INDENT}  {label_text}: {text}{suffix}")
     lines.append(
         f"{_TREE_INDENT}  Approval ID: {approval_id}  Timeout: {int(timeout_s)}s"
     )
 
     return "\n".join(lines)
+
+
+def _redact_prompt_context_value(value: object) -> str:
+    text = str(value or "").replace("\n", " ").strip()
+    text = re.sub(r"/workspace/[^\s'\"<>|)]+", "/workspace/<redacted>", text)
+    text = re.sub(r"/home/[^\s'\"<>|)]+", "/home/<redacted>", text)
+    text = re.sub(r"~/?[^\s'\"<>|)]*", "~/<redacted>", text)
+    text = re.sub(r"(?i)(token|password|secret|api_key)=([^\s&]+)", r"\1=<redacted>", text)
+    return text
+
+
+def _approval_prompt_source_label(source: object) -> str:
+    normalized = str(source or "").strip().lower()
+    if normalized == "generated":
+        return "generated guidance"
+    if normalized == "adapter_provided":
+        return "adapter-provided"
+    if normalized == "unavailable":
+        return "unavailable"
+    return normalized
 
 
 def _format_defer_resolved(

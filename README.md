@@ -18,11 +18,12 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Multi-step attack trajectory detection**: 5 built-in sequences with sliding-window analysis, SSE `trajectory_alert` broadcast
 - **Self-evolving pattern library (E-5)**: auto-extract candidates from high-risk events, CANDIDATE→EXPERIMENTAL→STABLE lifecycle, confidence scoring, REST API feedback loop
 - **Tunable detection pipeline**: `DetectionConfig` frozen dataclass with explicit `CS_` / project-level overrides, including high-level L3 routing and trigger controls
-- **Six-framework support with explicit boundaries**: a3s-code (explicit SDK transport) + OpenClaw (WS approval + webhook) + Claude Code (host hooks) + Codex CLI (session-log watcher + default managed `PreToolUse(Bash)` preflight / `PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)` approval gate / async compact observation via `clawsentry start --framework codex`) + Gemini CLI (native hooks; real provider `BeforeTool` deny smoke proven for `run_shell_command`) + Kimi CLI (native hooks; real `kimi-k2.5` E2E proven for prompt deny, safe Shell observation, and dangerous Shell `PreToolUse` deny; no native modify/defer parity)
+- **Skill Trust and policy traceability**: registry/preflight controls for local skill packages, first-use actions, compound/taint evidence, capability narrowing, and policy drift reports
+- **Six-framework support with explicit boundaries**: a3s-code (explicit SDK transport) + OpenClaw (WS approval + webhook) + Claude Code (host hooks) + Codex CLI (session-log watcher + default managed `PreToolUse(Bash)` preflight / `PermissionRequest(Bash|apply_patch|Edit|Write|mcp__.*)` approval gate / async compact observation via `clawsentry start --framework codex`) + Gemini CLI (native hooks; real provider `BeforeTool` deny smoke proven for `run_shell_command`) + Kimi CLI (native hooks; real E2E proven for prompt deny, safe Shell observation, and dangerous Shell `PreToolUse` deny; no native modify/defer parity)
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3199+ public regression tests**, with release-time CI/build evidence
+- **3468 Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,12 +35,12 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
-## What's New in v0.6.9
+## What's New in v0.7.0
 
-- **Persistence-write / SC-4 policy**: writes that create future automatic execution or re-entry entrypoints now have a dedicated L1-L3 policy surface.
-- **Configurable SC-4 handling**: `CS_PERSISTENCE_WRITE_ACTION` supports `audit`, `force_l3`, `defer`, and `block`; `auto` blocks in strict mode and asks L3 in normal mode.
-- **Redacted L3 evidence**: SC-4 L3 review receives a compact evidence summary instead of raw file payloads or secrets.
-- **Generalized write-risk coverage**: bounded output writes remain distinct from future auto-execution or re-entry entrypoints, and SC-4 takes precedence whenever that persistence risk is present.
+- **Benchmark-oriented roadmap foundations**: Skill Trust registry/preflight, AHP policy replay, deterministic compound/taint evidence, capability narrowing, redacted agent feedback, and policy drift traceability are now on the mainline path.
+- **Skill Trust first-use control**: local skill packages can be scanned and registered with `clawsentry skill-trust`, then routed through audit, L2/L3 review, defer, or block actions by runtime profile.
+- **Generalized persistence evidence**: startup/bootstrap/autoload/reentry and related persistence-write patterns are represented through `rule_hits` and `taint_flow_summary`, instead of a case-specific runtime switch.
+- **Honest benchmark boundary**: validation covers targeted replay and readiness gates; this release does not claim a complete benchmark leaderboard result.
 
 ## Quick Start
 

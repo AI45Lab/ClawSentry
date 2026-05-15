@@ -208,6 +208,64 @@ function hasActionableL3Meta(meta: TrajectoryRecord['meta']): boolean {
   )
 }
 
+function compactRecordValue(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  if (Array.isArray(value)) {
+    return value.map(item => compactRecordValue(item)).filter(Boolean).join(', ')
+  }
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, nested]) => nested !== null && nested !== undefined && nested !== '')
+      .slice(0, 5)
+      .map(([key, nested]) => `${key}=${compactRecordValue(nested)}`)
+      .join(', ')
+  }
+  return String(value)
+}
+
+function lineageDrilldownLines(record: TrajectoryRecord): string[] {
+  const lines: string[] = []
+  const lineage = record.meta.skill_lineage
+  if (lineage && typeof lineage === 'object') {
+    const summary = ['presented_skill_name', 'canonical_skill_id', 'content_hash', 'skill_root_path_hash', 'output_provenance_label']
+      .map(key => {
+        const value = lineage[key]
+        return value ? `${key}=${compactRecordValue(value)}` : ''
+      })
+      .filter(Boolean)
+      .join(', ')
+    lines.push(summary || 'redacted lineage metadata available')
+  }
+  const trustRaw = record.meta.skill_trust_raw
+  if (trustRaw && typeof trustRaw === 'object') {
+    const trustSummary = ['presented_name', 'provenance_claim', 'trust_level', 'status', 'list_state', 'registry_record_count']
+      .map(key => {
+        const value = trustRaw[key]
+        return value !== undefined && value !== null && value !== '' ? `${key}=${compactRecordValue(value)}` : ''
+      })
+      .filter(Boolean)
+      .join(', ')
+    if (trustSummary) lines.push(`registry ${trustSummary}`)
+  }
+  const ruleHits = record.risk_snapshot.rule_hits || []
+  if (ruleHits.length) lines.push(`rules ${ruleHits.join(', ')}`)
+  if (record.adapter_effect_results?.length) {
+    const effects = record.adapter_effect_results
+      .map(effect => compactRecordValue({
+        effect_id: effect.effect_id,
+        result_kind: effect.result_kind,
+        adapter: effect.adapter,
+      }))
+      .filter(Boolean)
+      .join(' | ')
+    if (effects) lines.push(`adapter effects ${effects}`)
+  }
+  if (record.meta.request_id || record.record_id) {
+    lines.push(`trace request=${record.meta.request_id || 'unknown'}, record=${record.record_id || 'unknown'}`)
+  }
+  return lines
+}
+
 function normalizeSessionRisk(result: SessionRisk | SessionRiskResponse): {
   risk: SessionRisk
   reporting: ReportingEnvelope
@@ -954,6 +1012,7 @@ export default function SessionDetail() {
                 const input = replayEventPreview(record)
                 const evidenceSummary = formatL3EvidenceSummary(record.l3_trace?.evidence_summary)
                 const actionableL3Meta = hasActionableL3Meta(record.meta)
+                const lineageLines = lineageDrilldownLines(record)
                 return (
                   <div key={`${record.recorded_at}-${index}`} className="decision-timeline-row">
                     <span className="mono decision-timeline-time">
@@ -1009,6 +1068,16 @@ export default function SessionDetail() {
                         <p className="priority-session-meta">
                           Evidence: <span className="mono">{evidenceSummary}</span>
                         </p>
+                      )}
+                      {lineageLines.length > 0 && (
+                        <div className="priority-session-meta">
+                          <span>Lineage drilldown:</span>
+                          {lineageLines.map(line => (
+                            <p key={line} className="priority-session-meta mono">
+                              {line}
+                            </p>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>

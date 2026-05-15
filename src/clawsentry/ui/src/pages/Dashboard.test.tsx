@@ -10,6 +10,7 @@ vi.mock('../api/client', () => ({
     summary: vi.fn(),
     health: vi.fn(),
     sessions: vi.fn(),
+    policyDrift: vi.fn(),
   },
 }))
 
@@ -126,6 +127,74 @@ function makeHealthResponse() {
   }
 }
 
+function makePolicyDriftResponse() {
+  return {
+    generated_at: '2026-04-15T07:15:00Z',
+    window_seconds: 300,
+    comparison_window_seconds: 300,
+    grouping_dimensions: ['workspace_root', 'source_framework', 'session_id', 'rule_family'],
+    total_cells: 1,
+    metric_cell_traceability: {
+      passed: false,
+      coverage: 0,
+      total_cells: 1,
+      cell_count: 1,
+      complete_cell_count: 0,
+      required_fields: ['request_ids', 'fallback_paths'],
+      conditional_fields: ['rule_evidence', 'registry_states', 'adapter_effect_result_ids'],
+      incomplete_cells: [
+        {
+          workspace_root: '/workspace/demo',
+          source_framework: 'codex',
+          session_id: 'sess-123',
+          rule_family: 'skill_trust',
+          missing_fields: ['fallback_paths'],
+        },
+      ],
+    },
+    cells: [
+      {
+        cell_id: '/workspace/demo|codex|sess-123|skill_trust',
+        workspace_root: '/workspace/demo',
+        source_framework: 'codex',
+        session_id: 'sess-123',
+        rule_family: 'skill_trust',
+        current: {
+          record_count: 2,
+          decision_distribution: { block: 1, allow: 1 },
+          risk_distribution: { high: 1, low: 1 },
+          rule_hits: { ambiguous_skill_alias: 1 },
+          block_rate: 0.5,
+          high_or_critical_rate: 0.5,
+        },
+        previous: {
+          record_count: 1,
+          decision_distribution: { allow: 1 },
+          risk_distribution: { low: 1 },
+          rule_hits: {},
+          block_rate: 0,
+          high_or_critical_rate: 0,
+        },
+        delta: { record_count: 1, block_rate: 0.5, high_or_critical_rate: 0.5 },
+        traceability: {
+          request_ids: ['req-123'],
+          record_ids: ['42'],
+          event_ids: ['evt-123'],
+          registry_states: ['unlisted'],
+          rule_evidence: ['ambiguous_skill_alias'],
+          fallback_paths: [],
+          adapter_effect_result_ids: [],
+        },
+        traceability_applicability: {
+          rule_evidence: true,
+          registry_states: true,
+          adapter_effect_result_ids: false,
+        },
+      },
+    ],
+  }
+}
+
 function renderDashboard() {
   return render(
     <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -139,6 +208,7 @@ describe('Dashboard', () => {
     vi.mocked(api.summary).mockResolvedValue(makeSummaryResponse() as never)
     vi.mocked(api.health).mockResolvedValue(makeHealthResponse() as never)
     vi.mocked(api.sessions).mockResolvedValue([makeSessionSummary()] as never)
+    vi.mocked(api.policyDrift).mockResolvedValue(makePolicyDriftResponse() as never)
   })
 
   it('composes the dashboard regions and key widgets', async () => {
@@ -167,6 +237,14 @@ describe('Dashboard', () => {
     expect(hotspotSection).not.toBeNull()
     expect(within(hotspotSection as HTMLElement).getByText('sess-123')).toBeInTheDocument()
     expect(screen.getByText('Toolkit evidence quota exhausted · codex · 12 events')).toBeInTheDocument()
+    expect(await screen.findByText('Policy drift cells')).toBeInTheDocument()
+    expect(screen.getByText('Traceability 0%')).toBeInTheDocument()
+    expect(screen.getByText('skill_trust · codex')).toBeInTheDocument()
+    expect(screen.getByText('missing fallback_paths')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /open session replay for skill_trust drift cell/i })).toHaveAttribute(
+      'href',
+      '/sessions/sess-123?event=evt-123&request=req-123',
+    )
   })
 
   it('shows an empty hotspot state when no sessions hit toolkit evidence budget', async () => {

@@ -453,6 +453,7 @@ def test_clawsentry_config_docs_use_dotenv_templates_not_section_configs() -> No
         "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED=true",
         "CS_DEFER_BRIDGE_ENABLED=true",
         "CS_POST_ACTION_FINDING_ACTION=broadcast",
+        "CS_MODE=benchmark",
     ]:
         assert term in templates
 
@@ -482,7 +483,7 @@ def test_clawsentry_config_docs_use_dotenv_templates_not_section_configs() -> No
         "raw command、raw payload、secret、env value 或 L3 trace",
         "anti_bypass_probe",
         "scope-only",
-        "dry-run / no-network",
+        "benchmark / dry-run / no-network",
     ]:
         assert term in anti_bypass_docs
 
@@ -534,3 +535,40 @@ def test_release_docs_use_real_toml_paths_and_current_public_status() -> None:
     assert "pyproject.env-template" not in release_docs
     assert "config.env-template" not in release_docs
     assert "pyproject.toml" in release_docs
+
+
+def test_public_synced_docs_do_not_expose_private_benchmark_details() -> None:
+    public_paths = [
+        PUBLIC_README,
+        PACKAGE_README,
+        REPO_ROOT / "CHANGELOG.md",
+        REPO_ROOT / "pyproject.toml",
+        REPO_ROOT / "benchmarks" / "README.md",
+        REPO_ROOT / "benchmarks" / "RESULTS.md",
+        REPO_ROOT / "benchmarks" / "RUNBOOK.md",
+        REPO_ROOT / "scripts" / "sync-to-public.sh",
+    ]
+    public_paths.extend((REPO_ROOT / "site-docs").rglob("*.md"))
+    public_paths.extend((REPO_ROOT / "benchmarks" / "fixtures").rglob("*.json"))
+    public_paths.extend((REPO_ROOT / "benchmarks" / "fixtures").rglob("*.jsonl"))
+    public_docs = "\n".join(
+        path.read_text(encoding="utf-8") for path in public_paths if path.exists()
+    )
+
+    private_terms = [
+        "kimi-k2.5",
+        "VPN no-key",
+        "provider/base_url/API key",
+        "openai/kimi",
+        "benchmarks/results/",
+        "gpt-5.3",
+        "Boyue",
+        "MiniMax",
+        "c13d",
+        "codex-boyue",
+        "kimi-ailab",
+        "codex-ailab",
+        "user-ailab",
+    ]
+    for term in private_terms:
+        assert term not in public_docs

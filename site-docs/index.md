@@ -77,8 +77,8 @@ hide:
 ---
 
 
-!!! tip "v0.6.9: Persistence-write / SC-4 policy"
-    ClawSentry 现在把“写入未来会自动执行或重入的入口”抽象为通用 SC-4 风险：entrypoint HTML/JS、startup/bootstrap loader、autoload manifest、inline loader contract 和 global loader state 会进入同一策略面，并可 block、defer、audit 或同步交给 L3。
+!!! tip "v0.7.0: Benchmark-oriented roadmap foundations"
+    Skill Trust registry/preflight、AHP policy replay、compound/taint evidence、capability narrowing、redacted agent feedback 和 policy drift traceability 已进入主线。当前公开口径是 targeted replay/readiness evidence，不声明完整 benchmark leaderboard 结论。
 
 <div class="grid-cards" markdown>
 
@@ -399,7 +399,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3199+ public regression tests**，随可选依赖与发布范围变化 |
+| 测试用例 | **3468 passed / 15 skipped**（v0.7.0 Python release validation；Web UI 56 passed） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |

@@ -10,6 +10,7 @@ import pytest
 import pytest_asyncio
 from clawsentry.adapters.a3s_adapter import A3SCodeAdapter
 from clawsentry.gateway.models import (
+    AgentTrustLevel,
     CanonicalDecision,
     DecisionSource,
     DecisionVerdict,
@@ -938,6 +939,49 @@ class TestNativeHookFormat:
         assert "jsonrpc" not in response
 
     @pytest.mark.asyncio
+    async def test_claude_native_write_payload_lifts_nested_edit_text(self):
+        """Claude native write/edit hooks should expose edit body text to policy."""
+        from unittest.mock import AsyncMock
+
+        adapter = A3SCodeAdapter(
+            uds_path="/tmp/nonexistent.sock",
+            source_framework="claude-code",
+        )
+        adapter.request_decision = AsyncMock(
+            return_value=CanonicalDecision(
+                decision=DecisionVerdict.ALLOW,
+                reason="captured",
+                policy_id="test-policy",
+                risk_level=RiskLevel.LOW,
+                decision_source=DecisionSource.POLICY,
+                final=True,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        response = await harness.dispatch_async(
+            {
+                "session_id": "sess-claude-edit",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "MultiEdit",
+                "tool_input": {
+                    "file_path": "/workspace/app/bootstrap.js",
+                    "edits": [
+                        {
+                            "old_string": "window.appReady = true;",
+                            "new_string": "window.__clawsentryLoader = eval(location.hash);",
+                        }
+                    ],
+                },
+            }
+        )
+
+        assert response is None
+        event = adapter.request_decision.await_args.args[0]
+        assert event.payload["file_path"] == "/workspace/app/bootstrap.js"
+        assert "window.__clawsentryLoader" in event.payload["content"]
+
+    @pytest.mark.asyncio
     async def test_jsonrpc_format_still_works(self, harness):
         """Existing JSON-RPC format should still work unchanged."""
         msg = {
@@ -1024,6 +1068,414 @@ class TestCodexNativeHookDispatch:
         assert event.trace_id == "tool-native-codex"
         assert event.payload["turn_id"] == "turn-native-codex"
         assert event.payload["arguments"]["command"] == "echo ok"
+
+    @pytest.mark.asyncio
+    async def test_codex_pretooluse_enriches_skill_trust_metadata_from_runtime_bundle(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        codex_home = tmp_path / "codex"
+        metadata = tmp_path / "skill-trust-raw.json"
+        metadata.write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "raw_metadata_by_skill": {
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "provenance_label_conflict": True,
+                            "control_language_findings": ["canonical_name_claim"],
+                            "content_hashes": {"SKILL.md": "sha256:skill"},
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CODEX_HOME", str(codex_home))
+        monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.ALLOW,
+                reason="allowed",
+                risk_level=RiskLevel.LOW,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        await harness.dispatch_async(
+            {
+                "session_id": "sess-native-codex-skill",
+                "turn_id": "turn-native-codex-skill",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": f"python {codex_home}/skills/search-accommodation/scripts/search.py",
+                },
+                "tool_use_id": "tool-native-codex-skill",
+                "cwd": "/workspace/project",
+            }
+        )
+
+        event = adapter.request_decision.await_args.args[0]
+        raw = event.payload["_clawsentry_meta"]["skill_trust_raw"]
+        assert raw["presented_name"] == "search-accommodation"
+        assert raw["provenance_claim"] == "search-accommodations"
+        assert raw["provenance_label_conflict"] is True
+        lineage = event.payload["_clawsentry_meta"]["skill_lineage_raw"]
+        assert lineage["presented_name"] == "search-accommodation"
+        assert "raw_skill_path" not in raw
+
+    @pytest.mark.asyncio
+    async def test_codex_pretooluse_enriches_skill_trust_metadata_from_split_skill_path(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        metadata = tmp_path / "skill-trust-raw.json"
+        metadata.write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "raw_metadata_by_skill": {
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "provenance_label_conflict": True,
+                            "control_language_findings": ["canonical_name_claim"],
+                        },
+                        "search-accommodations": {
+                            "presented_name": "search-accommodations",
+                            "provenance_claim": "search_accommodations",
+                        },
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.ALLOW,
+                reason="allowed",
+                risk_level=RiskLevel.LOW,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        await harness.dispatch_async(
+            {
+                "session_id": "sess-native-codex-split-skill",
+                "turn_id": "turn-native-codex-split-skill",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": (
+                        "base = Path('/root/.agents/skills')\n"
+                        "load(base/'search-accommodation/scripts/search_accommodations.py')"
+                    ),
+                },
+                "tool_use_id": "tool-native-codex-split-skill",
+                "cwd": "/workspace/project",
+            }
+        )
+
+        event = adapter.request_decision.await_args.args[0]
+        raw = event.payload["_clawsentry_meta"]["skill_trust_raw"]
+        assert raw["presented_name"] == "search-accommodation"
+        assert raw["provenance_label_conflict"] is True
+
+    @pytest.mark.asyncio
+    async def test_codex_pretooluse_split_skill_path_preserves_runtime_order(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        metadata = tmp_path / "skill-trust-raw.json"
+        metadata.write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "raw_metadata_by_skill": {
+                        "short": {
+                            "presented_name": "short",
+                            "provenance_label_conflict": False,
+                        },
+                        "a-much-longer-skill": {
+                            "presented_name": "a-much-longer-skill",
+                            "provenance_label_conflict": True,
+                        },
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.ALLOW,
+                reason="allowed",
+                risk_level=RiskLevel.LOW,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        await harness.dispatch_async(
+            {
+                "session_id": "sess-native-codex-split-order",
+                "turn_id": "turn-native-codex-split-order",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": (
+                        "base = Path('/root/.agents/skills')\n"
+                        "load(base/'short/scripts/run.py')\n"
+                        "load(base/'a-much-longer-skill/scripts/run.py')"
+                    ),
+                },
+                "tool_use_id": "tool-native-codex-split-order",
+                "cwd": "/workspace/project",
+            }
+        )
+
+        event = adapter.request_decision.await_args.args[0]
+        raw = event.payload["_clawsentry_meta"]["skill_trust_raw"]
+        assert raw["presented_name"] == "short"
+        assert raw["provenance_label_conflict"] is False
+
+    @pytest.mark.asyncio
+    async def test_codex_pretooluse_preserves_runtime_skill_order_when_command_mentions_many_skills(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        metadata = tmp_path / "skill-trust-raw.json"
+        metadata.write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "raw_metadata_by_skill": {
+                        "search-cities": {
+                            "presented_name": "search-cities",
+                            "provenance_label_conflict": False,
+                        },
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "provenance_label_conflict": True,
+                            "control_language_findings": ["canonical_name_claim", "routing_claim"],
+                        },
+                        "search-driving-distance": {
+                            "presented_name": "search-driving-distance",
+                            "provenance_label_conflict": False,
+                            "control_language_findings": ["routing_claim"],
+                        },
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.ALLOW,
+                reason="allowed",
+                risk_level=RiskLevel.LOW,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        await harness.dispatch_async(
+            {
+                "session_id": "sess-native-codex-many-skills",
+                "turn_id": "turn-native-codex-many-skills",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": (
+                        "sys.path.extend(['/root/.agents/skills/search-cities/scripts',"
+                        "'/root/.agents/skills/search-accommodation/scripts',"
+                        "'/root/.agents/skills/search-driving-distance/scripts'])"
+                    ),
+                },
+                "tool_use_id": "tool-native-codex-many-skills",
+                "cwd": "/workspace/project",
+            }
+        )
+
+        event = adapter.request_decision.await_args.args[0]
+        raw = event.payload["_clawsentry_meta"]["skill_trust_raw"]
+        assert raw["presented_name"] == "search-cities"
+        assert raw["provenance_label_conflict"] is False
+
+    @pytest.mark.asyncio
+    async def test_codex_pretooluse_does_not_enrich_from_incidental_skill_name_text(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        metadata = tmp_path / "skill-trust-raw.json"
+        metadata.write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "raw_metadata_by_skill": {
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "provenance_label_conflict": True,
+                            "control_language_findings": ["canonical_name_claim"],
+                        },
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.ALLOW,
+                reason="allowed",
+                risk_level=RiskLevel.LOW,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        await harness.dispatch_async(
+            {
+                "session_id": "sess-native-codex-incidental-skill-text",
+                "turn_id": "turn-native-codex-incidental-skill-text",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": (
+                        "cat <<'EOF' > /app/output/itinerary.json\n"
+                        '{"tool_called":"search-accommodation",'
+                        '"path":"/root/.agents/skills/search-accommodation/scripts/search.py"}\n'
+                        "EOF\n"
+                        "# validate /root/.agents/skills/search-accommodation/scripts/search.py was not selected\n"
+                        "python /workspace/validate.py"
+                    ),
+                },
+                "tool_use_id": "tool-native-codex-incidental-skill-text",
+                "cwd": "/workspace/project",
+            }
+        )
+
+        event = adapter.request_decision.await_args.args[0]
+        assert "_clawsentry_meta" not in event.payload or "skill_trust_raw" not in event.payload["_clawsentry_meta"]
+
+    @pytest.mark.asyncio
+    async def test_codex_pretooluse_ignores_incidental_alias_path_when_canonical_path_executes(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        metadata = tmp_path / "skill-trust-raw.json"
+        metadata.write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "raw_metadata_by_skill": {
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "provenance_label_conflict": True,
+                            "control_language_findings": ["canonical_name_claim"],
+                        },
+                        "search-accommodations": {
+                            "presented_name": "search-accommodations",
+                            "provenance_claim": "search_accommodations",
+                        },
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.ALLOW,
+                reason="allowed",
+                risk_level=RiskLevel.LOW,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        await harness.dispatch_async(
+            {
+                "session_id": "sess-native-codex-canonical-with-incidental-alias",
+                "turn_id": "turn-native-codex-canonical-with-incidental-alias",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": (
+                        "python /root/.agents/skills/search-accommodations/scripts/search_accommodations.py "
+                        "--city Cleveland\n"
+                        "# old alias path: /root/.agents/skills/search-accommodation/scripts/search.py\n"
+                        "cat <<'EOF' >/tmp/audit.txt\n"
+                        "/root/.agents/skills/search-accommodation/scripts/search.py\n"
+                        "EOF"
+                    ),
+                },
+                "tool_use_id": "tool-native-codex-canonical-with-incidental-alias",
+                "cwd": "/workspace/project",
+            }
+        )
+
+        event = adapter.request_decision.await_args.args[0]
+        raw = event.payload["_clawsentry_meta"]["skill_trust_raw"]
+        assert raw["presented_name"] == "search-accommodations"
+        assert raw.get("provenance_label_conflict") is not True
+
+    @pytest.mark.asyncio
+    async def test_codex_pretooluse_sends_standard_agent_trust_context(self):
+        from unittest.mock import AsyncMock
+
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.ALLOW,
+                reason="allowed",
+                risk_level=RiskLevel.LOW,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        await harness.dispatch_async(
+            {
+                "session_id": "sess-native-codex-context",
+                "turn_id": "turn-native-codex-context",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {"command": "python - <<'PY'\nprint('ok')\nPY"},
+                "tool_use_id": "tool-native-codex-context",
+                "cwd": "/workspace/project",
+            }
+        )
+
+        context = adapter.request_decision.await_args.args[1]
+        assert context.agent_trust_level == AgentTrustLevel.STANDARD
 
     @pytest.mark.asyncio
     async def test_codex_pretooluse_block_returns_verified_deny_shape(self):

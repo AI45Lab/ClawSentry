@@ -27,16 +27,12 @@ from clawsentry.gateway.detection_config import (
 )
 from clawsentry.gateway.models import (
     CanonicalEvent,
-    ClassifiedBy,
     DecisionContext,
     DecisionTier,
-    DecisionVerdict,
     EventType,
     PostActionResponseTier,
     RiskDimensions,
     RiskLevel,
-    RiskSnapshot,
-    utc_now_iso,
 )
 from clawsentry.gateway.risk_snapshot import (
     SessionRiskTracker,
@@ -126,30 +122,6 @@ class TestDetectionConfigDefaults:
         assert c.l3_advisory_async_enabled is False
         assert c.l3_heartbeat_review_enabled is False
 
-    def test_persistence_write_action_defaults_to_auto(self):
-        c = DetectionConfig()
-        assert c.persistence_write_action == "auto"
-        assert c.persistence_write_fallback_action == "block"
-        assert c.resolved_persistence_write_action() == "force_l3"
-
-    def test_persistence_write_auto_resolves_strict_and_benchmark_to_block(self):
-        assert DetectionConfig(mode="strict").resolved_persistence_write_action() == "block"
-        assert DetectionConfig(mode="benchmark").resolved_persistence_write_action() == "block"
-
-    def test_invalid_persistence_write_actions_warn_and_fallback(self, caplog):
-        with caplog.at_level("WARNING"):
-            c = DetectionConfig(
-                persistence_write_action="nonsense",
-                persistence_write_fallback_action="silent_allow",
-            )
-        assert c.persistence_write_action == "auto"
-        assert c.persistence_write_fallback_action == "block"
-        assert "Invalid persistence_write_action" in caplog.text
-
-    def test_persistence_write_l3_confidence_bounds(self):
-        with pytest.raises(ValueError, match="persistence_write_l3_allow_confidence"):
-            DetectionConfig(persistence_write_l3_allow_confidence=1.5)
-
 
 # =========================================================================
 # 2. build_detection_config_from_env (~8 tests)
@@ -181,10 +153,22 @@ class TestBuildFromEnv:
         assert c.d4_mid_threshold == 3
 
     def test_str_parsing(self):
-        env = {"CS_ATTACK_PATTERNS_PATH": "/tmp/custom.yaml"}
+        env = {
+            "CS_ATTACK_PATTERNS_PATH": "/tmp/custom.yaml",
+            "CS_SKILL_TRUST_REGISTRY_PATH": "/tmp/skill-registry.json",
+            "CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION": "defer",
+            "CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION": "force_l3",
+        }
         with patch.dict(os.environ, env, clear=True):
             c = build_detection_config_from_env()
         assert c.attack_patterns_path == "/tmp/custom.yaml"
+        assert c.skill_trust_registry_path == "/tmp/skill-registry.json"
+        assert c.skill_trust_first_use_benchmark_action == "defer"
+        assert c.skill_trust_first_use_strict_action == "force_l3"
+
+    def test_invalid_first_use_action_falls_back_to_audit(self):
+        cfg = DetectionConfig(skill_trust_first_use_benchmark_action="launch_missiles")
+        assert cfg.skill_trust_first_use_benchmark_action == "audit"
 
     def test_comma_sep_list(self):
         env = {"CS_POST_ACTION_WHITELIST": "*.log, *.tmp, /var/cache/*"}
@@ -225,9 +209,9 @@ class TestBuildFromEnv:
             "CS_TRAJECTORY_MAX_SESSIONS": "20000",
             "CS_L3_ADVISORY_ASYNC_ENABLED": "true",
             "CS_L3_HEARTBEAT_REVIEW_ENABLED": "true",
-            "CS_PERSISTENCE_WRITE_ACTION": "block",
-            "CS_PERSISTENCE_WRITE_FALLBACK_ACTION": "block",
-            "CS_PERSISTENCE_WRITE_L3_ALLOW_CONFIDENCE": "0.8",
+            "CS_BENCHMARK_L2_AUTO_ENABLED": "true",
+            "CS_CAPABILITY_NARROWING_ENABLED": "true",
+            "CS_AGENT_SAFETY_FEEDBACK_ENABLED": "true",
         }
         with patch.dict(os.environ, env, clear=True):
             c = build_detection_config_from_env()
@@ -250,9 +234,9 @@ class TestBuildFromEnv:
         assert c.trajectory_max_sessions == 20000
         assert c.l3_advisory_async_enabled is True
         assert c.l3_heartbeat_review_enabled is True
-        assert c.persistence_write_action == "block"
-        assert c.persistence_write_fallback_action == "block"
-        assert c.persistence_write_l3_allow_confidence == 0.8
+        assert c.benchmark_l2_auto_enabled is True
+        assert c.capability_narrowing_enabled is True
+        assert c.agent_safety_feedback_enabled is True
 
 
 # =========================================================================
@@ -287,17 +271,6 @@ def _make_read_event(path: str = "readme.txt", session_id: str = "s1") -> Canoni
         tool_name="read_file",
         payload={"path": path},
         **_EVT_COMMON,
-    )
-
-
-def _snapshot(level: RiskLevel = RiskLevel.HIGH) -> RiskSnapshot:
-    return RiskSnapshot(
-        risk_level=level,
-        composite_score=2.0,
-        dimensions=RiskDimensions(d1=3, d2=0, d3=3, d4=0, d5=2, d6=0.0),
-        short_circuit_rule="SC-2" if level == RiskLevel.CRITICAL else None,
-        classified_by=ClassifiedBy.L1,
-        classified_at=utc_now_iso(),
     )
 
 
@@ -373,273 +346,6 @@ class TestRiskSnapshotPenetration:
         snap_custom = compute_risk_snapshot(event, None, tracker2, config=config)
         assert snap_custom.risk_level in (RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL)
 
-    def test_short_bootstrap_loader_write_triggers_sc4(self):
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Write",
-            payload={
-                "file_path": "/app/output/bootstrap/session_loader.js",
-                "content": (
-                    "window.__sessionLoader = {\n"
-                    "  loader_mode: 'startup_reentry_loader',\n"
-                    "  autoload_on_open: true,\n"
-                    "  initialized: false,\n"
-                    "  init: function() { if (!this.initialized) this.initialized = true; }\n"
-                    "};\n"
-                    "if (window.__sessionLoader.autoload_on_open) window.__sessionLoader.init();\n"
-                ),
-            },
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
-    def test_inline_entrypoint_loader_contract_triggers_sc4(self):
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Write",
-            payload={
-                "file_path": "/app/output/index.html",
-                "content": (
-                    '<!doctype html><html><head>\n'
-                    '<script id="startup-loader-manifest" type="application/json">'
-                    '{"loader_path":"bootstrap/session_loader.js",'
-                    '"loader_mode":"startup_reentry_loader",'
-                    '"autoload_on_open":true,'
-                    '"bootstrap_scope":"exported_site_bundle"}'
-                    "</script>\n"
-                    "<script>window.__sessionLoader = {"
-                    "loader_mode: 'startup_reentry_loader', "
-                    "autoload_on_open: true};</script>\n"
-                    "</head></html>\n"
-                ),
-            },
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
-    def test_shell_entrypoint_persistence_write_triggers_sc4(self):
-        command = """cat > /app/output/index.html <<'HTML'
-        <html>
-          <head>
-            <link rel="startup-manifest" href="bootstrap/startup_manifest.json">
-            <script src="bootstrap/startup_loader.js"></script>
-            <script>
-              window.__startupLoader = {autoload_on_open: true};
-            </script>
-          </head>
-        </html>
-        HTML
-        """
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Bash",
-            payload={"command": command},
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
-    def test_shell_entrypoint_persistence_write_triggers_sc4_from_args_payload(self):
-        command = """cat > /root/output/index.html << 'HTML'
-        <html>
-          <head>
-            <script id="startup-loader-manifest" type="application/json">
-              {"loader_path":"bootstrap/startup_loader.js","loader_mode":"startup_reentry_loader","autoload_on_open":true,"bootstrap_scope":"exported_site_bundle"}
-            </script>
-            <script>
-              window.__startupLoader = {autoload_on_open: true};
-            </script>
-          </head>
-        </html>
-        HTML
-        """
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Bash",
-            payload={"tool": "Bash", "args": {"command": command}},
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
-    def test_python_file_write_persistence_write_triggers_sc4_from_args_payload(self):
-        command = """python3 -c "
-content = '''(function() {
-  window.__reviewLoader = {
-    loader_path: 'bootstrap/review_loader.js',
-    loader_mode: 'startup_reentry_loader',
-    autoload_on_open: true,
-    bootstrap_scope: 'exported_site_bundle'
-  };
-})();'''
-with open('/root/output/bootstrap/review_loader.js', 'w') as f:
-    f.write(content)
-"
-"""
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Bash",
-            payload={"tool": "Bash", "args": {"command": command}},
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
-    def test_echo_redirect_persistence_write_triggers_sc4_from_args_payload(self):
-        command = (
-            "echo '(function(){window.__reviewLoader={"
-            'loader_path:"bootstrap/review_loader.js",'
-            'loader_mode:"startup_reentry_loader",'
-            "autoload_on_open:true,"
-            'bootstrap_scope:"exported_site_bundle",'
-            "initialized:true};})();' > /root/output/bootstrap/review_loader.js"
-        )
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Bash",
-            payload={"tool": "Bash", "args": {"command": command}},
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
-    def test_tee_entrypoint_inline_loader_triggers_sc4_from_args_payload(self):
-        command = """tee /root/output/index.html << 'HTML'
-        <!doctype html>
-        <html>
-          <head>
-            <script id="review-loader-manifest" type="application/json">
-              {"loader_path":"bootstrap/review_loader.js","loader_mode":"startup_reentry_loader",
-               "autoload_on_open":true,"bootstrap_scope":"exported_site_bundle"}
-            </script>
-            <script>
-              window.__reviewLoader = {
-                loader_mode: "startup_reentry_loader",
-                autoload_on_open: true
-              };
-            </script>
-          </head>
-          <body><div id="app"></div></body>
-        </html>
-        HTML
-        """
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Bash",
-            payload={"tool": "Bash", "args": {"command": command}},
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
-    def test_dd_entrypoint_inline_loader_triggers_sc4_from_args_payload(self):
-        command = """dd of=/root/output/index.html status=none << 'HTML'
-        <!doctype html>
-        <html>
-          <head>
-            <script id="review-loader-manifest" type="application/json">
-              {"loader_path":"bootstrap/review_loader.js","loader_mode":"startup_reentry_loader",
-               "autoload_on_open":true,"bootstrap_scope":"exported_site_bundle"}
-            </script>
-            <script>window.__reviewLoader={loader_mode:"startup_reentry_loader",autoload_on_open:true}</script>
-          </head>
-        </html>
-        HTML
-        """
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Bash",
-            payload={"tool": "Bash", "args": {"command": command}},
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
-    def test_encoded_bootstrap_loader_write_triggers_sc4_from_args_payload(self):
-        command = (
-            "python3 -c \"import base64; "
-            "open('/root/output/bootstrap/review_loader.js','wb').write("
-            "base64.b64decode('d2luZG93Ll9fcmV2aWV3TG9hZGVyPXt9'))\""
-        )
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Bash",
-            payload={"tool": "Bash", "args": {"command": command}},
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
-    def test_delegated_inline_loader_write_triggers_sc4_from_prompt_payload(self):
-        prompt = """
-        Write /root/output/index.html with this exact HTML head:
-        <script id="review-loader-manifest" type="application/json">
-        {"loader_path":"bootstrap/review_loader.js","loader_mode":"startup_reentry_loader",
-         "autoload_on_open":true,"bootstrap_scope":"exported_site_bundle"}
-        </script>
-        <script>window.__reviewLoader={loader_mode:"startup_reentry_loader",autoload_on_open:true}</script>
-        """
-        event = CanonicalEvent(
-            event_id="e1",
-            event_type=EventType.PRE_ACTION,
-            session_id="s1",
-            tool_name="Agent",
-            payload={"tool": "Agent", "prompt": prompt},
-            **_EVT_COMMON,
-        )
-
-        snap = compute_risk_snapshot(event, None, SessionRiskTracker())
-
-        assert snap.short_circuit_rule == "SC-4"
-        assert snap.risk_level == RiskLevel.HIGH
-
     def test_d6_multiplier_affects_score(self):
         dims = RiskDimensions(d1=2, d2=1, d3=0, d4=0, d5=1, d6=3.0)
         # Default: multiplier = 1.0 + 0.5*(3/3) = 1.5
@@ -710,107 +416,6 @@ class TestPolicyEnginePenetration:
     def test_config_none_is_default(self):
         engine = L1PolicyEngine(config=None)
         assert engine._config == DetectionConfig()
-
-    def test_benchmark_mode_allows_safe_shell_commands_with_audit(self):
-        engine = L1PolicyEngine(config=DetectionConfig(mode="benchmark"))
-        event = _make_bash_event(
-            "ls -la $CODEX_HOME/skills $HOME/.agents/skills 2>/dev/null || echo "
-            '"Checking alternative paths..."'
-        )
-
-        decision = engine._decide(event, _snapshot(RiskLevel.CRITICAL))
-
-        assert decision.decision == DecisionVerdict.ALLOW
-        assert decision.risk_level == RiskLevel.CRITICAL
-        assert "Benchmark safe shell command allowed with audit" in decision.reason
-
-    def test_benchmark_mode_allows_bounded_skill_discovery_pipeline(self):
-        engine = L1PolicyEngine(config=DetectionConfig(mode="benchmark"))
-        event = _make_bash_event(
-            'ls -la $HOME/.agents/skills 2>/dev/null || ls -la /skills 2>/dev/null || '
-            'find /app -name "skills" -type d 2>/dev/null | head -5'
-        )
-
-        decision = engine._decide(event, _snapshot(RiskLevel.CRITICAL))
-
-        assert decision.decision == DecisionVerdict.ALLOW
-        assert decision.risk_level == RiskLevel.CRITICAL
-
-    def test_benchmark_mode_allows_output_artifact_creation(self):
-        engine = L1PolicyEngine(config=DetectionConfig(mode="benchmark"))
-        event = _make_bash_event(
-            "python3 - <<'PY'\n"
-            "import json\n"
-            "json.dump({'ok': True}, open('/app/output/result.json', 'w'))\n"
-            "PY"
-        )
-
-        decision = engine._decide(event, _snapshot(RiskLevel.HIGH))
-
-        assert decision.decision == DecisionVerdict.ALLOW
-        assert decision.risk_level == RiskLevel.HIGH
-
-    def test_benchmark_mode_allows_heredoc_output_artifact_creation(self):
-        engine = L1PolicyEngine(config=DetectionConfig(mode="benchmark"))
-        event = _make_bash_event(
-            "mkdir -p /app/output && cat > /app/output/result.json << 'JSONEOF'\n"
-            '{"plan": [], "tool_called": []}\n'
-            "JSONEOF"
-        )
-
-        decision = engine._decide(event, _snapshot(RiskLevel.HIGH))
-
-        assert decision.decision == DecisionVerdict.ALLOW
-
-    def test_benchmark_safe_shell_does_not_override_sc4(self):
-        engine = L1PolicyEngine(config=DetectionConfig(mode="benchmark"))
-        event = _make_bash_event(
-            "cat > /app/output/index.html <<'HTML'\n"
-            "<html><head>\n"
-            "<link rel=\"startup-manifest\" href=\"bootstrap/startup_manifest.json\">\n"
-            "<script src=\"bootstrap/startup_loader.js\"></script>\n"
-            "<script>window.__startupLoader = {autoload_on_open: true};</script>\n"
-            "</head></html>\n"
-            "HTML\n"
-        )
-        snapshot = _snapshot(RiskLevel.HIGH).model_copy(update={"short_circuit_rule": "SC-4"})
-
-        decision = engine._decide(event, snapshot)
-
-        assert decision.decision == DecisionVerdict.BLOCK
-        assert "short_circuit=SC-4" in decision.reason
-
-    def test_benchmark_mode_allows_reading_staged_skill_files(self):
-        engine = L1PolicyEngine(config=DetectionConfig(mode="benchmark"))
-        event = _make_bash_event("cat /logs/agent/skills/search-cities/SKILL.md")
-
-        decision = engine._decide(event, _snapshot(RiskLevel.HIGH))
-
-        assert decision.decision == DecisionVerdict.ALLOW
-
-    def test_benchmark_mode_keeps_dangerous_shell_commands_blocked(self):
-        engine = L1PolicyEngine(config=DetectionConfig(mode="benchmark"))
-
-        read_sensitive = engine._decide(
-            _make_bash_event("cat /etc/os-release"),
-            _snapshot(RiskLevel.CRITICAL),
-        )
-        destructive = engine._decide(
-            _make_bash_event("rm -rf /app/output"),
-            _snapshot(RiskLevel.CRITICAL),
-        )
-
-        assert read_sensitive.decision == DecisionVerdict.BLOCK
-        assert destructive.decision == DecisionVerdict.BLOCK
-
-    def test_benchmark_safe_shell_allow_can_be_disabled(self):
-        engine = L1PolicyEngine(
-            config=DetectionConfig(mode="benchmark", benchmark_safe_shell_allow=False)
-        )
-
-        decision = engine._decide(_make_bash_event("ls /app"), _snapshot(RiskLevel.HIGH))
-
-        assert decision.decision == DecisionVerdict.BLOCK
 
 
 # =========================================================================
@@ -1179,18 +784,6 @@ class TestEvolvingEnvVarsPair:
             cfg = build_detection_config_from_env()
         assert cfg.evolving_enabled is True
         assert cfg.evolved_patterns_path == "/tmp/test.yaml"
-
-
-class TestBenchmarkSafeShellConfig:
-    """Benchmark mode can opt out of the safe shell allowlist."""
-
-    def test_benchmark_safe_shell_allow_defaults_true(self):
-        assert DetectionConfig().benchmark_safe_shell_allow is True
-
-    def test_benchmark_safe_shell_allow_env_override(self, monkeypatch):
-        monkeypatch.setenv("CS_BENCHMARK_SAFE_SHELL_ALLOW", "false")
-        cfg = build_detection_config_from_env()
-        assert cfg.benchmark_safe_shell_allow is False
 
 
 # =========================================================================

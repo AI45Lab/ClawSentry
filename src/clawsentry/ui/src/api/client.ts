@@ -8,6 +8,7 @@ import type {
   SessionReplayResponse,
   Alert,
   L3FullReviewResponse,
+  PolicyDriftResponse,
 } from './types'
 
 let _token: string | null = null
@@ -80,6 +81,12 @@ export const api = {
     if (params?.min_risk) qs.set('min_risk', params.min_risk)
     const result = await apiFetch<{ sessions: SessionSummary[] }>(withQuery('/report/sessions', qs))
     return result.sessions ?? []
+  },
+  policyDrift: (params?: { windowSeconds?: number; maxCells?: number }): Promise<PolicyDriftResponse> => {
+    const qs = new URLSearchParams()
+    if (params?.windowSeconds) qs.set('window_seconds', String(params.windowSeconds))
+    if (params?.maxCells) qs.set('max_cells', String(params.maxCells))
+    return apiFetch<PolicyDriftResponse>(withQuery('/report/policy-drift', qs))
   },
   sessionRisk: (id: string, params?: { windowSeconds?: number | null }) => {
     const qs = new URLSearchParams()

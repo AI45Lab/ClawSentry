@@ -140,6 +140,7 @@ nav:
     - Anti-bypass Guard: decision-layers/anti-bypass-guard.md
   - Web 仪表板: dashboard/index.md
   - 高级用法:
+    - Skill Trust / Registry: advanced/skill-trust.md
     - 规则治理: advanced/rule-governance.md
     - 自定义 L3 Skills: advanced/custom-skills.md
     - 自定义 L2 Analyzer: advanced/custom-analyzer.md
@@ -149,6 +150,7 @@ nav:
     - 向量相似度接入 (D6): advanced/embedding-backend.md
   - 部署运维:
     - 生产部署: operations/deployment.md
+    - Benchmark 模式: operations/benchmark-mode.md
     - 文档覆盖审计: operations/docs-coverage-audit.md
     - 执行审计 2026-04-27: operations/docs-audit-2026-04-27.md
     - 最近功能覆盖矩阵: operations/recent-feature-coverage.md

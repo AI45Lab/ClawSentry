@@ -382,6 +382,81 @@ class TestDeferBridge:
         assert resolved["resolved_decision"] == "allow"
 
     @pytest.mark.asyncio
+    async def test_defer_pending_includes_operator_prompt_context(self):
+        config = DetectionConfig(
+            defer_bridge_enabled=True,
+            defer_timeout_s=0.05,
+        )
+        gw = SupervisionGateway(detection_config=config)
+        _force_defer(gw, RiskLevel.HIGH)
+        sub_id, queue = gw.event_bus.subscribe(event_types={"defer_pending"})
+
+        try:
+            await gw.handle_jsonrpc(
+                _jsonrpc_request(
+                    session_id="sess-approval-prompt",
+                    event_id="evt-approval-prompt",
+                    tool_name="bash",
+                    payload={
+                        "command": "rm -rf /workspace/payments",
+                        "workspace_root": "/workspace/payments",
+                    },
+                )
+            )
+            pending = queue.get_nowait()
+        finally:
+            gw.event_bus.unsubscribe(sub_id)
+
+        prompt = pending["approval_prompt"]
+        assert prompt["affected_target"] == "/workspace/<redacted>"
+        assert prompt["operation"] == "bash"
+        assert prompt["consequence"]
+        assert "/workspace/payments" not in prompt["consequence"]
+        assert prompt["dry_run_or_narrower_scope_suggestion"]
+        assert prompt["rollback_hint"]
+        assert prompt["field_sources"] == {
+            "affected_target": "adapter_provided",
+            "operation": "adapter_provided",
+            "consequence": "generated",
+            "dry_run_or_narrower_scope_suggestion": "generated",
+            "rollback_hint": "generated",
+        }
+        assert pending["approval_affected_target"] == prompt["affected_target"]
+        assert pending["approval_operation"] == prompt["operation"]
+        assert pending["approval_field_sources"] == prompt["field_sources"]
+
+    @pytest.mark.asyncio
+    async def test_defer_pending_redacts_payload_supplied_operation(self):
+        config = DetectionConfig(
+            defer_bridge_enabled=True,
+            defer_timeout_s=0.05,
+        )
+        gw = SupervisionGateway(detection_config=config)
+        _force_defer(gw, RiskLevel.HIGH)
+        sub_id, queue = gw.event_bus.subscribe(event_types={"defer_pending"})
+
+        try:
+            await gw.handle_jsonrpc(
+                _jsonrpc_request(
+                    session_id="sess-approval-operation-redaction",
+                    event_id="evt-approval-operation-redaction",
+                    tool_name="",
+                    payload={
+                        "operation": "write /home/user/private.txt token=abc123",
+                        "workspace_root": "/workspace/payments",
+                    },
+                )
+            )
+            pending = queue.get_nowait()
+        finally:
+            gw.event_bus.unsubscribe(sub_id)
+
+        prompt = pending["approval_prompt"]
+        assert prompt["operation"] == "write /home/<redacted> token=<redacted>"
+        assert "/home/user/private.txt" not in prompt["consequence"]
+        assert "abc123" not in prompt["consequence"]
+
+    @pytest.mark.asyncio
     async def test_defer_bridge_persists_final_resolution_record(self):
         """Final operator resolution should be replayable from trajectory storage."""
         config = DetectionConfig(

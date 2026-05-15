@@ -418,6 +418,41 @@ class TestEnterpriseHttpEndpoints:
         assert result["tier"] == "RT2"
         assert result["subtype"] == "identity_spoofing"
 
+    @pytest.mark.asyncio
+    async def test_enterprise_llm_fallback_prompt_is_redacted_and_bounded(self, monkeypatch):
+        monkeypatch.setenv("CS_LLM_PROVIDER", "openai")
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        captured = {}
+
+        class FakeProvider:
+            provider_id = "openai"
+
+            async def complete(self, system_prompt, user_message, timeout_ms, max_tokens=256):
+                captured["user_message"] = user_message
+                return json.dumps(
+                    {
+                        "subtype": "identity_spoofing",
+                        "confidence": 0.91,
+                        "reason": "semantic match",
+                    }
+                )
+
+        monkeypatch.setattr(enterprise_module, "_build_enterprise_llm_provider", lambda: FakeProvider())
+        secret = "SECRET_TOKEN=supersecret"
+        record = _trajectory_record(
+            tool_name="read_file",
+            payload={"message": f"benign note {secret} " + ("A" * 5000)},
+            risk_level="low",
+        )
+
+        result = await enterprise_module.classify_trajectory_record_async(record)
+
+        prompt = captured["user_message"]
+        assert result["mapped"] is True
+        assert secret not in prompt
+        assert "A" * 500 not in prompt
+        assert len(prompt) <= 8192
+
     def test_enterprise_provider_uses_shared_llm_api_key(self, monkeypatch):
         monkeypatch.setenv("CS_LLM_PROVIDER", "openai")
         monkeypatch.setenv("CS_LLM_API_KEY", "shared-key")

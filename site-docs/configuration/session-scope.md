@@ -30,13 +30,20 @@ Session scope 用来回答一个更贴近用户的问题：**这次任务里，A
     "denied_tools": ["shell"],
     "denied_paths": ["~/.ssh", ".env"],
     "denied_domains": ["pastebin.com", "file.io"],
-    "denied_command_prefixes": ["sudo", "rm -rf"]
+    "denied_command_prefixes": ["sudo", "rm -rf"],
+    "denied_skill_trust_states": ["blacklist", "revoked"],
+    "denied_mcp_servers": ["fetch"],
+    "denied_mcp_tools": ["fetch.fetch"],
+    "denied_mcp_statuses": ["blacklist", "revoked"],
+    "denied_mcp_trust_levels": ["untrusted"]
   },
   "task_rules": {
     "allowed_tools": ["read_file", "write_file"],
     "allowed_path_prefixes": ["README.md", "site-docs/", "docs/"],
     "allowed_domains": ["github.com"],
     "allowed_command_prefixes": ["git status", "python -m pytest"],
+    "allowed_skill_trust_states": ["allowlist"],
+    "allowed_mcp_tools": ["filesystem.read_file"],
     "queued_categories": ["network"]
   },
   "provenance": {
@@ -57,6 +64,13 @@ Session scope 用来回答一个更贴近用户的问题：**这次任务里，A
 | `task_rules.allowed_*` | 本次任务允许范围 | 例如文档任务只允许 `site-docs/` |
 | `task_rules.queued_categories` | 需要人工复核的类别提示 | 例如未明确 allow 的网络写入先 defer |
 | `provenance` | 审计来源 | 记录是谁生成/确认的 profile |
+
+Session scope 现在也能约束 skill 与 MCP 上下文：`denied_skill_ids`、
+`denied_skill_trust_states`、`allowed_skill_ids`、`allowed_skill_trust_states`
+用于 Skill Trust evidence；`denied_mcp_servers`、`denied_mcp_tools`、
+`denied_mcp_statuses`、`denied_mcp_trust_levels` 及对应 `allowed_*` 字段用于
+MCP server/tool/status/trust-level。缺失的 skill/MCP 元数据按 typed
+uncertainty 处理，不会由 adapter 本地隐藏过滤。
 
 ## 本地预览：先看会发生什么
 

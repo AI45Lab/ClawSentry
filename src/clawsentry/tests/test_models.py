@@ -19,6 +19,7 @@ from clawsentry.gateway.models import (
     SyncDecisionErrorResponse,
     EventType,
     DecisionVerdict,
+    DecisionContext,
     DecisionSource,
     RiskLevel,
     FailureClass,
@@ -26,8 +27,17 @@ from clawsentry.gateway.models import (
     RPCErrorCode,
     ClassifiedBy,
     AgentTrustLevel,
+    AdmissionFinding,
+    AdmissionReport,
+    FirstUseScanState,
+    McpContext,
     PostActionResponseTier,
     PostActionFinding,
+    SkillRegistryRecord,
+    SkillTrustListEntry,
+    SkillTrustTransitionEvent,
+    SkillTrustContext,
+    LineageEvent,
     CURRENT_SCHEMA_VERSION,
     RPC_VERSION,
     utc_now_iso,
@@ -247,7 +257,7 @@ class TestRiskSnapshot:
             assert rs.risk_level == rl
 
     def test_valid_short_circuit_rules(self):
-        for sc in ("SC-1", "SC-2", "SC-3", "SC-4"):
+        for sc in ("SC-1", "SC-2", "SC-3"):
             rs = RiskSnapshot(**_minimal_risk_snapshot(
                 short_circuit_rule=sc,
                 risk_level="critical",
@@ -321,6 +331,69 @@ class TestRiskSnapshot:
             dimensions={"d1": 3, "d2": 3, "d3": 3, "d4": 2, "d5": 2, "d6": 3.0},
         ))
         assert rs.composite_score == 10
+
+    def test_skill_trust_evidence_defaults_are_backward_compatible(self):
+        rs = RiskSnapshot(**_minimal_risk_snapshot())
+
+        assert rs.rule_hits == []
+        assert rs.skill_trust_findings == []
+        assert rs.taint_flow_summary is None
+
+
+class TestSkillTrustModels:
+    def test_registry_report_context_and_lineage_serialize(self):
+        record = SkillRegistryRecord(
+            canonical_skill_id="skill:search-accommodations",
+            canonical_name="search-accommodations",
+            aliases=["search_accommodations"],
+            content_hashes={"SKILL.md": "sha256:skill"},
+            source={"framework": "codex", "path_hash": "sha256:path"},
+            trust_level="trusted",
+            admission_scan_id="scan-1",
+            policy_fingerprint="sha256:policy",
+            status="trusted",
+        )
+        finding = AdmissionFinding(
+            finding_id="finding-1",
+            finding_family="alias",
+            severity="low",
+            confidence="medium",
+            evidence_hashes=["sha256:skill"],
+            evidence_summary="alias normalizes close to canonical name",
+            policy_fingerprint="sha256:policy",
+        )
+        report = AdmissionReport(
+            scan_id="scan-1",
+            skill_root_hash="sha256:root",
+            content_hashes={"SKILL.md": "sha256:skill"},
+            findings=[finding],
+            admission_risk="low",
+            policy_fingerprint="sha256:policy",
+        )
+        context = SkillTrustContext(
+            registry_status="matched",
+            canonical_skill_id=record.canonical_skill_id,
+            presented_name=record.canonical_name,
+            alias_match_type="exact",
+            provenance_claim=record.canonical_name,
+            admission_risk=report.admission_risk.value,
+            policy_fingerprint=record.policy_fingerprint,
+        )
+        lineage = LineageEvent(
+            event_id="evt-1",
+            session_id="sess-1",
+            canonical_skill_id=record.canonical_skill_id,
+            tool_name="read_file",
+            output_provenance_label=record.canonical_name,
+            content_hash="sha256:output",
+            policy_version="1.0",
+        )
+
+        decision_context = DecisionContext(skill_trust=context)
+
+        assert report.findings[0].decision_affecting is False
+        assert decision_context.model_dump(mode="json")["skill_trust"]["registry_status"] == "matched"
+        assert lineage.model_dump(mode="json")["canonical_skill_id"] == record.canonical_skill_id
 
 
 # ===========================================================================
@@ -654,10 +727,17 @@ class TestSessionScopeProfileModel:
                 denied_paths=["~/.ssh", "/etc"],
                 denied_domains=["evil.example"],
                 denied_command_prefixes=["sudo"],
+                denied_skill_ids=["skill:blocked"],
+                denied_skill_trust_states=["blacklist", "revoked"],
+                denied_mcp_servers=["fetch"],
+                denied_mcp_tools=["fetch.fetch"],
             ),
             task_rules=SessionScopeTaskRules(
                 allowed_tools=["read_file"],
                 allowed_path_prefixes=["docs/"],
+                allowed_skill_trust_states=["allowlist"],
+                allowed_mcp_servers=["filesystem"],
+                allowed_mcp_tools=["filesystem.read_file"],
                 queued_categories=["network"],
             ),
             provenance=SessionScopeProvenance(
@@ -671,4 +751,34 @@ class TestSessionScopeProfileModel:
         assert context.session_scope_profile is not None
         assert context.session_scope_profile.scope_version == "cs.session_scope.v1"
         assert context.session_scope_profile.base_rules.denied_paths[0] == "~/.ssh"
+        assert context.session_scope_profile.base_rules.denied_skill_ids == ["skill:blocked"]
+        assert context.session_scope_profile.base_rules.denied_mcp_servers == ["fetch"]
+        assert context.session_scope_profile.base_rules.denied_mcp_tools == ["fetch.fetch"]
         assert context.session_scope_profile.task_rules.allowed_path_prefixes == ["docs/"]
+        assert context.session_scope_profile.task_rules.allowed_skill_trust_states == ["allowlist"]
+        assert context.session_scope_profile.task_rules.allowed_mcp_tools == ["filesystem.read_file"]
+
+    def test_mcp_context_and_skill_trust_state_roundtrip(self):
+        context = DecisionContext(
+            mcp_context=McpContext(
+                server_name="filesystem",
+                tool_name="read_file",
+                resource_kind="file",
+                resource_uri_hash="sha256:resource",
+                trust_level="trusted",
+                status="allowlist",
+            ),
+            skill_trust=SkillTrustContext(
+                registry_status="matched",
+                canonical_skill_id="skill:docs",
+                presented_name="docs",
+                trust_list_state="allowlist",
+                first_use_scan=FirstUseScanState(state="scan_completed", admission_scan_id="scan-1"),
+            ),
+        )
+
+        dumped = context.model_dump(mode="json")
+
+        assert dumped["mcp_context"]["server_name"] == "filesystem"
+        assert dumped["skill_trust"]["trust_list_state"] == "allowlist"
+        assert dumped["skill_trust"]["first_use_scan"]["state"] == "scan_completed"

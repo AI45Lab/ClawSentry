@@ -101,6 +101,13 @@ class TestStructuredMessages:
             "reason": "writes to sensitive path",
             "session_id": "sess-abc",
             "expires_at": "2026-03-30T12:00:00Z",
+            "approval_prompt": {
+                "affected_target": "/workspace/payments",
+                "operation": "write_file",
+                "consequence": "Approving writes the file.",
+                "dry_run_or_narrower_scope_suggestion": "Preview a diff first.",
+                "rollback_hint": "Restore from VCS if needed.",
+            },
         }
         body = bridge._build_message_body(event)
         data = body["content"]["data"]
@@ -109,6 +116,8 @@ class TestStructuredMessages:
         assert data["timeout_s"] == 300
         assert data["risk_level"] == "high"
         assert data["expires_at"] == "2026-03-30T12:00:00Z"
+        assert data["approval_prompt"]["affected_target"] == "/workspace/payments"
+        assert "Target: /workspace/<redacted>" in body["content"]["text"]
 
 
 class TestGatewayRegistration:

@@ -7,7 +7,7 @@ Environment variables:
   ANTHROPIC_API_KEY   = legacy API key for Anthropic provider
   OPENAI_API_KEY      = legacy API key for OpenAI-compatible provider
   CS_LLM_MODEL        = override default model name
-  CS_LLM_BASE_URL     = OpenAI-compatible base URL (e.g. kimi-k2.5 endpoint)
+  CS_LLM_BASE_URL     = OpenAI-compatible base URL
   CS_LLM_TEMPERATURE  = optional model temperature override
   CS_LLM_PROVIDER_TIMEOUT_MS = optional per-call provider timeout override
   CS_L3_ENABLED       = "true" to enable AgentAnalyzer (L3 review agent)

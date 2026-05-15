@@ -179,14 +179,14 @@ class TestBuildAnalyzerFromEnv:
             **_clean_env(),
             "CS_LLM_PROVIDER": "openai",
             "OPENAI_API_KEY": "sk-test-key-123",
-            "CS_LLM_MODEL": "kimi-k2.5",
+            "CS_LLM_MODEL": "custom-test-model",
         }
         with mock.patch.dict(os.environ, env, clear=False):
             result = build_analyzer_from_env()
         assert isinstance(result, CompositeAnalyzer)
         provider = result._analyzers[1]._provider
         assert isinstance(provider, OpenAIProvider)
-        assert provider._model == "kimi-k2.5"
+        assert provider._model == "custom-test-model"
 
     def test_l3_enabled(self):
         """CS_L3_ENABLED=true nests L2 aggregate under an outer L2->L3 composite."""

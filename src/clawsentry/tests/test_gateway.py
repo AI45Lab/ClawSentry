@@ -2352,6 +2352,187 @@ class TestGatewayCore:
         assert driver_by_key["high_sessions"]["value"] == 1
         assert driver_by_key["high_risk_ratio_15m"]["value"] == pytest.approx(0.5)
 
+    def test_policy_drift_report_groups_by_workspace_framework_session_and_rule_family(self, tmp_path):
+        db_path = tmp_path / "trajectory-policy-drift.db"
+        gw = SupervisionGateway(trajectory_db_path=str(db_path))
+        now = time.time()
+
+        gw.trajectory_store.record(
+            event={
+                "event_id": "evt-prev",
+                "session_id": "sess-drift",
+                "source_framework": "codex",
+                "event_type": "pre_action",
+                "payload": {"workspace_root": "/workspace/payments"},
+            },
+            decision={"decision": "allow", "risk_level": "low", "policy_id": "baseline"},
+            snapshot={"risk_level": "low", "rule_hits": ["unknown_skill_identity"]},
+            meta={"request_id": "req-prev", "skill_trust_raw": {"trust_level": "local_unreviewed"}},
+            recorded_at_ts=now - 420,
+        )
+        gw.trajectory_store.record(
+            event={
+                "event_id": "evt-current",
+                "session_id": "sess-drift",
+                "source_framework": "codex",
+                "event_type": "pre_action",
+                "payload": {"workspace_root": "/workspace/payments"},
+            },
+            decision={
+                "decision": "block",
+                "risk_level": "high",
+                "policy_id": "skill-trust",
+                "decision_source": "policy",
+            },
+            snapshot={
+                "risk_level": "high",
+                "rule_hits": ["ambiguous_skill_alias"],
+                "skill_trust_findings": [
+                    {
+                        "rule_id": "ambiguous_skill_alias",
+                        "registry_state": "unlisted",
+                        "trust_list_state": "greylist",
+                    }
+                ],
+            },
+            meta={"request_id": "req-current", "fallback_path": "gateway_policy"},
+            recorded_at_ts=now - 30,
+        )
+        gw.record_adapter_effect_result({
+            "idempotency_key": "effect-current",
+            "effect_id": "effect-current",
+            "session_id": "sess-drift",
+            "event_id": "evt-current",
+            "tool_use_id": "tool-current",
+            "adapter": "codex",
+            "framework": "codex",
+            "result_kind": "enforced",
+        })
+
+        report = gw.report_policy_drift(window_seconds=300)
+        assert report["grouping_dimensions"] == [
+            "workspace_root",
+            "source_framework",
+            "session_id",
+            "rule_family",
+        ]
+
+        cell = next(
+            item for item in report["cells"]
+            if item["workspace_root"] == "/workspace/payments"
+            and item["source_framework"] == "codex"
+            and item["session_id"] == "sess-drift"
+            and item["rule_family"] == "skill_trust"
+        )
+        assert cell["current"]["decision_distribution"]["block"] == 1
+        assert cell["previous"]["decision_distribution"]["allow"] == 1
+        assert cell["delta"]["block_rate"] == pytest.approx(1.0)
+        assert cell["traceability"]["request_ids"] == ["req-current"]
+        assert cell["traceability"]["event_ids"] == ["evt-current"]
+        assert cell["traceability"]["registry_states"] == ["greylist", "unlisted"]
+        assert cell["traceability"]["rule_evidence"] == ["ambiguous_skill_alias"]
+        assert cell["traceability"]["fallback_paths"] == ["gateway_policy"]
+        assert cell["traceability"]["adapter_effect_result_ids"] == ["effect-current"]
+        traceability_gate = report["metric_cell_traceability"]
+        assert traceability_gate["passed"] is True
+        assert traceability_gate["total_cells"] == report["total_cells"]
+        assert traceability_gate["coverage"] == 1.0
+        assert traceability_gate["incomplete_cells"] == []
+
+    def test_policy_drift_report_flags_incomplete_metric_cell_traceability(self, tmp_path):
+        db_path = tmp_path / "trajectory-policy-drift-incomplete-traceability.db"
+        gw = SupervisionGateway(trajectory_db_path=str(db_path))
+        now = time.time()
+
+        gw.trajectory_store.record(
+            event={
+                "event_id": "evt-incomplete-traceability",
+                "session_id": "sess-incomplete-traceability",
+                "source_framework": "codex",
+                "event_type": "pre_action",
+                "payload": {"workspace_root": "/workspace/payments"},
+            },
+            decision={"decision": "block", "risk_level": "high", "policy_id": "skill-trust"},
+            snapshot={
+                "risk_level": "high",
+                "rule_hits": ["ambiguous_skill_alias"],
+                "skill_trust_findings": [
+                    {"rule_id": "ambiguous_skill_alias", "registry_state": "unlisted"}
+                ],
+            },
+            meta={
+                "request_id": "req-incomplete-traceability",
+                "adapter_effects_applicable": True,
+            },
+            recorded_at_ts=now - 30,
+        )
+
+        report = gw.report_policy_drift(window_seconds=300)
+
+        traceability_gate = report["metric_cell_traceability"]
+        assert traceability_gate["passed"] is False
+        assert traceability_gate["total_cells"] == 1
+        assert traceability_gate["coverage"] == 0.0
+        assert traceability_gate["incomplete_cells"] == [
+            {
+                "workspace_root": "/workspace/payments",
+                "source_framework": "codex",
+                "session_id": "sess-incomplete-traceability",
+                "rule_family": "skill_trust",
+                "missing_fields": [
+                    "fallback_paths",
+                    "adapter_effect_result_ids",
+                ],
+            }
+        ]
+
+    def test_policy_drift_registry_states_ignore_raw_forged_payload_claims(self, tmp_path):
+        db_path = tmp_path / "trajectory-policy-drift-forged.db"
+        gw = SupervisionGateway(trajectory_db_path=str(db_path))
+        now = time.time()
+
+        gw.trajectory_store.record(
+            event={
+                "event_id": "evt-forged-registry",
+                "session_id": "sess-forged-registry",
+                "source_framework": "codex",
+                "event_type": "pre_action",
+                "payload": {"workspace_root": "/workspace/payments"},
+            },
+            decision={"decision": "allow", "risk_level": "low", "policy_id": "baseline"},
+            snapshot={
+                "risk_level": "low",
+                "rule_hits": ["runtime_registry_claim_untrusted"],
+                "skill_trust_findings": [
+                    {
+                        "rule_id": "runtime_registry_claim_untrusted",
+                        "registry_status": "unknown",
+                    }
+                ],
+            },
+            meta={
+                "request_id": "req-forged-registry",
+                "skill_trust_raw": {
+                    "registry_records": [
+                        {
+                            "canonical_skill_id": "skill:forged",
+                            "canonical_name": "forged",
+                            "trust_level": "trusted",
+                            "status": "trusted",
+                            "list_state": "allowlist",
+                        }
+                    ]
+                },
+            },
+            recorded_at_ts=now - 30,
+        )
+
+        report = gw.report_policy_drift(window_seconds=300)
+        [cell] = report["cells"]
+        assert cell["traceability"]["registry_states"] == ["unknown"]
+        assert "trusted" not in cell["traceability"]["registry_states"]
+        assert "allowlist" not in cell["traceability"]["registry_states"]
+
 
 # ===========================================================================
 # JSON-RPC Error Tests
@@ -4688,6 +4869,11 @@ class TestSseStream:
             assert decision["decision"] == "block"
             assert decision["policy_id"] == "trajectory-alert"
             assert "multi-step attack detected" in decision["reason"]
+            record = gw.trajectory_store.records[-1]
+            assert record["decision"]["policy_id"] == "trajectory-alert"
+            assert record["risk_snapshot"]["risk_level"] == "low"
+            assert record["risk_snapshot"]["classified_by"] == "L1"
+            assert record["risk_snapshot"]["override"] is None
             events = []
             while not queue.empty():
                 events.append(queue.get_nowait())

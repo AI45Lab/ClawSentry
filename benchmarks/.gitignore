@@ -12,3 +12,6 @@ results/**
 !results/api-connectivity/
 !results/api-connectivity/*.json
 !results/api-connectivity/*.md
+
+# Local benchmark runtime secrets. Tracked templates live under env/<bench>/*.env.example.
+env/local/

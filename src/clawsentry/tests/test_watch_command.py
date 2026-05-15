@@ -1021,6 +1021,30 @@ class TestFormatDeferEvents:
         assert "300s" in result
         assert "D1: destructive pattern" in result
 
+    def test_format_defer_pending_operator_prompt_context(self):
+        event = self._make_defer_pending(
+            approval_prompt={
+                "affected_target": "/workspace/payments",
+                "operation": "bash",
+                "consequence": "Approving lets bash proceed.",
+                "dry_run_or_narrower_scope_suggestion": "Use a dry-run preview.",
+                "rollback_hint": "Restore from backup if needed.",
+                "field_sources": {
+                    "affected_target": "adapter_provided",
+                    "operation": "adapter_provided",
+                    "consequence": "generated",
+                    "dry_run_or_narrower_scope_suggestion": "generated",
+                    "rollback_hint": "generated",
+                },
+            }
+        )
+        result = _format_defer_pending(event, color=False)
+        assert "Target: /workspace/<redacted> [adapter-provided]" in result
+        assert "Operation: bash [adapter-provided]" in result
+        assert "Consequence: Approving lets bash proceed. [generated guidance]" in result
+        assert "Safer option: Use a dry-run preview. [generated guidance]" in result
+        assert "Rollback: Restore from backup if needed. [generated guidance]" in result
+
     def test_format_defer_pending_no_color(self):
         """No ANSI escape codes when color=False."""
         event = self._make_defer_pending()

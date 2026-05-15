@@ -37,6 +37,27 @@ L1 是纯规则引擎，零延迟（<1ms），零成本，处理所有事件的�
 
 ---
 
+## Skill Trust, capability narrowing, and feedback {#skill-trust-capability-narrowing-and-feedback}
+
+v0.7.0 增加三类 profile-aware 调优面：
+
+| 能力 | 默认值 | 调优入口 | 行为边界 |
+|---|---:|---|---|
+| Skill Trust first-use action | `audit` | `CS_SKILL_TRUST_FIRST_USE_*_ACTION` | 可设 `audit`、`force_l2`、`force_l3`、`defer`、`block`；依赖 registry/runtime metadata |
+| Capability narrowing | `false` | `CS_CAPABILITY_NARROWING_ENABLED` | 高会话风险时收紧后续 SessionScopeProfile，不改写历史 decision |
+| Agent safety feedback | `false` | `CS_AGENT_SAFETY_FEEDBACK_ENABLED` | critical block 后生成红线化提示；unsupported host 仅 audit-only |
+
+推荐 rollout：
+
+1. 用 `clawsentry skill-trust register-dir` 生成 registry 和 runtime metadata。
+2. normal 模式先保持 `audit`，观察 `skill_trust` / `skill_trust_raw` metadata。
+3. benchmark 或 strict profile 再提升为 `defer` / `block`。
+4. 启用 capability narrowing 前先验证 session scope profile 不会误伤常用只读工具。
+
+该路径用于通用 skill supply-chain / metadata trust 风险，不是某个 benchmark case 的字符串特判。
+
+---
+
 ## D1-D6 六维风险评分
 
 ClawSentry 使用六个独立维度对事件进行风险评估，D1-D5 产生整数分值，D6 为连续浮点值（注入乘数），最终由 v2 加权公式合成综合风险分数。
@@ -486,25 +507,6 @@ CS_TRAJECTORY_ALERT_ACTION=block        # broadcast | defer | block
 CS_POST_ACTION_FINDING_ACTION=defer     # broadcast | defer | block
 ```
 
-### Persistence-write / SC-4 策略
-
-`SC-4` 覆盖的是写入未来可能自动执行或自动重入的入口：HTML/JS entrypoint、startup/bootstrap loader、autoload manifest、inline loader contract、global/window loader state 等。它不是针对特定输出文件名的规则；没有最终输出文件时，只要当前 pre-action 正在创建这类入口，也会进入同一策略。
-
-| 模式 | `CS_PERSISTENCE_WRITE_ACTION=auto` 的解析 | 推荐回退 |
-|------|------------------------------------------|----------|
-| `strict` | `block` | `block` |
-| `normal` | `force_l3` | `defer` |
-| `permissive` | `force_l3` | `audit` 或 `defer` |
-
-显式动作可用：
-
-```bash
-CS_PERSISTENCE_WRITE_ACTION=force_l3      # audit | force_l3 | defer | block
-CS_PERSISTENCE_WRITE_FALLBACK_ACTION=defer
-```
-
-`force_l3` 是同步 pre-action verdict path：L3 low/medium 且 confidence 达标可 allow with audit，high/critical 会 block；L3 不可用或 degraded 时按 fallback 处理。
-
 !!! note "为什么 post_action 不是阻塞当前动作？"
     `post_action` 发生在工具已经执行之后，无法回滚当前动作。因此 `post_action_finding_action=defer|block` 的含义是对后续同一 session 动作启用会话级执法。
 
@@ -596,7 +598,7 @@ DEFER 桥接在以下**所有条件**同时满足时激活：
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `CS_DEFER_BRIDGE_ENABLED` | `true` | 启用 DEFER 桥接 |
-| `CS_DEFER_TIMEOUT_S` | `86400` | normal mode 人工审批软超时（秒） |
+| `CS_DEFER_TIMEOUT_S` | `86400` | normal mode 人工审批软超时（秒）；benchmark mode 不等待 |
 | `CS_DEFER_TIMEOUT_ACTION` | `block` | 超时动作：`block` 或 `allow` |
 
 ### 完整示例
@@ -604,7 +606,7 @@ DEFER 桥接在以下**所有条件**同时满足时激活：
 ```bash title=".clawsentry.env.local"
 # 启用 DEFER 桥接
 CS_DEFER_BRIDGE_ENABLED=true
-CS_DEFER_TIMEOUT_S=86400        # normal mode 24 小时软超时
+CS_DEFER_TIMEOUT_S=86400        # normal mode 24 小时软超时；CI 用 benchmark mode
 CS_DEFER_TIMEOUT_ACTION=block   # 超时阻断
 
 # 使用 watch CLI 交互审批

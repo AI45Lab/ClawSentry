@@ -30,6 +30,263 @@ INVALID_EVENT_RATE_WARNING_15M_MIN = 0.001
 INVALID_EVENT_RATE_WARNING_15M_MAX = 0.01
 
 MAX_WINDOW_SECONDS = 604800  # 1 week
+UNIVERSAL_METRIC_CELL_TRACEABILITY_FIELDS = (
+    "request_ids",
+    "fallback_paths",
+)
+CONDITIONAL_METRIC_CELL_TRACEABILITY_FIELDS = (
+    "rule_evidence",
+    "registry_states",
+    "adapter_effect_result_ids",
+)
+
+
+def _empty_policy_drift_bucket() -> dict[str, Any]:
+    return {
+        "record_count": 0,
+        "decision_distribution": defaultdict(int),
+        "risk_distribution": defaultdict(int),
+        "rule_hits": defaultdict(int),
+    }
+
+
+def _empty_policy_drift_traceability() -> dict[str, set[str]]:
+    return {
+        "request_ids": set(),
+        "record_ids": set(),
+        "event_ids": set(),
+        "registry_states": set(),
+        "rule_evidence": set(),
+        "fallback_paths": set(),
+        "adapter_effect_result_ids": set(),
+    }
+
+
+def _empty_policy_drift_traceability_applicability(rule_family: str) -> dict[str, bool]:
+    return {
+        "rule_evidence": rule_family != "general",
+        "registry_states": rule_family == "skill_trust",
+        "adapter_effect_result_ids": False,
+    }
+
+
+def _workspace_root_for_event(event: dict[str, Any]) -> str:
+    payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
+    for key in ("workspace_root", "workspace", "cwd", "working_directory"):
+        value = event.get(key)
+        if value is None:
+            value = payload.get(key)
+        text = str(value or "").strip()
+        if text:
+            return text
+    return "unbound"
+
+
+def _rule_families_for_snapshot(snapshot: dict[str, Any]) -> list[str]:
+    raw_hits = snapshot.get("rule_hits")
+    rule_hits = [str(item) for item in raw_hits] if isinstance(raw_hits, list) else []
+    raw_findings = snapshot.get("skill_trust_findings")
+    if isinstance(raw_findings, list) and raw_findings:
+        return ["skill_trust"]
+    families: set[str] = set()
+    for hit in rule_hits:
+        lowered = hit.lower()
+        if "skill" in lowered or "registry" in lowered or "alias" in lowered:
+            families.add("skill_trust")
+        elif "taint" in lowered or "flow" in lowered or "secret" in lowered or "exfil" in lowered:
+            families.add("taint_flow")
+        elif "scope" in lowered or "mcp" in lowered or "session" in lowered:
+            families.add("session_scope")
+        elif "trajectory" in lowered:
+            families.add("trajectory")
+        else:
+            families.add("general")
+    return sorted(families or {"general"})
+
+
+def _add_record_to_policy_drift_bucket(bucket: dict[str, Any], record: dict[str, Any]) -> None:
+    decision = record.get("decision") if isinstance(record.get("decision"), dict) else {}
+    snapshot = (
+        record.get("risk_snapshot")
+        if isinstance(record.get("risk_snapshot"), dict)
+        else {}
+    )
+    verdict = str(decision.get("decision") or "unknown")
+    risk = str(decision.get("risk_level") or snapshot.get("risk_level") or "unknown")
+    bucket["record_count"] = int(bucket["record_count"]) + 1
+    bucket["decision_distribution"][verdict] += 1
+    bucket["risk_distribution"][risk] += 1
+    raw_hits = snapshot.get("rule_hits")
+    if isinstance(raw_hits, list):
+        for hit in raw_hits:
+            bucket["rule_hits"][str(hit)] += 1
+
+
+def _finalize_policy_drift_bucket(bucket: dict[str, Any]) -> dict[str, Any]:
+    count = int(bucket["record_count"])
+    decisions = dict(bucket["decision_distribution"])
+    risks = dict(bucket["risk_distribution"])
+    high_or_critical = int(risks.get("high", 0)) + int(risks.get("critical", 0))
+    return {
+        "record_count": count,
+        "decision_distribution": decisions,
+        "risk_distribution": risks,
+        "rule_hits": dict(bucket["rule_hits"]),
+        "block_rate": round(float(decisions.get("block", 0)) / count, 6) if count else 0.0,
+        "high_or_critical_rate": round(float(high_or_critical) / count, 6) if count else 0.0,
+    }
+
+
+def _skill_registry_states(record: dict[str, Any]) -> set[str]:
+    states: set[str] = set()
+    snapshot = (
+        record.get("risk_snapshot")
+        if isinstance(record.get("risk_snapshot"), dict)
+        else {}
+    )
+    findings = snapshot.get("skill_trust_findings")
+    if isinstance(findings, list):
+        for finding in findings:
+            if not isinstance(finding, dict):
+                continue
+            for key in (
+                "registry_status",
+                "registry_state",
+                "status",
+                "trust_level",
+                "list_state",
+                "trust_list_state",
+            ):
+                value = str(finding.get(key) or "").strip()
+                if value:
+                    states.add(value)
+    return states
+
+
+def _add_policy_drift_traceability(
+    traceability: dict[str, set[str]],
+    record: dict[str, Any],
+    effects: list[dict[str, Any]],
+) -> None:
+    event = record.get("event") if isinstance(record.get("event"), dict) else {}
+    meta = record.get("meta") if isinstance(record.get("meta"), dict) else {}
+    snapshot = (
+        record.get("risk_snapshot")
+        if isinstance(record.get("risk_snapshot"), dict)
+        else {}
+    )
+    for key, value in (
+        ("request_ids", meta.get("request_id")),
+        ("record_ids", record.get("record_id")),
+        ("event_ids", event.get("event_id")),
+        ("fallback_paths", meta.get("fallback_path") or meta.get("fallback_mode")),
+    ):
+        text = str(value or "").strip()
+        if text:
+            traceability[key].add(text)
+    raw_hits = snapshot.get("rule_hits")
+    if isinstance(raw_hits, list):
+        for hit in raw_hits:
+            traceability["rule_evidence"].add(str(hit))
+    for state in _skill_registry_states(record):
+        traceability["registry_states"].add(state)
+    for effect in effects:
+        if not isinstance(effect, dict):
+            continue
+        value = str(effect.get("effect_id") or effect.get("id") or "").strip()
+        if value:
+            traceability["adapter_effect_result_ids"].add(value)
+
+
+def _finalize_policy_drift_traceability(
+    traceability: dict[str, set[str]],
+) -> dict[str, list[str]]:
+    return {
+        key: sorted(values)
+        for key, values in traceability.items()
+    }
+
+
+def _truthy_traceability_flag(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+    return bool(value)
+
+
+def _adapter_effect_results_applicable(
+    record: dict[str, Any],
+    effects: list[dict[str, Any]],
+) -> bool:
+    if effects:
+        return True
+    meta = record.get("meta") if isinstance(record.get("meta"), dict) else {}
+    event = record.get("event") if isinstance(record.get("event"), dict) else {}
+    for container in (meta, event):
+        for key in ("adapter_effects_applicable", "adapter_effect_result_ids_applicable"):
+            if key in container and _truthy_traceability_flag(container.get(key)):
+                return True
+    return False
+
+
+def _required_metric_cell_traceability_fields(cell: dict[str, Any]) -> list[str]:
+    fields = list(UNIVERSAL_METRIC_CELL_TRACEABILITY_FIELDS)
+    rule_family = str(cell.get("rule_family") or "general")
+    applicability = (
+        cell.get("traceability_applicability")
+        if isinstance(cell.get("traceability_applicability"), dict)
+        else {}
+    )
+    if rule_family != "general" or applicability.get("rule_evidence"):
+        fields.append("rule_evidence")
+    if rule_family == "skill_trust" or applicability.get("registry_states"):
+        fields.append("registry_states")
+    if (
+        applicability.get("adapter_effect_result_ids")
+        or applicability.get("adapter_effects_applicable")
+    ):
+        fields.append("adapter_effect_result_ids")
+    return fields
+
+
+def _metric_cell_traceability(policy_drift: dict[str, Any]) -> dict[str, Any]:
+    cells = policy_drift.get("cells") if isinstance(policy_drift, dict) else []
+    complete_count = 0
+    incomplete_cells: list[dict[str, Any]] = []
+    for cell in cells or []:
+        if not isinstance(cell, dict):
+            continue
+        trace = cell.get("traceability") if isinstance(cell.get("traceability"), dict) else {}
+        missing = [
+            field
+            for field in _required_metric_cell_traceability_fields(cell)
+            if not trace.get(field)
+        ]
+        if missing:
+            incomplete_cells.append({
+                "workspace_root": cell.get("workspace_root"),
+                "source_framework": cell.get("source_framework"),
+                "session_id": cell.get("session_id"),
+                "rule_family": cell.get("rule_family"),
+                "missing_fields": missing,
+            })
+        else:
+            complete_count += 1
+    total = len([cell for cell in cells or [] if isinstance(cell, dict)])
+    coverage = 1.0 if total <= 0 else round(float(complete_count) / total, 6)
+    return {
+        "required_fields": list(UNIVERSAL_METRIC_CELL_TRACEABILITY_FIELDS),
+        "conditional_fields": list(CONDITIONAL_METRIC_CELL_TRACEABILITY_FIELDS),
+        "total_cells": total,
+        "cell_count": total,
+        "complete_cell_count": complete_count,
+        "coverage": coverage,
+        "passed": total > 0 and not incomplete_cells,
+        "incomplete_cells": incomplete_cells,
+    }
 
 
 def _new_io_metric_bucket() -> dict[str, float | int]:
@@ -78,6 +335,7 @@ class TrajectoryStore:
         self._io_metrics = {
             "count": _new_io_metric_bucket(),
             "summary": _new_io_metric_bucket(),
+            "policy_drift": _new_io_metric_bucket(),
             "replay_session": _new_io_metric_bucket(),
             "replay_session_page": _new_io_metric_bucket(),
         }
@@ -1387,6 +1645,137 @@ class TrajectoryStore:
             }
         finally:
             _observe_io_metric(self._io_metrics["summary"], time.perf_counter() - start)
+
+    def policy_drift_report(
+        self,
+        *,
+        window_seconds: Optional[int] = None,
+        max_cells: int = 200,
+    ) -> dict[str, Any]:
+        """Aggregate policy drift by workspace/framework/session/rule family."""
+
+        start = time.perf_counter()
+        try:
+            effective_window = window_seconds if window_seconds and window_seconds > 0 else None
+            query_window = effective_window * 2 if effective_window else None
+            records = self._query_records(since_seconds=query_window)
+            adapter_results = self._adapter_results_for_records(records)
+            now_ts = time.time()
+            current_cutoff = now_ts - effective_window if effective_window else None
+            cells: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+
+            for record in records:
+                event = record.get("event") if isinstance(record.get("event"), dict) else {}
+                snapshot = (
+                    record.get("risk_snapshot")
+                    if isinstance(record.get("risk_snapshot"), dict)
+                    else {}
+                )
+                families = _rule_families_for_snapshot(snapshot)
+                workspace_root = _workspace_root_for_event(event)
+                source_framework = str(event.get("source_framework") or "unknown")
+                session_id = str(event.get("session_id") or "unknown")
+                period = "current"
+                if current_cutoff is not None and float(record.get("recorded_at_ts") or 0.0) < current_cutoff:
+                    period = "previous"
+                for family in families:
+                    key = (workspace_root, source_framework, session_id, family)
+                    cell = cells.setdefault(
+                        key,
+                        {
+                            "workspace_root": workspace_root,
+                            "source_framework": source_framework,
+                            "session_id": session_id,
+                            "rule_family": family,
+                            "current": _empty_policy_drift_bucket(),
+                            "previous": _empty_policy_drift_bucket(),
+                            "traceability": _empty_policy_drift_traceability(),
+                            "traceability_applicability": (
+                                _empty_policy_drift_traceability_applicability(family)
+                            ),
+                        },
+                    )
+                    _add_record_to_policy_drift_bucket(cell[period], record)
+                    if period == "current":
+                        event_id = event.get("event_id")
+                        session_key = (None, event.get("session_id"))
+                        result_key = (event_id, event.get("session_id"))
+                        effects = (
+                            adapter_results.get(result_key, [])
+                            + adapter_results.get(session_key, [])
+                        )
+                        _add_policy_drift_traceability(
+                            cell["traceability"],
+                            record,
+                            effects,
+                        )
+                        if _adapter_effect_results_applicable(record, effects):
+                            cell["traceability_applicability"][
+                                "adapter_effect_result_ids"
+                            ] = True
+
+            finalized: list[dict[str, Any]] = []
+            for cell in cells.values():
+                current = _finalize_policy_drift_bucket(cell["current"])
+                previous = _finalize_policy_drift_bucket(cell["previous"])
+                finalized.append({
+                    "cell_id": "|".join(
+                        [
+                            cell["workspace_root"],
+                            cell["source_framework"],
+                            cell["session_id"],
+                            cell["rule_family"],
+                        ]
+                    ),
+                    "workspace_root": cell["workspace_root"],
+                    "source_framework": cell["source_framework"],
+                    "session_id": cell["session_id"],
+                    "rule_family": cell["rule_family"],
+                    "current": current,
+                    "previous": previous,
+                    "delta": {
+                        "record_count": current["record_count"] - previous["record_count"],
+                        "block_rate": round(current["block_rate"] - previous["block_rate"], 6),
+                        "high_or_critical_rate": round(
+                            current["high_or_critical_rate"]
+                            - previous["high_or_critical_rate"],
+                            6,
+                        ),
+                    },
+                    "traceability": _finalize_policy_drift_traceability(
+                        cell["traceability"]
+                    ),
+                    "traceability_applicability": dict(
+                        cell["traceability_applicability"]
+                    ),
+                })
+            finalized.sort(
+                key=lambda item: (
+                    -abs(float(item["delta"]["block_rate"])),
+                    -int(item["current"]["record_count"]),
+                    item["cell_id"],
+                )
+            )
+            effective_limit = min(max(max_cells, 1), 5000)
+            policy_drift = {
+                "cells": finalized,
+            }
+            return {
+                "generated_at": self._iso_from_ts(now_ts),
+                "window_seconds": effective_window,
+                "comparison_window_seconds": effective_window,
+                "grouping_dimensions": [
+                    "workspace_root",
+                    "source_framework",
+                    "session_id",
+                    "rule_family",
+                ],
+                "total_cells": len(finalized),
+                "cells": finalized[:effective_limit],
+                "metric_cell_traceability": _metric_cell_traceability(policy_drift),
+            }
+        finally:
+            _observe_io_metric(self._io_metrics["policy_drift"], time.perf_counter() - start)
 
     @staticmethod
     def _is_invalid_event_record(record: dict[str, Any]) -> bool:

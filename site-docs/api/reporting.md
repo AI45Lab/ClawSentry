@@ -8,7 +8,7 @@ description: ClawSentry 报表、会话管理、告警和 SSE 实时推送端点
 ClawSentry Gateway 提供一整套 HTTP API 用于健康检查、聚合统计、会话追踪、告警管理和实时事件流推送。所有 `/report/*` 端点均需 Bearer Token 认证（除非 `CS_AUTH_TOKEN` 为空）。
 
 !!! abstract "本页快速导航"
-    [GET /health](#get-health) · [GET /metrics](#get-metrics) · [GET /report/summary](#get-report-summary) · [GET /report/sessions](#get-report-sessions) · [GET /report/session/{id}](#get-report-session) · [GET /report/session/{id}/risk](#get-report-session-risk) · [GET /report/session/{id}/post-action](#get-report-session-post-action) · [L3 advisory endpoints](#l3-advisory-endpoints) · [GET /report/stream (SSE)](#get-report-stream) · [GET /report/alerts](#get-report-alerts) · [Enterprise OS 20 类风险统计](#enterprise-os-risk-taxonomy-query) · [POST /report/alerts/{id}/ack](#post-report-alerts-acknowledge) · [GET /ahp/patterns](#get-ahp-patterns) · [POST /ahp/patterns/confirm](#post-ahp-patterns-confirm)
+    [GET /health](#get-health) · [GET /metrics](#get-metrics) · [GET /report/summary](#get-report-summary) · [GET /report/policy-drift](#get-report-policy-drift) · [GET /report/sessions](#get-report-sessions) · [GET /report/session/{id}](#get-report-session) · [GET /report/session/{id}/risk](#get-report-session-risk) · [GET /report/session/{id}/post-action](#get-report-session-post-action) · [L3 advisory endpoints](#l3-advisory-endpoints) · [GET /report/stream (SSE)](#get-report-stream) · [GET /report/alerts](#get-report-alerts) · [Enterprise OS 20 类风险统计](#enterprise-os-risk-taxonomy-query) · [POST /report/alerts/{id}/ack](#post-report-alerts-acknowledge) · [GET /ahp/patterns](#get-ahp-patterns) · [POST /ahp/patterns/confirm](#post-ahp-patterns-confirm)
 
 ---
 
@@ -251,6 +251,76 @@ curl -H "Authorization: Bearer $CS_AUTH_TOKEN" \
 # 最近 1 小时
 curl -H "Authorization: Bearer $CS_AUTH_TOKEN" \
   "http://127.0.0.1:8080/report/summary?window_seconds=3600"
+```
+
+---
+
+## GET /report/policy-drift — 策略漂移报告 {#get-report-policy-drift}
+
+按 `workspace_root` / `source_framework` / `session_id` / `rule_family` 聚合当前窗口与前一窗口的策略漂移，并在每个 metric cell 中保留 request、rule、registry、fallback、adapter effect 追踪字段。
+
+!!! note "边界"
+    这是 traceability / reporting surface，用于解释策略变化和审计回链；它不是 benchmark score endpoint，也不代表完整 leaderboard 结论。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `window_seconds` | int | `3600` | 当前窗口长度；前一窗口使用同样长度 |
+| `max_cells` | int | `200` | 返回的 drift cells 上限 |
+
+### 响应
+
+```json
+{
+  "generated_at": "2026-05-15T00:00:00+08:00",
+  "window_seconds": 3600,
+  "comparison_window_seconds": 3600,
+  "grouping_dimensions": ["workspace_root", "source_framework", "session_id", "rule_family"],
+  "total_cells": 1,
+  "cells": [
+    {
+      "cell_id": "/workspace/payments|codex|sess-001|skill_trust",
+      "workspace_root": "/workspace/payments",
+      "source_framework": "codex",
+      "session_id": "sess-001",
+      "rule_family": "skill_trust",
+      "current": {
+        "record_count": 1,
+        "decision_distribution": {"block": 1},
+        "risk_distribution": {"high": 1},
+        "rule_hits": {"ambiguous_skill_alias": 1},
+        "block_rate": 1.0,
+        "high_or_critical_rate": 1.0
+      },
+      "previous": {
+        "record_count": 1,
+        "decision_distribution": {"allow": 1},
+        "risk_distribution": {"low": 1},
+        "rule_hits": {"unknown_skill_identity": 1},
+        "block_rate": 0.0,
+        "high_or_critical_rate": 0.0
+      },
+      "delta": {"record_count": 0, "block_rate": 1.0, "high_or_critical_rate": 1.0},
+      "traceability": {
+        "request_ids": ["req-current"],
+        "record_ids": ["42"],
+        "event_ids": ["evt-current"],
+        "registry_states": ["unlisted"],
+        "rule_evidence": ["ambiguous_skill_alias"],
+        "fallback_paths": ["gateway_policy"],
+        "adapter_effect_result_ids": ["effect-current"]
+      }
+    }
+  ]
+}
+```
+
+### curl 示例
+
+```bash
+curl -H "Authorization: Bearer $CS_AUTH_TOKEN" \
+  "http://127.0.0.1:8080/report/policy-drift?window_seconds=3600&max_cells=100"
 ```
 
 ---

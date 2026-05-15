@@ -62,6 +62,43 @@ def test_secret_redaction_preserves_source_detail(tmp_path):
     assert effective.source_detail_for("llm.api_key") == f"{env_file}:2"
 
 
+def test_capability_narrowing_and_agent_feedback_are_visible_config_fields(tmp_path):
+    env_file = tmp_path / "local.env"
+    env_file.write_text(
+        "CS_CAPABILITY_NARROWING_ENABLED=true\n"
+        "CS_AGENT_SAFETY_FEEDBACK_ENABLED=true\n",
+        encoding="utf-8",
+    )
+    parsed = parse_env_file(env_file)
+
+    effective = resolve_effective_config(environ={}, env_file=parsed)
+
+    assert effective.values["features.capability_narrowing"] is True
+    assert effective.sources["features.capability_narrowing"] == "env-file"
+    assert effective.source_detail_for("features.capability_narrowing") == f"{env_file}:1"
+    assert effective.values["features.agent_safety_feedback"] is True
+    assert effective.sources["features.agent_safety_feedback"] == "env-file"
+    assert effective.source_detail_for("features.agent_safety_feedback") == f"{env_file}:2"
+
+
+def test_skill_trust_control_plane_inputs_are_visible_config_fields(tmp_path):
+    env_file = tmp_path / "local.env"
+    env_file.write_text(
+        "CS_SKILL_TRUST_REGISTRY_PATH=/tmp/registry.json\n"
+        "CS_SKILL_TRUST_METADATA_PATH=/tmp/metadata.json\n"
+        "CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=block\n",
+        encoding="utf-8",
+    )
+    parsed = parse_env_file(env_file)
+
+    effective = resolve_effective_config(environ={}, env_file=parsed)
+
+    assert effective.values["skill_trust.registry_path"] == "/tmp/registry.json"
+    assert effective.values["skill_trust.metadata_path"] == "/tmp/metadata.json"
+    assert effective.values["skill_trust.first_use_strict_action"] == "block"
+    assert effective.source_detail_for("skill_trust.metadata_path") == f"{env_file}:2"
+
+
 def test_scope_profile_file_deprecated_alias_resolves_from_process_env():
     effective = resolve_effective_config(
         environ={"CS_SESSION_SCOPE_PROFILE": "scope.json"},

@@ -19,6 +19,7 @@ FORCE_CODEX_API_KEY="${SSB_CODEX_FORCE_API_KEY:-1}"
 SANITIZED_ENVRC=""
 SANITIZED_CODEX_AUTH_JSON=""
 SANITIZED_DOCKER_CONFIG=""
+DRY_RUN_ENVRC=""
 GUARDED_HARBOR_BIN_DIR=""
 
 usage() {
@@ -239,9 +240,10 @@ run_dir="${WORKSPACE_ROOT}/results/skills-safety-bench/${date_tag}_${model_tag}_
 mkdir -p "${run_dir}"
 
 cmd=(
-  bash "${BENCH_DIR}/scripts/start_codex_batch.sh"
+  bash "${BENCH_DIR}/scripts/start_agent_batch.sh"
   --rd "${RD}"
   --jobs-dir "${run_dir}"
+  --agent codex
   --model "${MODEL}"
 )
 
@@ -256,6 +258,14 @@ if [[ "${#NETWORK_MODE_ARG[@]}" -gt 0 ]]; then
 fi
 
 if [[ "${REAL_RUN}" != "1" ]]; then
+  if [[ ! -f "${BENCH_DIR}/.envrc" ]]; then
+    mkdir -p "${run_dir}/runtime"
+    DRY_RUN_ENVRC="${run_dir}/runtime/dry-run.envrc"
+    cat > "${DRY_RUN_ENVRC}" <<'EOF'
+export OPENAI_API_KEY=dry-run-placeholder
+EOF
+    cmd+=(--envrc "${DRY_RUN_ENVRC}")
+  fi
   cmd+=(--dry-run --skip-api-preflight)
 else
   if [[ -d "${HOME}/.nvm" ]]; then

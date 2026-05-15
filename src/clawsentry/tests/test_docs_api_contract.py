@@ -63,8 +63,8 @@ def test_api_validity_report_command_generates_traceable_outputs(tmp_path: Path)
     report = json.loads(docs_json.read_text(encoding="utf-8"))
     assert report["schema_version"] == "clawsentry-api-validity.v1"
     assert report["summary"]["valid"] is True
-    assert report["summary"]["total_coverage_entries"] == 49
-    assert report["summary"]["openapi_operations"] == 46
+    assert report["summary"]["total_coverage_entries"] == 51
+    assert report["summary"]["openapi_operations"] == 48
     assert report["summary"]["docs_endpoint_mentions_unmatched"] == 0
     assert report["docs_reverse_validation"]["rules"]
     assert not report["validation_errors"]
@@ -90,7 +90,7 @@ def test_deployable_api_validity_report_is_current_and_traceable() -> None:
     report = json.loads(VALIDITY_JSON_FILE.read_text(encoding="utf-8"))
     assert report["summary"]["valid"] is True
     assert report["source_artifacts"]["coverage"] == "site-docs/api/api-coverage.json"
-    assert report["summary"]["status_counts"] == {"enterprise": 9, "excluded": 3, "public": 37}
+    assert report["summary"]["status_counts"] == {"enterprise": 10, "excluded": 3, "public": 38}
     report_page = VALIDITY_REPORT_PAGE.read_text(encoding="utf-8")
     assert "API 有效性报告" in report_page
     assert "src/clawsentry/gateway/server.py:" in report_page
@@ -237,6 +237,14 @@ def test_openapi_artifact_matches_public_coverage_entries() -> None:
             assert body.get("idempotencyKey")
             assert operation.get("requestBody", {}).get("required") is True
             assert operation.get("security") == [{"BearerAuth": []}]
+
+
+def test_openapi_info_version_matches_package_version() -> None:
+    spec = json.loads(OPENAPI_FILE.read_text(encoding="utf-8"))
+    pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    expected = re.search(r'^version = "([^"]+)"$', pyproject, re.MULTILINE)
+    assert expected is not None
+    assert spec["info"]["version"] == expected.group(1)
 
 
 def test_report_session_risk_ewma_is_declared_in_openapi_response_schemas() -> None:

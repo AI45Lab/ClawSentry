@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from .llm_settings import resolve_llm_settings
 from .models import utc_now_iso
 from .llm_provider import AnthropicProvider, LLMProviderConfig, OpenAIProvider
+from .semantic_analyzer import _compact_prompt_text
 from .risk_signals import (
     build_archive_command_signals,
     build_base_event_signals,
@@ -179,13 +180,33 @@ def _resolve_taxonomy_prompt(observation: dict[str, Any]) -> tuple[str, str]:
             *taxonomy_lines,
             "",
             "Observation:",
-            json.dumps(observation, ensure_ascii=False, sort_keys=True),
+            json.dumps(_llm_safe_observation(observation), ensure_ascii=False, sort_keys=True),
             "",
             "Return JSON with keys: subtype, confidence, reason, signals.",
             "Subtype must be one of the taxonomy ids or unmapped.",
         ]
     )
     return system_prompt, user_prompt
+
+
+def _llm_safe_observation(observation: dict[str, Any]) -> dict[str, Any]:
+    safe: dict[str, Any] = {}
+    for key, value in observation.items():
+        if isinstance(value, str):
+            safe[key] = _compact_prompt_text(value, max_len=512) or ""
+        elif isinstance(value, list):
+            safe[key] = [
+                _compact_prompt_text(str(item), max_len=128) or ""
+                for item in value[:8]
+            ]
+        elif isinstance(value, dict):
+            safe[key] = {
+                str(k): (_compact_prompt_text(str(v), max_len=256) or "")
+                for k, v in list(value.items())[:16]
+            }
+        else:
+            safe[key] = value
+    return safe
 
 
 def _parse_taxonomy_response(raw: str) -> dict[str, Any]:

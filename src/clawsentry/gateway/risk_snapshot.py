@@ -7,9 +7,11 @@ E-4 extension: D6 injection detection multiplier (2026-03-24).
 
 from __future__ import annotations
 
+import hashlib
 import re
+import shlex
 from collections import deque
-from typing import Any, Optional
+from typing import Optional
 
 from .detection_config import DetectionConfig
 from .injection_detector import score_layer1
@@ -18,26 +20,18 @@ from .models import (
     CanonicalEvent,
     ClassifiedBy,
     DecisionContext,
+    EventType,
+    RISK_LEVEL_ORDER,
     RiskDimensions,
     RiskLevel,
     RiskSnapshot,
     utc_now_iso,
 )
 from .risk_signals import (
-    build_file_write_persistence_signals,
     has_process_sub_remote_command,
     has_remote_pipe_exec_command,
     is_credential_path,
 )
-
-
-_SECRET_REDACTION_RE = re.compile(
-    r"(AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{20,}|sk-[a-zA-Z0-9_-]{20,}|"
-    r"-----BEGIN[A-Z ]*PRIVATE KEY-----.*?-----END[A-Z ]*PRIVATE KEY-----|"
-    r"\b[A-Za-z_][A-Za-z0-9_]*(?:SECRET|TOKEN|PASSWORD|API_KEY)[A-Za-z0-9_]*\s*[=:]\s*['\"]?[^'\"\s]+)",
-    re.IGNORECASE | re.DOTALL,
-)
-_PERSISTENCE_EVIDENCE_PREVIEW_CHARS = 512
 
 
 # ---------------------------------------------------------------------------
@@ -86,7 +80,7 @@ DANGEROUS_TOOLS = frozenset({
 
 # System paths that elevate bash from D1=2 to D1=3
 _SYSTEM_PATHS = re.compile(
-    r"(/etc/|/usr/|/var/|/sys/|/proc/|/boot/|/dev/)"
+    r"(/etc/|/usr/|/var/|/sys/|/proc/|/boot/|/dev/(?!null\b))"
 )
 
 
@@ -145,168 +139,24 @@ def _extract_paths(event: CanonicalEvent) -> list[str]:
     """Extract file paths from event payload."""
     payload = event.payload or {}
     paths = []
-    for mapping in (payload, payload.get("arguments"), payload.get("tool_input"), payload.get("args")):
-        if not isinstance(mapping, dict):
-            continue
-        for key in ("path", "file_path", "file", "target", "destination", "source"):
-            val = mapping.get(key)
-            if isinstance(val, str) and val:
-                paths.append(val)
-        for key in ("command", "cmd", "prompt", "instructions", "description"):
-            text = mapping.get(key)
-            if isinstance(text, str) and text:
-                paths.extend(_extract_paths_from_command(text))
+    for key in ("path", "file_path", "file", "target", "destination", "source"):
+        val = payload.get(key)
+        if isinstance(val, str) and val:
+            paths.append(val)
+    command = str(payload.get("command", ""))
+    if command:
+        paths.extend(_extract_paths_from_command(command))
     return paths
-
-
-def _extract_write_content(event: CanonicalEvent) -> str:
-    """Extract content that write/edit tools are about to add to files."""
-    payload = event.payload or {}
-    parts: list[str] = []
-
-    def add(value: object) -> None:
-        if isinstance(value, str) and value:
-            parts.append(value)
-
-    def collect_from_mapping(value: object) -> None:
-        if not isinstance(value, dict):
-            return
-        for key in (
-            "content",
-            "new_string",
-            "replacement",
-            "body",
-            "code",
-            "text",
-            "prompt",
-            "instructions",
-            "description",
-        ):
-            add(value.get(key))
-        edits = value.get("edits")
-        if isinstance(edits, list):
-            for item in edits:
-                collect_from_mapping(item)
-
-    collect_from_mapping(payload)
-    collect_from_mapping(payload.get("arguments"))
-    collect_from_mapping(payload.get("tool_input"))
-    collect_from_mapping(payload.get("args"))
-    return "\n".join(parts)
-
-
-def _extract_shell_command(event: CanonicalEvent) -> str:
-    """Extract shell command text from direct or nested tool payloads."""
-    payload = event.payload or {}
-    for mapping in (payload, payload.get("arguments"), payload.get("tool_input"), payload.get("args")):
-        if not isinstance(mapping, dict):
-            continue
-        for key in ("command", "cmd"):
-            value = mapping.get(key)
-            if isinstance(value, str) and value:
-                return value
-    return ""
-
-
-def _redact_evidence_text(value: str, *, max_len: int = _PERSISTENCE_EVIDENCE_PREVIEW_CHARS) -> str:
-    compact = " ".join(str(value or "").split())
-    compact = _SECRET_REDACTION_RE.sub("[REDACTED_SECRET]", compact)
-    if len(compact) > max_len:
-        return compact[:max_len] + "...[truncated]"
-    return compact
-
-
-def _path_category(path: str) -> str:
-    lowered = path.lower()
-    name = lowered.rsplit("/", 1)[-1]
-    if name in {"index.html", "app.html"} or lowered.endswith((".html", ".htm")):
-        return "html_entrypoint"
-    if "bootstrap" in lowered and ("loader" in lowered or "manifest" in lowered):
-        return "bootstrap_loader"
-    if "startup" in lowered or "autoload" in lowered:
-        return "startup_or_autoload"
-    if name.endswith((".js", ".mjs", ".cjs")) and "loader" in lowered:
-        return "script_loader"
-    if name.endswith((".json", ".yaml", ".yml")) and ("manifest" in lowered or "loader" in lowered):
-        return "loader_manifest"
-    return "write_target"
-
-
-def _redact_path(path: str) -> str:
-    cleaned = str(path or "").strip()
-    if not cleaned:
-        return ""
-    if cleaned.startswith("/"):
-        parts = [part for part in cleaned.split("/") if part]
-        if len(parts) <= 3:
-            return "/" + "/".join(parts)
-        return "/.../" + "/".join(parts[-3:])
-    if cleaned.startswith("~"):
-        parts = [part for part in cleaned.split("/") if part and part != "~"]
-        return "~/" + "/".join(parts[-3:])
-    return cleaned
-
-
-def _infer_write_method(tool_name: str, shell_command: str, signals: dict[str, bool]) -> str:
-    tool = (tool_name or "").lower()
-    command = shell_command.lower()
-    if signals.get("delegated_write_action"):
-        return "delegated_write"
-    if signals.get("shell_file_write_action") or tool in {"bash", "shell", "sh", "zsh"}:
-        if re.search(r"\bpython(?:3)?\b|node\b|writefile|write_text|write_bytes|open\(", command):
-            return "programmatic_write"
-        if re.search(r"\b(cat|tee|echo|printf|dd)\b|[<>]", command):
-            return "shell_redirect"
-        return "shell_write"
-    if signals.get("write_action"):
-        return "write_tool"
-    return "write"
-
-
-def _build_persistence_write_evidence(
-    *,
-    event: CanonicalEvent,
-    paths: list[str],
-    content_text: str,
-    shell_command: str,
-    signals: dict[str, bool],
-) -> dict[str, Any]:
-    trigger_flags = sorted(
-        key for key, value in signals.items()
-        if value and key != "persistence_write"
-    )
-    redacted_paths = [_redact_path(path) for path in paths if str(path or "").strip()]
-    path_categories = sorted({_path_category(path) for path in paths if str(path or "").strip()})
-    preview_source = content_text or shell_command
-    return {
-        "signal": "persistence_write",
-        "short_circuit_rule": "SC-4",
-        "tool": event.tool_name or "",
-        "write_method": _infer_write_method(event.tool_name or "", shell_command, signals),
-        "path_categories": path_categories,
-        "matched_paths_redacted": redacted_paths[:12],
-        "trigger_flags": trigger_flags,
-        "content_preview_redacted": _redact_evidence_text(preview_source),
-        "raw_payload_included": False,
-    }
 
 
 def _extract_paths_from_command(command: str) -> list[str]:
     """Best-effort path extraction from shell commands."""
     paths = []
     for token in command.split():
-        cleaned = token.strip("'\"`;,)(")
-        if cleaned.startswith("/") or cleaned.startswith("~"):
-            paths.append(cleaned)
-        elif "/" in cleaned and not cleaned.startswith("-"):
-            paths.append(cleaned)
-    paths.extend(
-        match.group(1)
-        for match in re.finditer(
-            r"['\"]((?:~|/|[A-Za-z]:\\|[A-Za-z0-9_.-]+/)[^'\"\s<>]+)['\"]",
-            command,
-        )
-    )
+        if token.startswith("/") or token.startswith("~"):
+            paths.append(token)
+        elif "/" in token and not token.startswith("-"):
+            paths.append(token)
     return paths
 
 
@@ -360,7 +210,7 @@ _D3_HIGH_DANGER_PATTERNS = [
     re.compile(r":\(\)\s*\{"),  # Fork bomb
     re.compile(r"curl\s.*\|\s*(sh|bash)"),
     re.compile(r"wget\s.*\|\s*(sh|bash)"),
-    re.compile(r">\s*/dev/"),
+    re.compile(r">[^\S\r\n]*/dev/(?!null\b)"),
     re.compile(r"git\s+push\s+.*--force"),
     re.compile(r"chmod\s+777"),
     re.compile(r"\bsudo\b"),
@@ -538,12 +388,24 @@ class SessionRiskTracker:
             self._all_calls.pop(oldest_key, None)
             all_session_ids.discard(oldest_key)
 
-    def record_tool_call(self, session_id: str, tool_name: str, now: float | None = None) -> None:
+    def record_tool_call(
+        self,
+        session_id: str,
+        tool_name: str,
+        now: float | None = None,
+        config: DetectionConfig | None = None,
+    ) -> None:
         """Record a tool invocation for frequency analysis."""
-        if not self._freq_enabled:
+        freq_enabled = config.d4_freq_enabled if config is not None else self._freq_enabled
+        if not freq_enabled:
             return
         import time
         ts = now if now is not None else time.monotonic()
+        repetitive_window_s = (
+            config.d4_freq_repetitive_window_s
+            if config is not None
+            else self._freq_repetitive_window_s
+        )
 
         # Per-tool timestamps
         session_tools = self._tool_calls.setdefault(session_id, {})
@@ -552,7 +414,7 @@ class SessionRiskTracker:
         tool_ts = session_tools[tool_name]
         tool_ts.append(ts)
         # Trim to repetitive window (the larger window)
-        cutoff = ts - self._freq_repetitive_window_s
+        cutoff = ts - repetitive_window_s
         while tool_ts and tool_ts[0] < cutoff:
             tool_ts.popleft()
 
@@ -568,29 +430,56 @@ class SessionRiskTracker:
         # Evict oldest sessions when over capacity
         self._evict_if_needed()
 
-    def _get_frequency_d4(self, session_id: str, now: float | None = None) -> int:
+    def _get_frequency_d4(
+        self,
+        session_id: str,
+        now: float | None = None,
+        config: DetectionConfig | None = None,
+    ) -> int:
         """Compute D4 contribution from tool-call frequency."""
-        if not self._freq_enabled:
+        freq_enabled = config.d4_freq_enabled if config is not None else self._freq_enabled
+        if not freq_enabled:
             return 0
         import time
         ts = now if now is not None else time.monotonic()
         freq_d4 = 0
+        burst_count = config.d4_freq_burst_count if config is not None else self._freq_burst_count
+        burst_window_s = (
+            config.d4_freq_burst_window_s
+            if config is not None
+            else self._freq_burst_window_s
+        )
+        repetitive_count = (
+            config.d4_freq_repetitive_count
+            if config is not None
+            else self._freq_repetitive_count
+        )
+        repetitive_window_s = (
+            config.d4_freq_repetitive_window_s
+            if config is not None
+            else self._freq_repetitive_window_s
+        )
+        rate_limit_per_min = (
+            config.d4_freq_rate_limit_per_min
+            if config is not None
+            else self._freq_rate_limit_per_min
+        )
 
         # Burst detection: same tool >= N in burst window
         session_tools = self._tool_calls.get(session_id, {})
-        burst_cutoff = ts - self._freq_burst_window_s
+        burst_cutoff = ts - burst_window_s
         for tool_ts in session_tools.values():
             count = sum(1 for t in tool_ts if t >= burst_cutoff)
-            if count >= self._freq_burst_count:
+            if count >= burst_count:
                 freq_d4 = max(freq_d4, 2)
                 break
 
         # Repetitive detection: same tool >= N in repetitive window
         if freq_d4 < 2:
-            rep_cutoff = ts - self._freq_repetitive_window_s
+            rep_cutoff = ts - repetitive_window_s
             for tool_ts in session_tools.values():
                 count = sum(1 for t in tool_ts if t >= rep_cutoff)
-                if count >= self._freq_repetitive_count:
+                if count >= repetitive_count:
                     freq_d4 = max(freq_d4, 1)
                     break
 
@@ -599,23 +488,34 @@ class SessionRiskTracker:
             all_ts = self._all_calls.get(session_id, [])
             rate_cutoff = ts - 60.0
             rate_count = sum(1 for t in all_ts if t >= rate_cutoff)
-            if rate_count >= self._freq_rate_limit_per_min:
+            if rate_count >= rate_limit_per_min:
                 freq_d4 = max(freq_d4, 1)
 
         return freq_d4
 
-    def get_d4(self, session_id: str, now: float | None = None) -> int:
+    def get_d4(
+        self,
+        session_id: str,
+        now: float | None = None,
+        config: DetectionConfig | None = None,
+    ) -> int:
         # Accumulation-based D4
         count = self._high_risk_counts.get(session_id, 0)
-        if count >= self._d4_high_threshold:
+        high_threshold = (
+            config.d4_high_threshold if config is not None else self._d4_high_threshold
+        )
+        mid_threshold = (
+            config.d4_mid_threshold if config is not None else self._d4_mid_threshold
+        )
+        if count >= high_threshold:
             accum_d4 = 2
-        elif count >= self._d4_mid_threshold:
+        elif count >= mid_threshold:
             accum_d4 = 1
         else:
             accum_d4 = 0
 
         # E-8: Frequency-based D4
-        freq_d4 = self._get_frequency_d4(session_id, now=now)
+        freq_d4 = self._get_frequency_d4(session_id, now=now, config=config)
 
         return min(max(accum_d4, freq_d4), 2)
 
@@ -655,6 +555,70 @@ _SHORT_CIRCUIT_RULES = [
     # SC-3: Pure read-only on normal path → low
     ("SC-3", lambda d: d.d1 == 0 and d.d2 == 0 and d.d3 == 0, RiskLevel.LOW),
 ]
+
+_TAINT_BULK_DESTRUCTIVE = re.compile(
+    r"\bfind\b.*(?:-delete|\|\s*xargs\b[^\n;|]*\brm\b)"
+    r"|\brm\s+-[^\n;|]*r[^\n;|]*f\s+(?:\*|\./\*|/tmp/\*)",
+    re.I,
+)
+_TAINT_NETWORK_SINK = re.compile(
+    r"\b(?:curl|wget|nc|ncat|netcat|scp|rsync)\b.*(?:https?://|@-|--data|-d\s)",
+    re.I,
+)
+_PERSISTENCE_ENTRYPOINT_PATH = re.compile(
+    r"(?:"
+    r"(?:^|/)\.(?:bashrc|zshrc|profile|bash_profile|zprofile|cshrc|tcshrc)$|"
+    r"^/etc/(?:profile|bash\.bashrc|zshrc)$|"
+    r"^/etc/profile\.d/[^/]+\.sh$|"
+    r"^/etc/(?:crontab|cron\.(?:d|hourly|daily|weekly|monthly)/[^/]+)$|"
+    r"^/var/(?:spool/cron|cron/tabs)/[^/]+$|"
+    r"^(?:/etc|/usr/lib|/lib)/systemd/(?:system|user)/[^/]+\.(?:service|timer|socket|path)$|"
+    r"^(?:~|/Users/[^/]+)?/Library/(?:LaunchAgents|LaunchDaemons)/[^/]+\.plist$|"
+    r"^/System/Library/(?:LaunchAgents|LaunchDaemons)/[^/]+\.plist$|"
+    r"(?:^|/)(?:preinstall|postinstall|preinst|postinst|prerm|postrm)$|"
+    r"(?:^|/)DEBIAN/(?:preinst|postinst|prerm|postrm)$|"
+    r"(?:^|/)(?:sitecustomize|usercustomize)\.py$"
+    r")",
+    re.I,
+)
+_TAINT_PACKAGE_LIFECYCLE_SCRIPT = re.compile(
+    r'"(?:preinstall|install|postinstall|prepare)"\s*:',
+    re.I,
+)
+_TAINT_SPREADSHEET_WRITER = re.compile(
+    r"\b(?:openpyxl|xlsxwriter|Workbook|load_workbook)\b|\.xlsx\b",
+    re.I,
+)
+_TAINT_SPREADSHEET_HIDDEN_OR_CACHE = re.compile(
+    r"sheet_state\s*=\s*['\"](?:hidden|veryHidden)['\"]|"
+    r"\b(?:very_?hidden|hidden)\s+(?:sheet|worksheet)\b|"
+    r"\b(?:export|cache|audit|recovery)[_\-\s]*(?:sheet|worksheet|cache)\b",
+    re.I,
+)
+_TAINT_SPREADSHEET_EXTERNAL_FORMULA = re.compile(
+    r"=\s*(?:HYPERLINK|WEBSERVICE|IMPORTXML|IMPORTDATA)\s*\([^)]*https?://|"
+    r"=\s*['\"]?https?://",
+    re.I | re.S,
+)
+_TEMP_EXEC_PATH = re.compile(r"^(?:/tmp|/var/tmp|/dev/shm|/private/tmp)(?:/|$)")
+_RELATIVE_PAYLOAD_EXECUTABLES = frozenset({
+    "run",
+    "payload",
+    "loader",
+    "install",
+    "install.sh",
+    "setup.sh",
+    "bootstrap.sh",
+    "update.sh",
+})
+_INTERPRETER_COMMANDS = frozenset({
+    "bash",
+    "sh",
+    "python",
+    "python3",
+    "node",
+    "source",
+})
 
 # ---------------------------------------------------------------------------
 # E-4: New composite scoring with D6 injection multiplier
@@ -696,31 +660,450 @@ def _score_to_risk_level_v2(
     return RiskLevel.LOW
 
 
+def _shell_tokens(segment: str) -> list[str]:
+    try:
+        return shlex.split(segment)
+    except ValueError:
+        return segment.split()
+
+
+def _clean_shell_path(value: str) -> str:
+    return value.strip().strip("'\"").rstrip(".,)")
+
+
+def _command_name(token: str) -> str:
+    return _clean_shell_path(token).rsplit("/", 1)[-1]
+
+
+def _split_shell_segments(command: str) -> list[str]:
+    return [segment.strip() for segment in re.split(r"\s*(?:&&|;|\|)\s*", command) if segment.strip()]
+
+
+def _is_temp_exec_path(path: str) -> bool:
+    return bool(_TEMP_EXEC_PATH.search(_clean_shell_path(path)))
+
+
+def _is_persistence_entrypoint_path(path: str) -> bool:
+    return bool(_PERSISTENCE_ENTRYPOINT_PATH.search(_clean_shell_path(path)))
+
+
+def _segment_mentions_temp_path(segment: str) -> bool:
+    return any(_is_temp_exec_path(token) for token in _shell_tokens(segment))
+
+
+def _is_archive_extract_segment(segment: str) -> bool:
+    tokens = _shell_tokens(segment)
+    for index, token in enumerate(tokens):
+        name = _command_name(token)
+        if name == "tar":
+            args = tokens[index + 1:]
+            return any(
+                arg == "--extract"
+                or (arg.startswith("-") and "x" in arg and not arg.startswith("--"))
+                or (arg and not arg.startswith("-") and "x" in arg[:2])
+                for arg in args
+            )
+        if name == "unzip":
+            args = tokens[index + 1:]
+            listing_or_test = {"-l", "-t", "-v", "-Z"}
+            return not any(arg in listing_or_test for arg in args)
+    return False
+
+
+def _relative_payload_execution(path: str) -> bool:
+    cleaned = _clean_shell_path(path)
+    if not cleaned.startswith("./"):
+        return False
+    basename = cleaned.rsplit("/", 1)[-1]
+    return basename in _RELATIVE_PAYLOAD_EXECUTABLES
+
+
+def _archive_payload_execution_arg(path: str) -> bool:
+    cleaned = _clean_shell_path(path)
+    if _relative_payload_execution(cleaned):
+        return True
+    if "/" in cleaned:
+        return False
+    return cleaned in _RELATIVE_PAYLOAD_EXECUTABLES
+
+
+def _segment_executes_archive_payload(segment: str, risky_context: bool) -> bool:
+    tokens = _shell_tokens(segment)
+    if not tokens:
+        return False
+
+    first = _clean_shell_path(tokens[0])
+    first_name = _command_name(first)
+    if _is_temp_exec_path(first):
+        return True
+    if _archive_payload_execution_arg(first):
+        return True
+
+    if first_name not in _INTERPRETER_COMMANDS:
+        return False
+    for arg in tokens[1:]:
+        if arg.startswith("-"):
+            continue
+        if _is_temp_exec_path(arg):
+            return True
+        if risky_context and _relative_payload_execution(arg):
+            return True
+        if _archive_payload_execution_arg(arg):
+            return True
+        return False
+    return False
+
+
+def _archive_extract_then_execute(command: str) -> bool:
+    extraction_seen = False
+    risky_context = False
+    for segment in _split_shell_segments(command):
+        if _is_archive_extract_segment(segment):
+            extraction_seen = True
+            risky_context = risky_context or _segment_mentions_temp_path(segment)
+            continue
+        if extraction_seen and _segment_executes_archive_payload(segment, risky_context):
+            return True
+    return False
+
+
+def _command_writes_persistence_entrypoint(command: str) -> bool:
+    for segment in _split_shell_segments(command):
+        tokens = _shell_tokens(segment)
+        if not tokens:
+            continue
+
+        for index, token in enumerate(tokens):
+            if (
+                token in {">", ">>"}
+                and index + 1 < len(tokens)
+                and _is_persistence_entrypoint_path(tokens[index + 1])
+            ):
+                return True
+            redirection = re.search(r"(?:^|[^\w])(?:\d*)>{1,2}(.+)$", token)
+            if redirection and _is_persistence_entrypoint_path(redirection.group(1)):
+                return True
+
+        command_names = [_command_name(token) for token in tokens]
+        if "tee" in command_names:
+            tee_index = command_names.index("tee")
+            for arg in tokens[tee_index + 1:]:
+                if not arg.startswith("-") and _is_persistence_entrypoint_path(arg):
+                    return True
+
+        if "sed" in command_names and any(arg.startswith("-i") for arg in tokens):
+            if any(_is_persistence_entrypoint_path(arg) for arg in tokens):
+                return True
+
+        if command_names and command_names[0] == "crontab":
+            if not any(arg in {"-l", "-r"} for arg in tokens[1:]):
+                return True
+
+    return False
+
+
+def _taint_flow_summary(event: CanonicalEvent) -> dict[str, object] | None:
+    """Return redacted structured L1 taint/compound evidence for replay."""
+
+    payload = event.payload or {}
+    command = str(payload.get("command") or "")
+    content = str(payload.get("content") or "")
+    analyzable_text = "\n".join(part for part in (command, content) if part)
+    paths = _extract_paths(event)
+    rules: list[dict[str, object]] = []
+
+    if command and (has_remote_pipe_exec_command(command) or has_process_sub_remote_command(command)):
+        rules.append({
+            "rule_id": "remote_fetch_to_interpreter",
+            "severity": "critical",
+            "source": "remote_fetch",
+            "sink": "interpreter",
+        })
+
+    if command and _TAINT_NETWORK_SINK.search(command) and any(
+        is_credential_path(path) or ".gnupg/" in path.lower() or ".env" in path.lower()
+        for path in paths
+    ):
+        rules.append({
+            "rule_id": "sensitive_source_to_network_sink",
+            "severity": "critical",
+            "source": "sensitive_local_data",
+            "sink": "network",
+        })
+
+    if command and _archive_extract_then_execute(command):
+        rules.append({
+            "rule_id": "archive_extract_then_execute",
+            "severity": "high",
+            "source": "archive_content",
+            "sink": "interpreter",
+        })
+
+    if command and _TAINT_BULK_DESTRUCTIVE.search(command):
+        rules.append({
+            "rule_id": "bulk_destructive_sequence",
+            "severity": "critical",
+            "source": "bulk_path_selection",
+            "sink": "destructive_write",
+        })
+
+    if (
+        analyzable_text
+        and _TAINT_SPREADSHEET_WRITER.search(analyzable_text)
+        and _TAINT_SPREADSHEET_HIDDEN_OR_CACHE.search(analyzable_text)
+        and _TAINT_SPREADSHEET_EXTERNAL_FORMULA.search(analyzable_text)
+    ):
+        rules.append({
+            "rule_id": "spreadsheet_downstream_payload",
+            "severity": "high",
+            "source": "spreadsheet_hidden_state",
+            "sink": "downstream_interpreter",
+        })
+
+    tool = (event.tool_name or "").lower()
+    writes_payload_path = tool in {"write_file", "edit_file", "create_file", "edit", "write"}
+    writes_package_lifecycle = (
+        writes_payload_path
+        and any(path.endswith("/package.json") or path == "package.json" for path in paths)
+        and _TAINT_PACKAGE_LIFECYCLE_SCRIPT.search(str(payload.get("content") or ""))
+    )
+    if (
+        (command and _command_writes_persistence_entrypoint(command))
+        or (writes_payload_path and any(_is_persistence_entrypoint_path(path) for path in paths))
+        or writes_package_lifecycle
+    ):
+        rules.append({
+            "rule_id": "persistence_entrypoint_write",
+            "severity": "high",
+            "source": "local_write",
+            "sink": "future_execution_entrypoint",
+        })
+
+    if not rules:
+        return None
+
+    rule_ids = [str(rule["rule_id"]) for rule in rules]
+    return {
+        "rules": rules,
+        "rule_ids": rule_ids,
+        "chain_count": len(rules),
+        "command_hash": "sha256:" + hashlib.sha256(command.encode("utf-8")).hexdigest() if command else None,
+        "redaction_policy_version": "cs.taint_flow_summary.v1",
+    }
+
+
+_FIRST_USE_SCAN_RULE_BY_STATE = {
+    "scan_not_started": "first_use_scan_not_started",
+    "scan_running_sync": "first_use_scan_running_sync",
+    "scan_pending_budget_exhausted": "first_use_scan_pending_budget_exhausted",
+    "scan_failed": "first_use_scan_failed",
+}
+
+
+def skill_trust_first_use_state_rule(skill_trust) -> str | None:
+    """Return the first-use scan rule id for unresolved skill identities."""
+
+    if skill_trust is None:
+        return None
+    if skill_trust.registry_status in {"unknown", "unbound"}:
+        pass
+    elif (
+        skill_trust.registry_status == "matched"
+        and skill_trust.trust_list_state in {"greylist", "unlisted", "disabled"}
+    ):
+        pass
+    else:
+        return None
+    scan = skill_trust.first_use_scan
+    if scan is None:
+        return None
+    return _FIRST_USE_SCAN_RULE_BY_STATE.get(scan.state)
+
+
+def skill_trust_first_use_action(skill_trust, config: DetectionConfig) -> str | None:
+    """Resolve the configured first-use action for the active profile."""
+
+    if skill_trust_first_use_state_rule(skill_trust) is None:
+        return None
+    mode = str(config.mode or "normal").strip().lower()
+    if mode not in {"normal", "benchmark", "strict", "permissive"}:
+        mode = "normal"
+    return str(getattr(config, f"skill_trust_first_use_{mode}_action", "audit"))
+
+
+def _skill_trust_evidence(
+    event: CanonicalEvent,
+    context: Optional[DecisionContext],
+    current_level: RiskLevel,
+    current_score: float,
+    config: DetectionConfig,
+) -> tuple[RiskLevel, float, list[str], list[dict]]:
+    skill_trust = context.skill_trust if context is not None else None
+    if skill_trust is None:
+        return current_level, current_score, [], []
+
+    rule_hits: list[str] = []
+    findings: list[dict] = []
+
+    if skill_trust.registry_status == "unknown":
+        rule_hits.append("unknown_skill_identity")
+    elif skill_trust.registry_status == "unbound":
+        rule_hits.append("unbound_skill_identity")
+    elif skill_trust.registry_status == "ambiguous":
+        rule_hits.append("ambiguous_skill_alias")
+    elif skill_trust.registry_status == "hash_mismatch":
+        rule_hits.append("skill_hash_mismatch")
+
+    for violation in skill_trust.invariant_violations:
+        if violation not in rule_hits:
+            rule_hits.append(violation)
+
+    if (
+        skill_trust.provenance_claim
+        and skill_trust.presented_name
+        and _skill_identity_normalize(skill_trust.provenance_claim)
+        == _skill_identity_normalize(skill_trust.presented_name)
+        and skill_trust.provenance_claim != skill_trust.presented_name
+    ):
+        rule_hits.append("provenance_label_mismatch")
+
+    first_use_rule = skill_trust_first_use_state_rule(skill_trust)
+    first_use_action = skill_trust_first_use_action(skill_trust, config)
+    if first_use_rule and first_use_rule not in rule_hits:
+        rule_hits.append(first_use_rule)
+
+    for rule_id in rule_hits:
+        finding = {
+            "rule_id": rule_id,
+            "registry_status": skill_trust.registry_status,
+            "canonical_skill_id": skill_trust.canonical_skill_id,
+            "presented_name": skill_trust.presented_name,
+            "provenance_claim": skill_trust.provenance_claim,
+            "alias_match_type": skill_trust.alias_match_type,
+            "admission_scan_id": skill_trust.admission_scan_id,
+            "admission_risk": skill_trust.admission_risk,
+            "trust_list_state": skill_trust.trust_list_state,
+            "policy_fingerprint": skill_trust.policy_fingerprint,
+            "decision_affecting": False,
+        }
+        if rule_id == first_use_rule and skill_trust.first_use_scan is not None:
+            finding.update({
+                "first_use_scan_state": skill_trust.first_use_scan.state,
+                "first_use_action": first_use_action or "audit",
+                "first_use_scan_failure_class": skill_trust.first_use_scan.failure_class,
+                "first_use_scan_admission_risk": skill_trust.first_use_scan.admission_risk,
+            })
+        findings.append(finding)
+
+    if event.event_type != EventType.PRE_ACTION:
+        return current_level, current_score, rule_hits, findings
+
+    upgrade_level: RiskLevel | None = None
+    rule_set = set(rule_hits)
+    hard_confidence = (
+        "skill_hash_mismatch" in rule_set
+        or "blacklisted_skill_identity" in rule_set
+        or "revoked_skill_identity" in rule_set
+    )
+    soft_confidence = (
+        {"ambiguous_skill_alias", "provenance_label_conflict"}.issubset(rule_set)
+        or {"unknown_skill_identity", "unknown_skill_provenance_rewrite"}.issubset(rule_set)
+        or "low_trust_redefined_canonical_tool" in rule_set
+    )
+    if hard_confidence:
+        upgrade_level = RiskLevel.HIGH
+    elif soft_confidence:
+        mode = str(config.mode or "normal").strip().lower()
+        upgrade_level = (
+            RiskLevel.HIGH
+            if mode in {"benchmark", "strict"}
+            else RiskLevel.MEDIUM
+        )
+    if first_use_action == "block":
+        upgrade_level = RiskLevel.HIGH
+    if skill_trust.admission_risk == "critical":
+        upgrade_level = RiskLevel.CRITICAL
+
+    if upgrade_level is None:
+        if first_use_action in {"force_l2", "force_l3", "defer"}:
+            for finding in findings:
+                if finding.get("rule_id") == first_use_rule:
+                    finding["decision_affecting"] = True
+        return current_level, current_score, rule_hits, findings
+
+    for finding in findings:
+        finding["decision_affecting"] = True
+    risk_level = _max_risk_level(current_level, upgrade_level)
+    score = max(current_score, _min_score_for_level(risk_level, config))
+    return risk_level, score, rule_hits, findings
+
+
+def _skill_identity_normalize(value: str) -> str:
+    return re.sub(r"[\s_-]+", "", value.strip().lower())
+
+
+def _counts_toward_d4_high_risk(snapshot: RiskSnapshot) -> bool:
+    if snapshot.short_circuit_rule is not None:
+        return True
+    if max(snapshot.dimensions.d1, snapshot.dimensions.d2, snapshot.dimensions.d3) >= 3:
+        return True
+    if snapshot.taint_flow_summary is not None:
+        return True
+    rule_hits = set(snapshot.rule_hits)
+    if not rule_hits:
+        return True
+    skill_trust_rules = {
+        "ambiguous_skill_alias",
+        "blacklisted_skill_identity",
+        "greylisted_skill_identity",
+        "low_trust_redefined_canonical_tool",
+        "provenance_label_conflict",
+        "provenance_label_mismatch",
+        "revoked_skill_identity",
+        "runtime_registry_claim_untrusted",
+        "skill_hash_mismatch",
+        "unbound_skill_identity",
+        "unknown_skill_identity",
+        "unknown_skill_provenance_rewrite",
+        "first_use_scan_failed",
+        "first_use_scan_not_started",
+        "first_use_scan_pending_budget_exhausted",
+        "first_use_scan_running_sync",
+    }
+    if not rule_hits.issubset(skill_trust_rules):
+        return True
+    return any(
+        rule in rule_hits
+        for rule in {
+            "blacklisted_skill_identity",
+            "revoked_skill_identity",
+            "skill_hash_mismatch",
+        }
+    )
+
+
+def _max_risk_level(a: RiskLevel, b: RiskLevel) -> RiskLevel:
+    return a if RISK_LEVEL_ORDER[a] >= RISK_LEVEL_ORDER[b] else b
+
+
+def _min_score_for_level(level: RiskLevel, config: DetectionConfig) -> float:
+    if level == RiskLevel.CRITICAL:
+        return config.threshold_critical
+    if level == RiskLevel.HIGH:
+        return config.threshold_high
+    if level == RiskLevel.MEDIUM:
+        return config.threshold_medium
+    return 0.0
+
+
 def _extract_text_for_d6(event: CanonicalEvent) -> str:
     """Extract analyzable text from event payload for D6 scoring."""
     payload = event.payload or {}
     parts: list[str] = []
-    for key in (
-        "command",
-        "content",
-        "text",
-        "body",
-        "input",
-        "code",
-        "message",
-        "transcript",
-        "userMessage",
-        "user_message",
-        "prompt",
-        "instructions",
-        "description",
-    ):
+    for key in ("command", "content", "text", "body", "input", "code", "message", "transcript", "userMessage", "user_message"):
         val = payload.get(key)
         if isinstance(val, str) and val:
             parts.append(val)
-    write_content = _extract_write_content(event)
-    if write_content:
-        parts.append(write_content)
     if event.risk_hints:
         parts.extend(str(h) for h in event.risk_hints)
     return " ".join(parts)
@@ -768,7 +1151,7 @@ def compute_risk_snapshot(
         d3 = 0
 
     # D4
-    d4 = session_tracker.get_d4(event.session_id)
+    d4 = session_tracker.get_d4(event.session_id, config=config)
 
     # D5
     d5 = _score_d5(context)
@@ -788,30 +1171,15 @@ def compute_risk_snapshot(
     ) if payload_text else 0.0
 
     dims = RiskDimensions(d1=d1, d2=d2, d3=d3, d4=d4, d5=d5, d6=d6)
-    extracted_paths = _extract_paths(event)
-    write_signal_content = _extract_write_content(event)
-    if not write_signal_content:
-        write_signal_content = _extract_shell_command(event)
-    shell_command = _extract_shell_command(event)
-    file_write_signals = build_file_write_persistence_signals(
-        tool_name=event.tool_name or "",
-        path_text=" ".join(extracted_paths),
-        content_text=write_signal_content,
-        risk_hints=event.risk_hints,
-    )
 
     # Short-circuit rules (priority over scoring)
     sc_rule: Optional[str] = None
     sc_level: Optional[RiskLevel] = None
-    if file_write_signals["persistence_write"]:
-        sc_rule = "SC-4"
-        sc_level = RiskLevel.HIGH
-    else:
-        for rule_id, predicate, level in _SHORT_CIRCUIT_RULES:
-            if predicate(dims):
-                sc_rule = rule_id
-                sc_level = level
-                break
+    for rule_id, predicate, level in _SHORT_CIRCUIT_RULES:
+        if predicate(dims):
+            sc_rule = rule_id
+            sc_level = level
+            break
 
     # Composite scoring (E-4 v2 formula)
     score = _composite_score_v2(dims, config)
@@ -826,6 +1194,35 @@ def compute_risk_snapshot(
         risk_level = RiskLevel.MEDIUM
         sc_rule = None  # D6 override invalidates the short-circuit
 
+    risk_level, score, rule_hits, skill_trust_findings = _skill_trust_evidence(
+        event,
+        context,
+        risk_level,
+        score,
+        config,
+    )
+    taint_flow_summary = _taint_flow_summary(event)
+    if taint_flow_summary is not None:
+        taint_rule_hits = [
+            str(rule_id)
+            for rule_id in taint_flow_summary.get("rule_ids", [])
+        ]
+        for rule_id in taint_rule_hits:
+            if rule_id not in rule_hits:
+                rule_hits.append(rule_id)
+        if event.event_type == EventType.PRE_ACTION:
+            severities = {
+                str(rule.get("severity"))
+                for rule in taint_flow_summary.get("rules", [])
+                if isinstance(rule, dict)
+            }
+            if "critical" in severities:
+                risk_level = _max_risk_level(risk_level, RiskLevel.CRITICAL)
+                score = max(score, _min_score_for_level(risk_level, config))
+            elif "high" in severities:
+                risk_level = _max_risk_level(risk_level, RiskLevel.HIGH)
+                score = max(score, _min_score_for_level(risk_level, config))
+
     snapshot = RiskSnapshot(
         risk_level=risk_level,
         composite_score=score,
@@ -834,21 +1231,16 @@ def compute_risk_snapshot(
         missing_dimensions=missing_dims,
         classified_by=ClassifiedBy.L1,
         classified_at=utc_now_iso(),
-        risk_evidence=(
-            _build_persistence_write_evidence(
-                event=event,
-                paths=extracted_paths,
-                content_text=write_signal_content,
-                shell_command=shell_command,
-                signals=file_write_signals,
-            )
-            if sc_rule == "SC-4"
-            else {}
-        ),
+        rule_hits=rule_hits,
+        skill_trust_findings=skill_trust_findings,
+        taint_flow_summary=taint_flow_summary,
     )
 
     # Update session tracker if risk >= high
-    if risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL):
+    if (
+        risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL)
+        and _counts_toward_d4_high_risk(snapshot)
+    ):
         session_tracker.record_high_risk_event(event.session_id)
 
     return snapshot

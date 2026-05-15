@@ -19,6 +19,7 @@ import json
 import argparse
 import logging
 import os
+import re
 import struct
 import sys
 import time
@@ -73,8 +74,10 @@ from .models import (
     SyncDecisionErrorResponse,
     SyncDecisionRequest,
     SyncDecisionResponse,
+    SessionScopeBaseRules,
     SessionEffectRequest,
     SessionScopeProfile,
+    SessionScopeTaskRules,
     adapter_effect_result_summary,
     decision_effect_summary,
     decision_effects_for_trajectory,
@@ -99,6 +102,8 @@ from .session_enforcement import (
     EnforcementAction,
     SessionEnforcementPolicy,
 )
+from .skill_trust import AdmissionScanner, load_skill_registry_records, resolve_skill_trust
+from .models import LineageEvent, McpContext, SkillRegistryRecord, SkillTrustContext
 from .enterprise import (
     build_enterprise_event_async,
     build_enterprise_live_snapshot_cached_async,
@@ -131,6 +136,48 @@ def _validate_public_l3_advisory_runner(runner: str) -> None:
 # ---------------------------------------------------------------------------
 
 _RISK_LEVEL_RANK: dict[str, int] = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+_CAPABILITY_NARROWING_READONLY_TOOLS = (
+    "read_file",
+    "list_dir",
+    "search",
+    "grep",
+    "glob",
+    "list_files",
+    "read",
+    "find",
+    "cat",
+    "head",
+    "tail",
+)
+_CAPABILITY_NARROWING_DENIED_TOOLS = (
+    "write_file",
+    "edit_file",
+    "create_file",
+    "edit",
+    "write",
+    "bash",
+    "shell",
+    "terminal",
+    "command",
+    "exec",
+    "http_request",
+    "fetch",
+    "web_fetch",
+    "install_package",
+)
+_SAFE_LINEAGE_KEYS = {
+    "presented_skill_name",
+    "skill_root_path_hash",
+    "skill_manifest_hash",
+    "content_hash",
+    "native_tool_label",
+    "output_provenance_label",
+    "tool_called",
+    "skill_invocation_id",
+    "parent_event_id",
+    "metadata_source",
+    "field_availability",
+}
 
 def _risk_rank(risk_level: Optional[str]) -> int:
     return _RISK_LEVEL_RANK.get(str(risk_level or "low").lower(), 0)
@@ -139,6 +186,548 @@ def _risk_rank(risk_level: Optional[str]) -> int:
 def _risk_points(risk_level: Any) -> int:
     """Return the display/L3-explainability ordinal for a risk level."""
     return _risk_rank(str(risk_level or "low"))
+
+
+def _capability_narrowing_profile(reason_code: str) -> SessionScopeProfile:
+    """Build a Gateway-enforced scope profile for critical session risk."""
+
+    return SessionScopeProfile(
+        profile_id=f"capability-narrowing:{reason_code}",
+        confirmed=True,
+        dry_run=False,
+        base_rules=SessionScopeBaseRules(
+            denied_tools=list(_CAPABILITY_NARROWING_DENIED_TOOLS),
+            denied_skill_trust_states=["blacklist", "revoked"],
+            denied_mcp_tools=["fetch.fetch"],
+            denied_mcp_statuses=["blacklist", "revoked"],
+            denied_mcp_trust_levels=["untrusted"],
+            denied_command_prefixes=[
+                "rm ",
+                "sudo ",
+                "chmod ",
+                "curl ",
+                "wget ",
+            ],
+        ),
+        task_rules=SessionScopeTaskRules(
+            allowed_tools=list(_CAPABILITY_NARROWING_READONLY_TOOLS),
+            allowed_skill_trust_states=["allowlist"],
+            allowed_mcp_tools=["filesystem.read_file"],
+            queued_categories=["network"],
+        ),
+    )
+
+
+def _lineage_summary_from_event(event: dict[str, Any]) -> dict[str, Any] | None:
+    """Extract redacted skill lineage metadata and remove unsafe raw fields."""
+
+    payload = event.get("payload")
+    if not isinstance(payload, dict):
+        return None
+    meta = payload.get("_clawsentry_meta")
+    if not isinstance(meta, dict):
+        return None
+    raw = meta.get("skill_lineage_raw")
+    if not isinstance(raw, dict):
+        return None
+
+    summary: dict[str, Any] = {}
+    for key, value in raw.items():
+        if key not in _SAFE_LINEAGE_KEYS or value is None:
+            continue
+        safe_value = _safe_lineage_value(key, value)
+        if safe_value is not None:
+            summary[key] = safe_value
+    summary["redaction_policy_version"] = "cs.skill_lineage.redaction.v1"
+    if len(summary) == 1:
+        summary["redacted"] = True
+    meta["skill_lineage_raw"] = dict(summary)
+    return summary
+
+
+def _lineage_event_from_summary(
+    *,
+    event: dict[str, Any],
+    decision: dict[str, Any],
+    context: DecisionContext | None,
+    summary: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Build the typed replay lineage event from redacted lineage metadata."""
+
+    event_id = str(event.get("event_id") or "").strip()
+    session_id = str(event.get("session_id") or "").strip()
+    tool_name = str(
+        summary.get("native_tool_label")
+        or summary.get("tool_called")
+        or event.get("tool_name")
+        or ""
+    ).strip()
+    policy_version = str(decision.get("policy_version") or "").strip()
+    if not event_id or not session_id or not tool_name or not policy_version:
+        return None
+
+    skill_trust = context.skill_trust if context is not None else None
+    try:
+        lineage = LineageEvent(
+            event_id=event_id,
+            session_id=session_id,
+            canonical_skill_id=(
+                skill_trust.canonical_skill_id
+                if skill_trust is not None
+                else None
+            ),
+            tool_name=tool_name,
+            output_provenance_label=(
+                str(summary.get("output_provenance_label") or summary.get("tool_called"))
+                if summary.get("output_provenance_label") or summary.get("tool_called")
+                else None
+            ),
+            parent_event_id=(
+                str(summary.get("parent_event_id"))
+                if summary.get("parent_event_id")
+                else None
+            ),
+            content_hash=(
+                str(summary.get("content_hash"))
+                if summary.get("content_hash")
+                else None
+            ),
+            policy_version=policy_version,
+        )
+    except Exception:
+        return None
+    return lineage.model_dump(mode="json")
+
+
+def _safe_lineage_value(key: str, value: Any) -> Any | None:
+    if key in {"skill_root_path_hash", "skill_manifest_hash", "content_hash"}:
+        if isinstance(value, str) and _is_sha256_digest(value):
+            return value[:256]
+        return None
+    if key == "field_availability":
+        if not isinstance(value, dict):
+            return None
+        return {
+            str(field): bool(available)
+            for field, available in value.items()
+            if isinstance(field, str)
+            and isinstance(available, bool)
+            and len(field) <= 80
+        }
+    if isinstance(value, str):
+        return _redacted_target_preview(value, max_len=256)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value
+    return None
+
+
+def _is_sha256_digest(value: str) -> bool:
+    return re.fullmatch(r"sha256:[0-9a-fA-F]{64}", value.strip()) is not None
+
+
+def _safe_skill_trust_raw_value(key: str, value: Any) -> Any | None:
+    if key in {"presented_name", "provenance_claim", "tool_label"} and isinstance(value, str):
+        return value[:256]
+    if key == "gateway_owned_metadata" and isinstance(value, bool):
+        return value
+    if key == "content_hashes" and isinstance(value, dict):
+        return {
+            str(name)[:120]: str(digest)[:256]
+            for name, digest in value.items()
+            if isinstance(name, str) and isinstance(digest, str)
+        }
+    if key == "control_language_findings" and isinstance(value, list):
+        return [str(item)[:120] for item in value[:20] if isinstance(item, str)]
+    if key == "provenance_label_conflict" and isinstance(value, bool):
+        return value
+    return None
+
+
+def _redact_skill_trust_raw_from_event(event: dict[str, Any]) -> dict[str, Any] | None:
+    """Keep replay-safe skill trust metadata and drop raw registry/source payloads."""
+
+    payload = event.get("payload")
+    if not isinstance(payload, dict):
+        return None
+    meta = payload.get("_clawsentry_meta")
+    if not isinstance(meta, dict):
+        return None
+    raw = meta.get("skill_trust_raw")
+    if not isinstance(raw, dict):
+        return None
+
+    summary: dict[str, Any] = {}
+    records_payload = raw.get("registry_records")
+    if isinstance(records_payload, list):
+        summary["registry_record_count"] = len(records_payload)
+        record_summaries: list[dict[str, Any]] = []
+        for item in records_payload[:20]:
+            if not isinstance(item, dict):
+                continue
+            record_summary = {
+                key: str(item[key])[:256]
+                for key in ("canonical_skill_id", "canonical_name", "policy_fingerprint")
+                if isinstance(item.get(key), str)
+            }
+            record_summary.update({
+                "trust_level": "local_unreviewed",
+                "status": "local_unreviewed",
+                "list_state": "unlisted",
+                "runtime_claim_trusted": False,
+            })
+            aliases = item.get("aliases")
+            if isinstance(aliases, list):
+                record_summary["aliases"] = [
+                    str(alias)[:120] for alias in aliases[:20] if isinstance(alias, str)
+                ]
+            content_hashes = item.get("content_hashes")
+            if isinstance(content_hashes, dict):
+                record_summary["content_hash_keys"] = [
+                    name[:120]
+                    for name in sorted(
+                        key for key in content_hashes if isinstance(key, str)
+                    )[:20]
+                ]
+            if record_summary:
+                record_summaries.append(record_summary)
+        if record_summaries:
+            summary["registry_records"] = record_summaries
+
+    gateway_owned = raw.get("gateway_owned_metadata") is True
+    for key, value in raw.items():
+        if key in {"admission_scan_id", "admission_risk", "policy_fingerprint"}:
+            if gateway_owned and isinstance(value, str):
+                summary[str(key)] = value[:256]
+            continue
+        safe_value = _safe_skill_trust_raw_value(str(key), value)
+        if safe_value is not None:
+            summary[str(key)] = safe_value
+
+    summary["redaction_policy_version"] = "cs.skill_trust_raw.redaction.v1"
+    summary["redacted"] = True
+    meta["skill_trust_raw"] = summary
+    return summary
+
+
+def _redacted_target_preview(value: Any, *, max_len: int = 96) -> str:
+    text = str(value or "").replace("\n", " ").strip()
+    if not text:
+        return ""
+    text = re.sub(r"/workspace/[^\s'\"<>|)]+", "/workspace/<redacted>", text)
+    text = re.sub(r"/home/[^\s'\"<>|)]+", "/home/<redacted>", text)
+    text = re.sub(r"~/?[^\s'\"<>|)]*", "~/<redacted>", text)
+    text = re.sub(r"(?i)(token|password|secret|api_key)=([^\s&]+)", r"\1=<redacted>", text)
+    if len(text) > max_len:
+        text = text[: max_len - 1] + "…"
+    return text
+
+
+def _safe_mcp_raw_value(key: str, value: Any) -> Any | None:
+    if key in {"server_name", "tool_name", "resource_kind", "resource_uri_hash", "trust_level", "status"} and isinstance(value, str):
+        return value[:256]
+    return None
+
+
+def _redact_mcp_raw_from_event(event: dict[str, Any]) -> dict[str, Any] | None:
+    """Keep replay-safe MCP metadata and drop raw resource URIs/payloads."""
+
+    payload = event.get("payload")
+    if not isinstance(payload, dict):
+        return None
+    meta = payload.get("_clawsentry_meta")
+    if not isinstance(meta, dict):
+        return None
+    raw = meta.get("mcp_raw")
+    if not isinstance(raw, dict):
+        return None
+
+    summary: dict[str, Any] = {}
+    for key, value in raw.items():
+        safe_value = _safe_mcp_raw_value(str(key), value)
+        if safe_value is not None:
+            summary[str(key)] = safe_value
+    summary["redaction_policy_version"] = "cs.mcp_raw.redaction.v1"
+    summary["redacted"] = True
+    meta["mcp_raw"] = summary
+    return summary
+
+
+def _context_with_mcp_raw(
+    context: DecisionContext | None,
+    event: CanonicalEvent,
+) -> DecisionContext | None:
+    """Resolve raw MCP metadata from event meta into DecisionContext evidence."""
+
+    payload = event.payload or {}
+    meta = payload.get("_clawsentry_meta")
+    if not isinstance(meta, dict):
+        if context is not None and context.mcp_context is not None:
+            return context.model_copy(update={"mcp_context": None})
+        return context
+    raw = meta.get("mcp_raw")
+    if not isinstance(raw, dict):
+        if context is not None and context.mcp_context is not None:
+            return context.model_copy(update={"mcp_context": None})
+        return context
+
+    context_payload = {
+        key: value
+        for key, value in raw.items()
+        if key in {"server_name", "tool_name", "resource_kind", "resource_uri_hash", "trust_level", "status"}
+    }
+    expected_server, expected_tool = _mcp_identity_from_event_tool(event.tool_name)
+    if expected_server is not None:
+        raw_server = str(context_payload.get("server_name") or "")
+        raw_tool = str(context_payload.get("tool_name") or "")
+        if raw_server != expected_server or raw_tool != expected_tool:
+            if context is not None and context.mcp_context is not None:
+                return context.model_copy(update={"mcp_context": None})
+            return context
+    try:
+        mcp_context = McpContext.model_validate(context_payload)
+    except Exception:
+        return context
+    if context is None:
+        return DecisionContext(mcp_context=mcp_context)
+    return context.model_copy(update={"mcp_context": mcp_context})
+
+
+def _mcp_identity_from_event_tool(tool_name: str | None) -> tuple[str | None, str | None]:
+    parts = str(tool_name or "").split("__")
+    if len(parts) >= 3 and parts[0] == "mcp":
+        return parts[1], "__".join(parts[2:])
+    return None, None
+
+
+def _downgrade_request_skill_trust(skill_trust: SkillTrustContext) -> SkillTrustContext:
+    """Treat request context skill identity as untrusted adapter evidence."""
+
+    presented_name = skill_trust.presented_name or skill_trust.canonical_skill_id
+    violations = set(skill_trust.invariant_violations)
+    violations.add("request_context_skill_trust_untrusted")
+    return skill_trust.model_copy(update={
+        "registry_status": "unknown" if presented_name else "unbound",
+        "canonical_skill_id": None,
+        "presented_name": presented_name,
+        "admission_risk": "unknown",
+        "trust_list_state": "unlisted",
+        "invariant_violations": sorted(violations),
+        "policy_fingerprint": "sha256:request-context-skill-trust-untrusted",
+    })
+
+
+def _context_with_skill_trust_raw(
+    context: DecisionContext | None,
+    event: CanonicalEvent,
+    trusted_records: list[SkillRegistryRecord] | None = None,
+    deadline_at: float | None = None,
+) -> DecisionContext | None:
+    """Resolve raw skill metadata from event meta into DecisionContext evidence."""
+
+    gateway_records = list(trusted_records or [])
+    payload = event.payload or {}
+    meta = payload.get("_clawsentry_meta")
+    if not isinstance(meta, dict):
+        if context is not None and context.skill_trust is not None:
+            return context.model_copy(update={"skill_trust": _downgrade_request_skill_trust(context.skill_trust)})
+        return context
+    raw = meta.get("skill_trust_raw")
+    if not isinstance(raw, dict):
+        if context is not None and context.skill_trust is not None:
+            return context.model_copy(update={"skill_trust": _downgrade_request_skill_trust(context.skill_trust)})
+        return context
+    runtime_records_added = isinstance(raw.get("registry_records"), list)
+    raw_metadata = _sanitize_request_skill_trust_raw(raw)
+    for key in (
+        "gateway_owned_metadata",
+        "admission_scan_id",
+        "admission_risk",
+        "policy_fingerprint",
+        "skill_root_path",
+    ):
+        raw.pop(key, None)
+    owned_raw = _gateway_owned_skill_trust_metadata(raw_metadata.get("presented_name"))
+    records: list[SkillRegistryRecord] = []
+    if owned_raw:
+        records = list(gateway_records)
+        raw_metadata.update(owned_raw)
+        _apply_gateway_owned_first_use_scan(raw_metadata, deadline_at=deadline_at)
+        raw.update(owned_raw)
+        for key in (
+            "admission_scan_id",
+            "admission_risk",
+            "policy_fingerprint",
+            "content_hashes",
+            "admission_scan_requested",
+            "admission_scan_failure_class",
+        ):
+            if key in raw_metadata:
+                raw[key] = raw_metadata[key]
+    elif raw_metadata.get("presented_name"):
+        raw_metadata["_request_skill_trust_raw_untrusted"] = True
+    if runtime_records_added:
+        raw_metadata["_registry_records_untrusted"] = True
+        if not gateway_records:
+            raw_metadata = {
+                "presented_name": raw_metadata.get("presented_name"),
+                "_registry_records_untrusted": True,
+            }
+    skill_trust = resolve_skill_trust(records, raw_metadata)
+    if runtime_records_added and "runtime_registry_claim_untrusted" in skill_trust.invariant_violations:
+        skill_trust = skill_trust.model_copy(update={
+            "canonical_skill_id": None,
+            "registry_status": (
+                "unknown"
+                if skill_trust.registry_status == "matched"
+                else skill_trust.registry_status
+            ),
+            "trust_list_state": "unlisted",
+        })
+    if context is None:
+        return DecisionContext(skill_trust=skill_trust)
+    return context.model_copy(update={"skill_trust": skill_trust})
+
+
+def _skill_trust_identity_key(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", str(value or "").strip().lower()).strip("-")
+
+
+def _sanitize_request_skill_trust_raw(raw: dict[str, Any]) -> dict[str, Any]:
+    """Keep request skill-trust fields observational, not decision-derived."""
+
+    allowed = {
+        "presented_name",
+        "provenance_claim",
+        "content_hashes",
+        "admission_scan_requested",
+        "admission_scan_budget_exhausted",
+        "admission_scan_failure_class",
+    }
+    return {key: value for key, value in raw.items() if key in allowed}
+
+
+def _gateway_owned_skill_trust_metadata(presented_name: Any) -> dict[str, Any]:
+    if not presented_name:
+        return {}
+    metadata_path = os.environ.get("CS_SKILL_TRUST_METADATA_PATH")
+    if not metadata_path:
+        return {}
+    path = Path(metadata_path)
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    raw_by_skill = payload.get("raw_metadata_by_skill") if isinstance(payload, dict) else None
+    if not isinstance(raw_by_skill, dict):
+        return {}
+    wanted = _skill_trust_identity_key(presented_name)
+    for key, value in raw_by_skill.items():
+        if _skill_trust_identity_key(key) == wanted and isinstance(value, dict):
+            owned = {
+                field: value[field]
+                for field in (
+                    "control_language_findings",
+                    "provenance_label_conflict",
+                    "admission_scan_id",
+                    "admission_risk",
+                    "policy_fingerprint",
+                    "skill_root_path",
+                )
+                if field in value
+            }
+            owned["gateway_owned_metadata"] = True
+            return owned
+    return {}
+
+
+def _apply_gateway_owned_first_use_scan(
+    raw_metadata: dict[str, Any],
+    *,
+    deadline_at: float | None = None,
+) -> None:
+    """Run synchronous first-use scan only for Gateway-owned skill metadata."""
+
+    if raw_metadata.get("admission_scan_id") or not raw_metadata.get("gateway_owned_metadata"):
+        return
+    root_value = raw_metadata.get("skill_root_path")
+    if not isinstance(root_value, str) or not root_value.strip():
+        return
+    raw_metadata["admission_scan_requested"] = True
+    if deadline_at is not None and (deadline_at - time.monotonic()) * 1000 <= 25:
+        raw_metadata["admission_scan_budget_exhausted"] = True
+        return
+    try:
+        root = Path(root_value)
+        if not root.is_dir() or not (root / "SKILL.md").is_file():
+            raw_metadata["admission_scan_failure_class"] = "input_invalid"
+            return
+        report = AdmissionScanner().scan(root, deadline_at=deadline_at)
+    except TimeoutError:
+        raw_metadata["admission_scan_budget_exhausted"] = True
+        return
+    except Exception:
+        raw_metadata["admission_scan_failure_class"] = "scan_failed"
+        return
+    raw_metadata["admission_scan_id"] = report.scan_id
+    raw_metadata["admission_risk"] = report.admission_risk.value
+    raw_metadata["policy_fingerprint"] = report.policy_fingerprint
+    raw_metadata["content_hashes"] = report.content_hashes
+
+
+def _request_skill_trust_metadata(skill_trust: SkillTrustContext) -> dict[str, Any]:
+    """Extract runtime-observation fields from request context trust data."""
+
+    payload: dict[str, Any] = {}
+    if skill_trust.presented_name:
+        payload["presented_name"] = skill_trust.presented_name
+    elif skill_trust.canonical_skill_id:
+        payload["presented_name"] = skill_trust.canonical_skill_id
+    if skill_trust.provenance_claim:
+        payload["provenance_claim"] = skill_trust.provenance_claim
+    return payload
+
+
+def _agent_safety_feedback(
+    *,
+    decision: CanonicalDecision,
+    snapshot: dict[str, Any],
+    delivery: str,
+) -> dict[str, Any] | None:
+    """Return redacted feedback for an agent after a critical pre-action block."""
+
+    if decision.decision != DecisionVerdict.BLOCK:
+        return None
+    risk_level = str(snapshot.get("risk_level") or decision.risk_level.value)
+    if _risk_rank(risk_level) < _risk_rank("critical"):
+        return None
+    rule_hits = snapshot.get("rule_hits")
+    if not isinstance(rule_hits, list):
+        rule_hits = []
+    return {
+        "risk_level": risk_level,
+        "policy_id": decision.policy_id,
+        "rule_hits": [str(item) for item in rule_hits],
+        "delivery": delivery,
+        "message": (
+            "ClawSentry blocked this action because the supervisor classified it "
+            "as critical risk. Use a read-only inspection step or a narrower, "
+            "user-approved alternative instead of retrying the same action unchanged."
+        ),
+        "redaction_policy_version": "cs.agent_safety_feedback.v1",
+    }
+
+
+def _agent_safety_feedback_supported(context: DecisionContext | None, event: CanonicalEvent) -> bool:
+    caller_adapter = str(context.caller_adapter if context else "" or "").lower()
+    source_framework = str(event.source_framework or "").lower()
+    supported_markers = ("codex", "a3s", "openclaw")
+    return any(marker in caller_adapter for marker in supported_markers) or any(
+        marker in source_framework for marker in supported_markers
+    )
 
 
 def _float_or_zero(value: Any) -> float:
@@ -556,6 +1145,9 @@ _APPROVAL_DENIED_REASON_CODE = "approval_denied"
 _APPROVAL_TIMEOUT_REASON_CODE = "approval_timeout"
 _APPROVAL_NO_ROUTE_REASON_CODE = "approval_no_route"
 _APPROVAL_QUEUE_FULL_REASON_CODE = "approval_queue_full"
+_APPROVAL_FIELD_SOURCE_ADAPTER = "adapter_provided"
+_APPROVAL_FIELD_SOURCE_GENERATED = "generated"
+_APPROVAL_FIELD_SOURCE_UNAVAILABLE = "unavailable"
 
 
 def _is_confirmation_fast_lane(
@@ -607,6 +1199,98 @@ def _approval_pending_meta(
         "approval_reason": approval_reason,
         "approval_reason_code": _APPROVAL_PENDING_REASON_CODE,
         "approval_timeout_s": approval_timeout_s,
+    }
+
+
+def _approval_prompt_context(
+    *,
+    event: dict[str, Any],
+    decision: dict[str, Any],
+) -> dict[str, Any]:
+    payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
+    operation_source = _APPROVAL_FIELD_SOURCE_UNAVAILABLE
+    operation = _redacted_target_preview(
+        event.get("tool_name")
+        or payload.get("tool")
+        or payload.get("operation")
+        or "unknown",
+        max_len=80,
+    ).strip() or "unknown"
+    if operation != "unknown":
+        operation_source = _APPROVAL_FIELD_SOURCE_ADAPTER
+    affected_target = "unspecified target"
+    affected_target_source = _APPROVAL_FIELD_SOURCE_UNAVAILABLE
+    for key in (
+        "target",
+        "path",
+        "file_path",
+        "workspace_root",
+        "workspace",
+        "cwd",
+        "working_directory",
+    ):
+        value = payload.get(key)
+        if value is None:
+            value = event.get(key)
+        text = str(value or "").strip()
+        if text:
+            affected_target = text
+            affected_target_source = _APPROVAL_FIELD_SOURCE_ADAPTER
+            break
+    affected_target = _redacted_target_preview(affected_target) or "unspecified target"
+    risk_level = str(decision.get("risk_level") or "unknown")
+    policy_id = str(decision.get("policy_id") or "unknown")
+    consequence = (
+        f"Approving lets {operation} proceed against {affected_target} "
+        f"under {risk_level} risk policy {policy_id}."
+    )
+    command = str(payload.get("command") or "").lower()
+    if "rm " in command or "delete" in command or "remove" in command:
+        rollback_hint = (
+            "Restore from VCS, snapshot, or backup before retrying; verify the "
+            "affected path before approval."
+        )
+    else:
+        rollback_hint = (
+            "Use adapter or tool rollback support when available; otherwise keep "
+            "the action read-only until an operator confirms recovery steps."
+        )
+    return {
+        "affected_target": affected_target,
+        "operation": operation,
+        "consequence": consequence,
+        "dry_run_or_narrower_scope_suggestion": (
+            "Prefer a dry-run/read-only preview or narrow the action to the "
+            "smallest explicit target before approval."
+        ),
+        "rollback_hint": rollback_hint,
+        "field_sources": {
+            "affected_target": affected_target_source,
+            "operation": operation_source,
+            "consequence": _APPROVAL_FIELD_SOURCE_GENERATED,
+            "dry_run_or_narrower_scope_suggestion": _APPROVAL_FIELD_SOURCE_GENERATED,
+            "rollback_hint": _APPROVAL_FIELD_SOURCE_GENERATED,
+        },
+        "redaction_policy_version": "cs.approval_prompt.v1",
+    }
+
+
+def _approval_prompt_event_fields(
+    *,
+    event: dict[str, Any],
+    decision: dict[str, Any],
+) -> dict[str, Any]:
+    prompt = _approval_prompt_context(event=event, decision=decision)
+    return {
+        "approval_prompt": prompt,
+        "approval_affected_target": prompt["affected_target"],
+        "approval_operation": prompt["operation"],
+        "approval_consequence": prompt["consequence"],
+        "approval_dry_run_or_narrower_scope_suggestion": (
+            prompt["dry_run_or_narrower_scope_suggestion"]
+        ),
+        "approval_rollback_hint": prompt["rollback_hint"],
+        "approval_field_sources": prompt["field_sources"],
     }
 
 
@@ -780,6 +1464,7 @@ class SupervisionGateway:
         session_enforcement: Optional[SessionEnforcementPolicy] = None,
         detection_config: Optional[DetectionConfig] = None,
         anti_bypass_llm_provider: Optional[AntiBypassLLMProvider] = None,
+        skill_registry_records: Optional[list[SkillRegistryRecord]] = None,
     ) -> None:
         self._detection_config = detection_config if detection_config is not None else DetectionConfig()
         self.policy_engine = L1PolicyEngine(analyzer=analyzer, config=self._detection_config)
@@ -797,6 +1482,11 @@ class SupervisionGateway:
         self.session_enforcement = session_enforcement or SessionEnforcementPolicy()
         self.anti_bypass_guard = AntiBypassGuard()
         self.anti_bypass_llm_provider = anti_bypass_llm_provider
+        self.skill_registry_records = (
+            list(skill_registry_records)
+            if skill_registry_records is not None
+            else load_skill_registry_records(self._detection_config.skill_trust_registry_path)
+        )
         self.default_session_scope_profile = _load_default_session_scope_profile()
         self.post_action_analyzer = PostActionAnalyzer(
             whitelist_patterns=self._detection_config.post_action_whitelist,
@@ -858,6 +1548,7 @@ class SupervisionGateway:
             "reporting": {
                 "health": _new_io_metric_bucket(),
                 "report_summary": _new_io_metric_bucket(),
+                "report_policy_drift": _new_io_metric_bucket(),
                 "report_sessions": _new_io_metric_bucket(),
                 "report_session_risk": _new_io_metric_bucket(),
                 "report_session_post_action": _new_io_metric_bucket(),
@@ -933,6 +1624,10 @@ class SupervisionGateway:
                 "report_summary": {
                     **_snapshot_io_metric(reporting_bucket["report_summary"]),
                     "trajectory_store": trajectory_store_io["summary"],
+                },
+                "report_policy_drift": {
+                    **_snapshot_io_metric(reporting_bucket["report_policy_drift"]),
+                    "trajectory_store": trajectory_store_io["policy_drift"],
                 },
                 "report_sessions": {
                     **_snapshot_io_metric(reporting_bucket["report_sessions"]),
@@ -1218,13 +1913,24 @@ class SupervisionGateway:
             )
             return self._jsonrpc_error_with_data(rpc_id, -32602, error_resp)
 
-        req = req.model_copy(update={
-            "context": self._context_with_default_session_scope(req.context)
-        })
-
         # Check deadline
         start = time.monotonic()
         deadline_at = start + req.deadline_ms / 1000.0
+
+        req = req.model_copy(update={
+            "context": self._context_with_default_session_scope(req.context)
+        })
+        req = req.model_copy(update={
+            "context": _context_with_skill_trust_raw(
+                req.context,
+                req.event,
+                self.skill_registry_records,
+                deadline_at=deadline_at,
+            )
+        })
+        req = req.model_copy(update={
+            "context": _context_with_mcp_raw(req.context, req.event)
+        })
 
         # --- Optional event-scoped preset config from harness metadata ---
         _preset_name, _preset_overrides = _extract_project_config(
@@ -1239,7 +1945,7 @@ class SupervisionGateway:
         # --- E-8: Record tool call for D4 frequency analysis ---
         if req.event.tool_name:
             self.policy_engine.session_tracker.record_tool_call(
-                str(req.event.session_id or ""), req.event.tool_name
+                str(req.event.session_id or ""), req.event.tool_name, config=project_config
             )
 
         # --- Phase 2A: compromised-session quarantine check (PRE_ACTION only) ---
@@ -1287,6 +1993,8 @@ class SupervisionGateway:
             str(req.event.session_id or "")
         )
         enforcement_applied = False
+        capability_narrowing_applied = False
+        capability_narrowing_profile_id: str | None = None
         budget_exhausted = not self.budget_tracker.can_spend()
         effective_requested_tier = req.decision_tier
         l3_runtime_reason_override: str | None = None
@@ -1294,11 +2002,51 @@ class SupervisionGateway:
         effective_config = project_config or self._detection_config
         anti_bypass_match: AntiBypassMatch | None = None
         anti_bypass_probe: dict[str, object] | None = None
+        previous_session_risk = self.session_registry.get_current_risk(
+            str(req.event.session_id or "")
+        )
+        previous_session_stats = self.session_registry.get_session_stats(
+            str(req.event.session_id or "")
+        )
+        capability_narrowing_enabled = bool(effective_config.capability_narrowing_enabled)
+        elevated_session_risk = (
+            _risk_rank(previous_session_risk) >= _risk_rank("high")
+            or int(previous_session_stats.get("high_risk_event_count") or 0) > 0
+        )
+        capability_narrowing_reason = "disabled"
+        if capability_narrowing_enabled:
+            if req.event.event_type != EventType.PRE_ACTION:
+                capability_narrowing_reason = "not_pre_action"
+            elif enforcement is not None:
+                capability_narrowing_reason = "explicit_enforcement"
+            elif elevated_session_risk:
+                capability_narrowing_reason = "elevated_session_risk"
+            else:
+                capability_narrowing_reason = "session_risk_below_threshold"
+        if capability_narrowing_reason == "elevated_session_risk":
+            reason_code = "elevated_session_risk"
+            narrowed_profile = _capability_narrowing_profile(reason_code)
+            capability_narrowing_profile_id = narrowed_profile.profile_id
+            if req.context is None:
+                narrowed_context = DecisionContext(
+                    session_scope_profile_id=narrowed_profile.profile_id,
+                    session_scope_profile=narrowed_profile,
+                )
+            elif req.context.session_scope_profile is None:
+                narrowed_context = req.context.model_copy(update={
+                    "session_scope_profile_id": narrowed_profile.profile_id,
+                    "session_scope_profile": narrowed_profile,
+                })
+            else:
+                narrowed_context = req.context
+            req = req.model_copy(update={"context": narrowed_context})
+            capability_narrowing_applied = True
         if quarantine_applied:
             pass
         elif (
             enforcement is not None
             and req.event.event_type == EventType.PRE_ACTION
+            and not capability_narrowing_applied
         ):
             if enforcement.action == EnforcementAction.L3_REQUIRE:
                 effective_requested_tier = DecisionTier.L3
@@ -1542,6 +2290,18 @@ class SupervisionGateway:
                 else "unknown"
             ),
         }
+        capability_narrowing_meta = {
+            "enabled": capability_narrowing_enabled,
+            "applied": capability_narrowing_applied,
+            "reason": capability_narrowing_reason,
+        }
+        if capability_narrowing_applied:
+            capability_narrowing_meta["profile_id"] = capability_narrowing_profile_id or (
+                req.context.session_scope_profile.profile_id
+                if req.context and req.context.session_scope_profile
+                else None
+            )
+        meta_dict["capability_narrowing"] = capability_narrowing_meta
         if anti_bypass_match is not None:
             meta_dict["anti_bypass"] = anti_bypass_match.to_metadata()
             meta_dict["anti_bypass_memory_evictions"] = self.anti_bypass_guard.memory_evictions
@@ -1555,6 +2315,23 @@ class SupervisionGateway:
         l3_trace_summary = _compact_l3_evidence_summary(l3_trace)
         if l3_trace_summary is not None:
             meta_dict["l3_trace_summary"] = l3_trace_summary
+        skill_lineage = _lineage_summary_from_event(event_dict)
+        if skill_lineage is not None:
+            meta_dict["skill_lineage"] = skill_lineage
+            lineage_event = _lineage_event_from_summary(
+                event=event_dict,
+                decision=decision_dict,
+                context=req.context,
+                summary=skill_lineage,
+            )
+            if lineage_event is not None:
+                meta_dict["lineage_event"] = lineage_event
+        skill_trust_raw = _redact_skill_trust_raw_from_event(event_dict)
+        if skill_trust_raw is not None:
+            meta_dict["skill_trust_raw"] = skill_trust_raw
+        mcp_raw = _redact_mcp_raw_from_event(event_dict)
+        if mcp_raw is not None:
+            meta_dict["mcp_raw"] = mcp_raw
         # CS-024: Keep stream/session framework consistent for HTTP adapters.
         event_dict["source_framework"] = _infer_source_framework(
             event_dict.get("source_framework"),
@@ -1642,7 +2419,11 @@ class SupervisionGateway:
                         final=True,
                     )
                     decision_dict = decision.model_dump(mode="json")
-                    snapshot_dict["risk_level"] = decision.risk_level.value
+                    meta_dict["trajectory_alert_decision_override"] = {
+                        "sequence_id": tm.sequence_id,
+                        "risk_level": tm.risk_level,
+                        "handling": handling,
+                    }
         except Exception:
             logger.exception("trajectory analysis failed for event %s", req.event.event_id)
 
@@ -1694,6 +2475,22 @@ class SupervisionGateway:
                 "original_verdict": "defer",
                 "benchmark_defer_action": benchmark_action,
             })
+
+        agent_safety_feedback_for_response: dict[str, Any] | None = None
+        if (
+            effective_config.agent_safety_feedback_enabled
+            and req.event.event_type == EventType.PRE_ACTION
+        ):
+            feedback_supported = _agent_safety_feedback_supported(req.context, req.event)
+            feedback = _agent_safety_feedback(
+                decision=decision,
+                snapshot=snapshot_dict,
+                delivery="response" if feedback_supported else "audit_only",
+            )
+            if feedback is not None:
+                meta_dict["agent_safety_feedback"] = feedback
+                if feedback_supported:
+                    agent_safety_feedback_for_response = feedback
 
         record_id = self._record_decision_path(
             event=event_dict,
@@ -1810,6 +2607,8 @@ class SupervisionGateway:
             decision_event["anti_bypass_memory_evictions"] = self.anti_bypass_guard.memory_evictions
         if meta_dict.get("anti_bypass_probe") is not None:
             decision_event["anti_bypass_probe"] = meta_dict["anti_bypass_probe"]
+        if meta_dict.get("capability_narrowing") is not None:
+            decision_event["capability_narrowing"] = meta_dict["capability_narrowing"]
         effect_summary = decision_effect_summary(decision_dict.get("decision_effects"))
         if effect_summary is not None:
             decision_event["effect_summary"] = effect_summary
@@ -2061,6 +2860,10 @@ class SupervisionGateway:
                     "type": "defer_pending",
                     "session_id": session_id,
                     **pending_approval,
+                    **_approval_prompt_event_fields(
+                        event=event_dict,
+                        decision=decision_dict,
+                    ),
                     "tool_name": req.event.tool_name or "",
                     "command": str(
                         req.event.tool_name or ""
@@ -2275,6 +3078,10 @@ class SupervisionGateway:
                     "type": "defer_pending",
                     "session_id": session_id,
                     **pending_approval,
+                    **_approval_prompt_event_fields(
+                        event=event_dict,
+                        decision=decision_dict,
+                    ),
                     "tool_name": req.event.tool_name or "",
                     "command": str(
                         req.event.tool_name or ""
@@ -2448,9 +3255,12 @@ class SupervisionGateway:
             l3_state=l3_info["l3_state"],
             l3_reason=l3_info["l3_reason"],
             l3_reason_code=l3_info["l3_reason_code"],
+            agent_safety_feedback=agent_safety_feedback_for_response,
             served_at=utc_now_iso(),
         )
         resp_dict = resp.model_dump(mode="json")
+        if resp_dict.get("agent_safety_feedback") is None:
+            resp_dict.pop("agent_safety_feedback", None)
 
         # Cache response
         self.idempotency_cache.put(req.request_id, resp_dict, req.deadline_ms)
@@ -2548,6 +3358,24 @@ class SupervisionGateway:
             io_state["decision_path_io"]
         )
         return summary
+
+    def report_policy_drift(
+        self,
+        *,
+        window_seconds: Optional[int] = None,
+        max_cells: int = 200,
+    ) -> dict[str, Any]:
+        """Return policy drift grouped for operator traceability."""
+        start = time.perf_counter()
+        since_seconds = window_seconds if window_seconds and window_seconds > 0 else None
+        report = self.trajectory_store.policy_drift_report(
+            window_seconds=since_seconds,
+            max_cells=max_cells,
+        )
+        report.update(self._reporting_state())
+        self._observe_reporting_io("report_policy_drift", time.perf_counter() - start)
+        report.update(self._reporting_io_state())
+        return report
 
     def replay_session(
         self,
@@ -3818,6 +4646,26 @@ def create_http_app(
             )
         return gateway.report_summary(window_seconds=window_seconds)
 
+    @app.get("/report/policy-drift")
+    async def report_policy_drift_endpoint(
+        request: Request,
+        window_seconds: Optional[int] = 3600,
+        max_cells: int = 200,
+    ):
+        auth_result = await verify_auth(request)
+        if isinstance(auth_result, Response):
+            return auth_result
+        if window_seconds is not None and (window_seconds < 1 or window_seconds > MAX_WINDOW_SECONDS):
+            return Response(
+                content=json.dumps({"error": f"window_seconds must be between 1 and {MAX_WINDOW_SECONDS}"}),
+                status_code=400,
+                media_type="application/json",
+            )
+        return gateway.report_policy_drift(
+            window_seconds=window_seconds,
+            max_cells=min(max(max_cells, 1), 1000),
+        )
+
     @_enterprise_get("/enterprise/report/summary")
     async def enterprise_report_summary_endpoint(
         request: Request,
@@ -3836,6 +4684,26 @@ def create_http_app(
             gateway.report_summary(window_seconds=window_seconds),
             gateway,
             window_seconds=window_seconds,
+        )
+
+    @_enterprise_get("/enterprise/report/policy-drift")
+    async def enterprise_report_policy_drift_endpoint(
+        request: Request,
+        window_seconds: Optional[int] = 3600,
+        max_cells: int = 1000,
+    ):
+        auth_result = await verify_auth(request)
+        if isinstance(auth_result, Response):
+            return auth_result
+        if window_seconds is not None and (window_seconds < 1 or window_seconds > MAX_WINDOW_SECONDS):
+            return Response(
+                content=json.dumps({"error": f"window_seconds must be between 1 and {MAX_WINDOW_SECONDS}"}),
+                status_code=400,
+                media_type="application/json",
+            )
+        return gateway.report_policy_drift(
+            window_seconds=window_seconds,
+            max_cells=min(max(max_cells, 1), 5000),
         )
 
     @_enterprise_get("/enterprise/report/live")

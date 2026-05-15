@@ -46,32 +46,21 @@ artifacts/
 1. `git -C <bench-dir> status --short` 确认源码状态。
 2. `git -C <bench-dir> rev-parse HEAD` 记录源码版本。
 3. 检查运行时依赖。
-4. 在私有开发仓库中读取本地 API/CLI 配置基线，优先使用 2026-05-11 已验证的用户指定 CLI/API 搭配。
-5. 需要长实验前，复跑 `python benchmarks/scripts/api_connectivity.py --chat --target <name>`，确认目标 provider 仍可用。
+4. 在私有开发仓库中读取本地 API/CLI 配置基线；公开仓库不保存真实 provider、endpoint、key、relay host 或内部模型路由。
+5. 需要长实验前，在私有开发环境复跑 API connectivity smoke，确认目标 provider 仍可用。
 6. dry-run 或 manifest parse。
 7. 小范围 smoke case。
 8. 将结果归档到 `results/<bench-slug>/`。
 9. 在 [RESULTS.md](RESULTS.md) 记录摘要。
 
-## 默认 CLI/API 搭配
+## Provider 配置边界
 
-后续实验默认使用以下已验证配置，除非实验目标明确要求换模型或换 provider：
+真实 CLI/API 搭配、私有 relay、内部模型名和 connectivity smoke 结果只保存在私有开发材料中。公开仓库只记录通用要求：
 
-| CLI | API 来源 | Model | 配置要点 | 证据 |
-| --- | --- | --- | --- | --- |
-| Codex | ailab 本地 MiniMax | `MiniMax-2.7-w8a8` | 临时 `CODEX_HOME`；`wire_api="responses"`；`OPENAI_API_KEY=dummy` | `results/api-connectivity/2026-05-11-requested-cli-smoke.md` |
-| Codex | ailab 本地 GLM | `glm-5` | 临时 `CODEX_HOME`；`wire_api="responses"`；`OPENAI_API_KEY=dummy` | `results/api-connectivity/2026-05-11-requested-cli-smoke.md` |
-| Claude Code | ailab 本地 MiniMax | `MiniMax-2.7-w8a8` | `--setting-sources project`；`ANTHROPIC_BASE_URL` 指向私有开发配置中的 provider root URL | `results/api-connectivity/2026-05-11-requested-cli-smoke.md` |
-| Claude Code | ailab 本地 GLM | `glm-5` | `--setting-sources project`；`ANTHROPIC_BASE_URL` 指向私有开发配置中的 provider root URL | `results/api-connectivity/2026-05-11-requested-cli-smoke.md` |
-| Kimi CLI | ailab 本地 Kimi | `kimi-k2.5` | 显式追加 ailab host 到 `NO_PROXY/no_proxy` | `results/api-connectivity/2026-05-11-requested-cli-smoke.md` |
-| Gemini CLI | 博越 Gemini relay | `gemini-3-flash-preview` | `GEMINI_API_KEY=<redacted>`；`GOOGLE_GEMINI_BASE_URL` 指向私有开发配置中的 relay root URL | `results/api-connectivity/2026-05-11-requested-cli-smoke.md` |
-
-排查结论：
-
-- Codex 0.130 不再支持 `wire_api="chat"`；ailab MiniMax/GLM 必须走 Responses。
-- Claude Code 用户级 `~/.claude/settings.json` 可能覆盖临时 env；第三方 provider smoke 用 `--setting-sources project`。
-- 当前 shell 代理会让 Kimi CLI 访问 ailab Kimi 返回 502；显式 `NO_PROXY/no_proxy` 后通过。
-- Gemini CLI 可通过底层 `@google/genai` 的 `GOOGLE_GEMINI_BASE_URL` 指向私有 relay；公开文档不得记录真实 endpoint。
+- 每次真实运行必须使用临时 agent home 或容器隔离目录，避免污染开发者全局配置。
+- 真实 key/token 只能通过环境继承或 secret store 注入，不写入命令行 argv、公开日志、公开 docs 或 fixture。
+- 第三方 provider 的 routing 细节只在私有 runbook 维护；公开结果只报告脱敏后的框架、防御状态、case 范围和聚合指标。
+- replay/readiness gate 可以在公开仓库复现；真实 live-run 的 provider preflight 必须在私有环境完成。
 
 ## 裸执行 vs 加防御
 

@@ -542,6 +542,58 @@ def _build_parser() -> argparse.ArgumentParser:
     rules_report.add_argument("--summary-markdown", default=None, help="Optional path to write a human-readable markdown dashboard.")
     rules_report.add_argument("--json", action="store_true", default=False, help="Also print report JSON to stdout.")
 
+    # --- skill-trust ---
+    skill_trust_parser = sub.add_parser(
+        "skill-trust",
+        help="Scan skill packages and update the Skill Trust registry.",
+    )
+    skill_trust_sub = skill_trust_parser.add_subparsers(dest="skill_trust_command")
+    skill_trust_sub.required = True
+    skill_trust_scan = skill_trust_sub.add_parser(
+        "scan",
+        help="Run deterministic admission scan for one local skill root.",
+    )
+    skill_trust_scan.add_argument("--skill-root", type=Path, required=True)
+    skill_trust_scan.add_argument("--output", type=Path, default=None)
+    skill_trust_scan.add_argument("--json", action="store_true", default=False)
+    skill_trust_register = skill_trust_sub.add_parser(
+        "register",
+        help="Scan and persist a skill registry record plus transition event.",
+    )
+    skill_trust_register.add_argument("--skill-root", type=Path, required=True)
+    skill_trust_register.add_argument("--registry", type=Path, required=True)
+    skill_trust_register.add_argument("--framework", default="codex")
+    skill_trust_register.add_argument(
+        "--scope",
+        default="workspace",
+        choices=["workspace", "user_home", "project", "global"],
+    )
+    skill_trust_register.add_argument(
+        "--list-state",
+        default="auto",
+        choices=["auto", "allowlist", "greylist", "blacklist"],
+    )
+    skill_trust_register.add_argument(
+        "--operator-override",
+        default=None,
+        help="Operator review/override id required for allowlisting non-low-risk scans.",
+    )
+    skill_trust_register.add_argument("--json", action="store_true", default=False)
+    skill_trust_register_dir = skill_trust_sub.add_parser(
+        "register-dir",
+        help="Scan a directory of skills and write Gateway registry plus runtime metadata.",
+    )
+    skill_trust_register_dir.add_argument("--skills-dir", type=Path, required=True)
+    skill_trust_register_dir.add_argument("--registry", type=Path, required=True)
+    skill_trust_register_dir.add_argument("--metadata", type=Path, required=True)
+    skill_trust_register_dir.add_argument("--framework", default="codex")
+    skill_trust_register_dir.add_argument(
+        "--scope",
+        default="workspace",
+        choices=["workspace", "user_home", "project", "global"],
+    )
+    skill_trust_register_dir.add_argument("--json", action="store_true", default=False)
+
     # --- latch ---
     latch_parser = sub.add_parser(
         "latch",
@@ -1038,6 +1090,11 @@ def main(argv: list[str] | None = None) -> None:
                     as_json=args.json,
                 )
             )
+
+    elif args.command == "skill-trust":
+        from .skill_trust_command import run_skill_trust_command
+
+        sys.exit(run_skill_trust_command(args))
 
     elif args.command == "latch":
         from .latch_command import (

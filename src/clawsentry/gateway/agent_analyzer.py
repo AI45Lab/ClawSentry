@@ -29,7 +29,14 @@ from .llm_provider import LLMProvider
 from .models import CanonicalEvent, DecisionContext, DecisionTier, RiskLevel, RiskSnapshot
 from .review_skills import ReviewSkill, SkillRegistry
 from .review_toolkit import ReadOnlyToolkit, ToolCallBudgetExhausted
-from .semantic_analyzer import L2Result, _max_risk_level
+from .semantic_analyzer import (
+    _MAX_RISK_HINTS,
+    L2Result,
+    _MAX_PROMPT_PAYLOAD_LEN,
+    _compact_prompt_text,
+    _max_risk_level,
+    _redacted_payload_text,
+)
 
 
 # Whitelist of toolkit methods callable by LLM in multi-turn mode
@@ -58,6 +65,8 @@ class AgentAnalyzerConfig:
 
 class AgentAnalyzer:
     """L3 review analyzer implementing the SemanticAnalyzer-compatible interface."""
+
+    prompt_budgeted = True
 
     def __init__(
         self,
@@ -115,6 +124,7 @@ class AgentAnalyzer:
             "L3 format retry failed": L3ReasonCode.FORMAT_RETRY_FAILED.value,
             "L3 tool call budget exhausted": L3ReasonCode.TOOL_CALL_BUDGET_EXHAUSTED.value,
             "L3 trigger not matched": L3ReasonCode.TRIGGER_NOT_MATCHED.value,
+            "analysis_budget_exceeded": L3ReasonCode.ANALYSIS_BUDGET_EXCEEDED.value,
         }
         mapped = exact.get(reason)
         if mapped is not None:
@@ -324,6 +334,44 @@ class AgentAnalyzer:
                 target_level=result.target_level, reasons=result.reasons,
                 confidence=result.confidence, analyzer_id=result.analyzer_id,
                 latency_ms=result.latency_ms, trace=trace,
+                decision_tier=DecisionTier.L1,
+            )
+
+        _payload_text, payload_budget_exceeded, payload_len = _redacted_payload_text(event)
+        if payload_budget_exceeded:
+            result = self._degraded(l1_snapshot, start, "analysis_budget_exceeded")
+            trace = self._build_trace(
+                trigger_reason=trigger_reason or "triggered",
+                trigger_detail=trigger_detail,
+                skill_selected=None,
+                mode=None,
+                turns=[],
+                final_verdict=None,
+                start=start,
+                degraded=True,
+                degradation_reason="analysis_budget_exceeded",
+                evidence_summary=self._build_evidence_summary(
+                    toolkit=None,
+                    trajectory=[],
+                    session_risk_history=session_risk_history,
+                    workspace_context=workspace_context,
+                    turns=[],
+                    effective_budget_ms=budget_ms,
+                    start=start,
+                    toolkit_budget_mode=None,
+                    toolkit_budget_cap=None,
+                ),
+            )
+            trace["analysis_budget_exceeded"] = True
+            trace["payload_length"] = payload_len
+            trace["max_payload_length"] = _MAX_PROMPT_PAYLOAD_LEN
+            return L2Result(
+                target_level=result.target_level,
+                reasons=result.reasons,
+                confidence=result.confidence,
+                analyzer_id=result.analyzer_id,
+                latency_ms=result.latency_ms,
+                trace=trace,
                 decision_tier=DecisionTier.L1,
             )
 
@@ -791,25 +839,25 @@ class AgentAnalyzer:
         trajectory_summary = [
             {
                 "recorded_at": item.get("recorded_at"),
-                "tool_name": item.get("event", {}).get("tool_name"),
-                "event_type": item.get("event", {}).get("event_type"),
-                "risk_hints": item.get("event", {}).get("risk_hints", []),
+                "tool_name": self._prompt_safe_value(item.get("event", {}).get("tool_name"), max_len=128),
+                "event_type": self._prompt_safe_value(item.get("event", {}).get("event_type"), max_len=64),
+                "risk_hints": self._prompt_safe_risk_hints(item.get("event", {}).get("risk_hints", [])),
                 "risk_level": item.get("risk_level"),
             }
             for item in trajectory
         ]
         payload = {
             "skill": {
-                "name": skill.name,
-                "description": skill.description,
-                "evaluation_criteria": skill.evaluation_criteria,
+                "name": self._prompt_safe_value(skill.name, max_len=128),
+                "description": self._prompt_safe_value(skill.description, max_len=512),
+                "evaluation_criteria": self._prompt_safe_value(skill.evaluation_criteria, max_len=256),
             },
-            "event": self._event_for_prompt(event, l1_snapshot),
-            "workspace_context": workspace_context,
-            "l1_snapshot": l1_snapshot.model_dump(mode="json"),
+            "event": self._prompt_safe_event(event),
+            "workspace_context": self._prompt_safe_value(workspace_context, max_len=256),
+            "l1_snapshot": self._prompt_safe_value(l1_snapshot.model_dump(mode="json"), max_len=256),
             "trajectory_summary": trajectory_summary,
             "constraints": {
-                "must_not_downgrade_below_l1": not self._allows_l3_downgrade(l1_snapshot),
+                "must_not_downgrade_below_l1": True,
                 "final_response_format": {
                     "risk_level": "low|medium|high|critical",
                     "findings": ["short finding"],
@@ -819,38 +867,52 @@ class AgentAnalyzer:
         }
         return json.dumps(payload, ensure_ascii=False, sort_keys=True)
 
-    def _event_for_prompt(
-        self,
-        event: CanonicalEvent,
-        l1_snapshot: RiskSnapshot,
-    ) -> dict[str, Any]:
-        if (
-            l1_snapshot.short_circuit_rule == "SC-4"
-            and isinstance(l1_snapshot.risk_evidence, dict)
-            and l1_snapshot.risk_evidence
-        ):
-            return {
-                "event_id": event.event_id,
-                "trace_id": event.trace_id,
-                "event_type": event.event_type.value,
-                "session_id": event.session_id,
-                "agent_id": event.agent_id,
-                "source_framework": event.source_framework,
-                "occurred_at": event.occurred_at,
-                "tool_name": event.tool_name,
-                "risk_hints": event.risk_hints,
-                "payload_redacted": True,
-                "persistence_write_evidence": l1_snapshot.risk_evidence,
-        }
-        return event.model_dump(mode="json")
+    def _prompt_safe_event(self, event: CanonicalEvent) -> dict[str, Any]:
+        event_dict = event.model_dump(mode="json")
+        safe: dict[str, Any] = {}
+        for key, value in event_dict.items():
+            if key == "payload":
+                safe[key] = self._prompt_safe_value(value, max_len=512)
+            elif key == "risk_hints":
+                safe[key] = self._prompt_safe_risk_hints(value)
+            elif isinstance(value, str):
+                safe[key] = self._prompt_safe_value(value, max_len=128)
+            else:
+                safe[key] = self._prompt_safe_value(value, max_len=128)
+        return safe
 
-    @staticmethod
-    def _allows_l3_downgrade(l1_snapshot: RiskSnapshot) -> bool:
-        return (
-            l1_snapshot.short_circuit_rule == "SC-4"
-            and isinstance(l1_snapshot.risk_evidence, dict)
-            and l1_snapshot.risk_evidence.get("signal") == "persistence_write"
-        )
+    def _prompt_safe_risk_hints(self, value: Any) -> list[str]:
+        if not isinstance(value, list):
+            return []
+        safe_items: list[str] = []
+        for item in value[:_MAX_RISK_HINTS]:
+            compact = _compact_prompt_text(str(item), max_len=128)
+            if compact:
+                safe_items.append(compact)
+        if len(value) > len(safe_items):
+            safe_items.append(f"(+{len(value) - len(safe_items)} more)")
+        return safe_items
+
+    def _prompt_safe_value(self, value: Any, *, max_len: int) -> Any:
+        if isinstance(value, str):
+            return _compact_prompt_text(value, max_len=max_len) or ""
+        if isinstance(value, list):
+            return [
+                self._prompt_safe_value(item, max_len=max_len)
+                for item in value[:8]
+            ]
+        if isinstance(value, dict):
+            safe: dict[str, Any] = {}
+            for key, item in list(value.items())[:16]:
+                key_base = _compact_prompt_text(str(key), max_len=96) or "[redacted_key]"
+                safe_key = key_base
+                suffix = 2
+                while safe_key in safe:
+                    safe_key = f"{key_base}#{suffix}"
+                    suffix += 1
+                safe[safe_key] = self._prompt_safe_value(item, max_len=max_len)
+            return safe
+        return value
 
     def _build_multi_turn_system_prompt(self, skill: ReviewSkill) -> str:
         return (
@@ -999,11 +1061,7 @@ class AgentAnalyzer:
             findings = self._extract_findings_from_data(data)
             confidence = float(data.get("confidence", 0.7))
             confidence = max(0.0, min(1.0, confidence))
-            target_level = (
-                risk_level
-                if self._allows_l3_downgrade(l1_snapshot)
-                else _max_risk_level(risk_level, l1_snapshot.risk_level)
-            )
+            target_level = _max_risk_level(risk_level, l1_snapshot.risk_level)
             return L2Result(
                 target_level=target_level,
                 reasons=[str(item) for item in findings[: self._config.max_findings]],

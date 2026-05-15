@@ -55,6 +55,7 @@ clawsentry-stack     # 等价于 clawsentry stack
 | [`service`](#clawsentry-service) | 安装或检查常驻服务（systemd/launchd） | `clawsentry service status` |
 | [`config`](#clawsentry-config) | 管理项目安全预设 | `clawsentry config init --preset high` |
 | [`rules`](#clawsentry-rules) | 规则治理（lint / dry-run / report） | `clawsentry rules lint --json` |
+| [`skill-trust`](#clawsentry-skill-trust) | 扫描并登记本地 skill trust registry | `clawsentry skill-trust register-dir --skills-dir ~/.codex/skills --registry .clawsentry/skill-trust-registry.json --metadata .clawsentry/skill-trust-runtime.json` |
 | [`latch`](#clawsentry-latch) | 管理 Latch 移动监控 | `clawsentry latch install` |
 
 > **新用户推荐路径：** 先运行 `clawsentry start --framework <你的框架>`。它会启动 Gateway，并在前台显示 `watch` 事件流；只有需要安装宿主 managed hooks 或排障时，再单独使用 `init`、`gateway`、`watch`。
@@ -69,7 +70,7 @@ clawsentry-stack     # 等价于 clawsentry stack
     | `clawsentry-harness` | a3s-code stdio transport 自动调用 | 不是普通用户入口，通常只出现在 SDK transport 配置里 |
 
 !!! abstract "本页快速导航"
-    [start](#clawsentry-start) · [stop](#clawsentry-stop) · [status](#clawsentry-status) · [init](#clawsentry-init) · [gateway](#clawsentry-gateway) · [stack](#clawsentry-stack) · [harness](#clawsentry-harness) · [watch](#clawsentry-watch) · [scope](#clawsentry-scope) · [audit](#clawsentry-audit) · [doctor](#clawsentry-doctor) · [test-llm](#clawsentry-test-llm) · [l3](#clawsentry-l3) · [service](#clawsentry-service) · [config](#clawsentry-config) · [rules](#clawsentry-rules) · [integrations](#clawsentry-integrations) · [latch](#clawsentry-latch)
+    [start](#clawsentry-start) · [stop](#clawsentry-stop) · [status](#clawsentry-status) · [init](#clawsentry-init) · [gateway](#clawsentry-gateway) · [stack](#clawsentry-stack) · [harness](#clawsentry-harness) · [watch](#clawsentry-watch) · [scope](#clawsentry-scope) · [audit](#clawsentry-audit) · [doctor](#clawsentry-doctor) · [test-llm](#clawsentry-test-llm) · [l3](#clawsentry-l3) · [service](#clawsentry-service) · [config](#clawsentry-config) · [rules](#clawsentry-rules) · [skill-trust](#clawsentry-skill-trust) · [integrations](#clawsentry-integrations) · [latch](#clawsentry-latch)
 
 ---
 
@@ -1298,6 +1299,26 @@ CS_DEFER_TIMEOUT_ACTION=block
 
 ---
 
+## clawsentry benchmark
+
+管理显式 benchmark/autonomous 模式。该模式面向 CI 和安全评测：不会等待人工 DEFER，不会修改真实 `~/.codex`，除非人工显式传入 `--force-user-home`。完整说明见 [Benchmark 模式](../operations/benchmark-mode.md)。
+
+### 语法
+
+```bash
+clawsentry benchmark env --framework codex --mode guarded > .clawsentry.benchmark.env
+clawsentry benchmark enable --dir . --framework codex --codex-home /tmp/cs-codex-home
+clawsentry benchmark run --framework codex --codex-home /tmp/cs-codex-home -- <command>
+clawsentry benchmark disable --dir . --framework codex --codex-home /tmp/cs-codex-home
+```
+
+### 安全规则
+
+- `run` 默认使用临时配置并清理，`--keep-artifacts` 才保留证据。
+- 自动化测试必须传入临时 `--codex-home`。
+- would-DEFER 默认转换为 `block`，并写入 `auto_resolved=true`、`original_verdict=defer` 等 metadata。
+
+
 ## clawsentry rules
 
 `clawsentry rules` 是规则治理入口，用于检查和预演当前 YAML 规则面。它刻意保持为窄范围治理层：管理的是 attack patterns / evolved patterns / review skills 这些规则资产，而不是跨 L1/L2/L3 的统一运行时策略语言。
@@ -1346,6 +1367,48 @@ clawsentry rules dry-run --events my-events.json --skills-dir /etc/clawsentry/sk
     `clawsentry rules` 不会替换 L3 的运行时选择逻辑；它只是帮助你在 rollout 之前确认当前 YAML 规则面是否可加载、是否有冲突，以及 sample events 在当前规则面上会命中什么。
 
 更多 authoring 细节见：[规则治理](../advanced/rule-governance.md)。
+
+---
+
+## clawsentry skill-trust
+
+扫描本地 skill 包、写入 Skill Trust registry，并生成 Gateway-owned runtime metadata。该命令面向 Codex/Claude Code 等 skill 包供应链治理：它登记 identity/provenance/hash 证据，让 Gateway 在 `pre_action` 中按 profile 对首次使用或不可信 skill 执行 audit、L2/L3、DEFER 或 BLOCK。完整机制见 [Skill Trust / Registry](../advanced/skill-trust.md)。
+
+### 语法
+
+```bash
+clawsentry skill-trust scan --skill-root PATH [--output FILE] [--json]
+clawsentry skill-trust register --skill-root PATH --registry FILE [--framework codex] [--scope workspace] [--list-state auto|allowlist|greylist|blacklist] [--operator-override ID] [--json]
+clawsentry skill-trust register-dir --skills-dir DIR --registry FILE --metadata FILE [--framework codex] [--scope workspace] [--json]
+```
+
+### 子命令
+
+| 子命令 | 说明 |
+|---|---|
+| `scan` | 对单个 skill root 做 deterministic admission scan，不写 registry |
+| `register` | 扫描单个 skill root，并写入 registry transition event |
+| `register-dir` | 扫描目录下的 skill 包，生成 registry 与 runtime metadata |
+
+### 示例
+
+```bash
+clawsentry skill-trust register-dir \
+  --skills-dir ~/.codex/skills \
+  --registry .clawsentry/skill-trust-registry.json \
+  --metadata .clawsentry/skill-trust-runtime.json \
+  --framework codex \
+  --scope workspace \
+  --json
+```
+
+运行时启用：
+
+```bash
+CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json
+CS_SKILL_TRUST_METADATA_PATH=.clawsentry/skill-trust-runtime.json
+CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=defer
+```
 
 ---
 
@@ -1562,7 +1625,7 @@ clawsentry latch uninstall --keep-data
 | `CS_FRAMEWORK` | start, gateway, harness | 默认 framework 名称，如 `codex` |
 | `CS_CODEX_SESSION_DIR` | gateway | Codex 会话目录路径（用于 Session Watcher） |
 | `CS_DEFER_TIMEOUT_ACTION` | gateway, harness | DEFER 超时后的动作：`block`（默认）或 `allow` |
-| `CS_DEFER_TIMEOUT_S` | gateway, harness | normal mode DEFER 软超时（秒），默认 `86400` |
+| `CS_DEFER_TIMEOUT_S` | gateway, harness | normal mode DEFER 软超时（秒），默认 `86400`；benchmark mode 不等待 |
 | `CS_LLM_TOKEN_BUDGET_ENABLED` | gateway | 是否启用基于真实 provider usage 的 token 预算 |
 | `CS_LLM_DAILY_TOKEN_BUDGET` | gateway | 每日 token 上限，启用时必须大于 `0` |
 | `CS_LLM_DAILY_BUDGET_USD` | gateway | 旧版兼容字段；仅迁移/估算提示，不推荐执法 |

@@ -12,6 +12,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 import json
 import re
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,14 @@ SOURCE_FILES = {
     "openclaw-webhook": REPO_ROOT / "src" / "clawsentry" / "adapters" / "openclaw_webhook_receiver.py",
 }
 
+
+def package_version() -> str:
+    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    version = pyproject.get("project", {}).get("version")
+    if not isinstance(version, str) or not version:
+        raise ValueError("pyproject.toml missing [project].version")
+    return version
+
 # service, method, path, source, group, audience, status, auth, auth_note, markdown_ref, summary
 ROUTES: list[dict[str, Any]] = [
     {"service":"gateway","method":"POST","path":"/ahp","source":"src/clawsentry/gateway/server.py:2413","group":"AHP 决策","audience":"developer","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.","markdown_ref":"api/decisions.md#post-ahp","summary":"OpenClaw/AHP JSON-RPC 同步决策入口"},
@@ -41,6 +50,7 @@ ROUTES: list[dict[str, Any]] = [
     {"service":"gateway","method":"GET","path":"/health","source":"src/clawsentry/gateway/server.py:2514","group":"运行状态","audience":"operator","public_status":"public","auth":"none","auth_note":"Gateway health endpoint is intentionally unauthenticated.","markdown_ref":"api/reporting.md#get-health","summary":"Gateway 健康检查"},
     {"service":"gateway","method":"GET","path":"/metrics","source":"src/clawsentry/gateway/server.py:2528","group":"运行状态","audience":"operator","public_status":"public","auth":"metrics-conditional","auth_note":"CS_METRICS_AUTH=true requires Bearer token; false/empty exposes metrics without auth.","markdown_ref":"api/reporting.md#get-metrics","summary":"Prometheus 指标"},
     {"service":"gateway","method":"GET","path":"/report/summary","source":"src/clawsentry/gateway/server.py:2540","group":"报表与监控","audience":"operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth.","markdown_ref":"api/reporting.md#get-report-summary","summary":"聚合统计"},
+    {"service":"gateway","method":"GET","path":"/report/policy-drift","source":"src/clawsentry/gateway/server.py:4333","group":"报表与监控","audience":"operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth.","markdown_ref":"api/reporting.md#get-report-policy-drift","summary":"按 workspace/framework/session/rule family 聚合 policy drift 并提供 traceability"},
     {"service":"gateway","method":"GET","path":"/report/stream","source":"src/clawsentry/gateway/server.py:2580","group":"报表与监控","audience":"developer","public_status":"public","auth":"query-token","auth_note":"Accepts Bearer token and browser-friendly ?token= query auth; CS_AUTH_TOKEN empty disables auth.","markdown_ref":"api/reporting.md#get-report-stream","summary":"SSE 实时事件流"},
     {"service":"gateway","method":"GET","path":"/report/sessions","source":"src/clawsentry/gateway/server.py:2694","group":"报表与监控","audience":"operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth.","markdown_ref":"api/reporting.md#get-report-sessions","summary":"会话列表"},
     {"service":"gateway","method":"GET","path":"/report/session/{session_id}/risk","source":"src/clawsentry/gateway/server.py:2787","group":"报表与监控","audience":"operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth.","markdown_ref":"api/reporting.md#get-report-session-risk","summary":"会话风险时间线"},
@@ -81,6 +91,7 @@ for item in [
 for method,path,line,summary in [
     ("GET","/enterprise/health","2518","Enterprise enriched health"),
     ("GET","/enterprise/report/summary","2553","Enterprise enriched summary"),
+    ("GET","/enterprise/report/policy-drift","4353","Enterprise policy drift report"),
     ("GET","/enterprise/report/live","2573","Enterprise live snapshot"),
     ("GET","/enterprise/report/stream","2638","Enterprise SSE stream"),
     ("GET","/enterprise/report/sessions","2739","Enterprise session list"),
@@ -119,7 +130,7 @@ def _apply_curated_examples(entry: dict[str, Any]) -> None:
     if method == "POST" and path == "/ahp":
         entry["request_example"] = {
             "jsonrpc": "2.0",
-            "method": "sync_decision",
+            "method": "ahp/sync_decision",
             "id": "req-001",
             "params": {
                 "event": {
@@ -272,6 +283,61 @@ def _apply_curated_examples(entry: dict[str, Any]) -> None:
             },
             "generated_at": "2026-03-23T10:30:00+00:00",
             "window_seconds": None,
+        }
+    elif method == "GET" and path in {"/report/policy-drift", "/enterprise/report/policy-drift"}:
+        entry["response_example"] = {
+            "generated_at": "2026-05-15T00:00:00+08:00",
+            "window_seconds": 3600,
+            "comparison_window_seconds": 3600,
+            "grouping_dimensions": [
+                "workspace_root",
+                "source_framework",
+                "session_id",
+                "rule_family",
+            ],
+            "total_cells": 1,
+            "cells": [
+                {
+                    "cell_id": "/workspace/payments|codex|sess-001|skill_trust",
+                    "workspace_root": "/workspace/payments",
+                    "source_framework": "codex",
+                    "session_id": "sess-001",
+                    "rule_family": "skill_trust",
+                    "current": {
+                        "record_count": 1,
+                        "decision_distribution": {"block": 1},
+                        "risk_distribution": {"high": 1},
+                        "rule_hits": {"ambiguous_skill_alias": 1},
+                        "block_rate": 1.0,
+                        "high_or_critical_rate": 1.0,
+                    },
+                    "previous": {
+                        "record_count": 1,
+                        "decision_distribution": {"allow": 1},
+                        "risk_distribution": {"low": 1},
+                        "rule_hits": {"unknown_skill_identity": 1},
+                        "block_rate": 0.0,
+                        "high_or_critical_rate": 0.0,
+                    },
+                    "delta": {
+                        "record_count": 0,
+                        "block_rate": 1.0,
+                        "high_or_critical_rate": 1.0,
+                    },
+                    "traceability": {
+                        "request_ids": ["req-current"],
+                        "record_ids": ["42"],
+                        "event_ids": ["evt-current"],
+                        "registry_states": ["unlisted"],
+                        "rule_evidence": ["ambiguous_skill_alias"],
+                        "fallback_paths": ["gateway_policy"],
+                        "adapter_effect_result_ids": ["effect-current"],
+                    },
+                }
+            ],
+            "budget": {"exhausted": False},
+            "llm_usage_snapshot": {},
+            "decision_path_io": {"reporting": {"report_policy_drift": {"calls": 1}}},
         }
     elif method == "GET" and path == "/enterprise/report/summary":
         entry["response_example"] = {
@@ -988,8 +1054,10 @@ def operation_for(entry: dict[str, Any]) -> dict[str, Any]:
             {"name": "limit", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100}},
             {"name": "cursor", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 0}},
         ])
-    if entry["path"] in {"/report/summary", "/report/sessions", "/report/session/{session_id}", "/report/session/{session_id}/page", "/report/session/{session_id}/risk", "/report/session/{session_id}/post-action", "/report/alerts", "/enterprise/report/summary", "/enterprise/report/sessions", "/enterprise/report/session/{session_id}", "/enterprise/report/session/{session_id}/page", "/enterprise/report/session/{session_id}/risk", "/enterprise/report/alerts"}:
+    if entry["path"] in {"/report/summary", "/report/policy-drift", "/report/sessions", "/report/session/{session_id}", "/report/session/{session_id}/page", "/report/session/{session_id}/risk", "/report/session/{session_id}/post-action", "/report/alerts", "/enterprise/report/summary", "/enterprise/report/policy-drift", "/enterprise/report/sessions", "/enterprise/report/session/{session_id}", "/enterprise/report/session/{session_id}/page", "/enterprise/report/session/{session_id}/risk", "/enterprise/report/alerts"}:
         params.append({"name": "window_seconds", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1, "maximum": 604800}})
+    if entry["path"] in {"/report/policy-drift", "/enterprise/report/policy-drift"}:
+        params.append({"name": "max_cells", "in": "query", "required": False, "schema": {"type": "integer", "minimum": 1, "maximum": 5000}})
     if entry["path"] == "/enterprise/report/live":
         params.append({"name": "cached", "in": "query", "required": False, "schema": {"type": "boolean", "default": False}})
     if entry["path"] in {"/report/stream", "/enterprise/report/stream"}:
@@ -1065,7 +1133,7 @@ def write_openapi() -> None:
         "openapi": "3.1.0",
         "info": {
             "title": "ClawSentry Public API Reference",
-            "version": "0.6.9",
+            "version": package_version(),
             "description": "Docs-owned OpenAPI artifact generated from route inventory plus curated semantic metadata. It does not change runtime API behavior.",
         },
         "servers": [
@@ -1519,6 +1587,7 @@ def validate() -> list[str]:
             }
 
         expected_params = {
+            "/report/policy-drift": {"window_seconds", "max_cells"},
             "/report/sessions": {"status", "sort", "limit", "min_risk", "window_seconds"},
             "/report/session/{session_id}/risk": {"limit", "window_seconds"},
             "/report/session/{session_id}/post-action": {"limit", "window_seconds"},

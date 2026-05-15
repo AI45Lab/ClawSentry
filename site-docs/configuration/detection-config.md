@@ -74,10 +74,35 @@ DetectionConfig（frozen dataclass）
 # CS_ANTI_BYPASS_EXACT_REPEAT_ACTION=block
 # CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION=defer
 # CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=force_l3
+
+# ── Skill Trust / capability narrowing / feedback（v0.7.0）──────────────
+# CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json
+# CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION=audit
+# CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=defer
+# CS_CAPABILITY_NARROWING_ENABLED=false
+# CS_AGENT_SAFETY_FEEDBACK_ENABLED=false
 ```
 
 !!! tip "显式 env-file"
     `.clawsentry.env.local` 不会自动加载。使用 `clawsentry start --env-file .clawsentry.env.local` 或 `clawsentry config show --effective --env-file .clawsentry.env.local`；系统/进程环境变量优先于文件中的值。
+
+---
+
+## v0.7.0 roadmap controls {#roadmap-controls}
+
+这组字段连接 Skill Trust、capability narrowing 和 agent feedback。默认值保守：不会自动调用真实 LLM，不会启动后台 scheduler，也不会静默改写历史 canonical decision。
+
+| 字段名 | 类型 | 默认值 | CS_ 变量 | 说明 |
+|--------|------|--------|----------|------|
+| `skill_trust_registry_path` | `str \| None` | `None` | `CS_SKILL_TRUST_REGISTRY_PATH` | Skill Trust registry JSON 路径 |
+| `skill_trust_first_use_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION` | normal 模式 first-use/unbound skill 动作 |
+| `skill_trust_first_use_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION` | benchmark 模式 first-use/unbound skill 动作 |
+| `skill_trust_first_use_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION` | strict 模式 first-use/unbound skill 动作 |
+| `skill_trust_first_use_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION` | permissive 模式 first-use/unbound skill 动作 |
+| `capability_narrowing_enabled` | `bool` | `false` | `CS_CAPABILITY_NARROWING_ENABLED` | 高会话风险时应用收窄的 SessionScopeProfile |
+| `agent_safety_feedback_enabled` | `bool` | `false` | `CS_AGENT_SAFETY_FEEDBACK_ENABLED` | critical block 后生成红线化 agent feedback |
+
+Skill Trust 动作允许值为 `audit`、`force_l2`、`force_l3`、`defer`、`block`。如果需要登记 skill registry，先运行 `clawsentry skill-trust register-dir`，再把生成的 registry/metadata 路径写入 env。详见 [Skill Trust / Registry](../advanced/skill-trust.md)。
 
 ---
 
@@ -314,7 +339,7 @@ Anti-bypass follow-up guard 是默认关闭的 `PRE_ACTION` 重试/绕过检测�
 | `normalized_destructive_repeat` | `observe` / `force_l2` / `force_l3` / `defer` / `block` | 仅在显式配置 `block` 时可本地 BLOCK |
 | `cross_tool_script_similarity` | `observe` / `force_l2` / `force_l3` / `defer` | 永不本地 hard-block；`block` 配置会被拒绝/回退 |
 
-**LLM recognizer 条件：** 未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，会随有效共享 `CS_LLM_PROVIDER` + API key 自动启用；dry-run / no-network 等不应外联的运行环境不会自动启用外部 LLM recognition，除非显式 `true`。显式 `false` 强制关闭。实际调用仍要求 `CS_ANTI_BYPASS_GUARD_ENABLED=true`、事件为 `PRE_ACTION`、deterministic 路径未确认、当前动作不是 `non-destructive`、已生成跨工具候选、至少两个弱证据信号（scope-only 不够）、provider 可用且 LLM budget 未耗尽。它只判断 follow-up 关系，不做风险评分，也不能产生本地 `block`。请求只包含 sanitized semantic capsules，不包含 raw command、raw payload、secret、env value、deterministic token hashes 或 L3 trace；LLM 返回的 `action` 不参与执法，命中后使用 `CS_ANTI_BYPASS_LLM_ACTION`。
+**LLM recognizer 条件：** 未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，会随有效共享 `CS_LLM_PROVIDER` + API key 自动启用；benchmark / dry-run / no-network 模式不会自动启用外部 LLM recognition，除非显式 `true`。显式 `false` 强制关闭。实际调用仍要求 `CS_ANTI_BYPASS_GUARD_ENABLED=true`、事件为 `PRE_ACTION`、deterministic 路径未确认、当前动作不是 `non-destructive`、已生成跨工具候选、至少两个弱证据信号（scope-only 不够）、provider 可用且 LLM budget 未耗尽。它只判断 follow-up 关系，不做风险评分，也不能产生本地 `block`。请求只包含 sanitized semantic capsules，不包含 raw command、raw payload、secret、env value、deterministic token hashes 或 L3 trace；LLM 返回的 `action` 不参与执法，命中后使用 `CS_ANTI_BYPASS_LLM_ACTION`。
 
 **Rollout 示例：**
 
@@ -343,7 +368,7 @@ CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=force_l3
     `AHP_SESSION_ENFORCEMENT_*` 仍只表示旧的 session-threshold enforcement。Anti-bypass guard 只使用 `DetectionConfig` / `CS_ANTI_BYPASS_*` 配置，不新增 `AHP_*` anti-bypass 环境变量。
 
 !!! note "Final canonical decision memory"
-    Guard memory 在 final decision resolution 和 `_record_decision_path` 完成后记录 `decision.final=true` 的 canonical decision。若该 final decision 是 `defer`，后续 defer bridge 的 operator / timeout resolution 不会回溯删除已记录的 compact fingerprint。
+    Guard memory 在 trajectory override、benchmark auto-resolution 和 `_record_decision_path` 完成后记录 `decision.final=true` 的 canonical decision。若该 final decision 是 `defer`，后续 defer bridge 的 operator / timeout resolution 不会回溯删除已记录的 compact fingerprint。
 
 
 ---
@@ -425,7 +450,7 @@ ClawSentry 提供 4 个内置安全预设，通过 `.clawsentry.env.example` 或
 | 字段名 | 类型 | 默认值 | CS_ 变量 | 说明 |
 |--------|------|--------|----------|------|
 | `defer_timeout_action` | `str` | `"block"` | `CS_DEFER_TIMEOUT_ACTION` | 超时动作：`block` 或 `allow` |
-| `defer_timeout_s` | `float` | `86400.0` | `CS_DEFER_TIMEOUT_S` | normal mode 审批软超时（秒） |
+| `defer_timeout_s` | `float` | `86400.0` | `CS_DEFER_TIMEOUT_S` | normal mode 审批软超时（秒）；benchmark mode 不等待人工审批 |
 | `defer_bridge_enabled` | `bool` | `True` | `CS_DEFER_BRIDGE_ENABLED` | 启用 DEFER 审批桥接 |
 
 **生命周期：**
@@ -481,16 +506,6 @@ DEFER 决策产生
 - **Advisory 自动化必须显式 opt-in**：L3 咨询审查提供 frozen evidence snapshot / queued advisory job / advisory result 流程；打开 `l3_advisory_async_enabled` 会自动创建 snapshot 并入队 job，但不会自动运行后台 L3 审查或改变 canonical decision。启用 heartbeat review 时，非 heartbeat-compatible 的高风险即时 snapshot queueing 会被抑制，避免和聚合路径重复。
 - **无本地 L3 能力时保持诚实回退**：如果网关启动时没有本地 L3 能力，`replace_l2` / `eager` 会被视为 unsupported runtime，现有 L1/L2 路径继续运行，但运行态会明确暴露 `l3_available=false`、`effective_tier=L3`、`l3_state=skipped`、`l3_reason_code=local_l3_unavailable`。
 
-### Persistence-write / SC-4 策略 {#persistence-write-sc4}
-
-| 字段名 | 类型 | 默认值 | CS_ 变量 | 说明 |
-|--------|------|--------|----------|------|
-| `persistence_write_action` | `str` | `auto` | `CS_PERSISTENCE_WRITE_ACTION` | `auto`、`audit`、`force_l3`、`defer`、`block`。决定 L1 命中 SC-4 后的动作。 |
-| `persistence_write_fallback_action` | `str` | `block` | `CS_PERSISTENCE_WRITE_FALLBACK_ACTION` | `force_l3` 不可用、degraded、timeout、parse fail 或 trigger_not_matched 时的回退动作：`defer`、`block`、`audit`。 |
-| `persistence_write_l3_allow_confidence` | `float` | `0.6` | `CS_PERSISTENCE_WRITE_L3_ALLOW_CONFIDENCE` | L3 返回 low/medium 时允许放行的最低 confidence。 |
-
-`auto` 集中解析：`strict` 模式为 `block`，`normal` / `permissive` 模式为 `force_l3`。`force_l3` 是同步 pre-action L3 verdict path，消费 redacted evidence summary；它不是 post-action advisory，也不依赖最终输出文件是否已经存在。
-
 ---
 
 ## 从 env 到 DetectionConfig {#project-config}
@@ -540,7 +555,7 @@ Fail-open 行为：
 - 多个字段组合违反 `DetectionConfig` 约束 → 整体回退默认 `DetectionConfig()` 并记录 error。
 
 !!! tip "复制配置的位置"
-    Anti-bypass、DEFER、post-action、生产部署等直接可用片段统一维护在 [配置模板](templates.md)，本页只保留字段语义、默认值和约束。
+    Anti-bypass、DEFER、post-action、benchmark、生产部署等直接可用片段统一维护在 [配置模板](templates.md)，本页只保留字段语义、默认值和约束。
 
 ---
 
@@ -578,6 +593,7 @@ Fail-open 行为：
 | `defer_timeout_action` 非法 | 回退到 `block` |
 | `llm_token_budget_scope` 非法 | 回退到 `total` |
 | token budget 启用但 limit 非正 | 禁用 token budget enforcement |
+| `benchmark_defer_action` / `benchmark_persist_scope` 非法 | 回退到 `block` / `project` |
 | anti-bypass prior risk/verdict/action 非法 | prior risk 回退到 `high`；prior verdicts 回退到 `block,defer`；exact/normalized/cross-tool/LLM action 分别回退到安全默认值 |
 
 ### 环境变量整体回退机制

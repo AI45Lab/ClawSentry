@@ -292,6 +292,61 @@ describe('SessionDetail', () => {
     expect(screen.getByText('trajectory, file · 2 tool call(s) · toolkit 0/5 (exhausted)')).toBeInTheDocument()
   })
 
+  it('renders redacted lineage and traceability drilldown for replay records', async () => {
+    vi.mocked(api.sessionReplayPage).mockResolvedValueOnce(makeReplayPageResponse({
+      records: [
+        {
+          event: { tool_name: 'bash', payload: { command: 'cat /workspace/demo/README.md' } },
+          decision: {
+            decision: 'block',
+            reason: 'Skill alias conflict',
+            risk_level: 'high',
+            decision_latency_ms: 33,
+          },
+          risk_snapshot: {
+            risk_level: 'high',
+            composite_score: 2.2,
+            dimensions: { d1: 2.0, d2: 0.0, d3: 1.0, d4: 0.0, d5: 0.0, d6: 1.0 },
+            rule_hits: ['ambiguous_skill_alias'],
+            skill_trust_findings: [{ rule_id: 'ambiguous_skill_alias', registry_state: 'unlisted' }],
+          },
+          meta: {
+            actual_tier: 'L1',
+            caller_adapter: 'codex-http',
+            request_id: 'req-lineage',
+            skill_lineage: {
+              presented_skill_name: 'search_accommodation',
+              content_hash: 'sha256:content',
+              skill_root_path_hash: 'sha256:path',
+            },
+            skill_trust_raw: {
+              presented_name: 'search_accommodation',
+              registry_record_count: 1,
+              redaction_policy_version: 'cs.skill_trust_raw.redaction.v1',
+            },
+          },
+          adapter_effect_results: [
+            { effect_id: 'effect-lineage', result_kind: 'enforced', adapter: 'codex' },
+          ],
+          record_id: 7,
+          l3_trace: null,
+          recorded_at: '2026-04-14T08:05:10Z',
+        },
+      ],
+      next_cursor: null,
+    }) as never)
+
+    renderSessionDetail()
+
+    expect(await screen.findByText('Lineage drilldown:')).toBeInTheDocument()
+    expect(screen.getByText(/presented_skill_name=search_accommodation/)).toBeInTheDocument()
+    expect(screen.getByText(/content_hash=sha256:content/)).toBeInTheDocument()
+    expect(screen.getByText(/registry presented_name=search_accommodation/)).toBeInTheDocument()
+    expect(screen.getByText(/rules ambiguous_skill_alias/)).toBeInTheDocument()
+    expect(screen.getByText(/adapter effects effect_id=effect-lineage/)).toBeInTheDocument()
+    expect(screen.getByText(/trace request=req-lineage, record=7/)).toBeInTheDocument()
+  })
+
   it('uses conversation event labels instead of unknown for prompt and response replay rows', async () => {
     vi.mocked(api.sessionReplayPage).mockResolvedValueOnce(makeReplayPageResponse({
       records: [

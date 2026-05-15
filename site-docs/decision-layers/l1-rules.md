@@ -117,12 +117,6 @@ _D2_CONFIG            = re.compile(r"(\.config\.|\.env|\.rc$|Makefile$|Dockerfil
 
 D3 只对 bash/shell/exec 类工具生效，分析 `payload.command` 字段中的具体命令内容。对于非 shell 工具，D3 固定为 **0**。
 
-### SC-4 — 持久化执行入口写入 {#sc4-persistence-write}
-
-L1 还会识别一种结构化短路信号：agent 正在写入未来可能自动执行或自动重入的入口，而不只是普通文件输出。典型信号包括 entrypoint HTML/JS、startup/bootstrap loader、autoload manifest、inline loader contract、`window.__*Loader` 全局 loader state、以及 shell/programmatic/delegated write 写入这些内容。
-
-这个规则不依赖特定测试用例名称，也不要求已经存在最终输出文件。判断对象是“当前 pre-action 是否在创建未来页面打开、程序启动、session 恢复或入口加载时会自动执行/重入的内容”。命中后 L1 标记 `short_circuit_rule=SC-4` 并生成 redacted evidence summary；最终动作由策略层的 `CS_PERSISTENCE_WRITE_ACTION` 决定，可 block、defer、audit，或同步交给 L3 verdict path。
-
 === "分值 0 — 安全命令"
 
     已知无副作用的只读命令：

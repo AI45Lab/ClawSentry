@@ -13,7 +13,7 @@ import re
 import time as _time
 from dataclasses import dataclass as _dataclass
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -207,6 +207,12 @@ class SessionScopeBaseRules(BaseModel):
     denied_paths: list[str] = Field(default_factory=list)
     denied_domains: list[str] = Field(default_factory=list)
     denied_command_prefixes: list[str] = Field(default_factory=list)
+    denied_skill_ids: list[str] = Field(default_factory=list)
+    denied_mcp_servers: list[str] = Field(default_factory=list)
+    denied_mcp_tools: list[str] = Field(default_factory=list)
+    denied_mcp_statuses: list[str] = Field(default_factory=list)
+    denied_mcp_trust_levels: list[str] = Field(default_factory=list)
+    denied_skill_trust_states: list[str] = Field(default_factory=list)
 
 
 class SessionScopeTaskRules(BaseModel):
@@ -218,6 +224,12 @@ class SessionScopeTaskRules(BaseModel):
     allowed_path_prefixes: list[str] = Field(default_factory=list)
     allowed_domains: list[str] = Field(default_factory=list)
     allowed_command_prefixes: list[str] = Field(default_factory=list)
+    allowed_skill_ids: list[str] = Field(default_factory=list)
+    allowed_mcp_servers: list[str] = Field(default_factory=list)
+    allowed_mcp_tools: list[str] = Field(default_factory=list)
+    allowed_mcp_statuses: list[str] = Field(default_factory=list)
+    allowed_mcp_trust_levels: list[str] = Field(default_factory=list)
+    allowed_skill_trust_states: list[str] = Field(default_factory=list)
     queued_categories: list[str] = Field(default_factory=list)
 
 
@@ -712,6 +724,200 @@ class CanaryToken:
 
 
 # ---------------------------------------------------------------------------
+# Skill Trust Control Plane Models
+# ---------------------------------------------------------------------------
+
+class SkillRegistryRecord(BaseModel):
+    """Canonical registry record for a skill identity."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    canonical_skill_id: str = Field(..., min_length=1)
+    canonical_name: str = Field(..., min_length=1)
+    aliases: list[str] = Field(default_factory=list)
+    content_hashes: dict[str, str] = Field(default_factory=dict)
+    source: dict[str, Any] = Field(default_factory=dict)
+    trust_level: Literal["trusted", "local_unreviewed", "unknown", "untrusted"] = "unknown"
+    admission_scan_id: Optional[str] = None
+    policy_fingerprint: Optional[str] = None
+    list_state: Literal[
+        "allowlist",
+        "greylist",
+        "blacklist",
+        "unlisted",
+        "revoked",
+        "disabled",
+    ] = "unlisted"
+    status: Literal[
+        "trusted",
+        "ambiguous_alias",
+        "hash_changed",
+        "quarantined",
+        "revoked",
+        "local_unreviewed",
+        "unknown",
+    ] = "unknown"
+
+
+class SkillTrustListEntry(BaseModel):
+    """Trust-list state for a canonical skill identity and scope."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    canonical_skill_id: str = Field(..., min_length=1)
+    list_state: Literal[
+        "allowlist",
+        "greylist",
+        "blacklist",
+        "unlisted",
+        "revoked",
+        "disabled",
+    ] = "unlisted"
+    scope: Literal["workspace", "user_home", "project", "global"] = "workspace"
+    reason_code: str = Field(..., min_length=1)
+    evidence_hashes: list[str] = Field(default_factory=list)
+    policy_fingerprint: str = Field(..., min_length=1)
+    expires_at: Optional[str] = None
+    disabled_until: Optional[str] = None
+    review_required: bool = True
+
+
+class SkillTrustTransitionEvent(BaseModel):
+    """Auditable trust-list transition event."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    transition_id: str = Field(..., min_length=1)
+    registry_snapshot_id: str = Field(..., min_length=1)
+    canonical_skill_id: str = Field(..., min_length=1)
+    from_state: Literal["unlisted", "allowlist", "greylist", "blacklist", "revoked", "disabled"]
+    to_state: Literal["allowlist", "greylist", "blacklist", "revoked", "disabled"]
+    reason_code: str = Field(..., min_length=1)
+    evidence_hashes: list[str] = Field(default_factory=list)
+    scope: Literal["workspace", "user_home", "project", "global"] = "workspace"
+    actor_type: Literal["policy", "operator", "manual_migration", "system"] = "policy"
+    operator_id_hash: Optional[str] = None
+    override_id: Optional[str] = None
+    policy_fingerprint: str = Field(..., min_length=1)
+    previous_policy_fingerprint: Optional[str] = None
+    expires_at: Optional[str] = None
+    disabled_until: Optional[str] = None
+    review_required: bool = True
+
+
+class AdmissionFinding(BaseModel):
+    """Deterministic admission scanner finding; evidence until policy consumes it."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    finding_id: str = Field(..., min_length=1)
+    finding_family: Literal[
+        "alias",
+        "provenance",
+        "hash",
+        "control_language",
+        "description_consistency",
+        "cross_skill_overlap",
+    ]
+    severity: RiskLevel = RiskLevel.LOW
+    confidence: Literal["low", "medium", "high"] = "low"
+    decision_affecting: bool = False
+    evidence_hashes: list[str] = Field(default_factory=list)
+    evidence_summary: str = ""
+    policy_fingerprint: Optional[str] = None
+
+
+class AdmissionReport(BaseModel):
+    """Scanner report for a skill root."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    scan_id: str = "scan-local"
+    skill_root_hash: str
+    content_hashes: dict[str, str] = Field(default_factory=dict)
+    findings: list[AdmissionFinding] = Field(default_factory=list)
+    admission_risk: RiskLevel = RiskLevel.LOW
+    policy_fingerprint: Optional[str] = None
+
+
+class FirstUseScanState(BaseModel):
+    """Explicit first-use scan lifecycle state for audit/replay."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    state: Literal[
+        "scan_not_started",
+        "scan_running_sync",
+        "scan_completed",
+        "scan_pending_budget_exhausted",
+        "scan_failed",
+    ] = "scan_not_started"
+    admission_scan_id: Optional[str] = None
+    failure_class: Optional[str] = None
+    admission_risk: Literal["low", "medium", "high", "critical", "unknown"] = "unknown"
+    policy_fingerprint: Optional[str] = None
+
+
+class SkillTrustContext(BaseModel):
+    """Runtime skill identity and trust evidence resolved before policy evaluation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    registry_status: Literal["matched", "unknown", "ambiguous", "hash_mismatch", "unbound"] = "unbound"
+    canonical_skill_id: Optional[str] = None
+    presented_name: Optional[str] = None
+    alias_match_type: Literal[
+        "exact",
+        "singular_plural",
+        "hyphen_underscore",
+        "near_name",
+        "none",
+    ] = "none"
+    provenance_claim: Optional[str] = None
+    admission_scan_id: Optional[str] = None
+    admission_risk: Literal["low", "medium", "high", "critical", "unknown"] = "unknown"
+    trust_list_state: Optional[Literal[
+        "allowlist",
+        "greylist",
+        "blacklist",
+        "unlisted",
+        "revoked",
+        "disabled",
+    ]] = None
+    first_use_scan: Optional[FirstUseScanState] = None
+    invariant_violations: list[str] = Field(default_factory=list)
+    policy_fingerprint: Optional[str] = None
+
+
+class LineageEvent(BaseModel):
+    """Redactable skill-to-tool-to-output lineage event."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    event_id: str = Field(..., min_length=1)
+    session_id: str = Field(..., min_length=1)
+    canonical_skill_id: Optional[str] = None
+    tool_name: str = Field(..., min_length=1)
+    output_provenance_label: Optional[str] = None
+    parent_event_id: Optional[str] = None
+    content_hash: Optional[str] = None
+    policy_version: str = Field(..., min_length=1)
+
+
+class McpContext(BaseModel):
+    """Runtime MCP server/tool trust evidence for capability narrowing."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    server_name: Optional[str] = None
+    tool_name: Optional[str] = None
+    resource_kind: Optional[str] = None
+    resource_uri_hash: Optional[str] = None
+    trust_level: Literal["trusted", "local_unreviewed", "unknown", "untrusted"] = "unknown"
+    status: Literal["allowlist", "greylist", "blacklist", "unlisted", "revoked", "disabled"] = "unlisted"
+
+
+# ---------------------------------------------------------------------------
 # RiskSnapshot (04 section 13)
 # ---------------------------------------------------------------------------
 
@@ -743,20 +949,23 @@ class RiskSnapshot(BaseModel):
     risk_level: RiskLevel
     composite_score: float = Field(..., ge=0)  # v2: base*injection_multiplier (D6)
     dimensions: RiskDimensions
-    short_circuit_rule: Optional[str] = None  # SC-1/SC-2/SC-3/SC-4 or null
+    short_circuit_rule: Optional[str] = None  # SC-1/SC-2/SC-3 or null
     missing_dimensions: list[str] = Field(default_factory=list)
     classified_by: ClassifiedBy
     classified_at: str  # UTC ISO8601
     override: Optional[RiskOverride] = None
     l1_snapshot: Optional["RiskSnapshot"] = None
     l3_trace: Optional[dict] = Field(default=None, exclude=True)
-    risk_evidence: dict[str, Any] = Field(default_factory=dict)
+    l2_l3_summary: Optional[dict[str, Any]] = None
+    rule_hits: list[str] = Field(default_factory=list)
+    skill_trust_findings: list[dict[str, Any]] = Field(default_factory=list)
+    taint_flow_summary: Optional[dict[str, Any]] = None
 
     @field_validator("short_circuit_rule")
     @classmethod
     def validate_short_circuit(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in ("SC-1", "SC-2", "SC-3", "SC-4"):
-            raise ValueError(f"short_circuit_rule must be SC-1/SC-2/SC-3/SC-4, got '{v}'")
+        if v is not None and v not in ("SC-1", "SC-2", "SC-3"):
+            raise ValueError(f"short_circuit_rule must be SC-1/SC-2/SC-3, got '{v}'")
         return v
 
     @field_validator("classified_at")
@@ -826,6 +1035,8 @@ class DecisionContext(BaseModel):
     cognition_hints: Optional[list[str]] = None
     session_scope_profile_id: Optional[str] = None
     session_scope_profile: Optional[SessionScopeProfile] = None
+    skill_trust: Optional[SkillTrustContext] = None
+    mcp_context: Optional[McpContext] = None
 
 
 class SyncDecisionRequest(BaseModel):
@@ -863,6 +1074,7 @@ class SyncDecisionResponse(BaseModel):
     l3_state: Optional[str] = None
     l3_reason: Optional[str] = None
     l3_reason_code: Optional[str] = None
+    agent_safety_feedback: Optional[dict[str, Any]] = None
     served_at: str  # UTC ISO8601
 
     @field_validator("served_at")

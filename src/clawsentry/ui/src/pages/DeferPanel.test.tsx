@@ -95,11 +95,35 @@ describe('Defer approvals workbench', () => {
       reason: 'Outbound package publication requested',
       timeout_s: 45,
       timestamp: '2026-04-15T09:00:00Z',
+      approval_prompt: {
+        affected_target: '/workspace/package',
+        operation: 'shell',
+        consequence: 'Approving publishes the package.',
+        dry_run_or_narrower_scope_suggestion: 'Run npm publish --dry-run first.',
+        rollback_hint: 'Use npm deprecate if the package is published incorrectly.',
+        field_sources: {
+          affected_target: 'adapter_provided',
+          operation: 'adapter_provided',
+          consequence: 'generated',
+          dry_run_or_narrower_scope_suggestion: 'generated',
+          rollback_hint: 'generated',
+        },
+      },
     })
 
     const pendingQueue = screen.getByRole('region', { name: /pending approvals queue/i })
     expect(await within(pendingQueue).findByRole('heading', { level: 3, name: 'shell' })).toBeInTheDocument()
     expect(within(pendingQueue).getByText('Outbound package publication requested')).toBeInTheDocument()
+    expect(within(pendingQueue).getByText('Affected target')).toBeInTheDocument()
+    expect(within(pendingQueue).getByText('/workspace/<redacted>')).toBeInTheDocument()
+    expect(within(pendingQueue).getByText('Consequence')).toBeInTheDocument()
+    expect(within(pendingQueue).getByText('Approving publishes the package.')).toBeInTheDocument()
+    expect(within(pendingQueue).getByText('Safer option')).toBeInTheDocument()
+    expect(within(pendingQueue).getByText('Run npm publish --dry-run first.')).toBeInTheDocument()
+    expect(within(pendingQueue).getAllByText('Generated guidance')).toHaveLength(3)
+    expect(within(pendingQueue).getAllByText('Adapter-provided')).toHaveLength(2)
+    expect(within(pendingQueue).getByText('Rollback hint')).toBeInTheDocument()
+    expect(within(pendingQueue).getByText('Use npm deprecate if the package is published incorrectly.')).toBeInTheDocument()
     expect(within(pendingQueue).getByText(/due at/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /allow approval shell/i }))

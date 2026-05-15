@@ -17,6 +17,7 @@ import { api } from '../api/client'
 import type {
   ControlHealthSnapshot,
   HealthResponse,
+  PolicyDriftResponse,
   RiskVelocity,
   SessionSummary,
   SummaryResponse,
@@ -161,11 +162,27 @@ function sessionsHref(params: Record<string, string | number | boolean | undefin
   return `/sessions?${qs.toString()}`
 }
 
+function policyDriftSessionHref(cell: PolicyDriftResponse['cells'][number]) {
+  const qs = new URLSearchParams()
+  const eventId = cell.traceability.event_ids?.[0]
+  const requestId = cell.traceability.request_ids?.[0]
+  if (eventId) qs.set('event', eventId)
+  if (requestId) qs.set('request', requestId)
+  const query = qs.toString()
+  return `/sessions/${cell.session_id}${query ? `?${query}` : ''}`
+}
+
+function formatPercent(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
+  return `${Math.round(value * 100)}%`
+}
+
 export default function Dashboard() {
   const { language, t } = usePreferences()
   const [summary, setSummary] = useState<SummaryResponse | null>(null)
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [sessions, setSessions] = useState<SessionSummary[]>([])
+  const [policyDrift, setPolicyDrift] = useState<PolicyDriftResponse | null>(null)
   const [demoMode, setDemoMode] = useState(false)
   const [loading, setLoading] = useState(true)
   const budgetExhaustionEvent = health?.budget_exhaustion_event
@@ -179,17 +196,20 @@ export default function Dashboard() {
         api.summary(),
         api.health(),
         api.sessions({ sort: 'risk_level', limit: 120 }),
+        api.policyDrift({ windowSeconds: 300, maxCells: 6 }),
       ])
-        .then(([summaryResult, healthResult, sessionResult]) => {
+        .then(([summaryResult, healthResult, sessionResult, policyDriftResult]) => {
           if (DEMO_FALLBACK_ENABLED && sessionResult.length === 0 && summaryResult.total_records === 0) {
             setSummary(DEMO_SUMMARY)
             setHealth(DEMO_HEALTH)
             setSessions(DEMO_SESSIONS)
+            setPolicyDrift(null)
             setDemoMode(true)
           } else {
             setSummary(summaryResult)
             setHealth(healthResult)
             setSessions(sessionResult)
+            setPolicyDrift(policyDriftResult)
             setDemoMode(false)
           }
         })
@@ -198,6 +218,7 @@ export default function Dashboard() {
             setSummary(DEMO_SUMMARY)
             setHealth(DEMO_HEALTH)
             setSessions(DEMO_SESSIONS)
+            setPolicyDrift(null)
             setDemoMode(true)
           }
         })
@@ -233,6 +254,8 @@ export default function Dashboard() {
     })
     .slice(0, 5)
   const toolkitEvidenceBudgetHotspotCount = sessions.filter(hasToolkitEvidenceBudgetExhausted).length
+  const policyDriftCells = policyDrift?.cells?.slice(0, 4) ?? []
+  const metricTraceability = policyDrift?.metric_cell_traceability
   const firstCriticalSession = prioritySessions[0]
   const operatorSteps = [
     {
@@ -698,6 +721,60 @@ export default function Dashboard() {
               })}
               {toolkitEvidenceBudgetHotspots.length === 0 && (
                 <div className="empty-inline">{t('dashboard.noEvidenceHotspots')}</div>
+              )}
+            </div>
+          </section>
+
+          <section className="card section-card" aria-label="Policy drift cells">
+            <div className="section-card-header">
+              <div>
+                <p className="section-kicker">Policy drift</p>
+                <h2>Policy drift cells</h2>
+              </div>
+              <span className="section-meta">
+                Traceability {formatPercent(metricTraceability?.coverage)}
+              </span>
+            </div>
+            <div className="priority-session-list">
+              {policyDriftCells.map(cell => {
+                const incomplete = metricTraceability?.incomplete_cells?.find(item =>
+                  item.workspace_root === cell.workspace_root
+                  && item.source_framework === cell.source_framework
+                  && item.session_id === cell.session_id
+                  && item.rule_family === cell.rule_family
+                )
+                return (
+                  <Link
+                    key={cell.cell_id}
+                    to={policyDriftSessionHref(cell)}
+                    className="priority-session-row"
+                    aria-label={`Open session replay for ${cell.rule_family} drift cell`}
+                  >
+                    <div>
+                      <div className="priority-session-top">
+                        <strong>{cell.rule_family} · {cell.source_framework}</strong>
+                        <span className={`activity-pill ${incomplete ? 'activity-pill-stale' : 'activity-pill-active'}`}>
+                          {incomplete ? 'incomplete' : 'traceable'}
+                        </span>
+                      </div>
+                      <p className="priority-session-meta">
+                        block delta {formatSignedMetric(cell.delta.block_rate)} · {cell.current.record_count} records
+                      </p>
+                      {incomplete && (
+                        <p className="priority-session-meta priority-session-annotation mono">
+                          missing {incomplete.missing_fields.join(', ')}
+                        </p>
+                      )}
+                      <p className="priority-session-id mono">{cell.session_id}</p>
+                    </div>
+                    <div className="priority-session-side">
+                      <span className="mono">{cell.traceability.event_ids?.[0] ?? 'no event'}</span>
+                    </div>
+                  </Link>
+                )
+              })}
+              {policyDriftCells.length === 0 && (
+                <div className="empty-inline">No policy drift cells in the current window.</div>
               )}
             </div>
           </section>

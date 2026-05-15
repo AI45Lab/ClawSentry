@@ -94,12 +94,7 @@ class DetectionConfig:
     benchmark_auto_resolve_defer: bool = True
     benchmark_defer_action: str = "block"
     benchmark_persist_scope: str = "project"
-    benchmark_safe_shell_allow: bool = True
-
-    # --- Persistence-write / future execution entrypoint guard ---
-    persistence_write_action: str = "auto"  # "auto", "audit", "force_l3", "defer", or "block"
-    persistence_write_fallback_action: str = "block"  # "defer", "block", or "audit"
-    persistence_write_l3_allow_confidence: float = 0.6
+    benchmark_l2_auto_enabled: bool = False
 
     # --- Anti-bypass follow-up guard (default-off) ---
     anti_bypass_guard_enabled: bool = False
@@ -119,6 +114,15 @@ class DetectionConfig:
     anti_bypass_llm_timeout_ms: float = 800.0
     anti_bypass_llm_max_priors: int = 3
     anti_bypass_llm_action: str = "force_l3"
+
+    # --- Session-risk capability narrowing and feedback surfaces ---
+    capability_narrowing_enabled: bool = False
+    agent_safety_feedback_enabled: bool = False
+    skill_trust_registry_path: Optional[str] = None
+    skill_trust_first_use_normal_action: str = "audit"
+    skill_trust_first_use_benchmark_action: str = "audit"
+    skill_trust_first_use_strict_action: str = "audit"
+    skill_trust_first_use_permissive_action: str = "audit"
 
     # --- E-5: Self-evolving pattern repository ---
     evolving_enabled: bool = False
@@ -237,27 +241,6 @@ class DetectionConfig:
                 self.benchmark_persist_scope,
             )
             object.__setattr__(self, "benchmark_persist_scope", "project")
-        persistence_action = str(self.persistence_write_action).strip().lower()
-        if persistence_action not in ("auto", "audit", "force_l3", "defer", "block"):
-            logger.warning(
-                "Invalid persistence_write_action=%r, falling back to 'auto'",
-                self.persistence_write_action,
-            )
-            persistence_action = "auto"
-        object.__setattr__(self, "persistence_write_action", persistence_action)
-        fallback_action = str(self.persistence_write_fallback_action).strip().lower()
-        if fallback_action not in ("defer", "block", "audit"):
-            logger.warning(
-                "Invalid persistence_write_fallback_action=%r, falling back to 'block'",
-                self.persistence_write_fallback_action,
-            )
-            fallback_action = "block"
-        object.__setattr__(self, "persistence_write_fallback_action", fallback_action)
-        if not (0.0 <= self.persistence_write_l3_allow_confidence <= 1.0):
-            raise ValueError(
-                "persistence_write_l3_allow_confidence must be between 0.0 and 1.0, "
-                f"got {self.persistence_write_l3_allow_confidence}"
-            )
         if self.anti_bypass_memory_ttl_s <= 0:
             raise ValueError(
                 f"anti_bypass_memory_ttl_s must be > 0, got {self.anti_bypass_memory_ttl_s}"
@@ -338,6 +321,22 @@ class DetectionConfig:
                 self.anti_bypass_llm_action,
             )
             object.__setattr__(self, "anti_bypass_llm_action", "force_l3")
+        first_use_actions = {"audit", "force_l2", "force_l3", "defer", "block"}
+        for field_name in (
+            "skill_trust_first_use_normal_action",
+            "skill_trust_first_use_benchmark_action",
+            "skill_trust_first_use_strict_action",
+            "skill_trust_first_use_permissive_action",
+        ):
+            value = str(getattr(self, field_name) or "").strip().lower()
+            if value not in first_use_actions:
+                logger.warning(
+                    "Invalid %s=%r, falling back to 'audit'",
+                    field_name,
+                    getattr(self, field_name),
+                )
+                value = "audit"
+            object.__setattr__(self, field_name, value)
         if self.threshold_critical > 3.0:
             logger.warning(
                 "threshold_critical=%.2f exceeds max achievable score (3.0) with default weights; "
@@ -354,15 +353,6 @@ class DetectionConfig:
     def l3_timeout_ms(self) -> float | None:
         """Canonical alias retained for compatibility with the new config contract."""
         return self.l3_budget_ms
-
-    def resolved_persistence_write_action(self) -> str:
-        """Resolve auto mode for the persistence-write guard."""
-        action = self.persistence_write_action
-        if action != "auto":
-            return action
-        if self.mode in ("benchmark", "strict"):
-            return "block"
-        return "force_l3"
 
 
 # ---------------------------------------------------------------------------
@@ -409,9 +399,6 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_LLM_DAILY_BUDGET_USD", "llm_daily_budget_usd", float),
     ("CS_BENCHMARK_DEFER_ACTION", "benchmark_defer_action", str),
     ("CS_BENCHMARK_PERSIST_SCOPE", "benchmark_persist_scope", str),
-    ("CS_PERSISTENCE_WRITE_ACTION", "persistence_write_action", str),
-    ("CS_PERSISTENCE_WRITE_FALLBACK_ACTION", "persistence_write_fallback_action", str),
-    ("CS_PERSISTENCE_WRITE_L3_ALLOW_CONFIDENCE", "persistence_write_l3_allow_confidence", float),
     ("CS_ANTI_BYPASS_MEMORY_TTL_S", "anti_bypass_memory_ttl_s", float),
     ("CS_ANTI_BYPASS_MEMORY_MAX_RECORDS_PER_SESSION", "anti_bypass_memory_max_records_per_session", int),
     ("CS_ANTI_BYPASS_MIN_PRIOR_RISK", "anti_bypass_min_prior_risk", str),
@@ -425,6 +412,11 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_ANTI_BYPASS_LLM_TIMEOUT_MS", "anti_bypass_llm_timeout_ms", float),
     ("CS_ANTI_BYPASS_LLM_MAX_PRIORS", "anti_bypass_llm_max_priors", int),
     ("CS_ANTI_BYPASS_LLM_ACTION", "anti_bypass_llm_action", str),
+    ("CS_SKILL_TRUST_REGISTRY_PATH", "skill_trust_registry_path", str),
+    ("CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION", "skill_trust_first_use_normal_action", str),
+    ("CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION", "skill_trust_first_use_benchmark_action", str),
+    ("CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION", "skill_trust_first_use_strict_action", str),
+    ("CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION", "skill_trust_first_use_permissive_action", str),
 ]
 
 _ENV_ALIAS_MAP: list[tuple[str, str, type, str]] = [
@@ -519,9 +511,11 @@ def build_detection_config_from_env() -> DetectionConfig:
     _parse_bool_env("CS_L3_HEARTBEAT_REVIEW_ENABLED", "l3_heartbeat_review_enabled")
     _parse_bool_env("CS_LLM_TOKEN_BUDGET_ENABLED", "llm_token_budget_enabled")
     _parse_bool_env("CS_BENCHMARK_AUTO_RESOLVE_DEFER", "benchmark_auto_resolve_defer")
-    _parse_bool_env("CS_BENCHMARK_SAFE_SHELL_ALLOW", "benchmark_safe_shell_allow")
+    _parse_bool_env("CS_BENCHMARK_L2_AUTO_ENABLED", "benchmark_l2_auto_enabled")
     _parse_bool_env("CS_ANTI_BYPASS_GUARD_ENABLED", "anti_bypass_guard_enabled")
     _parse_bool_env("CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS", "anti_bypass_record_allow_decisions")
+    _parse_bool_env("CS_CAPABILITY_NARROWING_ENABLED", "capability_narrowing_enabled")
+    _parse_bool_env("CS_AGENT_SAFETY_FEEDBACK_ENABLED", "agent_safety_feedback_enabled")
     explicit_anti_bypass_llm = _parse_bool_env(
         "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED",
         "anti_bypass_llm_recognition_enabled",
@@ -689,9 +683,11 @@ def build_detection_config_with_preset(
     _parse_bool_env("CS_L3_HEARTBEAT_REVIEW_ENABLED", "l3_heartbeat_review_enabled")
     _parse_bool_env("CS_LLM_TOKEN_BUDGET_ENABLED", "llm_token_budget_enabled")
     _parse_bool_env("CS_BENCHMARK_AUTO_RESOLVE_DEFER", "benchmark_auto_resolve_defer")
-    _parse_bool_env("CS_BENCHMARK_SAFE_SHELL_ALLOW", "benchmark_safe_shell_allow")
+    _parse_bool_env("CS_BENCHMARK_L2_AUTO_ENABLED", "benchmark_l2_auto_enabled")
     _parse_bool_env("CS_ANTI_BYPASS_GUARD_ENABLED", "anti_bypass_guard_enabled")
     _parse_bool_env("CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS", "anti_bypass_record_allow_decisions")
+    _parse_bool_env("CS_CAPABILITY_NARROWING_ENABLED", "capability_narrowing_enabled")
+    _parse_bool_env("CS_AGENT_SAFETY_FEEDBACK_ENABLED", "agent_safety_feedback_enabled")
     explicit_anti_bypass_llm = _parse_bool_env(
         "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED",
         "anti_bypass_llm_recognition_enabled",

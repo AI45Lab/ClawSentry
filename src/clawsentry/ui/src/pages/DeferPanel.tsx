@@ -17,6 +17,7 @@ interface DeferItem {
   command: string
   reason: string
   timestamp: string
+  approval_prompt?: SSEDeferPendingEvent['approval_prompt']
   expires_at?: number
   status: DeferStatus
 }
@@ -29,6 +30,32 @@ function formatResolveActionLabel(
   const commandLabel = command.length > 48 ? `${command.slice(0, 45)}...` : command
   const detail = commandLabel ? ` for command ${commandLabel}` : ''
   return `${action} approval ${item.tool_name} for session ${item.session_id}${detail} (${item.approval_id})`
+}
+
+function redactPromptContextValue(value?: string): string {
+  return String(value || '')
+    .replace(/\/workspace\/[^\s'"<>|)]+/g, '/workspace/<redacted>')
+    .replace(/\/home\/[^\s'"<>|)]+/g, '/home/<redacted>')
+    .replace(/~\/?[^\s'"<>|)]*/g, '~/<redacted>')
+    .replace(/(token|password|secret|api_key)=([^\s&]+)/gi, '$1=<redacted>')
+}
+
+function promptFieldSourceLabel(
+  item: DeferItem,
+  field: string,
+): string | null {
+  const source = item.approval_prompt?.field_sources?.[field]
+  if (!source) return null
+  if (source === 'generated') return 'Generated guidance'
+  if (source === 'adapter_provided') return 'Adapter-provided'
+  if (source === 'unavailable') return 'Unavailable'
+  return source
+}
+
+function PromptFieldSource({ item, field }: { item: DeferItem; field: string }) {
+  const label = promptFieldSourceLabel(item, field)
+  if (!label) return null
+  return <span className="badge badge-neutral">{label}</span>
 }
 
 export default function DeferPanel() {
@@ -54,6 +81,7 @@ export default function DeferPanel() {
             command: data.command,
             reason: data.reason,
             timestamp: data.timestamp,
+            approval_prompt: data.approval_prompt,
             expires_at: expiresAt,
             status: 'pending',
           }, ...prev]
@@ -235,6 +263,45 @@ export default function DeferPanel() {
                     <div className="cmd-snippet operator-command">{item.command || '—'}</div>
                     {item.reason && (
                       <p className="operator-card-description">{item.reason}</p>
+                    )}
+                    {item.approval_prompt && (
+                      <div className="operator-card-meta approval-prompt-context">
+                        {item.approval_prompt.affected_target && (
+                          <div className="operator-meta-block">
+                            <span className="operator-meta-label">Affected target</span>
+                            <strong className="mono">{redactPromptContextValue(item.approval_prompt.affected_target)}</strong>
+                            <PromptFieldSource item={item} field="affected_target" />
+                          </div>
+                        )}
+                        {item.approval_prompt.operation && (
+                          <div className="operator-meta-block">
+                            <span className="operator-meta-label">Operation</span>
+                            <strong>{item.approval_prompt.operation}</strong>
+                            <PromptFieldSource item={item} field="operation" />
+                          </div>
+                        )}
+                        {item.approval_prompt.consequence && (
+                          <div className="operator-meta-block">
+                            <span className="operator-meta-label">Consequence</span>
+                            <strong>{redactPromptContextValue(item.approval_prompt.consequence)}</strong>
+                            <PromptFieldSource item={item} field="consequence" />
+                          </div>
+                        )}
+                        {item.approval_prompt.dry_run_or_narrower_scope_suggestion && (
+                          <div className="operator-meta-block">
+                            <span className="operator-meta-label">Safer option</span>
+                            <strong>{item.approval_prompt.dry_run_or_narrower_scope_suggestion}</strong>
+                            <PromptFieldSource item={item} field="dry_run_or_narrower_scope_suggestion" />
+                          </div>
+                        )}
+                        {item.approval_prompt.rollback_hint && (
+                          <div className="operator-meta-block">
+                            <span className="operator-meta-label">Rollback hint</span>
+                            <strong>{redactPromptContextValue(item.approval_prompt.rollback_hint)}</strong>
+                            <PromptFieldSource item={item} field="rollback_hint" />
+                          </div>
+                        )}
+                      </div>
                     )}
 
                     <div className="operator-card-meta">

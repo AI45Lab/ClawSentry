@@ -147,6 +147,67 @@ export interface SystemSecurityPosture {
   window_risk_summary?: WindowRiskSummary | null
 }
 
+export interface PolicyDriftBucket {
+  record_count: number
+  decision_distribution: Record<string, number>
+  risk_distribution: Record<string, number>
+  rule_hits: Record<string, number>
+  block_rate: number
+  high_or_critical_rate: number
+}
+
+export interface PolicyDriftCell {
+  cell_id: string
+  workspace_root: string
+  source_framework: string
+  session_id: string
+  rule_family: string
+  current: PolicyDriftBucket
+  previous: PolicyDriftBucket
+  delta: {
+    record_count: number
+    block_rate: number
+    high_or_critical_rate: number
+  }
+  traceability: {
+    request_ids: string[]
+    record_ids: string[]
+    event_ids: string[]
+    registry_states: string[]
+    rule_evidence: string[]
+    fallback_paths: string[]
+    adapter_effect_result_ids: string[]
+  }
+  traceability_applicability: Record<string, boolean>
+}
+
+export interface MetricCellTraceability {
+  passed: boolean
+  coverage: number
+  total_cells: number
+  cell_count?: number
+  complete_cell_count?: number
+  required_fields: string[]
+  conditional_fields: string[]
+  incomplete_cells: Array<{
+    workspace_root: string
+    source_framework: string
+    session_id: string
+    rule_family: string
+    missing_fields: string[]
+  }>
+}
+
+export interface PolicyDriftResponse {
+  generated_at: string
+  window_seconds: number | null
+  comparison_window_seconds?: number | null
+  grouping_dimensions: string[]
+  total_cells: number
+  cells: PolicyDriftCell[]
+  metric_cell_traceability: MetricCellTraceability
+}
+
 export interface EnterpriseLiveRiskOverview {
   generated_at?: string
   active_sessions: number
@@ -393,16 +454,23 @@ export interface TrajectoryRecord {
     risk_level: RiskLevel
     composite_score: number
     dimensions: RiskDimensions
+    rule_hits?: string[]
+    skill_trust_findings?: Record<string, unknown>[]
   }
   meta: {
     actual_tier: DecisionTier
     caller_adapter: string
+    request_id?: string
+    skill_lineage?: Record<string, unknown>
+    skill_trust_raw?: Record<string, unknown>
     l3_available?: boolean
     l3_requested?: boolean
     l3_reason_code?: string
     l3_state?: string
     l3_reason?: string
   }
+  adapter_effect_results?: Record<string, unknown>[]
+  record_id?: number
   l3_trace?: {
     trigger_reason?: string
     trigger_detail?: string
@@ -531,6 +599,17 @@ export type SSEDeferPendingEvent = {
   reason: string
   timeout_s: number
   timestamp: string
+  approval_prompt?: {
+    affected_target?: string
+    operation?: string
+    consequence?: string
+    dry_run_or_narrower_scope_suggestion?: string
+    rollback_hint?: string
+    field_sources?: Record<
+      string,
+      'generated' | 'adapter_provided' | 'unavailable' | string
+    >
+  }
 }
 
 export type SSEDeferResolvedEvent = {

@@ -11,6 +11,7 @@ import os
 import re as _re
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable, Optional
 
 try:
@@ -18,7 +19,13 @@ try:
     from .codex_adapter import CodexAdapter
     from .gemini_adapter import GeminiAdapter, decision_to_gemini_hook_output
     from .kimi_adapter import KimiAdapter, decision_to_kimi_hook_output
-    from ..gateway.models import AdapterEffectResult, CanonicalDecision, DecisionVerdict
+    from ..gateway.models import (
+        AdapterEffectResult,
+        AgentTrustLevel,
+        CanonicalDecision,
+        DecisionContext,
+        DecisionVerdict,
+    )
 except ImportError:
     # Support direct script execution:
     # python src/clawsentry/adapters/a3s_gateway_harness.py
@@ -31,7 +38,13 @@ except ImportError:
     from clawsentry.adapters.codex_adapter import CodexAdapter  # type: ignore[no-redef]
     from clawsentry.adapters.gemini_adapter import GeminiAdapter, decision_to_gemini_hook_output  # type: ignore[no-redef]
     from clawsentry.adapters.kimi_adapter import KimiAdapter, decision_to_kimi_hook_output  # type: ignore[no-redef]
-    from clawsentry.gateway.models import AdapterEffectResult, CanonicalDecision, DecisionVerdict  # type: ignore[no-redef]
+    from clawsentry.gateway.models import (  # type: ignore[no-redef]
+        AdapterEffectResult,
+        AgentTrustLevel,
+        CanonicalDecision,
+        DecisionContext,
+        DecisionVerdict,
+    )
 
 import time as _time
 
@@ -103,6 +116,29 @@ def _normalize_event_type(value: Any) -> str:
     return _camel_to_snake(event_type)
 
 
+def _extract_tool_input_content(tool_input: dict[str, Any]) -> str | None:
+    """Extract host-native write/edit body text for policy analysis."""
+    parts: list[str] = []
+    for key in ("content", "new_string", "old_string", "text", "body", "input", "code"):
+        value = tool_input.get(key)
+        if isinstance(value, str) and value:
+            parts.append(value)
+
+    edits = tool_input.get("edits")
+    if isinstance(edits, list):
+        for edit in edits:
+            if not isinstance(edit, dict):
+                continue
+            for key in ("new_string", "old_string", "content"):
+                value = edit.get(key)
+                if isinstance(value, str) and value:
+                    parts.append(value)
+
+    if not parts:
+        return None
+    return "\n".join(dict.fromkeys(parts))
+
+
 def _log_stderr(msg: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"[{ts}] [a3s-gateway-harness] {msg}", file=sys.stderr, flush=True)
@@ -137,16 +173,7 @@ def _resolve_payload(raw: Any) -> dict[str, Any]:
 
     args = payload.get("arguments")
     if isinstance(args, dict):
-        for key in (
-            "command",
-            "path",
-            "target",
-            "file_path",
-            "content",
-            "old_string",
-            "new_string",
-            "edits",
-        ):
+        for key in ("command", "path", "target", "file_path"):
             if key in args and key not in payload:
                 payload[key] = args[key]
 
@@ -198,6 +225,172 @@ def _merge_clawsentry_meta(payload: dict[str, Any], extra: dict[str, Any]) -> No
         meta = {}
         payload["_clawsentry_meta"] = meta
     meta.update(extra)
+
+
+def _codex_skill_name_from_payload(payload: dict[str, Any]) -> str | None:
+    return _codex_skill_name_from_payload_texts(payload, known_skill_names=None)
+
+
+def _codex_payload_texts(payload: dict[str, Any]) -> list[str]:
+    texts: list[str] = []
+    for key in ("command", "path", "file_path"):
+        value = payload.get(key)
+        if isinstance(value, str):
+            texts.append(_codex_skill_attribution_text(value) if key == "command" else value)
+    arguments = payload.get("arguments")
+    if isinstance(arguments, dict):
+        for key in ("command", "path", "file_path"):
+            value = arguments.get(key)
+            if isinstance(value, str):
+                texts.append(_codex_skill_attribution_text(value) if key == "command" else value)
+    return texts
+
+
+def _strip_shell_comment(line: str) -> str:
+    quote: str | None = None
+    escaped = False
+    for index, char in enumerate(line):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if char in {"'", '"'}:
+            quote = None if quote == char else char if quote is None else quote
+            continue
+        if quote is None and char == "#":
+            return line[:index]
+    return line
+
+
+def _codex_skill_attribution_text(command: str) -> str:
+    """Return command text relevant for skill path attribution.
+
+    Skill names inside shell comments or heredoc bodies are often validation text
+    or output content, not executed skill paths. Keep direct shell command lines
+    and strip those incidental regions before runtime metadata attribution.
+    """
+
+    lines: list[str] = []
+    heredoc_end: str | None = None
+    heredoc_pattern = _re.compile(r"<<-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?")
+    for raw_line in command.splitlines():
+        if heredoc_end is not None:
+            if raw_line.strip() == heredoc_end:
+                heredoc_end = None
+            continue
+        line = _strip_shell_comment(raw_line)
+        match = heredoc_pattern.search(line)
+        if match:
+            before_heredoc = line[:match.start()]
+            if before_heredoc.strip():
+                lines.append(before_heredoc)
+            heredoc_end = match.group(1)
+            continue
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def _codex_skill_name_from_payload_texts(
+    payload: dict[str, Any],
+    *,
+    known_skill_names: set[str] | None,
+) -> str | None:
+    names = _codex_skill_names_from_payload_texts(
+        payload,
+        known_skill_names=known_skill_names,
+    )
+    return names[0] if names else None
+
+
+def _codex_skill_names_from_payload_texts(
+    payload: dict[str, Any],
+    *,
+    known_skill_names: set[str] | None,
+) -> list[str]:
+    texts = _codex_payload_texts(payload)
+    names: list[str] = []
+    for text in texts:
+        for match in _re.finditer(r"(?:^|/)(?:\.agents/)?skills/([^/\s'\";|&]+)(?:/|$)", text):
+            names.append(match.group(1))
+    if not known_skill_names:
+        return list(dict.fromkeys(names))
+    path_contexts = ("/scripts", "/SKILL.md", "/README.md", "/references", "/data")
+    split_path_matches: list[tuple[int, int, str]] = []
+    for text_index, text in enumerate(texts):
+        for skill_name in known_skill_names:
+            path_pattern = (
+                r"(?<![A-Za-z0-9_.-])"
+                + _re.escape(skill_name)
+                + r"(?=(?:"
+                + "|".join(_re.escape(item) for item in path_contexts)
+                + r")(?:/|['\"\s),]|$))"
+            )
+            match = _re.search(path_pattern, text)
+            if match:
+                split_path_matches.append((text_index, match.start(), skill_name))
+    names.extend(skill_name for _text_index, _offset, skill_name in sorted(split_path_matches))
+    return list(dict.fromkeys(names))
+
+
+def _load_codex_skill_runtime_metadata(skill_name: str) -> dict[str, Any] | None:
+    raw_by_skill = _load_codex_skill_runtime_metadata_bundle()
+    raw = raw_by_skill.get(skill_name)
+    if not isinstance(raw, dict):
+        return None
+    return copy.deepcopy(raw)
+
+
+def _load_codex_skill_runtime_metadata_bundle() -> dict[str, Any]:
+    metadata_path = os.environ.get("CS_SKILL_TRUST_METADATA_PATH")
+    if not metadata_path:
+        codex_home = os.environ.get("CODEX_HOME")
+        if codex_home:
+            metadata_path = str(Path(codex_home) / "clawsentry" / "skill-trust-raw.json")
+    if not metadata_path:
+        return {}
+    try:
+        payload = json.loads(Path(metadata_path).read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    raw_by_skill = payload.get("raw_metadata_by_skill") if isinstance(payload, dict) else None
+    if not isinstance(raw_by_skill, dict):
+        return {}
+    return raw_by_skill
+
+
+def _enrich_codex_skill_trust_from_runtime_bundle(payload: dict[str, Any]) -> None:
+    raw_by_skill = _load_codex_skill_runtime_metadata_bundle()
+    skill_names = _codex_skill_names_from_payload_texts(
+        payload,
+        known_skill_names={str(name) for name in raw_by_skill},
+    )
+    if not skill_names:
+        return
+    candidates: list[tuple[int, str, dict[str, Any]]] = []
+    for index, skill_name in enumerate(skill_names):
+        raw_candidate = raw_by_skill.get(skill_name)
+        if isinstance(raw_candidate, dict):
+            candidates.append((index, skill_name, raw_candidate))
+    if not candidates:
+        return
+    _index, skill_name, raw = min(candidates, key=lambda item: item[0])
+    if raw is None:
+        return
+    raw = copy.deepcopy(raw)
+    _merge_clawsentry_meta(
+        payload,
+        {
+            "skill_trust_raw": raw,
+            "skill_lineage_raw": {
+                "presented_name": raw.get("presented_name") or skill_name,
+                "provenance_claim": raw.get("provenance_claim"),
+                "admission_scan_id": raw.get("admission_scan_id"),
+                "policy_fingerprint": raw.get("policy_fingerprint"),
+            },
+        },
+    )
 
 
 def _build_ahp_compat_meta(
@@ -684,17 +877,13 @@ class A3SGatewayHarness:
             if isinstance(tool_input, dict):
                 payload["arguments"] = tool_input
                 # Lift common fields for risk assessment
-                for key in (
-                    "command",
-                    "file_path",
-                    "path",
-                    "content",
-                    "old_string",
-                    "new_string",
-                    "edits",
-                ):
+                for key in ("command", "file_path", "path"):
                     if key in tool_input and key not in payload:
                         payload[key] = tool_input[key]
+                if "content" not in payload:
+                    content = _extract_tool_input_content(tool_input)
+                    if content:
+                        payload["content"] = content
             # Carry over other context fields
             for key in ("cwd", "working_directory", "permission_mode", "transcript_path"):
                 if key in msg:
@@ -737,8 +926,13 @@ class A3SGatewayHarness:
 
         if project_meta and evt.payload is not None:
             _merge_clawsentry_meta(evt.payload, project_meta)
+        if evt.payload is not None:
+            _enrich_codex_skill_trust_from_runtime_bundle(evt.payload)
 
-        decision = await self.adapter.request_decision(evt)
+        decision = await self.adapter.request_decision(
+            evt,
+            DecisionContext(agent_trust_level=AgentTrustLevel.STANDARD),
+        )
         result = _decision_to_ahp_result(decision)
         _record_inprocess_adapter_effect_result(
             self.adapter,

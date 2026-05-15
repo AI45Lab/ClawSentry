@@ -14,9 +14,19 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def _redact_prompt_context_value(value: Any) -> str:
+    text = str(value or "").replace("\n", " ").strip()
+    text = re.sub(r"/workspace/[^\s'\"<>|)]+", "/workspace/<redacted>", text)
+    text = re.sub(r"/home/[^\s'\"<>|)]+", "/home/<redacted>", text)
+    text = re.sub(r"~/?[^\s'\"<>|)]*", "~/<redacted>", text)
+    text = re.sub(r"(?i)(token|password|secret|api_key)=([^\s&]+)", r"\1=<redacted>", text)
+    return text
 
 
 class LatchHubBridge:
@@ -185,7 +195,22 @@ class LatchHubBridge:
         if event_type == "defer_pending":
             tool = str(event.get("tool_name") or "")
             timeout = event.get("timeout_s", 300)
-            return f"[DEFER PENDING] {tool} — awaiting operator approval (timeout: {int(timeout)}s)"
+            parts = [
+                f"[DEFER PENDING] {tool} — awaiting operator approval (timeout: {int(timeout)}s)"
+            ]
+            prompt = event.get("approval_prompt")
+            if isinstance(prompt, dict):
+                for label, key in (
+                    ("Target", "affected_target"),
+                    ("Operation", "operation"),
+                    ("Consequence", "consequence"),
+                    ("Safer option", "dry_run_or_narrower_scope_suggestion"),
+                    ("Rollback", "rollback_hint"),
+                ):
+                    value = _redact_prompt_context_value(prompt.get(key))
+                    if value:
+                        parts.append(f"{label}: {value}")
+            return " | ".join(parts)
 
         if event_type == "defer_resolved":
             resolved = str(event.get("resolved_decision") or "unknown")

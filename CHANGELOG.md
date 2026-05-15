@@ -8,22 +8,32 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
-## [0.6.9] — 2026-05-15
-
-- Release tag: <https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.9>
-- Package metadata source: `pyproject.toml`.
+## [0.7.0] — 2026-05-16
 
 ### 新增
 
-- **Persistence-write / SC-4 policy** — 将未来自动执行/重入入口写入抽象为通用 L1-L3 策略面，新增 `CS_PERSISTENCE_WRITE_ACTION`、`CS_PERSISTENCE_WRITE_FALLBACK_ACTION` 和 L3 allow confidence 阈值；`force_l3` 走同步 pre-action verdict path，并默认向 L3 发送 redacted evidence summary。
+- **Benchmark-oriented roadmap foundations** — 发布 Skill Trust registry / preflight、AHP policy replay、deterministic compound/taint evidence、capability narrowing、redacted agent feedback 与 policy drift traceability 的主线基础能力。
+- **Skill Trust registry and first-use actions** — 新增 `clawsentry skill-trust scan/register/register-dir`，可把本地 skill 包扫描为 registry/runtime metadata，并在 Gateway `pre_action` 中按 normal/benchmark/strict/permissive profile 执行 `audit`、`force_l2`、`force_l3`、`defer` 或 `block`。
+- **Policy replay and drift traceability** — AHP replay 报告记录 request id、registry state、rule evidence、fallback path 与 adapter effect result，`GET /report/policy-drift` 暴露聚合 traceability surface。
 
 ### 改进
 
-- **Pre-action write payload coverage** — Claude/A3S harness payload normalization now lifts nested write/edit fields (`content`, `new_string`, `edits`) before risk scoring, so file writes can be supervised before creation.
+- **Compound/taint L1 evidence** — L1 风险快照现在以 `rule_hits` / `taint_flow_summary` 表达 remote-fetch-to-interpreter、sensitive-source-to-network-sink、archive-extract-then-execute、bulk destructive sequence 和 persistence entrypoint write 等通用 evidence，而不是引入专用 persistence-write runtime knob。
+- **Framework feedback boundary** — supported host hooks 在 critical block 时可返回红线化的 agent safety feedback；unsupported host 仅写入 audit metadata，避免声称不存在的交互能力。
+- **Capability narrowing** — 高会话风险时可应用收窄的 `SessionScopeProfile`，在不静默改写 canonical decision 的前提下收紧后续 tool/skill/MCP 能力。
 
 ### 测试与验证
 
-- 待发布前由 release worktree 重新记录。
+- Python 完整回归：`python -m pytest src/clawsentry/tests/ -q --tb=short` → `3468 passed, 15 skipped`。
+- Web UI regression/build：`npm test -- --run` → `56 passed`；`npm run build` → PASS。
+- AHP policy replay：decision match rate `1.0`，unsafe-pass proxy `0.0`，overblock proxy `0.0`，evidence/schema coverage `1.0`。
+- SkillsSafetyBench targeted gate：protected-feedback profile selected，e2e verifier passed with ASR `0`, TSR `1`, TFR `0` on the targeted readiness set.
+- Docs/API/build checks：`python scripts/docs_api_inventory.py validate`、`mkdocs build --strict`、`python -m build`、`python -m compileall -q src/clawsentry`、`git diff --check` → PASS。
+
+### 边界
+
+- 本版本提供 targeted replay / single-case readiness evidence，不声明完整 benchmark 分数、leaderboard 或 full raw-vs-protected sweep 结论。
+- 临时 persistence-write side-branch 方案不合并为主线；其专用 runtime knobs 与 L3 降级路径已由本版本通用 compound/taint evidence 方向取代。
 
 ## [0.6.8] — 2026-05-11
 
@@ -67,6 +77,7 @@
 ### 测试与验证
 
 - Python 完整回归：`python -m pytest src/clawsentry/tests/ -q --tb=short` → 开发仓库 `3171 passed, 5 skipped`；公开仓库 `3170 passed, 6 skipped`。
+- Codex focused regression：`python -m pytest src/clawsentry/tests/test_start_command.py src/clawsentry/tests/test_codex_initializer.py src/clawsentry/tests/test_codex_doctor.py src/clawsentry/tests/test_benchmark_command.py src/clawsentry/tests/test_gemini_initializer.py src/clawsentry/tests/test_kimi_initializer.py src/clawsentry/tests/test_codex_gateway_e2e_smoke.py src/clawsentry/tests/test_public_docs_contract.py -q` → `79 passed`。
 - Real Codex CLI E2E：`python scripts/run_codex_gateway_e2e_smoke.py --output-report docs/validation/codex-gateway-daemon-e2e-smoke-2026-05-11.md` → PASS on Codex CLI `0.130.0` with workspace-write sandbox and host `PreToolUse` block evidence.
 - Web UI regression：`npm test -- --run` → `55 passed`。
 - Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
@@ -82,6 +93,7 @@
 
 ### 改进
 
+- **Scope tightening covers composed decisions** — 外部/异步路径组合出的 Gateway decision 如果缺少 `scope_evaluation`，会在持久化、SSE 与 benchmark auto-resolution 前补做 scope 收紧，避免 confirmed non-dry-run profile 被后续路径绕过。
 - **Web UI 风险图表口径修正** — Session Detail 的风险雷达与趋势图改用文档化 D1-D6 评分范围（D1/D2/D3/D6 为 0..3，D4/D5 为 0..2），不再按 0..1 归一化轴展示。
 - **Web UI 登录与 API 请求细节** — 缺失 token 时不再展示误导性的 invalid-token 文案；sessions/alerts API 查询为空时不拼接裸 `?`。
 - **Sanitizer 能力页刷新** — 在线文档进一步区分 `would_sanitize` 观察面、adapter effect result 与真正 rewrite-before-history 能力，避免把 advisory-only tool-output sanitizer 说成强制改写。
@@ -151,6 +163,7 @@
 
 - **配置参考 env-first 收口** — 配置概览、模板、环境变量、检测管线、策略调优、CLI、Quickstart、集成与运维页面统一为 `CS_*` / `AHP_*` dotenv 参数口径，移除正常 runtime 路径仍使用项目 TOML 的过时说法。
 - **阅读路径去重** — 明确“环境变量”是参数目录，“检测管线配置”是 L1/L2/L3 runtime 层级图，“策略调优”是按场景取舍的调参指南，减少多个页面看不出差别的问题。
+- **可复制模板块补齐** — 配置模板新增/整理 L1、L2、严格 L3、Anti-bypass observe/review/enforce、DEFER、post-action / trajectory、D4 频率、benchmark 与生产部署块，可直接复制到部署环境或显式 env-file。
 - **公开发布面刷新** — README、PyPI README、包内 README、在线文档与发布状态页更新到 v0.6.3，公开仓库 release 不再停留在早期口径。
 
 ### 修复
@@ -183,7 +196,7 @@
 - 包含 Kimi 就绪状态的 start/status 回归：`python -m pytest src/clawsentry/tests/test_integrations_command.py src/clawsentry/tests/test_start_command.py` → `73 passed`。
 - Python 完整回归：`python -m pytest src/clawsentry/tests/ -q --tb=short` → 开发仓库 `3221 passed, 5 skipped`；公开仓库 `3220 passed, 6 skipped`。
 - 文档构建：`mkdocs build --strict` PASS。
-- VPN no-key `kimi-k2.5` endpoint 下的真实 Kimi CLI E2E：prompt 放行、prompt 拒绝、安全 Shell 放行 + `PostToolUse`、危险 Shell 在 `PreToolUse` 阶段拒绝，以及 marker-hook uninstall 均已验证。
+- 真实 Kimi CLI E2E：prompt 放行、prompt 拒绝、安全 Shell 放行 + `PostToolUse`、危险 Shell 在 `PreToolUse` 阶段拒绝，以及 marker-hook uninstall 均已验证。
 
 ## [0.6.1] — 2026-04-29
 
@@ -244,6 +257,7 @@
 
 ### 改进
 
+- **Gateway precedence 明确化** — anti-bypass guard 位于 quarantine/session enforcement 之后、normal policy 之前；memory update 仅在 trajectory / benchmark auto-resolution 与 `_record_decision_path` 完成后记录最终 verdict/record id。
 - **Redacted observability** — anti-bypass metadata、decision SSE 与 defer-pending SSE 使用 hashes / fingerprints / ids / labels / tool name，不暴露 raw payload、raw command、secret 或 L3 trace。
 - **在线配置文档** — DetectionConfig、env vars、recent feature coverage 与 a3s-code 集成文档补充 observe / review / enforce rollout 示例。
 
@@ -269,6 +283,7 @@
 ### 新增
 
 - **Post-action Enterprise OS contract** — `/report/sessions`、`/report/session/{id}/risk` 与 `/report/session/{id}/post-action` 暴露 `score_range` / `score_semantics`，明确 `0.0..3.0` 分数范围、空数据 `0.0` 语义，以及 `session_risk_ewma` 与 `post_action_score_ewma` 不应裸值相加。
+- **AgentDoG / ATBench labeled replay adapter** — runner 支持 labeled manifest batch replay、safe/unsafe 聚合、per-record artifacts、unsafe recall、safe false-positive、coverage 与 tier 分布指标。
 - **Five-framework ingress smoke** — 新增单 case smoke，覆盖 a3s-code、Claude Code、Codex、Gemini CLI 与 OpenClaw 的本地 adapter/harness/Gateway ingress path。
 
 ### 改进
@@ -276,6 +291,7 @@
 - **Post-action scoring severity floors** — 保留 additive `0.0..3.0` numeric score，同时对明显外传、秘密泄露和混淆组合设置严重性 floor，避免低分低估高危工具输出。
 - **Gateway whitelist propagation** — post-action 分析优先从 `_clawsentry_meta.file_path`，再从 payload `file_path/path/target_path` 传入 whitelist 匹配。
 - **Dashboard Sessions score semantics** — Sessions 主分优先 `session_risk_ewma`，ScoreBar 按 `0..3` 归一化，并显示 post-action EWMA 辅助分。
+- **Anthropic provider base URL** — AgentDoG runner、LLM factory、`clawsentry test-llm` 与 enterprise fallback 保留 Anthropic base URL，支持 native Claude-compatible endpoint smoke。
 
 ### 修复
 
@@ -296,6 +312,8 @@
 ### 新增
 
 - **交互式配置向导升级** — `clawsentry config wizard --interactive` 现在提供明确的 5 步 TTY 配置流程，覆盖 framework、mode、LLM provider、L2/L3 与 token budget；非 TTY 的显式交互请求会失败并给出可执行提示，`--non-interactive` 保持 CI/模板可复现路径。
+- **AgentDoG / ATBench replay 基建** — 新增 `benchmarks/scripts/agentdog_atbench_clawsentry.py`，支持 AgentDoG trajectory 转 ClawSentry canonical events、读取 `agent.hcl` 的 OpenAI-compatible API 配置、执行 L1/L2/L3 replay，并输出 `events.jsonl`、`decisions.jsonl`、`risk_report.json`、`summary.json` 与 `summary.md`。
+- **OpenAI-compatible LLM 参数覆盖** — `CS_LLM_TEMPERATURE` 与 `CS_LLM_PROVIDER_TIMEOUT_MS` 可用于兼容只接受特定 temperature 或需要更长 provider timeout 的模型；AgentDoG runner 暴露 `--llm-temperature` 与 `--llm-provider-timeout-ms`。
 
 ### 改进
 
@@ -308,11 +326,18 @@
 - **会话风险趋势算法统一** — `session_registry` 的 `risk_velocity` 与 reporting helper 统一为窗口首尾 composite score 差值，阈值 `0.25`；单样本返回 `unknown`。
 - **窗口风险摘要字段统一** — `window_risk_summary` 不再输出旧 alias `composite_score_sum`，统一使用 `session_risk_sum`，并补齐 `generated_at` 与 `decision_affecting=false`。
 
+### Benchmark / 交接
 
+- AgentDoG 上游已 clone 到 `benchmarks/AgentDoG`（commit `09adfb8`，目录已 gitignore）。
+- 使用本地 benchmark provider 配置跑通 sample 端到端 smoke：3 events / 3 L2 decisions / max risk `medium`；私有结果目录不进入公开 changelog。
+- 该 sample 没有 ground-truth label，因此只作为基建 smoke；下一窗口继续推进 labeled ATBench 最小样本集、raw vs ClawSentry 对照、a3s-code / Codex / Claude Code / Gemini CLI / OpenClaw runner 设计。
 
 ### 测试与验证
 
+- Python 完整回归：开发仓库 `python -m pytest src/clawsentry/tests/ -q --tb=short` → `3196 passed, 4 skipped`；公开仓库预期 `3189 passed, 11 skipped` benchmark-only 测试跳过后。
+- 发布聚焦回归：`python -m pytest src/clawsentry/tests/test_llm_factory.py src/clawsentry/tests/test_config_command.py src/clawsentry/tests/test_benchmark_wrapper_contract.py src/clawsentry/tests/test_public_docs_contract.py -q` → `51 passed`。
 - Gateway core 回归：`python -m pytest src/clawsentry/tests/test_gateway.py::TestGatewayCore -q` → `55 passed`。
+- docs/config/benchmark/LLM 聚焦检查：`31 passed`；Gateway metric contract 检查：`4 passed`。
 - `python scripts/docs_api_inventory.py validate` → PASS。
 - `mkdocs build --strict` → PASS。
 - `git diff --check` → PASS。
@@ -363,10 +388,13 @@
 
 - **Web UI 风险图表显示** — Session Detail 的“风险构成”和“风险分数趋势”图表现在为 Recharts `ResponsiveContainer` 提供明确宽高，避免真实布局中高度测量为 0 导致图表不渲染。
 - **项目配置运行时生效** — Gateway、stack 与 `test-llm` 在构建检测/LLM 配置前会读取项目级 `.clawsentry.toml` 并导出 canonical `CS_*` 环境变量，同时保留显式环境变量优先级。
+- **Benchmark 模式配置语义** — `clawsentry benchmark env` 输出 canonical `CS_MODE=benchmark`，Gateway benchmark 自动解析会在持久化/SSE 前应用，并尊重 `benchmark_defer_action`。
 - **CLI 配置写入一致性** — `config wizard --llm-provider none` 与 `--write-project-config` 可直接使用文档中的复制命令；`config set/enable/disable` 保留无关 section 并正确写入 bool/int/float。
 
 ### 改进
 
+- **在线文档从 0 到可用的阅读路径** — 首页、快速开始、配置概览、配置模板、benchmark-mode、Codex/Gemini 集成、Dashboard 与 CLI 文档改为用户/二次开发者口径，减少开发进度式表述。
+- **配置模板可复制性** — 增补个人、团队 L2 token budget、严格 L3、CI/benchmark 与生产环境模板，并明确 env > project config > defaults 的优先级。
 - **公开口径对齐** — README、包内 README、安装页、首页指标与 changelog 更新到 v0.5.9 发布口径。
 
 ### 测试与验证
@@ -385,16 +413,20 @@
 
 ### 新增
 
+- **有效配置与启动向导** — `clawsentry config show --effective` 现在展示项目配置、环境变量、默认值与 legacy alias 的来源信息，并对 LLM key / token 等敏感字段做稳定脱敏；配置向导与 canonical `.clawsentry.toml` section 覆盖项目模式、LLM、features、budgets、defer 与 benchmark。
 - **Token budget enforcement** — LLM budget 现在以 provider-reported input/output/total tokens 为执行依据，保留 legacy USD 字段为兼容/展示信息；缺失 usage 的 provider 调用会计入 `unknown_usage_calls`，不会伪造 token 用量触发拦截。
+- **Benchmark 模式 CLI** — 新增 `clawsentry benchmark env|enable|disable|run`，为 Codex benchmark/autonomous runs 生成显式 no-human env、安装/清理临时 managed hooks，并默认拒绝修改当前用户真实 `~/.codex`。
 
 ### 改进
 
 - **部署 UX 与 service validate** — systemd / Docker env 模板改用 canonical token-budget 与 timeout 变量，`clawsentry service validate` 输出脱敏摘要、legacy warning、缺失 auth / 非法 token budget / timeout 错误，并在成功时给出明确 PASS 信号。
 - **Bounded-large timeout defaults** — L2 / L3 / DEFER 默认从短探索窗口调整为更适合本地/持久部署的大窗口，同时保持 hard timeout cap；L2 路径不会因为默认 L3 timeout 变长而继承 5 分钟等待。
+- **在线文档配置旅程** — 新增/更新配置概览、模板、env vars、部署与 benchmark-mode 文档，并把 quickstart / CLI 文档改为 canonical config + effective config 的用户路径。
 
 ### 测试与验证
 
 - Python 完整回归：开发仓库 `3173 passed, 4 skipped`；公开仓库 `3170 passed, 7 skipped`。
+- UX/config/benchmark/service 聚焦回归：`175 passed`。
 - `python -m ruff check <changed Python files>`：PASS。
 - `python -m compileall`：PASS。
 - `python scripts/docs_api_inventory.py validate`：PASS。
@@ -485,7 +517,7 @@
 - **WebUI/watch L3 状态可读化** — 新增 operator-readable L3 状态/原因/runner 标签层，WebUI RuntimeFeed、Sessions、Session Detail 与 `clawsentry watch` 在保留底层 ID/边界语义的同时显示更易扫描的状态文案；L3 advisory job 现在同时展示 frozen snapshot / explicit-run-only 边界，不改变 JSON 输出、Gateway 判决、scheduler 或 canonical decision。
 - **L3 full-review operator visibility** — Session Detail 现在在 full-review action 之外持续展示最新 advisory review/job/snapshot ID、frozen record boundary 与 “canonical decision unchanged” 口径，根 README / 状态页同步到 `v0.5.3` 基线并增加版本一致性契约测试。
 - **L3 咨询审查在线文档** — 在线文档新增独立 L3 咨询审查页面，面向使用者解释 full review、snapshot/job/review、runner 选择、Web UI/CLI/API 路径和 advisory-only 边界；Codex 集成页新增 hook 安装验证说明，规则治理页补充 CI artifact 与 sample events 覆盖范围。
-- **L3 advisory real-provider smoke hardening** — `llm_provider` advisory worker 的 provider completion budget 从 1024 提升到 4096 tokens，避免 reasoning-heavy OpenAI-compatible 模型在 reasoning 阶段耗尽输出预算而返回空 content；`openai/kimi-k2.5` 已重新通过 `--require-completed` 真实 smoke，证据见 `docs/validation/l3-advisory-provider-real-smoke-rerun-2026-04-21.md`。
+- **L3 advisory real-provider smoke hardening** — `llm_provider` advisory worker 的 provider completion budget 从 1024 提升到 4096 tokens，避免 reasoning-heavy OpenAI-compatible 模型在 reasoning 阶段耗尽输出预算而返回空 content；真实 provider smoke 已重新通过 `--require-completed`。
 
 ### 测试与验证
 
@@ -513,6 +545,7 @@
 - **L3 full-review CLI surface** — 新增 `clawsentry l3 full-review --session ...`，operator 可从命令行调用 full-review endpoint，支持 `--queue-only`、`--runner deterministic_local|fake_llm|llm_provider`、record range、JSON 输出与 bearer token；默认仍走 deterministic local / no scheduler。
 - **Operator-triggered L3 full review** — 新增 `POST /report/session/{session_id}/l3-advisory/full-review`，operator 可显式冻结 session evidence、排队 advisory job，并选择 queue-only 或执行一次 deterministic/fake/provider worker；结果保持 `advisory_only=true`，返回 `canonical_decision_mutated=false`，不启动 scheduler、不做 enforcement。
 - **L3 advisory real-provider bridge** — `llm_provider` runner 现在可在 `CS_L3_ADVISORY_PROVIDER_DRY_RUN=false` 且 provider/key/model 都显式配置时桥接到现有 OpenAI / Anthropic LLM provider 抽象；默认仍 dry-run，不进入后台调度，mock-backed 回归覆盖 completed review 解析路径，并兼容 fenced JSON provider responses；真实网络 smoke 仅在 `CS_L3_ADVISORY_RUN_REAL_SMOKE=true` 时运行，否则默认跳过；OpenAI-compatible Kimi 端点已通过 `--require-completed` real smoke。
+- **Benchmark wrapper proxy hygiene** — `benchmarks/scripts/skills_safety_bench_codex.sh` 真实执行时默认过滤 proxy env 并使用临时干净 `DOCKER_CONFIG`，避免 Harbor/Docker build 继承宿主不可达代理配置。
 - **Rules governance sample events expansion** — `examples/sample-events.jsonl` 现在覆盖 safe-read、credential upload、download-and-execute 三类代表事件，使 rules dry-run/report artifact 更适合作为 rollout smoke。
 
 ### 测试与验证
@@ -520,7 +553,7 @@
 - Python 回归：完整测试 `3020 passed, 4 skipped`
 - L3 advisory provider path 聚焦回归：`36 passed, 169 deselected`
 - 真实 provider smoke gate：默认 `1 skipped`
-- 真实 provider smoke：`openai/kimi-k2.5` 已完成，证据 `docs/validation/l3-advisory-provider-real-smoke-2026-04-21.md`
+- 真实 provider smoke 已完成。
 - `mkdocs build --strict`：PASS
 
 ## [0.5.1] — 2026-04-21
@@ -1465,5 +1498,5 @@
 [0.6.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.5
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
-[0.6.9]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.9
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.7.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.0

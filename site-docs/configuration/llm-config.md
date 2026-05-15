@@ -494,7 +494,7 @@ CS_LLM_TOKEN_BUDGET_SCOPE=total  # total | input | output
 
 1. **usage 记录**：每次 LLM 调用完成后，`InstrumentedProvider` 读取 provider 报告的 input/output token
 2. **预算检查**：下一次 LLM 调用前检查所选 scope 的累计 token 是否超出上限
-3. **自动降级/阻断**：预算耗尽后，L2/L3 调用被跳过或按当前模式策略阻断；strict 模式默认更保守
+3. **自动降级/阻断**：预算耗尽后，L2/L3 调用被跳过或按当前模式策略阻断；benchmark mode 默认确定性 block
 4. **UTC 日期翻转**：每天 UTC 00:00 自动重置累计 token 和状态
 5. **unknown usage**：provider 未返回 usage 时增加 `unknown_usage_calls`，不使用估算价格伪造 token
 

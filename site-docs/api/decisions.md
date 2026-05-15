@@ -96,6 +96,10 @@ ClawSentry 网关接收 AI Agent 运行时事件，并返回统一的 `Canonical
 | `event` | object | :material-check: | AHP CanonicalEvent |
 | `context` | object | :material-close: | 可选决策上下文 |
 
+`context` 可携带 Gateway evidence，例如 `session_scope_profile`、
+`skill_trust` 与 `mcp_context`。这些字段只提供策略输入和审计线索；
+adapter 不得通过它们直接产出最终 `decision`、`policy_id` 或 `final`。
+
 ### 成功响应
 
 ```json

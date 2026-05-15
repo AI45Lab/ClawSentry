@@ -42,7 +42,7 @@ clawsentry config show --effective --env-file .clawsentry.env.local
 
 ClawSentry 会把多个来源合成为一份有效配置。优先级从高到低：
 
-1. **CLI 参数**：例如 `clawsentry start --mode strict --port 9100`
+1. **CLI 参数**：例如 `clawsentry start --mode benchmark --port 9100`
 2. **进程/部署环境变量**：当前 shell、CI secret、systemd/Docker 注入的 `CS_*` / `AHP_*`
 3. **显式 env file**：只在传入 `--env-file PATH` 或设置 `CLAWSENTRY_ENV_FILE=PATH` 时读取
 4. **白名单旧别名**：迁移兼容，例如旧预算变量；只在规范名称缺失时读取
@@ -138,10 +138,10 @@ clawsentry service validate --env-file /etc/clawsentry/gateway.env
 
 ## 发布状态核对 {#release-status}
 
-截至 2026-05-15，本仓库发布面刷新到 `v0.6.9`：
+截至 2026-05-16，本仓库发布面刷新到 `v0.7.0`：
 
-- GitHub latest release / tags：`v0.6.9 — Persistence-write SC-4 policy`
-- PyPI：`clawsentry` 最新版本为 `0.6.9`
-- 运行时配置来源仍保持 env-first strict split；Persistence-write / SC-4 可通过 `CS_PERSISTENCE_WRITE_ACTION`、`CS_PERSISTENCE_WRITE_FALLBACK_ACTION` 和 `CS_PERSISTENCE_WRITE_L3_ALLOW_CONFIDENCE` 调整，默认在 strict 阻断，在 normal/permissive 同步交给 L3 verdict path
+- GitHub latest release / tags：`v0.7.0 — Benchmark-oriented roadmap foundations`
+- PyPI：`clawsentry` 最新版本为 `0.7.0`
+- 运行时配置来源仍保持 env-first strict split；v0.7.0 新增 Skill Trust registry/preflight、capability narrowing、agent safety feedback 和 policy drift traceability 配置面；benchmark / dry-run / no-network 模式默认不自动启用外部 LLM recognition
 
 若你看到更早版本，优先清浏览器/CDN 缓存，并确认访问的是 <https://github.com/Elroyper/ClawSentry> 与 <https://pypi.org/project/clawsentry/>。
