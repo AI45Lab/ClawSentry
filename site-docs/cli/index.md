@@ -1298,26 +1298,6 @@ CS_DEFER_TIMEOUT_ACTION=block
 
 ---
 
-## clawsentry benchmark
-
-管理显式 benchmark/autonomous 模式。该模式面向 CI 和安全评测：不会等待人工 DEFER，不会修改真实 `~/.codex`，除非人工显式传入 `--force-user-home`。完整说明见 [Benchmark 模式](../operations/benchmark-mode.md)。
-
-### 语法
-
-```bash
-clawsentry benchmark env --framework codex --mode guarded > .clawsentry.benchmark.env
-clawsentry benchmark enable --dir . --framework codex --codex-home /tmp/cs-codex-home
-clawsentry benchmark run --framework codex --codex-home /tmp/cs-codex-home -- <command>
-clawsentry benchmark disable --dir . --framework codex --codex-home /tmp/cs-codex-home
-```
-
-### 安全规则
-
-- `run` 默认使用临时配置并清理，`--keep-artifacts` 才保留证据。
-- 自动化测试必须传入临时 `--codex-home`。
-- would-DEFER 默认转换为 `block`，并写入 `auto_resolved=true`、`original_verdict=defer` 等 metadata。
-
-
 ## clawsentry rules
 
 `clawsentry rules` 是规则治理入口，用于检查和预演当前 YAML 规则面。它刻意保持为窄范围治理层：管理的是 attack patterns / evolved patterns / review skills 这些规则资产，而不是跨 L1/L2/L3 的统一运行时策略语言。
@@ -1582,7 +1562,7 @@ clawsentry latch uninstall --keep-data
 | `CS_FRAMEWORK` | start, gateway, harness | 默认 framework 名称，如 `codex` |
 | `CS_CODEX_SESSION_DIR` | gateway | Codex 会话目录路径（用于 Session Watcher） |
 | `CS_DEFER_TIMEOUT_ACTION` | gateway, harness | DEFER 超时后的动作：`block`（默认）或 `allow` |
-| `CS_DEFER_TIMEOUT_S` | gateway, harness | normal mode DEFER 软超时（秒），默认 `86400`；benchmark mode 不等待 |
+| `CS_DEFER_TIMEOUT_S` | gateway, harness | normal mode DEFER 软超时（秒），默认 `86400` |
 | `CS_LLM_TOKEN_BUDGET_ENABLED` | gateway | 是否启用基于真实 provider usage 的 token 预算 |
 | `CS_LLM_DAILY_TOKEN_BUDGET` | gateway | 每日 token 上限，启用时必须大于 `0` |
 | `CS_LLM_DAILY_BUDGET_USD` | gateway | 旧版兼容字段；仅迁移/估算提示，不推荐执法 |

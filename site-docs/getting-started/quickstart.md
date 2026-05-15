@@ -93,7 +93,6 @@ curl http://127.0.0.1:8080/health
 | 团队仓库语义分析 | `normal` + L2 + token budget | L2 只在 medium+ / 关键域事件触发 | [L2 预算模板](../configuration/templates.md#template-l2-budgeted) |
 | 安全敏感变更审查 | `strict` + L2 + L3 | L3 可能带来 10s+ 审查延迟 | [严格 L3 模板](../configuration/templates.md#template-l3-strict) |
 | 只想手动复盘高风险 session | 同步 L3 可不开；启用 L3 advisory | 不改历史判决；按需生成报告 | [L3 咨询审查](../decision-layers/l3-advisory.md) |
-| CI 或安全 benchmark | `benchmark` + 临时 home | 无人值守；DEFER 确定性处理 | [Benchmark 模式](../operations/benchmark-mode.md) |
 
 ---
 

@@ -144,11 +144,11 @@ CS_L3_ENABLED=true       →  L1 + L2 + L3 审查 Agent（完整三层）
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `CS_PERSISTENCE_WRITE_ACTION` | `auto` | L1 命中未来自动执行/重入入口写入后的动作：`auto` / `audit` / `force_l3` / `defer` / `block`。`auto` 在 `benchmark`/`strict` 为 `block`，在 `normal`/`permissive` 为 `force_l3` |
+| `CS_PERSISTENCE_WRITE_ACTION` | `auto` | L1 命中未来自动执行/重入入口写入后的动作：`auto` / `audit` / `force_l3` / `defer` / `block`。`auto` 在 `strict` 为 `block`，在 `normal`/`permissive` 为 `force_l3` |
 | `CS_PERSISTENCE_WRITE_FALLBACK_ACTION` | `block` | `force_l3` 不可用、degraded、timeout、parse fail 或 trigger_not_matched 时的回退动作：`defer` / `block` / `audit` |
 | `CS_PERSISTENCE_WRITE_L3_ALLOW_CONFIDENCE` | `0.6` | L3 返回 low/medium 时允许 allow with audit 的最低 confidence |
 
-该策略面向通用“写入未来可自动执行/重入入口”的风险，不依赖 benchmark artifact 是否存在。
+该策略面向通用“写入未来可自动执行/重入入口”的风险，不依赖特定输出文件是否存在。
 
 ### Post-action 分析阈值
 
@@ -183,7 +183,7 @@ Anti-bypass guard 用于检测 `PRE_ACTION` 中对 prior final risky decision �
 | `CS_ANTI_BYPASS_SIMILARITY_THRESHOLD` | `0.92` | cross-tool/script similarity 阈值，范围 `0.0..1.0` |
 | `CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD` | `0.88` | same-tool destructive soft similarity 阈值，范围 `0.0..1.0` |
 | `CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS` | `false` | 是否记录 compact allow-decision fingerprints |
-| `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` | unset / auto | 显式覆盖 sanitized LLM recognizer：`true` 强制启用（需 provider 可用），`false` 强制关闭；未设置时，guard 已启用且共享 `CS_LLM_PROVIDER` + API key 有效则自动启用，benchmark / dry-run / no-network 模式除外 |
+| `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` | unset / auto | 显式覆盖 sanitized LLM recognizer：`true` 强制启用（需 provider 可用），`false` 强制关闭；未设置时，guard 已启用且共享 `CS_LLM_PROVIDER` + API key 有效则自动启用，dry-run / no-network 等不应外联的运行环境除外 |
 | `CS_ANTI_BYPASS_LLM_CANDIDATE_THRESHOLD` | `0.55` | 生成跨工具 LLM 候选的弱相似阈值 |
 | `CS_ANTI_BYPASS_LLM_CONFIDENCE_THRESHOLD` | `0.75` | LLM follow-up 判定生效的最低 confidence |
 | `CS_ANTI_BYPASS_LLM_TIMEOUT_MS` | `800` | LLM recognizer 单次调用超时 |
@@ -194,7 +194,7 @@ Anti-bypass guard 用于检测 `PRE_ACTION` 中对 prior final risky decision �
     `cross_tool_script_similarity` 可 `observe` / `force_l2` / `force_l3` / `defer`，但不能本地 `block`。若 deterministic 或 LLM action 配置为 `block`，会被校验逻辑回退到 `force_l3`；LLM 返回的 `action` 不参与执法，Gateway 始终按 `CS_ANTI_BYPASS_LLM_ACTION` 处理 LLM-assisted match。
 
 !!! note "LLM recognizer 的隐私边界"
-    未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，只有同时启用 guard、共享 `CS_LLM_*` provider 配置有效、非 benchmark / dry-run / no-network、命中跨工具候选且 LLM budget 未耗尽，Gateway 才会发送 sanitized semantic capsules。候选必须至少有两个弱证据信号，scope-only 不会触发；当前 `non-destructive` 动作不会触发 LLM-assisted force review。显式 `false` 会关闭该路径。capsule 不包含 raw command、raw payload、secret、env value 或 L3 trace；也不会包含 deterministic token hashes。
+    未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，只有同时启用 guard、共享 `CS_LLM_*` provider 配置有效、当前运行环境允许外联、命中跨工具候选且 LLM budget 未耗尽，Gateway 才会发送 sanitized semantic capsules。候选必须至少有两个弱证据信号，scope-only 不会触发；当前 `non-destructive` 动作不会触发 LLM-assisted force review。显式 `false` 会关闭该路径。capsule 不包含 raw command、raw payload、secret、env value 或 L3 trace；也不会包含 deterministic token hashes。
 
 !!! note "与 AHP_SESSION_ENFORCEMENT_* 的关系"
     `AHP_SESSION_ENFORCEMENT_*` 仍只控制会话阈值执法；anti-bypass guard 只使用 `CS_ANTI_BYPASS_*`。
@@ -369,7 +369,7 @@ DEFER 决策的运维审批桥接配置，控制超时行为和操作员交互�
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `CS_DEFER_TIMEOUT_ACTION` | `block` | DEFER 超时后的默认动作。可选值：`block`（安全优先）或 `allow`（可用性优先） |
-| `CS_DEFER_TIMEOUT_S` | `86400` (24 小时) | normal mode 下 DEFER 等待运维审批的软超时（秒）；benchmark mode 不等待人工审批 |
+| `CS_DEFER_TIMEOUT_S` | `86400` (24 小时) | normal mode 下 DEFER 等待运维审批的软超时（秒） |
 | `CS_DEFER_BRIDGE_ENABLED` | `true` | 启用 DEFER→运维审批桥接。可选值：`true`/`1`/`yes` |
 
 !!! warning "超时策略选择"

@@ -25,7 +25,7 @@ Anti-bypass Follow-up Guard 是 ClawSentry 的**同会话防重试保护层**。
     L1/L2/L3 判断“这次操作本身是否危险”；Anti-bypass Guard 判断“这次操作是否在同一个 session 里重试了之前已经被 `block` / `defer` 的高风险动作”。
 
 !!! info "识别方式"
-    Anti-bypass Guard 采用 **deterministic-first**：先收集候选，再按 “exact raw repeat → same-tool normalized → same-tool Jaccard → cross-tool normalized → operation+scope → intent+support → cross-tool Jaccard” 排序，避免较新的弱跨工具命中遮住较旧的 exact repeat。未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，guard 已启用且共享 `CS_LLM_*` provider 配置有效会自动启用 sanitized LLM recognizer；benchmark / dry-run / no-network 模式除外，除非显式设为 `true`。
+    Anti-bypass Guard 采用 **deterministic-first**：先收集候选，再按 “exact raw repeat → same-tool normalized → same-tool Jaccard → cross-tool normalized → operation+scope → intent+support → cross-tool Jaccard” 排序，避免较新的弱跨工具命中遮住较旧的 exact repeat。未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，guard 已启用且共享 `CS_LLM_*` provider 配置有效会自动启用 sanitized LLM recognizer；dry-run / no-network 等不应外联的运行环境除外，除非显式设为 `true`。
 
 ## 什么时候使用 {#overview}
 
@@ -123,7 +123,7 @@ Agent 准备调用工具
 </div>
 
 <div class="cs-flow-strip" markdown>
-**顺序保证：** quarantine / session enforcement → anti-bypass guard → normal policy → trajectory / benchmark finalization → decision record → final-only memory update
+**顺序保证：** quarantine / session enforcement → anti-bypass guard → normal policy → final decision resolution → decision record → final-only memory update
 </div>
 
 ---
@@ -221,7 +221,7 @@ Guard 的逻辑可以拆成两步：**先记住上一次最终高风险判决的
 
 ### LLM-assisted 跨工具候选识别 {#llm-assisted}
 
-LLM recognizer 是可选补充，用来判断未被确定性规则确认的跨工具候选是否确实是 follow-up。未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，它会随共享 `CS_LLM_PROVIDER` + API key 自动启用；benchmark / dry-run / no-network 模式不会自动启用外部 LLM recognition，除非显式设置为 `true`。实际调用仍只在这些条件同时满足时运行：
+LLM recognizer 是可选补充，用来判断未被确定性规则确认的跨工具候选是否确实是 follow-up。未显式设置 `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 时，它会随共享 `CS_LLM_PROVIDER` + API key 自动启用；dry-run / no-network 等不应外联的运行环境不会自动启用外部 LLM recognition，除非显式设置为 `true`。实际调用仍只在这些条件同时满足时运行：
 
 1. `CS_ANTI_BYPASS_GUARD_ENABLED=true`
 2. `CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 未设置或为 `true`；若显式为 `false`，即使共享 provider 有效也不会运行

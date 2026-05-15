@@ -22,7 +22,7 @@ description: Source-backed coverage matrix for recent ClawSentry online document
 - L2/L3 页面补充 operator 合同和同步判决 vs advisory-only full-review 的边界。
 - L3 Advisory 页面移除页面内样式岛，改用共享 `.cs-*` 组件。
 - `clawsentry config wizard --interactive` 现在提供 TTY 分步向导；显式交互遇到非 TTY 会失败并提示使用 `--non-interactive`，`--non-interactive` 继续作为 CI/模板路径。
-- AgentDoG / ATBench 已完成 converter + ClawSentry L2 replay smoke；后续 benchmark 评测将在新窗口继续推进。
+- 离线 trajectory converter 和 L2 replay smoke 属于维护者验证材料，不作为用户文档入口公开展开。
 
 ## Recent-feature coverage matrix {#recent-feature-coverage-matrix}
 
@@ -31,7 +31,6 @@ description: Source-backed coverage matrix for recent ClawSentry online document
 | L3 advisory jobs / full-review | `src/clawsentry/gateway/server.py` full-review route; `src/clawsentry/cli/l3_command.py`; `src/clawsentry/tests/test_l3_command.py` | [L3 咨询审查](../decision-layers/l3-advisory.md), [Reporting API](../api/reporting.md), [CLI](../cli/index.md) | Session Detail full-review controls; `POST /report/session/{id}/l3-advisory/full-review`; `clawsentry l3 full-review` | Covered | Keep advisory-only wording and `canonical_decision_mutated=false` examples in sync with API contract tests. |
 | Heartbeat / idle aggregate queueing | `src/clawsentry/gateway/server.py` `heartbeat_aggregate`; `src/clawsentry/tests/test_gateway.py` heartbeat aggregate cases | [L3 咨询审查](../decision-layers/l3-advisory.md), [Reporting API](../api/reporting.md) | SSE advisory snapshot/job events; `clawsentry l3 jobs list/run-next/drain` | Covered | Continue to emphasize no scheduler/daemon and bounded one-shot drain behavior. |
 | Gemini CLI hooks | `src/clawsentry/adapters/gemini_adapter.py`; integration tests and CLI init paths | [Gemini CLI 集成](../integration/gemini-cli.md), [Quickstart](../getting-started/quickstart.md) | Framework startup / hook adapter | Covered | Verify hook boundary language during each release. |
-| Benchmark mode | `src/clawsentry/cli/benchmark_command.py`; benchmark docs/tests | [Benchmark 模式](benchmark-mode.md), [Quickstart](../getting-started/quickstart.md), [Templates](../configuration/templates.md) | `clawsentry benchmark env/enable/run/disable` | Covered | Keep temporary `CODEX_HOME` warning visible for Codex benchmark examples. |
 | Metric/window fields | `src/clawsentry/gateway/session_registry.py` metrics; `src/clawsentry/gateway/server.py` reporting payloads; `src/clawsentry/ui/src/api/types.ts`; `docs/validation/v0.5.12-metric-wizard-agentdog-progress-2026-04-27.md` | [Metric Dictionary](../api/metric-dictionary.md), [Dashboard](../dashboard/index.md), [Reporting API](../api/reporting.md) | `/report/sessions`, `/report/session/{id}/risk`, Sessions row, Session Detail cards | Release-ready | Prefer `window_risk_summary` + canonical names; legacy fields are fallback-only. |
 | Web UI L3 surfaces | `src/clawsentry/ui/src/pages/SessionDetail.tsx`; `src/clawsentry/ui/src/components/RuntimeFeed.tsx` | [L3 咨询审查](../decision-layers/l3-advisory.md), [Dashboard](../dashboard/index.md) | Session Detail full-review button, L3 advisory review card, Runtime Feed | Covered | Future screenshots can be added when visual smoke tooling is available. |
 | Token budget / LLM usage | `src/clawsentry/cli/test_llm_command.py`; config/env docs; metrics token counters | [LLM 配置](../configuration/llm-config.md), [Templates](../configuration/templates.md), [Reporting API](../api/reporting.md) | `clawsentry test-llm --json`, Prometheus `clawsentry_llm_tokens_total` | Covered | Keep examples provider-neutral and budget-first. |
@@ -39,7 +38,6 @@ description: Source-backed coverage matrix for recent ClawSentry online document
 | Latch integration | `src/clawsentry/latch/*`; docs integration page | [Latch 集成](../integration/latch.md), homepage Latch callout | Latch daemon / bridge surfaces | Covered | No changes needed in this pass beyond nav verification. |
 | OpenClaw / Codex managed setup boundaries | `src/clawsentry/adapters/openclaw_*`; `src/clawsentry/adapters/codex_adapter.py`; Codex init tests | [OpenClaw 集成](../integration/openclaw.md), [Codex CLI 集成](../integration/codex.md), [Quickstart](../getting-started/quickstart.md) | `clawsentry init codex --setup`, OpenClaw webhook/WebSocket | Covered | Keep Codex text clear: default monitoring + optional Bash preflight/native hook enhancement. |
 | Interactive config wizard | `src/clawsentry/cli/config_command.py` TTY prompt flow and non-TTY guard; CLI parser flags; `docs/validation/v0.5.12-metric-wizard-agentdog-progress-2026-04-27.md` | [Quickstart](../getting-started/quickstart.md), [Templates](../configuration/templates.md), [CLI](../cli/index.md) | `clawsentry config wizard --interactive`; `clawsentry config wizard --non-interactive ...` | Release-ready | Keep `--non-interactive` examples for CI and copy/paste templates; framework selection is next-step guidance, not hook installation. |
-| AgentDoG / ATBench benchmark | `benchmarks/scripts/agentdog_atbench_clawsentry.py`; `benchmarks/RESULTS.md`; `benchmarks/notes/agentdog-atbench/RUNBOOK.md` | Benchmark docs and validation progress record | Offline trajectory conversion + ClawSentry L1/L2/L3 replay | Handoff recorded | Continue in next window with labeled ATBench records and raw-vs-protected runner matrix. |
 
 ## Pages touched / verified {#pages-touched-verified}
 
@@ -62,14 +60,11 @@ description: Source-backed coverage matrix for recent ClawSentry online document
 | `dashboard/index.md` | Already explains Dashboard / Sessions / Session Detail hierarchy and metric fallback ordering. | Link from Metric Dictionary and Quickstart. |
 | `integration/codex.md` | Already distinguishes monitoring from optional managed native hooks. | Public docs contract checks `clawsentry init codex --setup`, `PreToolUse(Bash)`. |
 | `integration/gemini-cli.md` | Recent-feature entry exists in nav and integration section. | Nav path exists and build includes page. |
-| `operations/benchmark-mode.md` | Dedicated benchmark path exists and is linked from Quickstart/Templates. | Build and link sanity. |
 
 ## Follow-up candidates {#follow-up-candidates}
 
 These are intentionally not part of this docs-only pass:
 
-1. **AgentDoG labeled evaluation:** select labeled ATBench safe/unsafe records and compute unsafe recall / safe false-positive rate before documenting safety improvement.
-2. **Raw vs ClawSentry live runners:** implement a3s-code, Claude Code, Gemini CLI, Codex and optional OpenClaw live runner comparisons after offline replay metrics are stable.
-3. **Optional `clawsentry setup` alias:** keep `config wizard` as the tested setup surface; add a separate alias only if there is a concrete release need.
-4. **Rendered visual screenshots:** capture light/dark screenshots for Quickstart, Templates, Metric Dictionary and L3 pages when browser tooling is available in CI or release validation.
-5. **Generated API excerpt sync:** if OpenAPI generation changes response schemas, rerun `python scripts/docs_api_inventory.py validate` and refresh `api/reference.md` / `api/validity-report.md`.
+1. **Optional `clawsentry setup` alias:** keep `config wizard` as the tested setup surface; add a separate alias only if there is a concrete release need.
+2. **Rendered visual screenshots:** capture light/dark screenshots for Quickstart, Templates, Metric Dictionary and L3 pages when browser tooling is available in CI or release validation.
+3. **Generated API excerpt sync:** if OpenAPI generation changes response schemas, rerun `python scripts/docs_api_inventory.py validate` and refresh `api/reference.md` / `api/validity-report.md`.

@@ -87,7 +87,7 @@ AHP_SESSION_ENFORCEMENT_COOLDOWN_SECONDS=600
 # ===== DEFER 配置 =====
 # DEFER 等待超时后的默认行为：block（默认）或 allow
 CS_DEFER_TIMEOUT_ACTION=block
-# DEFER 审批等待软超时秒数（默认 86400s；benchmark mode 不等待）
+# DEFER 审批等待软超时秒数（默认 86400s）
 CS_DEFER_TIMEOUT_S=86400
 # 启用 DEFER Bridge（接入 Latch Hub 移动端审批）
 CS_DEFER_BRIDGE_ENABLED=false
@@ -430,7 +430,7 @@ DEFER Bridge 和 Latch Hub Bridge 是两个可选组件，将人工审批和实�
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `CS_DEFER_TIMEOUT_ACTION` | `block` | 超时后默认行为：`block`（拒绝）或 `allow`（放行） |
-| `CS_DEFER_TIMEOUT_S` | `86400` | normal mode 等待超时秒数；benchmark mode 不等待人工审批 |
+| `CS_DEFER_TIMEOUT_S` | `86400` | normal mode 等待超时秒数 |
 | `CS_DEFER_BRIDGE_ENABLED` | `true` | 是否启用 Latch Hub 审批桥接 |
 
 !!! tip "安全默认"
@@ -903,7 +903,7 @@ sudo journalctl -u clawsentry-gateway -f
 ### DEFER 与 Latch
 
 - [x] `CS_DEFER_TIMEOUT_ACTION=block` 确保超时后默认拒绝（推荐）
-- [x] `CS_DEFER_TIMEOUT_S` 已按运维响应能力配置合适软超时值；benchmark 任务使用 [Benchmark 模式](benchmark-mode.md) 避免人工等待
+- [x] `CS_DEFER_TIMEOUT_S` 已按运维响应能力配置合适软超时值；无人值守环境已显式设置超时后行为
 - [x] 若启用 Latch Hub，`CS_AUTH_TOKEN` 与 Hub `CLI_API_TOKEN` 已同步（`clawsentry doctor` 检查 `LATCH_TOKEN_SYNC`）
 
 ### 监控

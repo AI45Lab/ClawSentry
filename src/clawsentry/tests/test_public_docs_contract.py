@@ -453,7 +453,6 @@ def test_clawsentry_config_docs_use_dotenv_templates_not_section_configs() -> No
         "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED=true",
         "CS_DEFER_BRIDGE_ENABLED=true",
         "CS_POST_ACTION_FINDING_ACTION=broadcast",
-        "CS_MODE=benchmark",
     ]:
         assert term in templates
 
@@ -483,7 +482,7 @@ def test_clawsentry_config_docs_use_dotenv_templates_not_section_configs() -> No
         "raw command、raw payload、secret、env value 或 L3 trace",
         "anti_bypass_probe",
         "scope-only",
-        "benchmark / dry-run / no-network",
+        "dry-run / no-network",
     ]:
         assert term in anti_bypass_docs
 

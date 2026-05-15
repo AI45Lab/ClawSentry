@@ -1,6 +1,6 @@
 ---
 title: 配置模板
-description: 按功能块复制 ClawSentry dotenv 配置：L1、L2、L3、Anti-bypass、DEFER、Benchmark、生产部署
+description: 按功能块复制 ClawSentry dotenv 配置：L1、L2、L3、Anti-bypass、DEFER、生产部署
 ---
 
 # 配置模板
@@ -27,7 +27,6 @@ clawsentry start --env-file .clawsentry.env.local --framework codex --open-brows
 | 高风险操作同步审查 | [严格 L3](#template-l3-strict) + [DEFER 审批](#template-defer-bridge) | 先小仓库试运行 |
 | 防重试/绕过 | [Anti-bypass Guard](#template-anti-bypass) | 先记录命中，再按审计结果调整动作 |
 | 处理工具输出泄露/外部指令 | [Post-action / trajectory](#template-runtime-detectors) | 观察 SSE/UI finding |
-| CI / benchmark | [CI / benchmark](#template-benchmark) | 使用临时 `CODEX_HOME` |
 | systemd / Docker 常驻 | [生产环境变量骨架](#template-production-env) | `service validate --env-file` |
 
 ---
@@ -37,7 +36,7 @@ clawsentry start --env-file .clawsentry.env.local --framework codex --open-brows
 ```bash title=".clawsentry.env.example — 可提交基础策略"
 CS_FRAMEWORK=codex
 CS_ENABLED_FRAMEWORKS=codex
-CS_MODE=normal                  # normal | strict | permissive | benchmark
+CS_MODE=normal                  # normal | strict | permissive
 CS_PRESET=medium                # low | medium | high | strict
 
 CS_HTTP_HOST=127.0.0.1
@@ -187,7 +186,7 @@ CS_ANTI_BYPASS_PRIOR_VERDICTS=block,defer
 
 ### Review + LLM-assisted cross-tool 候选识别
 
-`CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 可以省略；只要 guard 已启用且共享 `CS_LLM_PROVIDER` + API key 有效，recognizer 会自动启用。benchmark / dry-run / no-network 模式不会自动启用外部 LLM recognition，除非显式 `true`。保留显式 `true` 适合模板化 rollout；显式 `false` 可强制关闭。
+`CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED` 可以省略；只要 guard 已启用且共享 `CS_LLM_PROVIDER` + API key 有效，recognizer 会自动启用。dry-run / no-network 等不应外联的运行环境不会自动启用外部 LLM recognition，除非显式 `true`。保留显式 `true` 适合模板化 rollout；显式 `false` 可强制关闭。
 
 ```bash
 CS_ANTI_BYPASS_GUARD_ENABLED=true
@@ -295,32 +294,6 @@ clawsentry l3 jobs run-next --runner deterministic_local --json
 ```
 
 边界：advisory review 冻结证据、排队/运行 job、生成 review；不会修改已经发生的 canonical allow/block/defer 判决。
-
----
-
-## CI / benchmark：无人值守且可审计 {#template-benchmark}
-<span id="ci-benchmark-operator"></span>
-
-
-```bash
-CS_MODE=benchmark
-CS_PRESET=high
-CS_FRAMEWORK=codex
-CS_ENABLED_FRAMEWORKS=codex
-CS_BENCHMARK_AUTO_RESOLVE_DEFER=true
-CS_BENCHMARK_DEFER_ACTION=block
-CS_BENCHMARK_PERSIST_SCOPE=project
-CS_DEFER_BRIDGE_ENABLED=true
-CS_DEFER_TIMEOUT_ACTION=block
-```
-
-Codex benchmark 必须使用临时 `CODEX_HOME`，不要复用正在工作的 `~/.codex`。
-
-```bash
-TMP_CODEX_HOME="$(mktemp -d)"
-CODEX_HOME="$TMP_CODEX_HOME" clawsentry benchmark run -- codex --approval-policy untrusted
-rm -rf "$TMP_CODEX_HOME"
-```
 
 ---
 

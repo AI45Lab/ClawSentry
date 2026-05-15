@@ -37,9 +37,9 @@ Requires Python >= 3.11.
 ## What's New in v0.6.9
 
 - **Persistence-write / SC-4 policy**: writes that create future automatic execution or re-entry entrypoints now have a dedicated L1-L3 policy surface.
-- **Configurable SC-4 handling**: `CS_PERSISTENCE_WRITE_ACTION` supports `audit`, `force_l3`, `defer`, and `block`; `auto` blocks in strict/benchmark mode and asks L3 in normal mode.
+- **Configurable SC-4 handling**: `CS_PERSISTENCE_WRITE_ACTION` supports `audit`, `force_l3`, `defer`, and `block`; `auto` blocks in strict mode and asks L3 in normal mode.
 - **Redacted L3 evidence**: SC-4 L3 review receives a compact evidence summary instead of raw file payloads or secrets.
-- **Benchmark safe-shell boundary is generalized**: benchmark mode can allow bounded setup/output-directory shell operations without artifact-name special cases, and SC-4 still takes precedence.
+- **Generalized write-risk coverage**: bounded output writes remain distinct from future auto-execution or re-entry entrypoints, and SC-4 takes precedence whenever that persistence risk is present.
 
 ## Quick Start
 

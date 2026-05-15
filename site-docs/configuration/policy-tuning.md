@@ -488,11 +488,10 @@ CS_POST_ACTION_FINDING_ACTION=defer     # broadcast | defer | block
 
 ### Persistence-write / SC-4 策略
 
-`SC-4` 覆盖的是写入未来可能自动执行或自动重入的入口：HTML/JS entrypoint、startup/bootstrap loader、autoload manifest、inline loader contract、global/window loader state 等。它不是 benchmark artifact 规则；没有最终 artifact 文件时，只要当前 pre-action 正在创建这类入口，也会进入同一策略。
+`SC-4` 覆盖的是写入未来可能自动执行或自动重入的入口：HTML/JS entrypoint、startup/bootstrap loader、autoload manifest、inline loader contract、global/window loader state 等。它不是针对特定输出文件名的规则；没有最终输出文件时，只要当前 pre-action 正在创建这类入口，也会进入同一策略。
 
 | 模式 | `CS_PERSISTENCE_WRITE_ACTION=auto` 的解析 | 推荐回退 |
 |------|------------------------------------------|----------|
-| `benchmark` | `block` | `block` |
 | `strict` | `block` | `block` |
 | `normal` | `force_l3` | `defer` |
 | `permissive` | `force_l3` | `audit` 或 `defer` |
@@ -597,7 +596,7 @@ DEFER 桥接在以下**所有条件**同时满足时激活：
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `CS_DEFER_BRIDGE_ENABLED` | `true` | 启用 DEFER 桥接 |
-| `CS_DEFER_TIMEOUT_S` | `86400` | normal mode 人工审批软超时（秒）；benchmark mode 不等待 |
+| `CS_DEFER_TIMEOUT_S` | `86400` | normal mode 人工审批软超时（秒） |
 | `CS_DEFER_TIMEOUT_ACTION` | `block` | 超时动作：`block` 或 `allow` |
 
 ### 完整示例
@@ -605,7 +604,7 @@ DEFER 桥接在以下**所有条件**同时满足时激活：
 ```bash title=".clawsentry.env.local"
 # 启用 DEFER 桥接
 CS_DEFER_BRIDGE_ENABLED=true
-CS_DEFER_TIMEOUT_S=86400        # normal mode 24 小时软超时；CI 用 benchmark mode
+CS_DEFER_TIMEOUT_S=86400        # normal mode 24 小时软超时
 CS_DEFER_TIMEOUT_ACTION=block   # 超时阻断
 
 # 使用 watch CLI 交互审批
