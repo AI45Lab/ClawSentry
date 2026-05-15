@@ -399,7 +399,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **v0.6.9 release gate pending**（focused SC-4 regression 已本地验证；完整 public count 发布前刷新） |
+| 测试用例 | **3199+ public regression tests**，随可选依赖与发布范围变化 |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |
