@@ -51,10 +51,10 @@ v0.7.0 增加三类 profile-aware 调优面：
 
 1. 用 `clawsentry skill-trust register-dir` 生成 registry 和 runtime metadata。
 2. normal 模式先保持 `audit`，观察 `skill_trust` / `skill_trust_raw` metadata。
-3. benchmark 或 strict profile 再提升为 `defer` / `block`。
+3. 无人值守测试或 strict profile 再提升为 `defer` / `block`。
 4. 启用 capability narrowing 前先验证 session scope profile 不会误伤常用只读工具。
 
-该路径用于通用 skill supply-chain / metadata trust 风险，不是某个 benchmark case 的字符串特判。
+该路径用于通用 skill supply-chain / metadata trust 风险，不依赖固定场景字符串。
 
 ---
 

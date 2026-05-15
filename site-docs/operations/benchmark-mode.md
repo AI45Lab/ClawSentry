@@ -24,7 +24,7 @@ export CS_CODEX_HOME="$(mktemp -d)"
 clawsentry benchmark env --framework codex --mode guarded > .clawsentry.benchmark.env
 clawsentry benchmark enable --dir . --framework codex --codex-home "$CS_CODEX_HOME"
 clawsentry benchmark run --dir . --framework codex --codex-home "$CS_CODEX_HOME" -- \
-  bash benchmarks/scripts/skills_safety_bench_codex.sh
+  <your-command>
 clawsentry benchmark disable --dir . --framework codex --codex-home "$CS_CODEX_HOME"
 ```
 

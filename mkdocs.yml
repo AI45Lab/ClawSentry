@@ -151,8 +151,5 @@ nav:
   - 部署运维:
     - 生产部署: operations/deployment.md
     - Benchmark 模式: operations/benchmark-mode.md
-    - 文档覆盖审计: operations/docs-coverage-audit.md
-    - 执行审计 2026-04-27: operations/docs-audit-2026-04-27.md
-    - 最近功能覆盖矩阵: operations/recent-feature-coverage.md
     - 故障排查: operations/troubleshooting.md
   - 更新日志: changelog.md

@@ -260,7 +260,7 @@ curl -H "Authorization: Bearer $CS_AUTH_TOKEN" \
 按 `workspace_root` / `source_framework` / `session_id` / `rule_family` 聚合当前窗口与前一窗口的策略漂移，并在每个 metric cell 中保留 request、rule、registry、fallback、adapter effect 追踪字段。
 
 !!! note "边界"
-    这是 traceability / reporting surface，用于解释策略变化和审计回链；它不是 benchmark score endpoint，也不代表完整 leaderboard 结论。
+    这是 traceability / reporting surface，用于解释策略变化和审计回链；它不用于对外发布排名或综合结论。
 
 ### 查询参数
 

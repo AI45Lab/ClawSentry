@@ -7,8 +7,8 @@ description: 用 Skill Trust registry、preflight scan 和 first-use action 管�
 
 Skill Trust 用来把本地 skill 包的身份、来源、hash、别名和安全扫描结果变成 Gateway 可审计的运行时上下文。它解决的是 skill 供应链与 metadata trust 问题：低信任 skill 不能只靠文档声称自己是 canonical，也不能通过近名、改名或 provenance label 绕过策略。
 
-!!! note "发布口径"
-    v0.7.0 提供 registry/preflight、first-use action 和审计 metadata。当前证据是 targeted replay/readiness gate，不是完整 benchmark leaderboard 结论。
+!!! note "发布状态"
+    v0.7.0 提供 registry/preflight、first-use action 和审计 metadata。该功能面向运行时 skill 供应链治理，默认保持 audit-only，便于逐步接入。
 
 ## 工作流
 

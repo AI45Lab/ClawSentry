@@ -6,7 +6,7 @@
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.7.1)**: public release metadata now matches the public repository validation surface, while v0.7.0's benchmark-oriented roadmap foundations remain the runtime baseline: Skill Trust registry/preflight, AHP policy replay, deterministic compound/taint evidence, capability narrowing, redacted agent feedback, and policy drift traceability.
+**Current release highlight (v0.7.1)**: public release metadata now matches the public repository validation surface, while v0.7.0's runtime safety controls remain the baseline: Skill Trust registry/preflight, AHP policy replay, deterministic compound/taint evidence, capability narrowing, redacted agent feedback, and policy drift traceability.
 
 ---
 

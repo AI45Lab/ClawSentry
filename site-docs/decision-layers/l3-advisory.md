@@ -358,8 +358,8 @@ L3 ADVISORY REVIEW    l3adv-...   State=Completed Action=Inspect
 | LLM 配置 | 继承同步 L2/L3 provider：`CS_LLM_PROVIDER`、`CS_LLM_MODEL` 等 | 同样继承 `CS_LLM_*`；无有效配置时 loud degraded |
 | 是否改历史判决 | 不适用 | 明确不改，`canonical_decision_mutated=false` |
 
-## 最近功能覆盖状态 {#recent-feature-coverage}
+## 相关入口 {#related-entrypoints}
 
-本页覆盖 L3 advisory jobs/full-review、heartbeat/idle aggregate queueing、provider smoke gates、Web UI L3 surfaces 与 action summary。完整跨页面覆盖矩阵见 [最近功能文档覆盖矩阵](../operations/recent-feature-coverage.md)。
+本页覆盖 L3 advisory jobs/full-review、heartbeat/idle aggregate queueing、provider smoke gates、Web UI L3 surfaces 与 action summary。需要入口概览时，优先查看 [API 概览](../api/overview.md)、[Web 仪表板](../dashboard/index.md) 和各集成页。
 
 如果你想了解同步决策链里的 L3 审查器，继续看 [L3 审查 Agent](l3-agent.md)。

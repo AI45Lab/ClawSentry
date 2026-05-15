@@ -99,7 +99,7 @@ CS_L3_ENABLED=true       →  L1 + L2 + L3 审查 Agent（完整三层）
 
 ## Skill Trust / capability narrowing / agent feedback
 
-v0.7.0 新增的 benchmark-oriented roadmap surfaces 默认关闭或 audit-only。它们用于 skill 供应链审计、会话风险后能力收紧，以及 critical block 后给支持的宿主返回红线化提示。
+v0.7.0 新增的 Skill Trust / capability narrowing / agent feedback surfaces 默认关闭或 audit-only。它们用于 skill 供应链审计、会话风险后能力收紧，以及 critical block 后给支持的宿主返回红线化提示。
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|

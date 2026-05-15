@@ -37,14 +37,14 @@ Requires Python >= 3.11.
 
 ## What's New in v0.7.1
 
-- **Public release metadata correction**: the public release surface now reports the public repository validation count (`3357 passed, 16 skipped`) and excludes private benchmark notes, provider matrix runners, and internal run-path fixtures from public sync.
+- **Public release metadata correction**: the public release surface now reports the public repository validation count (`3357 passed, 16 skipped`) and keeps the online documentation focused on install, integration, operations, and Benchmark mode usage.
 
 ## What's New in v0.7.0
 
-- **Benchmark-oriented roadmap foundations**: Skill Trust registry/preflight, AHP policy replay, deterministic compound/taint evidence, capability narrowing, redacted agent feedback, and policy drift traceability are now on the mainline path.
+- **Runtime safety controls**: Skill Trust registry/preflight, AHP policy replay, deterministic compound/taint evidence, capability narrowing, redacted agent feedback, and policy drift traceability are now on the mainline path.
 - **Skill Trust first-use control**: local skill packages can be scanned and registered with `clawsentry skill-trust`, then routed through audit, L2/L3 review, defer, or block actions by runtime profile.
 - **Generalized persistence evidence**: startup/bootstrap/autoload/reentry and related persistence-write patterns are represented through `rule_hits` and `taint_flow_summary`, instead of a case-specific runtime switch.
-- **Honest benchmark boundary**: validation covers targeted replay and readiness gates; this release does not claim a complete benchmark leaderboard result.
+- **Benchmark mode**: non-interactive safety-test runs can use deterministic defer handling and temporary Codex homes through the `clawsentry benchmark` commands.
 
 ## Quick Start
 

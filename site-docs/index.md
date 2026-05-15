@@ -78,10 +78,10 @@ hide:
 
 
 !!! tip "v0.7.1: Public release metadata correction"
-    公开发布面现在使用公开仓库实际可复验的测试计数，并排除了私有 benchmark notes、provider matrix runner/tests 与内部 run-path fixture。v0.7.0 的 benchmark-oriented roadmap foundations 仍是当前 runtime 基线。
+    公开发布面现在使用公开仓库实际可复验的测试计数，并刷新了首页、配置页、API 文档和 PyPI/GitHub README 的版本说明。
 
-!!! tip "v0.7.0: Benchmark-oriented roadmap foundations"
-    Skill Trust registry/preflight、AHP policy replay、compound/taint evidence、capability narrowing、redacted agent feedback 和 policy drift traceability 已进入主线。当前公开口径是 targeted replay/readiness evidence，不声明完整 benchmark leaderboard 结论。
+!!! tip "v0.7.0: Runtime safety controls"
+    Skill Trust registry/preflight、capability narrowing、agent safety feedback 和 policy drift traceability 已进入主线。Benchmark 模式的运行方式见 [部署运维 / Benchmark 模式](operations/benchmark-mode.md)。
 
 <div class="grid-cards" markdown>
 

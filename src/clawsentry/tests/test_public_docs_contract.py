@@ -462,7 +462,6 @@ def test_clawsentry_config_docs_use_dotenv_templates_not_section_configs() -> No
         "site-docs/configuration/env-vars.md",
         "site-docs/configuration/detection-config.md",
         "site-docs/configuration/templates.md",
-        "site-docs/operations/recent-feature-coverage.md",
         "docs/PROJECT_STATUS.md",
         "docs/guides/a3s-code-integration.md",
         "docs/management/DEVELOPMENT_DYNAMIC_LOG.md",
