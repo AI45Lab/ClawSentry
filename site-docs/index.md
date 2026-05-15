@@ -77,8 +77,8 @@ hide:
 ---
 
 
-!!! tip "v0.6.8: Anti-bypass recognition is clearer and safer"
-    Anti-bypass Follow-up Guard 现在先按确定性候选排序，再把符合条件的跨工具 destructive 候选交给 sanitized LLM recognition 作为复核信号。LLM 路径不会产生本地 hard block，`anti_bypass_probe` 只暴露候选数量和降级原因等安全 metadata。
+!!! tip "v0.6.9: Persistence-write / SC-4 policy"
+    ClawSentry 现在把“写入未来会自动执行或重入的入口”抽象为通用 SC-4 风险：entrypoint HTML/JS、startup/bootstrap loader、autoload manifest、inline loader contract 和 global loader state 会进入同一策略面，并可 block、defer、audit 或同步交给 L3。
 
 <div class="grid-cards" markdown>
 
@@ -399,7 +399,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3199 passed / 6 skipped**（v0.6.8 public release；dev workspace 3207 / 5 skipped） |
+| 测试用例 | **v0.6.9 release gate pending**（focused SC-4 regression 已本地验证；完整 public count 发布前刷新） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |

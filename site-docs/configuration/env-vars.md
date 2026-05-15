@@ -62,8 +62,6 @@ clawsentry config show --effective --env-file .clawsentry.env.local
     - 将 `CS_TRAJECTORY_DB_PATH` 指向持久化存储（非 `/tmp`）
     - UDS 文件会自动设置 `chmod 600` 权限，仅限属主进程访问
 
----
-
 ## LLM / 决策层
 
 配置 L2 语义分析和 L3 审查 Agent 的 LLM 提供商。
@@ -141,6 +139,16 @@ CS_L3_ENABLED=true       →  L1 + L2 + L3 审查 Agent（完整三层）
 | `CS_L2_TIMEOUT_MS` | `60000` | L2 分析软超时（毫秒）。超时自动降级为 L1 结果 |
 | `CS_L2_BUDGET_MS` | 兼容旧名 | 旧别名；新配置请改用 `CS_L2_TIMEOUT_MS` |
 | `CS_ATTACK_PATTERNS_PATH` | (内置 25 条) | 自定义攻击模式 YAML 文件路径。设置后覆盖内置模式库 |
+
+### Persistence-write / SC-4 策略
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `CS_PERSISTENCE_WRITE_ACTION` | `auto` | L1 命中未来自动执行/重入入口写入后的动作：`auto` / `audit` / `force_l3` / `defer` / `block`。`auto` 在 `benchmark`/`strict` 为 `block`，在 `normal`/`permissive` 为 `force_l3` |
+| `CS_PERSISTENCE_WRITE_FALLBACK_ACTION` | `block` | `force_l3` 不可用、degraded、timeout、parse fail 或 trigger_not_matched 时的回退动作：`defer` / `block` / `audit` |
+| `CS_PERSISTENCE_WRITE_L3_ALLOW_CONFIDENCE` | `0.6` | L3 返回 low/medium 时允许 allow with audit 的最低 confidence |
+
+该策略面向通用“写入未来可自动执行/重入入口”的风险，不依赖 benchmark artifact 是否存在。
 
 ### Post-action 分析阈值
 

@@ -138,10 +138,10 @@ clawsentry service validate --env-file /etc/clawsentry/gateway.env
 
 ## 发布状态核对 {#release-status}
 
-截至 2026-05-11，本仓库发布面刷新到 `v0.6.8`：
+截至 2026-05-15，本仓库发布面刷新到 `v0.6.9`：
 
-- GitHub latest release / tags：`v0.6.8 — Anti-bypass recognition precision and docs clarity`
-- PyPI：`clawsentry` 最新版本为 `0.6.8`
-- 运行时配置来源仍保持 env-first strict split；Anti-bypass LLM recognition 复用共享 `CS_LLM_*` 配置，可通过 `CS_LLM_API_KEY_ENV` 指向自定义 key 环境变量，且 benchmark / dry-run / no-network 模式默认不自动启用外部 LLM recognition
+- GitHub latest release / tags：`v0.6.9 — Persistence-write SC-4 policy`
+- PyPI：`clawsentry` 最新版本为 `0.6.9`
+- 运行时配置来源仍保持 env-first strict split；Persistence-write / SC-4 可通过 `CS_PERSISTENCE_WRITE_ACTION`、`CS_PERSISTENCE_WRITE_FALLBACK_ACTION` 和 `CS_PERSISTENCE_WRITE_L3_ALLOW_CONFIDENCE` 调整，默认在 strict/benchmark 阻断，在 normal/permissive 同步交给 L3 verdict path
 
 若你看到更早版本，优先清浏览器/CDN 缓存，并确认访问的是 <https://github.com/Elroyper/ClawSentry> 与 <https://pypi.org/project/clawsentry/>。

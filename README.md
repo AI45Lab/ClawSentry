@@ -34,12 +34,12 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
-## What's New in v0.6.8
+## What's New in v0.6.9
 
-- **Anti-bypass follow-up recognition is more precise**: exact destructive repeats now outrank weaker cross-tool similarities, so older high-confidence matches are not hidden by newer low-confidence ones.
-- **Cross-tool LLM recognition stays review-only**: sanitized LLM recognition is admitted only for cross-tool destructive candidates with multiple weak evidence signals, and it can request L2/L3 review or defer instead of producing a local hard block.
-- **Safer operator metadata**: `anti_bypass_probe` reports compact candidate and degradation state without raw commands, payloads, secrets, environment values, deterministic token hashes, or L3 traces.
-- **Docs and release status refreshed**: anti-bypass docs now explain when to enable the guard, what each action means, and how to read recognition metadata without relying on vague launch phrasing.
+- **Persistence-write / SC-4 policy**: writes that create future automatic execution or re-entry entrypoints now have a dedicated L1-L3 policy surface.
+- **Configurable SC-4 handling**: `CS_PERSISTENCE_WRITE_ACTION` supports `audit`, `force_l3`, `defer`, and `block`; `auto` blocks in strict/benchmark mode and asks L3 in normal mode.
+- **Redacted L3 evidence**: SC-4 L3 review receives a compact evidence summary instead of raw file payloads or secrets.
+- **Benchmark safe-shell boundary is generalized**: benchmark mode can allow bounded setup/output-directory shell operations without artifact-name special cases, and SC-4 still takes precedence.
 
 ## Quick Start
 

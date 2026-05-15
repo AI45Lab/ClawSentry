@@ -543,7 +543,7 @@ patterns:
     description: "Python pickle / marshal deserialization — arbitrary code execution via untrusted data"
     risk_level: "high"
     triggers:
-      tool_names: ["bash", "shell", "exec", "write_file", "write"]
+      tool_names: ["bash", "shell", "exec", "write_file", "write", "edit_file", "edit", "multiedit", "multi_edit"]
     detection:
       regex_patterns:
         - pattern: "pickle\\.loads?\\("
@@ -566,7 +566,7 @@ patterns:
     description: "Eval/exec injection in written files — code execution embedded in generated output"
     risk_level: "high"
     triggers:
-      tool_names: ["write_file", "write", "edit_file", "edit"]
+      tool_names: ["write_file", "write", "edit_file", "edit", "multiedit", "multi_edit"]
     detection:
       regex_patterns:
         - pattern: "\\beval\\s*\\(.*(?:atob|decode|unescape)"

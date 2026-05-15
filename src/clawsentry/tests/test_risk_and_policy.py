@@ -6,9 +6,11 @@ D4 session accumulation, L1 policy decisions, fallback decisions.
 """
 
 import concurrent.futures
+import json
 import time
 
 from clawsentry.gateway.agent_analyzer import AgentAnalyzer
+from clawsentry.gateway.detection_config import DetectionConfig
 from clawsentry.gateway.l3_runtime import build_l3_runtime_info
 from clawsentry.gateway.models import (
     CanonicalEvent,
@@ -467,6 +469,162 @@ class TestL1PolicyEngine:
         assert snapshot.classified_by == "L1"
         assert snapshot.l3_trace["trigger_reason"] == "trigger_not_matched"
         assert decision.decision == DecisionVerdict.ALLOW
+
+    def test_sc4_force_l3_allows_low_confident_verdict_with_redacted_evidence(self):
+        class AllowingL3Analyzer:
+            analyzer_id = "agent-reviewer"
+
+            def __init__(self):
+                self.captured_event = None
+
+            async def analyze(self, event, context, l1_snapshot, budget_ms):
+                self.captured_event = event
+                return L2Result(
+                    target_level=RiskLevel.LOW,
+                    reasons=["user-requested entrypoint write"],
+                    confidence=0.91,
+                    analyzer_id=self.analyzer_id,
+                    trace={"trigger_reason": "persistence_write", "degraded": False},
+                    decision_tier=DecisionTier.L3,
+                )
+
+        analyzer = AllowingL3Analyzer()
+        engine = L1PolicyEngine(
+            analyzer=analyzer,
+            config=DetectionConfig(
+                persistence_write_action="force_l3",
+                persistence_write_fallback_action="block",
+            ),
+        )
+        event = _evt(
+            tool_name="bash",
+            payload={
+                "command": (
+                    "cat > /app/output/index.html <<'HTML'\n"
+                    "<script src=\"bootstrap/startup_loader.js\"></script>\n"
+                    "<script>window.__startupLoader={autoload_on_open:true};</script>\n"
+                    "<!-- API_TOKEN=supersecret123 -->\n"
+                    "HTML"
+                )
+            },
+        )
+
+        decision, snapshot, tier = engine.evaluate(event, _ctx(AgentTrustLevel.STANDARD))
+
+        assert tier == DecisionTier.L3
+        assert decision.decision == DecisionVerdict.ALLOW
+        assert snapshot.risk_level == RiskLevel.LOW
+        assert snapshot.short_circuit_rule == "SC-4"
+        assert snapshot.l3_trace["sc4_action_resolved"] == "force_l3"
+        assert analyzer.captured_event is not None
+        captured_payload = json.dumps(analyzer.captured_event.payload, sort_keys=True)
+        assert "persistence_write_evidence" in captured_payload
+        assert "supersecret123" not in captured_payload
+        assert "payload_redacted" in captured_payload
+
+    def test_sc4_force_l3_blocks_high_verdict(self):
+        class BlockingL3Analyzer:
+            analyzer_id = "agent-reviewer"
+
+            async def analyze(self, event, context, l1_snapshot, budget_ms):
+                return L2Result(
+                    target_level=RiskLevel.CRITICAL,
+                    reasons=["unrequested autoload persistence"],
+                    confidence=0.88,
+                    analyzer_id=self.analyzer_id,
+                    trace={"trigger_reason": "persistence_write", "degraded": False},
+                    decision_tier=DecisionTier.L3,
+                )
+
+        engine = L1PolicyEngine(
+            analyzer=BlockingL3Analyzer(),
+            config=DetectionConfig(persistence_write_action="force_l3"),
+        )
+        event = _evt(
+            tool_name="write_file",
+            payload={
+                "file_path": "/tmp/site/index.html",
+                "content": (
+                    "<script src=\"bootstrap/startup_loader.js\"></script>"
+                    "<script>window.__startupLoader={autoload_on_open:true};</script>"
+                ),
+            },
+        )
+
+        decision, snapshot, tier = engine.evaluate(event, _ctx(AgentTrustLevel.STANDARD))
+
+        assert tier == DecisionTier.L3
+        assert decision.decision == DecisionVerdict.BLOCK
+        assert snapshot.risk_level == RiskLevel.CRITICAL
+
+    def test_sc4_force_l3_degraded_uses_fallback_defer(self):
+        class DegradedL3Analyzer:
+            analyzer_id = "agent-reviewer"
+
+            async def analyze(self, event, context, l1_snapshot, budget_ms):
+                return L2Result(
+                    target_level=l1_snapshot.risk_level,
+                    reasons=["L3 trigger not matched"],
+                    confidence=0.0,
+                    analyzer_id=self.analyzer_id,
+                    trace={
+                        "trigger_reason": "trigger_not_matched",
+                        "degraded": True,
+                        "degradation_reason": "L3 trigger not matched",
+                    },
+                    decision_tier=DecisionTier.L1,
+                )
+
+        engine = L1PolicyEngine(
+            analyzer=DegradedL3Analyzer(),
+            config=DetectionConfig(
+                persistence_write_action="force_l3",
+                persistence_write_fallback_action="defer",
+            ),
+        )
+        event = _evt(
+            tool_name="bash",
+            payload={
+                "command": (
+                    "cat > /tmp/app/index.html <<'HTML'\n"
+                    "<script src=\"bootstrap/startup_loader.js\"></script>\n"
+                    "<script>window.__startupLoader={autoload_on_open:true};</script>\n"
+                    "HTML"
+                )
+            },
+        )
+
+        decision, snapshot, tier = engine.evaluate(event, _ctx(AgentTrustLevel.STANDARD))
+
+        assert tier == DecisionTier.L1
+        assert decision.decision == DecisionVerdict.DEFER
+        assert snapshot.l3_trace["fallback_reason"] == "l3_not_completed"
+
+    def test_sc4_force_l3_without_l3_analyzer_uses_fallback_block(self):
+        engine = L1PolicyEngine(
+            config=DetectionConfig(
+                mode="normal",
+                persistence_write_action="force_l3",
+                persistence_write_fallback_action="block",
+            ),
+        )
+        event = _evt(
+            tool_name="bash",
+            payload={
+                "command": (
+                    "cat > /tmp/app/index.html <<'HTML'\n"
+                    "<script src=\"bootstrap/startup_loader.js\"></script>\n"
+                    "<script>window.__startupLoader={autoload_on_open:true};</script>\n"
+                    "HTML"
+                )
+            },
+        )
+
+        decision, snapshot, tier = engine.evaluate(event, _ctx(AgentTrustLevel.STANDARD))
+
+        assert tier == DecisionTier.L1
+        assert decision.decision == DecisionVerdict.BLOCK
+        assert snapshot.l3_trace["fallback_reason"] == "l3_analyzer_unavailable"
 
 
 class TestL3RuntimeInfo:

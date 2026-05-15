@@ -50,6 +50,8 @@ class L3TriggerPolicy:
         l1_snapshot: RiskSnapshot,
         session_risk_history: list[Any],
     ) -> dict[str, str] | None:
+        if l1_snapshot.short_circuit_rule == "SC-4":
+            return {"trigger_reason": "persistence_write"}
         if self._has_manual_flag(context):
             return {"trigger_reason": "manual_l3_escalate"}
         if self._has_eager_profile(context):

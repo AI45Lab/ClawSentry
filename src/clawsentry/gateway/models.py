@@ -743,19 +743,20 @@ class RiskSnapshot(BaseModel):
     risk_level: RiskLevel
     composite_score: float = Field(..., ge=0)  # v2: base*injection_multiplier (D6)
     dimensions: RiskDimensions
-    short_circuit_rule: Optional[str] = None  # SC-1/SC-2/SC-3 or null
+    short_circuit_rule: Optional[str] = None  # SC-1/SC-2/SC-3/SC-4 or null
     missing_dimensions: list[str] = Field(default_factory=list)
     classified_by: ClassifiedBy
     classified_at: str  # UTC ISO8601
     override: Optional[RiskOverride] = None
     l1_snapshot: Optional["RiskSnapshot"] = None
     l3_trace: Optional[dict] = Field(default=None, exclude=True)
+    risk_evidence: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("short_circuit_rule")
     @classmethod
     def validate_short_circuit(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in ("SC-1", "SC-2", "SC-3"):
-            raise ValueError(f"short_circuit_rule must be SC-1/SC-2/SC-3, got '{v}'")
+        if v is not None and v not in ("SC-1", "SC-2", "SC-3", "SC-4"):
+            raise ValueError(f"short_circuit_rule must be SC-1/SC-2/SC-3/SC-4, got '{v}'")
         return v
 
     @field_validator("classified_at")

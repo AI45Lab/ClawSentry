@@ -12,8 +12,9 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import logging
+import re
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from .models import (
     RISK_LEVEL_ORDER,
@@ -51,6 +52,64 @@ _L2_OVERHEAD_MARGIN_MS: float = 200.0
 # degrade gracefully (producing traces/results) before the outer timeout fires.
 _INNER_BUDGET_MARGIN_MS: float = 300.0
 
+_BENCHMARK_SHELL_TOOLS = {
+    "bash",
+    "exec_command",
+    "run_shell_command",
+    "shell",
+    "sh",
+}
+
+_BENCHMARK_FORBIDDEN_COMMAND_RE = re.compile(
+    r"(?ix)"
+    r"(\b(rm|sudo|su|chmod|chown|mkfs|dd|mount|umount|ssh|scp|curl|wget|nc|ncat|"
+    r"telnet|docker|kubectl|apt|apt-get|pip|npm)\b"
+    r"|/etc(?:/|\b)|/root(?:/|\b)|/proc(?:/|\b)|/sys(?:/|\b)|/dev(?:/|\b)"
+    r"|docker\.sock|auth\.json|\.env\b|api[_-]?key|secret|token|credential)"
+)
+
+_BENCHMARK_SAFE_ANCHOR_RE = re.compile(
+    r"(?x)"
+    r"(/app(?:/|\b)|/logs/agent(?:/|\b)|/tmp/clawsentry-benchmark(?:/|\b)|"
+    r"/skills(?:/|\b)|/root/output(?:/|\b)|/root/data(?:/|\b)|"
+    r"\$CODEX_HOME(?:/|\b)|\$HOME/\.agents(?:/|\b)|~/\.agents(?:/|\b))"
+)
+
+_BENCHMARK_SIMPLE_READONLY_RE = re.compile(
+    r"(?sx)"
+    r"\A\s*"
+    r"(?:"
+    r"pwd|true|whoami|id|"
+    r"echo(?:\s+(?:\$HOME|['\"][^'\"]*['\"]|[A-Za-z0-9_./:-]+))*|"
+    r"ls(?:\s+-[A-Za-z0-9]+)*(?:\s+(?:[A-Za-z0-9_./:-]+|\$CODEX_HOME(?:/[^\s;&|]*)?|\$HOME/\.agents(?:/[^\s;&|]*)?))*|"
+    r"test\s+-s\s+/app/output/[A-Za-z0-9_.-]+"
+    r")"
+    r"(?:\s+2>/dev/null)?"
+    r"(?:\s*\|\|\s*echo\s+['\"]?[^;&|`$()]*['\"]?)?"
+    r"\s*\Z"
+)
+
+_BENCHMARK_SAFE_FIND_RE = re.compile(
+    r"(?sx)\A\s*find\s+"
+    r"(?:/app|\$CODEX_HOME|\$HOME/\.agents|~/\.agents|/logs/agent)"
+    r"(?:\s+[^;&|`$()]*)?\s*\Z"
+)
+
+_BENCHMARK_SAFE_MKDIR_RE = re.compile(
+    r"(?sx)\A\s*mkdir\s+-p\s+"
+    r"(?:/app/output|/root/output(?:/[A-Za-z0-9_.-]+)?|"
+    r"/logs/agent(?:/[A-Za-z0-9_.-]+)?|"
+    r"\$CODEX_HOME(?:/skills)?|\$HOME/\.agents(?:/skills)?)"
+    r"(?:\s+(?:/app/output|/root/output(?:/[A-Za-z0-9_.-]+)?|"
+    r"/logs/agent(?:/[A-Za-z0-9_.-]+)?|"
+    r"\$CODEX_HOME(?:/skills)?|\$HOME/\.agents(?:/skills)?))*"
+    r"\s*\Z"
+)
+
+_BENCHMARK_SAFE_OUTPUT_PATH_RE = re.compile(
+    r"(?x)(?:^|[\s>])"
+    r"(?:/app/output|/root/output)/[A-Za-z0-9_./@+:-]+"
+)
 
 def _analyzer_supports_l3(analyzer) -> bool:
     analyzer_id = str(getattr(analyzer, "analyzer_id", "") or "")
@@ -60,6 +119,17 @@ def _analyzer_supports_l3(analyzer) -> bool:
         if _analyzer_supports_l3(child):
             return True
     return False
+
+
+def _select_l3_analyzer(analyzer):
+    analyzer_id = str(getattr(analyzer, "analyzer_id", "") or "")
+    if analyzer_id == "agent-reviewer":
+        return analyzer
+    for child in getattr(analyzer, "_analyzers", []) or []:
+        selected = _select_l3_analyzer(child)
+        if selected is not None:
+            return selected
+    return None
 
 
 def _effective_requested_tier_for_l3_config(
@@ -98,6 +168,72 @@ def _context_with_l3_config(
     if context is not None:
         return context.model_copy(update={"session_risk_summary": session_summary})
     return DecisionContext(session_risk_summary=session_summary)
+
+
+def _benchmark_shell_command(event: CanonicalEvent) -> str | None:
+    tool_name = (event.tool_name or "").strip().lower()
+    if tool_name not in _BENCHMARK_SHELL_TOOLS:
+        return None
+    payload = event.payload or {}
+    for key in ("command", "cmd"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    tool_input = payload.get("tool_input")
+    if isinstance(tool_input, dict):
+        for key in ("command", "cmd"):
+            value = tool_input.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return None
+
+
+def _is_benchmark_safe_shell_command(event: CanonicalEvent, config: DetectionConfig) -> bool:
+    if config.mode != "benchmark" or not config.benchmark_safe_shell_allow:
+        return False
+
+    command = _benchmark_shell_command(event)
+    if not command:
+        return False
+    normalized = " ".join(command.split())
+    safety_scan = re.sub(r"(?:^|\s)[12]?>/dev/null\b", " ", normalized)
+    safety_scan = safety_scan.replace("/root/output", "/SAFE_ROOT_OUTPUT")
+    safety_scan = safety_scan.replace("/root/data", "/SAFE_ROOT_DATA")
+    if _BENCHMARK_FORBIDDEN_COMMAND_RE.search(safety_scan):
+        return False
+
+    if _BENCHMARK_SIMPLE_READONLY_RE.fullmatch(normalized):
+        return True
+    if _BENCHMARK_SAFE_FIND_RE.fullmatch(normalized):
+        return True
+    if _BENCHMARK_SAFE_MKDIR_RE.fullmatch(normalized):
+        return True
+    first = normalized.split(None, 1)[0] if normalized.split(None, 1) else ""
+    if first in {"cat", "ls", "find", "head", "sed", "test", "cp", "mkdir", "tee"} and _BENCHMARK_SAFE_ANCHOR_RE.search(normalized):
+        return True
+
+    if normalized.startswith(("cd /app && ", "cd /app; ")):
+        tail = normalized.split("&& ", 1)[-1] if "&& " in normalized else normalized.split("; ", 1)[-1]
+        if _BENCHMARK_SIMPLE_READONLY_RE.fullmatch(tail):
+            return True
+
+    if normalized.startswith(("python ", "python3 ")) and (
+        _BENCHMARK_SAFE_ANCHOR_RE.search(normalized)
+        or normalized == 'python3 -c "import sys; print(sys.path)"'
+        or normalized == "python3 -c 'import sys; print(sys.path)'"
+    ):
+        return True
+
+    if _BENCHMARK_SAFE_OUTPUT_PATH_RE.search(normalized) and (
+        normalized.startswith(("cat > ", "tee ", "python ", "python3 ", "printf "))
+        or " > /app/output/" in normalized
+        or " > /root/output/" in normalized
+        or normalized.startswith("mkdir -p /app/output && cat > /app/output/")
+        or normalized.startswith("mkdir -p /root/output && cat > /root/output/")
+    ):
+        return True
+
+    return False
 
 
 def _build_min_score_map(config: DetectionConfig) -> dict[RiskLevel, float]:
@@ -187,7 +323,18 @@ class L1PolicyEngine:
 
         l1_snapshot = compute_risk_snapshot(event, context, self._session_tracker, effective_config)
         snapshot = l1_snapshot
-        decision = self._decide(event, snapshot, context)
+        if event.event_type == EventType.PRE_ACTION and l1_snapshot.short_circuit_rule == "SC-4":
+            decision, snapshot, actual_tier = self._decide_persistence_write(
+                event,
+                l1_snapshot,
+                context,
+                effective_config,
+                deadline_budget_ms,
+            )
+            decision.decision_latency_ms = round((time.monotonic() - start) * 1000, 2)
+            return decision, snapshot, actual_tier
+
+        decision = self._decide(event, snapshot, context, effective_config)
         actual_tier = DecisionTier.L1
 
         if self._should_run_l2(event, context, l1_snapshot, requested_tier):
@@ -197,7 +344,7 @@ class L1PolicyEngine:
                     requested_tier=requested_tier,
                     config_override=effective_config,
                 )
-                decision = self._decide(event, snapshot, context)
+                decision = self._decide(event, snapshot, context, effective_config)
             except Exception:
                 logging.getLogger(__name__).warning(
                     "L2 analysis failed; falling back to L1", exc_info=True,
@@ -220,8 +367,10 @@ class L1PolicyEngine:
         event: CanonicalEvent,
         snapshot: RiskSnapshot,
         context: Optional[DecisionContext] = None,
+        config: Optional[DetectionConfig] = None,
     ) -> CanonicalDecision:
         """Map risk level to decision for the given event type."""
+        effective_config = config if config is not None else self._config
         risk = snapshot.risk_level
         etype = event.event_type
 
@@ -257,6 +406,39 @@ class L1PolicyEngine:
             )
 
         # pre_action: decide based on risk level
+        if risk in (RiskLevel.CRITICAL, RiskLevel.HIGH) and snapshot.short_circuit_rule == "SC-4":
+            action = effective_config.resolved_persistence_write_action()
+            return self._persistence_write_action_decision(
+                event,
+                snapshot,
+                context,
+                action,
+                "L1 persistence-write policy",
+            )
+
+        if (
+            risk in (RiskLevel.CRITICAL, RiskLevel.HIGH)
+            and _is_benchmark_safe_shell_command(event, effective_config)
+        ):
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.ALLOW,
+                    reason=self._build_reason(
+                        event,
+                        snapshot,
+                        "Benchmark safe shell command allowed with audit",
+                    ),
+                    policy_id=self.POLICY_ID,
+                    risk_level=risk,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=True,
+                ),
+                event,
+                context,
+            )
+
         if risk == RiskLevel.CRITICAL:
             return self._with_scope_evaluation(
                 CanonicalDecision(
@@ -316,6 +498,250 @@ class L1PolicyEngine:
                 policy_version=self.POLICY_VERSION,
                 failure_class=FailureClass.NONE,
                 final=True,
+            ),
+            event,
+            context,
+        )
+
+    def _decide_persistence_write(
+        self,
+        event: CanonicalEvent,
+        l1_snapshot: RiskSnapshot,
+        context: Optional[DecisionContext],
+        config: DetectionConfig,
+        deadline_budget_ms: float | None,
+    ) -> tuple[CanonicalDecision, RiskSnapshot, DecisionTier]:
+        action = config.resolved_persistence_write_action()
+        if action != "force_l3":
+            return (
+                self._persistence_write_action_decision(
+                    event,
+                    l1_snapshot,
+                    context,
+                    action,
+                    "L1 persistence-write policy",
+                ),
+                l1_snapshot.model_copy(update={
+                    "l3_trace": {
+                        "sc4_action_resolved": action,
+                        "l3_verdict_source": "policy",
+                    }
+                }),
+                DecisionTier.L1,
+            )
+
+        l3_analyzer = _select_l3_analyzer(self._analyzer)
+        if l3_analyzer is None:
+            return self._persistence_write_fallback(
+                event,
+                l1_snapshot,
+                context,
+                config,
+                "l3_analyzer_unavailable",
+                trace={"l3_verdict_source": "fallback"},
+            )
+
+        try:
+            result = self._run_sc4_l3_verdict(
+                l3_analyzer,
+                event,
+                context,
+                l1_snapshot,
+                deadline_budget_ms,
+                config,
+            )
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "SC-4 L3 review failed; applying persistence-write fallback",
+                exc_info=True,
+            )
+            return self._persistence_write_fallback(
+                event,
+                l1_snapshot,
+                context,
+                config,
+                "l3_exception",
+                trace={
+                    "l3_verdict_source": "exception",
+                    "exception_type": type(exc).__name__,
+                },
+            )
+
+        trace = dict(result.trace or {})
+        trace.update({
+            "sc4_action_resolved": action,
+            "l3_verdict_source": result.analyzer_id or "agent-reviewer",
+        })
+        fallback_reason = self._sc4_l3_fallback_reason(result, trace, config)
+        if fallback_reason is not None:
+            return self._persistence_write_fallback(
+                event,
+                l1_snapshot.model_copy(update={"l3_trace": trace}),
+                context,
+                config,
+                fallback_reason,
+                trace=trace,
+            )
+
+        reviewed_snapshot = l1_snapshot.model_copy(update={
+            "risk_level": result.target_level,
+            "composite_score": max(
+                l1_snapshot.composite_score,
+                self._min_score_for_level.get(result.target_level, 0.0),
+            ),
+            "classified_by": ClassifiedBy.L3,
+            "classified_at": utc_now_iso(),
+            "l3_trace": trace,
+        })
+        if result.target_level in (RiskLevel.HIGH, RiskLevel.CRITICAL):
+            decision = self._persistence_write_action_decision(
+                event,
+                reviewed_snapshot,
+                context,
+                "block",
+                "L3 persistence-write review blocked",
+            )
+            return decision, reviewed_snapshot, DecisionTier.L3
+
+        decision = self._persistence_write_action_decision(
+            event,
+            reviewed_snapshot,
+            context,
+            "audit",
+            "L3 persistence-write review allowed with audit",
+        )
+        return decision, reviewed_snapshot, DecisionTier.L3
+
+    def _run_sc4_l3_verdict(
+        self,
+        analyzer,
+        event: CanonicalEvent,
+        context: Optional[DecisionContext],
+        l1_snapshot: RiskSnapshot,
+        deadline_budget_ms: float | None,
+        config: DetectionConfig,
+    ) -> L2Result:
+        review_context = _context_with_l3_config(context, config, DecisionTier.L3)
+        review_event = self._redacted_persistence_write_review_event(event, l1_snapshot)
+        budget = config.l3_budget_ms if config.l3_budget_ms is not None else config.l2_budget_ms
+        if deadline_budget_ms is not None:
+            budget = min(budget, max(0.0, deadline_budget_ms - _L2_OVERHEAD_MARGIN_MS))
+        timeout_sec = max(budget, 1.0) / 1000.0
+        inner_budget = max(budget - _INNER_BUDGET_MARGIN_MS, 0.0)
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            return self._l2_pool.submit(
+                asyncio.run,
+                asyncio.wait_for(
+                    analyzer.analyze(review_event, review_context, l1_snapshot, inner_budget),
+                    timeout=timeout_sec,
+                ),
+            ).result(timeout=timeout_sec + 0.5)
+
+        async def _run_with_timeout() -> L2Result:
+            return await asyncio.wait_for(
+                analyzer.analyze(review_event, review_context, l1_snapshot, inner_budget),
+                timeout=timeout_sec,
+            )
+
+        return asyncio.run(_run_with_timeout())
+
+    def _redacted_persistence_write_review_event(
+        self,
+        event: CanonicalEvent,
+        l1_snapshot: RiskSnapshot,
+    ) -> CanonicalEvent:
+        evidence = dict(l1_snapshot.risk_evidence or {})
+        return event.model_copy(update={
+            "payload": {
+                "persistence_write_evidence": evidence,
+                "payload_redacted": True,
+            },
+            "risk_hints": sorted(set([*(event.risk_hints or []), "persistence_write", "SC-4"])),
+        })
+
+    def _sc4_l3_fallback_reason(
+        self,
+        result: L2Result,
+        trace: dict[str, Any],
+        config: DetectionConfig,
+    ) -> str | None:
+        if result.decision_tier != DecisionTier.L3:
+            return "l3_not_completed"
+        if bool(trace.get("degraded")):
+            return str(trace.get("l3_reason_code") or trace.get("degradation_reason") or "l3_degraded")
+        if str(trace.get("trigger_reason") or "") == "trigger_not_matched":
+            return "trigger_not_matched"
+        if result.confidence <= 0.0:
+            return "l3_zero_confidence"
+        if (
+            result.target_level in (RiskLevel.LOW, RiskLevel.MEDIUM)
+            and result.confidence < config.persistence_write_l3_allow_confidence
+        ):
+            return "l3_allow_confidence_below_threshold"
+        return None
+
+    def _persistence_write_fallback(
+        self,
+        event: CanonicalEvent,
+        snapshot: RiskSnapshot,
+        context: Optional[DecisionContext],
+        config: DetectionConfig,
+        fallback_reason: str,
+        trace: Optional[dict[str, Any]] = None,
+    ) -> tuple[CanonicalDecision, RiskSnapshot, DecisionTier]:
+        action = config.persistence_write_fallback_action
+        l3_trace = dict(trace or snapshot.l3_trace or {})
+        l3_trace.update({
+            "sc4_action_resolved": config.resolved_persistence_write_action(),
+            "fallback_reason": fallback_reason,
+        })
+        fallback_snapshot = snapshot.model_copy(update={"l3_trace": l3_trace})
+        decision = self._persistence_write_action_decision(
+            event,
+            fallback_snapshot,
+            context,
+            action,
+            f"persistent execution entrypoint write L3 fallback: {fallback_reason}",
+        )
+        return decision, fallback_snapshot, DecisionTier.L1
+
+    def _persistence_write_action_decision(
+        self,
+        event: CanonicalEvent,
+        snapshot: RiskSnapshot,
+        context: Optional[DecisionContext],
+        action: str,
+        base_reason: str,
+    ) -> CanonicalDecision:
+        if action == "audit":
+            verdict = DecisionVerdict.ALLOW
+            final = True
+            reason = f"{base_reason}: allowed with audit"
+        elif action == "defer":
+            verdict = DecisionVerdict.DEFER
+            final = False
+            reason = f"{base_reason}: operator review required"
+        else:
+            verdict = DecisionVerdict.BLOCK
+            final = True
+            reason = f"{base_reason}: blocked"
+
+        return self._with_scope_evaluation(
+            CanonicalDecision(
+                decision=verdict,
+                reason=self._build_reason(event, snapshot, reason),
+                policy_id=self.POLICY_ID,
+                risk_level=snapshot.risk_level,
+                decision_source=DecisionSource.POLICY,
+                policy_version=self.POLICY_VERSION,
+                failure_class=FailureClass.NONE,
+                final=final,
             ),
             event,
             context,
@@ -509,6 +935,7 @@ class L1PolicyEngine:
             override=override,
             l1_snapshot=l1_snapshot if upgraded else None,
             l3_trace=result.trace,
+            risk_evidence=dict(l1_snapshot.risk_evidence or {}),
         ), actual_tier
 
     @staticmethod

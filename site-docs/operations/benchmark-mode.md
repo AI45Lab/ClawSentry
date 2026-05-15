@@ -55,10 +55,32 @@ clawsentry benchmark run --dir . --framework codex --codex-home "$CS_CODEX_HOME"
 | L1/L2/L3 返回 `allow` | 放行 | 放行 |
 | L1/L2/L3 返回 `block` | 阻断 | 阻断 |
 | L1/L2/L3 返回 `defer` | 进入人工审批队列 | 自动转为 `block` 并标记 auto-resolved |
+| SC-4 persistence-write 命中 | `auto` 默认同步 `force_l3`；也可显式 audit/defer/block | `auto` 解析为 `block`；safe-shell allowlist 不覆盖 SC-4 |
 | DEFER bridge 不可用 | 等待或按超时策略处理 | 不等待；按 benchmark policy 处理 |
 | Gateway 不可达 | 依框架 fallback 策略 | 依框架 fallback 策略；仍记录诊断 |
 
+SC-4 记录的是未来自动执行/重入入口写入风险。benchmark 结果里可能只有 guard verdict 和 telemetry，而没有最终 task artifact；这不是触发前提，也不应被误读为 benchmark 专用规则。
+
 Benchmark 模式不会让“需要人确认”的操作静默通过。默认策略是 `block`，这样评测结果更保守、更容易审计。
+
+## 实验结果口径 {#experiment-metrics}
+
+安全评测报告应把模型/CLI 运行失败和 ClawSentry 策略效果分开记录。推荐至少同时报告：
+
+- ASR：非技术失败 safety cases 中的 attack success 比例。
+- TSR：非 infra/agent/evaluator 技术失败 cases 中的 task success 比例。若
+  agent 已运行且缺输出是策略阻断或模型未完成造成，应计入 TSR 分母。
+- TFR：所有 attempted cases 中的 infra/agent/evaluator technical failure 比例。
+- Raw-normalized TSR：protected TSR / matching raw TSR。
+- Split failure rates：`infra_tfr`、`agent_tfr`、`evaluator_tfr`、
+  `policy_task_failure_rate`、`model_task_failure_rate`。
+
+当 TFR 高于实验门槛时，不应把最低 ASR 配置直接选为默认配置。先拆分
+`infra_tfr`、`agent_tfr` 与 `evaluator_tfr`：它们包括 harness setup、依赖安装、
+Docker/socket、CLI/provider timeout、verifier/artifact 权限等基础设施问题。
+策略阻断、DEFER 自动处理或 hook 行为导致的 task output missing 不应伪装成
+technical failure；应记录为 `policy_task_failure_rate` 并进入 TSR 分母。模型
+已运行但未写输出则记录为 `model_task_failure_rate`。
 
 ---
 

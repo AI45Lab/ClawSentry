@@ -137,7 +137,16 @@ def _resolve_payload(raw: Any) -> dict[str, Any]:
 
     args = payload.get("arguments")
     if isinstance(args, dict):
-        for key in ("command", "path", "target", "file_path"):
+        for key in (
+            "command",
+            "path",
+            "target",
+            "file_path",
+            "content",
+            "old_string",
+            "new_string",
+            "edits",
+        ):
             if key in args and key not in payload:
                 payload[key] = args[key]
 
@@ -675,7 +684,15 @@ class A3SGatewayHarness:
             if isinstance(tool_input, dict):
                 payload["arguments"] = tool_input
                 # Lift common fields for risk assessment
-                for key in ("command", "file_path", "path"):
+                for key in (
+                    "command",
+                    "file_path",
+                    "path",
+                    "content",
+                    "old_string",
+                    "new_string",
+                    "edits",
+                ):
                     if key in tool_input and key not in payload:
                         payload[key] = tool_input[key]
             # Carry over other context fields

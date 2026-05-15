@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 from collections import deque
-from typing import Optional
+from typing import Any, Optional
 
 from .detection_config import DetectionConfig
 from .injection_detector import score_layer1
@@ -24,10 +24,20 @@ from .models import (
     utc_now_iso,
 )
 from .risk_signals import (
+    build_file_write_persistence_signals,
     has_process_sub_remote_command,
     has_remote_pipe_exec_command,
     is_credential_path,
 )
+
+
+_SECRET_REDACTION_RE = re.compile(
+    r"(AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{20,}|sk-[a-zA-Z0-9_-]{20,}|"
+    r"-----BEGIN[A-Z ]*PRIVATE KEY-----.*?-----END[A-Z ]*PRIVATE KEY-----|"
+    r"\b[A-Za-z_][A-Za-z0-9_]*(?:SECRET|TOKEN|PASSWORD|API_KEY)[A-Za-z0-9_]*\s*[=:]\s*['\"]?[^'\"\s]+)",
+    re.IGNORECASE | re.DOTALL,
+)
+_PERSISTENCE_EVIDENCE_PREVIEW_CHARS = 512
 
 
 # ---------------------------------------------------------------------------
@@ -135,24 +145,168 @@ def _extract_paths(event: CanonicalEvent) -> list[str]:
     """Extract file paths from event payload."""
     payload = event.payload or {}
     paths = []
-    for key in ("path", "file_path", "file", "target", "destination", "source"):
-        val = payload.get(key)
-        if isinstance(val, str) and val:
-            paths.append(val)
-    command = str(payload.get("command", ""))
-    if command:
-        paths.extend(_extract_paths_from_command(command))
+    for mapping in (payload, payload.get("arguments"), payload.get("tool_input"), payload.get("args")):
+        if not isinstance(mapping, dict):
+            continue
+        for key in ("path", "file_path", "file", "target", "destination", "source"):
+            val = mapping.get(key)
+            if isinstance(val, str) and val:
+                paths.append(val)
+        for key in ("command", "cmd", "prompt", "instructions", "description"):
+            text = mapping.get(key)
+            if isinstance(text, str) and text:
+                paths.extend(_extract_paths_from_command(text))
     return paths
+
+
+def _extract_write_content(event: CanonicalEvent) -> str:
+    """Extract content that write/edit tools are about to add to files."""
+    payload = event.payload or {}
+    parts: list[str] = []
+
+    def add(value: object) -> None:
+        if isinstance(value, str) and value:
+            parts.append(value)
+
+    def collect_from_mapping(value: object) -> None:
+        if not isinstance(value, dict):
+            return
+        for key in (
+            "content",
+            "new_string",
+            "replacement",
+            "body",
+            "code",
+            "text",
+            "prompt",
+            "instructions",
+            "description",
+        ):
+            add(value.get(key))
+        edits = value.get("edits")
+        if isinstance(edits, list):
+            for item in edits:
+                collect_from_mapping(item)
+
+    collect_from_mapping(payload)
+    collect_from_mapping(payload.get("arguments"))
+    collect_from_mapping(payload.get("tool_input"))
+    collect_from_mapping(payload.get("args"))
+    return "\n".join(parts)
+
+
+def _extract_shell_command(event: CanonicalEvent) -> str:
+    """Extract shell command text from direct or nested tool payloads."""
+    payload = event.payload or {}
+    for mapping in (payload, payload.get("arguments"), payload.get("tool_input"), payload.get("args")):
+        if not isinstance(mapping, dict):
+            continue
+        for key in ("command", "cmd"):
+            value = mapping.get(key)
+            if isinstance(value, str) and value:
+                return value
+    return ""
+
+
+def _redact_evidence_text(value: str, *, max_len: int = _PERSISTENCE_EVIDENCE_PREVIEW_CHARS) -> str:
+    compact = " ".join(str(value or "").split())
+    compact = _SECRET_REDACTION_RE.sub("[REDACTED_SECRET]", compact)
+    if len(compact) > max_len:
+        return compact[:max_len] + "...[truncated]"
+    return compact
+
+
+def _path_category(path: str) -> str:
+    lowered = path.lower()
+    name = lowered.rsplit("/", 1)[-1]
+    if name in {"index.html", "app.html"} or lowered.endswith((".html", ".htm")):
+        return "html_entrypoint"
+    if "bootstrap" in lowered and ("loader" in lowered or "manifest" in lowered):
+        return "bootstrap_loader"
+    if "startup" in lowered or "autoload" in lowered:
+        return "startup_or_autoload"
+    if name.endswith((".js", ".mjs", ".cjs")) and "loader" in lowered:
+        return "script_loader"
+    if name.endswith((".json", ".yaml", ".yml")) and ("manifest" in lowered or "loader" in lowered):
+        return "loader_manifest"
+    return "write_target"
+
+
+def _redact_path(path: str) -> str:
+    cleaned = str(path or "").strip()
+    if not cleaned:
+        return ""
+    if cleaned.startswith("/"):
+        parts = [part for part in cleaned.split("/") if part]
+        if len(parts) <= 3:
+            return "/" + "/".join(parts)
+        return "/.../" + "/".join(parts[-3:])
+    if cleaned.startswith("~"):
+        parts = [part for part in cleaned.split("/") if part and part != "~"]
+        return "~/" + "/".join(parts[-3:])
+    return cleaned
+
+
+def _infer_write_method(tool_name: str, shell_command: str, signals: dict[str, bool]) -> str:
+    tool = (tool_name or "").lower()
+    command = shell_command.lower()
+    if signals.get("delegated_write_action"):
+        return "delegated_write"
+    if signals.get("shell_file_write_action") or tool in {"bash", "shell", "sh", "zsh"}:
+        if re.search(r"\bpython(?:3)?\b|node\b|writefile|write_text|write_bytes|open\(", command):
+            return "programmatic_write"
+        if re.search(r"\b(cat|tee|echo|printf|dd)\b|[<>]", command):
+            return "shell_redirect"
+        return "shell_write"
+    if signals.get("write_action"):
+        return "write_tool"
+    return "write"
+
+
+def _build_persistence_write_evidence(
+    *,
+    event: CanonicalEvent,
+    paths: list[str],
+    content_text: str,
+    shell_command: str,
+    signals: dict[str, bool],
+) -> dict[str, Any]:
+    trigger_flags = sorted(
+        key for key, value in signals.items()
+        if value and key != "persistence_write"
+    )
+    redacted_paths = [_redact_path(path) for path in paths if str(path or "").strip()]
+    path_categories = sorted({_path_category(path) for path in paths if str(path or "").strip()})
+    preview_source = content_text or shell_command
+    return {
+        "signal": "persistence_write",
+        "short_circuit_rule": "SC-4",
+        "tool": event.tool_name or "",
+        "write_method": _infer_write_method(event.tool_name or "", shell_command, signals),
+        "path_categories": path_categories,
+        "matched_paths_redacted": redacted_paths[:12],
+        "trigger_flags": trigger_flags,
+        "content_preview_redacted": _redact_evidence_text(preview_source),
+        "raw_payload_included": False,
+    }
 
 
 def _extract_paths_from_command(command: str) -> list[str]:
     """Best-effort path extraction from shell commands."""
     paths = []
     for token in command.split():
-        if token.startswith("/") or token.startswith("~"):
-            paths.append(token)
-        elif "/" in token and not token.startswith("-"):
-            paths.append(token)
+        cleaned = token.strip("'\"`;,)(")
+        if cleaned.startswith("/") or cleaned.startswith("~"):
+            paths.append(cleaned)
+        elif "/" in cleaned and not cleaned.startswith("-"):
+            paths.append(cleaned)
+    paths.extend(
+        match.group(1)
+        for match in re.finditer(
+            r"['\"]((?:~|/|[A-Za-z]:\\|[A-Za-z0-9_.-]+/)[^'\"\s<>]+)['\"]",
+            command,
+        )
+    )
     return paths
 
 
@@ -546,10 +700,27 @@ def _extract_text_for_d6(event: CanonicalEvent) -> str:
     """Extract analyzable text from event payload for D6 scoring."""
     payload = event.payload or {}
     parts: list[str] = []
-    for key in ("command", "content", "text", "body", "input", "code", "message", "transcript", "userMessage", "user_message"):
+    for key in (
+        "command",
+        "content",
+        "text",
+        "body",
+        "input",
+        "code",
+        "message",
+        "transcript",
+        "userMessage",
+        "user_message",
+        "prompt",
+        "instructions",
+        "description",
+    ):
         val = payload.get(key)
         if isinstance(val, str) and val:
             parts.append(val)
+    write_content = _extract_write_content(event)
+    if write_content:
+        parts.append(write_content)
     if event.risk_hints:
         parts.extend(str(h) for h in event.risk_hints)
     return " ".join(parts)
@@ -617,15 +788,30 @@ def compute_risk_snapshot(
     ) if payload_text else 0.0
 
     dims = RiskDimensions(d1=d1, d2=d2, d3=d3, d4=d4, d5=d5, d6=d6)
+    extracted_paths = _extract_paths(event)
+    write_signal_content = _extract_write_content(event)
+    if not write_signal_content:
+        write_signal_content = _extract_shell_command(event)
+    shell_command = _extract_shell_command(event)
+    file_write_signals = build_file_write_persistence_signals(
+        tool_name=event.tool_name or "",
+        path_text=" ".join(extracted_paths),
+        content_text=write_signal_content,
+        risk_hints=event.risk_hints,
+    )
 
     # Short-circuit rules (priority over scoring)
     sc_rule: Optional[str] = None
     sc_level: Optional[RiskLevel] = None
-    for rule_id, predicate, level in _SHORT_CIRCUIT_RULES:
-        if predicate(dims):
-            sc_rule = rule_id
-            sc_level = level
-            break
+    if file_write_signals["persistence_write"]:
+        sc_rule = "SC-4"
+        sc_level = RiskLevel.HIGH
+    else:
+        for rule_id, predicate, level in _SHORT_CIRCUIT_RULES:
+            if predicate(dims):
+                sc_rule = rule_id
+                sc_level = level
+                break
 
     # Composite scoring (E-4 v2 formula)
     score = _composite_score_v2(dims, config)
@@ -648,6 +834,17 @@ def compute_risk_snapshot(
         missing_dimensions=missing_dims,
         classified_by=ClassifiedBy.L1,
         classified_at=utc_now_iso(),
+        risk_evidence=(
+            _build_persistence_write_evidence(
+                event=event,
+                paths=extracted_paths,
+                content_text=write_signal_content,
+                shell_command=shell_command,
+                signals=file_write_signals,
+            )
+            if sc_rule == "SC-4"
+            else {}
+        ),
     )
 
     # Update session tracker if risk >= high

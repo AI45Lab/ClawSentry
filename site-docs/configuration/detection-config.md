@@ -481,6 +481,16 @@ DEFER 决策产生
 - **Advisory 自动化必须显式 opt-in**：L3 咨询审查提供 frozen evidence snapshot / queued advisory job / advisory result 流程；打开 `l3_advisory_async_enabled` 会自动创建 snapshot 并入队 job，但不会自动运行后台 L3 审查或改变 canonical decision。启用 heartbeat review 时，非 heartbeat-compatible 的高风险即时 snapshot queueing 会被抑制，避免和聚合路径重复。
 - **无本地 L3 能力时保持诚实回退**：如果网关启动时没有本地 L3 能力，`replace_l2` / `eager` 会被视为 unsupported runtime，现有 L1/L2 路径继续运行，但运行态会明确暴露 `l3_available=false`、`effective_tier=L3`、`l3_state=skipped`、`l3_reason_code=local_l3_unavailable`。
 
+### Persistence-write / SC-4 策略 {#persistence-write-sc4}
+
+| 字段名 | 类型 | 默认值 | CS_ 变量 | 说明 |
+|--------|------|--------|----------|------|
+| `persistence_write_action` | `str` | `auto` | `CS_PERSISTENCE_WRITE_ACTION` | `auto`、`audit`、`force_l3`、`defer`、`block`。决定 L1 命中 SC-4 后的动作。 |
+| `persistence_write_fallback_action` | `str` | `block` | `CS_PERSISTENCE_WRITE_FALLBACK_ACTION` | `force_l3` 不可用、degraded、timeout、parse fail 或 trigger_not_matched 时的回退动作：`defer`、`block`、`audit`。 |
+| `persistence_write_l3_allow_confidence` | `float` | `0.6` | `CS_PERSISTENCE_WRITE_L3_ALLOW_CONFIDENCE` | L3 返回 low/medium 时允许放行的最低 confidence。 |
+
+`auto` 集中解析：`benchmark` / `strict` 模式为 `block`，`normal` / `permissive` 模式为 `force_l3`。`force_l3` 是同步 pre-action L3 verdict path，消费 redacted evidence summary；它不是 post-action advisory，也不依赖最终 artifact 文件是否已经存在。
+
 ---
 
 ## 从 env 到 DetectionConfig {#project-config}

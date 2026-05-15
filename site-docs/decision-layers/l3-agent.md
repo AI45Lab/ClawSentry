@@ -721,6 +721,7 @@ class L3TriggerPolicy:
     def trigger_reason(
         self, event, context, l1_snapshot, session_risk_history
     ) -> str | None:
+        if l1_snapshot.short_circuit_rule == "SC-4": return "persistence_write"
         if self._has_manual_flag(context):          return "manual_l3_escalate"
         if self._detect_suspicious_pattern(...):    return "suspicious_pattern"
         if self._cumulative_risk_score(...) >= 5:   return "cumulative_risk"
@@ -733,10 +734,14 @@ class L3TriggerPolicy:
 
 | 条件 | 判断逻辑 | 触发原因 | Operator 解读 |
 |------|----------|----------|---------------|
+| **SC-4 persistence-write** | L1 已识别未来自动执行/重入入口写入 | `persistence_write` | 同步 pre-action L3 verdict path；不是 advisory-only，也不使用普通 upgrade-only merge 来吞掉 L3 allow。 |
 | **手动触发标志** | `DecisionContext` 含 `l3_escalate`/`force_l3`/`manual_l3_escalation` | `manual_l3_escalate` | 上游系统或人工明确要求同步深审。 |
 | **可疑行为序列** | 当前事件 + 最近会话历史命中有界序列启发式 | `suspicious_pattern` | 例如凭证访问后接网络外传、侦察后接 sudo，单点事件不足以说明全链路。 |
 | **累积风险分** | 会话历史风险分总和 + 当前事件风险分 >= 5 | `cumulative_risk` | 多个 medium/high 事件叠加到需要上下文判断的 session 风险。 |
 | **高危工具 + 复杂 payload** | 工具为 bash/shell/exec/write 等 **且** payload 满足复杂条件 | `high_risk_complex_payload` | 高危工具携带复杂参数，规则层难以解释全部语义。 |
+
+!!! note "SC-4 的 L3 语义"
+    `CS_PERSISTENCE_WRITE_ACTION=force_l3` 时，L3 对这一次写入给出最终 allow/block/defer 语义：low/medium 且 confidence 达标可 allow with audit，high/critical 会 block。L3 不可用、degraded、`trigger_not_matched`、timeout 或解析失败时按 `CS_PERSISTENCE_WRITE_FALLBACK_ACTION` 回退，并在 trace 中记录原因。
 
 当前 `suspicious_pattern` 先覆盖两类确定性序列：
 

@@ -804,12 +804,12 @@ class AgentAnalyzer:
                 "description": skill.description,
                 "evaluation_criteria": skill.evaluation_criteria,
             },
-            "event": event.model_dump(mode="json"),
+            "event": self._event_for_prompt(event, l1_snapshot),
             "workspace_context": workspace_context,
             "l1_snapshot": l1_snapshot.model_dump(mode="json"),
             "trajectory_summary": trajectory_summary,
             "constraints": {
-                "must_not_downgrade_below_l1": True,
+                "must_not_downgrade_below_l1": not self._allows_l3_downgrade(l1_snapshot),
                 "final_response_format": {
                     "risk_level": "low|medium|high|critical",
                     "findings": ["short finding"],
@@ -818,6 +818,39 @@ class AgentAnalyzer:
             },
         }
         return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+    def _event_for_prompt(
+        self,
+        event: CanonicalEvent,
+        l1_snapshot: RiskSnapshot,
+    ) -> dict[str, Any]:
+        if (
+            l1_snapshot.short_circuit_rule == "SC-4"
+            and isinstance(l1_snapshot.risk_evidence, dict)
+            and l1_snapshot.risk_evidence
+        ):
+            return {
+                "event_id": event.event_id,
+                "trace_id": event.trace_id,
+                "event_type": event.event_type.value,
+                "session_id": event.session_id,
+                "agent_id": event.agent_id,
+                "source_framework": event.source_framework,
+                "occurred_at": event.occurred_at,
+                "tool_name": event.tool_name,
+                "risk_hints": event.risk_hints,
+                "payload_redacted": True,
+                "persistence_write_evidence": l1_snapshot.risk_evidence,
+        }
+        return event.model_dump(mode="json")
+
+    @staticmethod
+    def _allows_l3_downgrade(l1_snapshot: RiskSnapshot) -> bool:
+        return (
+            l1_snapshot.short_circuit_rule == "SC-4"
+            and isinstance(l1_snapshot.risk_evidence, dict)
+            and l1_snapshot.risk_evidence.get("signal") == "persistence_write"
+        )
 
     def _build_multi_turn_system_prompt(self, skill: ReviewSkill) -> str:
         return (
@@ -966,7 +999,11 @@ class AgentAnalyzer:
             findings = self._extract_findings_from_data(data)
             confidence = float(data.get("confidence", 0.7))
             confidence = max(0.0, min(1.0, confidence))
-            target_level = _max_risk_level(risk_level, l1_snapshot.risk_level)
+            target_level = (
+                risk_level
+                if self._allows_l3_downgrade(l1_snapshot)
+                else _max_risk_level(risk_level, l1_snapshot.risk_level)
+            )
             return L2Result(
                 target_level=target_level,
                 reasons=[str(item) for item in findings[: self._config.max_findings]],

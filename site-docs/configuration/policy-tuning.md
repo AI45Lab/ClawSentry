@@ -486,6 +486,26 @@ CS_TRAJECTORY_ALERT_ACTION=block        # broadcast | defer | block
 CS_POST_ACTION_FINDING_ACTION=defer     # broadcast | defer | block
 ```
 
+### Persistence-write / SC-4 策略
+
+`SC-4` 覆盖的是写入未来可能自动执行或自动重入的入口：HTML/JS entrypoint、startup/bootstrap loader、autoload manifest、inline loader contract、global/window loader state 等。它不是 benchmark artifact 规则；没有最终 artifact 文件时，只要当前 pre-action 正在创建这类入口，也会进入同一策略。
+
+| 模式 | `CS_PERSISTENCE_WRITE_ACTION=auto` 的解析 | 推荐回退 |
+|------|------------------------------------------|----------|
+| `benchmark` | `block` | `block` |
+| `strict` | `block` | `block` |
+| `normal` | `force_l3` | `defer` |
+| `permissive` | `force_l3` | `audit` 或 `defer` |
+
+显式动作可用：
+
+```bash
+CS_PERSISTENCE_WRITE_ACTION=force_l3      # audit | force_l3 | defer | block
+CS_PERSISTENCE_WRITE_FALLBACK_ACTION=defer
+```
+
+`force_l3` 是同步 pre-action verdict path：L3 low/medium 且 confidence 达标可 allow with audit，high/critical 会 block；L3 不可用或 degraded 时按 fallback 处理。
+
 !!! note "为什么 post_action 不是阻塞当前动作？"
     `post_action` 发生在工具已经执行之后，无法回滚当前动作。因此 `post_action_finding_action=defer|block` 的含义是对后续同一 session 动作启用会话级执法。
 

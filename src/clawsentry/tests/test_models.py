@@ -247,7 +247,7 @@ class TestRiskSnapshot:
             assert rs.risk_level == rl
 
     def test_valid_short_circuit_rules(self):
-        for sc in ("SC-1", "SC-2", "SC-3"):
+        for sc in ("SC-1", "SC-2", "SC-3", "SC-4"):
             rs = RiskSnapshot(**_minimal_risk_snapshot(
                 short_circuit_rule=sc,
                 risk_level="critical",

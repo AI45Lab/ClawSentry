@@ -1236,6 +1236,57 @@ def test_parse_risk_level_aliases(tmp_path: Path):
     assert result.target_level == RiskLevel.MEDIUM
 
 
+def test_sc4_persistence_write_l3_can_return_low_without_upgrade(tmp_path: Path):
+    """SC-4 force_l3 verdicts may lower L1 HIGH when the write is legitimate."""
+    provider = MagicMock()
+    provider.provider_id = "mock-llm"
+    provider.complete = AsyncMock(
+        return_value='{"risk_level": "low", "findings": ["user requested startup entrypoint"], "confidence": 0.91}'
+    )
+    toolkit = ReadOnlyToolkit(tmp_path, StubTrajectoryStore())
+    registry = SkillRegistry(_skills_dir(tmp_path))
+    analyzer = AgentAnalyzer(
+        provider=provider,
+        toolkit=toolkit,
+        skill_registry=registry,
+        trigger_policy=L3TriggerPolicy(),
+        config=AgentAnalyzerConfig(enable_multi_turn=False),
+    )
+    l1_snapshot = _snap(RiskLevel.HIGH).model_copy(update={
+        "short_circuit_rule": "SC-4",
+        "risk_evidence": {
+            "signal": "persistence_write",
+            "short_circuit_rule": "SC-4",
+            "tool": "Write",
+            "content_preview_redacted": "API_TOKEN=[REDACTED_SECRET]",
+            "raw_payload_included": False,
+        },
+    })
+    event = _evt(
+        tool_name="Write",
+        payload={
+            "file_path": "/tmp/site/index.html",
+            "content": "<script>API_TOKEN=supersecret123</script>",
+        },
+    )
+
+    result = asyncio.run(
+        analyzer.analyze(
+            event,
+            DecisionContext(session_risk_summary={"force_l3": True}),
+            l1_snapshot,
+            5000,
+        )
+    )
+
+    assert result.confidence == 0.91
+    assert result.target_level == RiskLevel.LOW
+    prompt = provider.complete.call_args.args[1]
+    assert '"must_not_downgrade_below_l1": false' in prompt
+    assert "supersecret123" not in prompt
+    assert "persistence_write_evidence" in prompt
+
+
 def test_format_correction_retry_on_unparseable_response(tmp_path: Path):
     """When first response is unparseable and budget remains, retry with correction prompt."""
     bad_response = "I think this command is safe because it just echoes text."

@@ -6,7 +6,7 @@
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.6.8)**: Anti-bypass follow-up recognition now ranks deterministic matches before weaker cross-tool similarity, uses sanitized LLM recognition only as a review signal for destructive cross-tool candidates, and exposes compact probe metadata for operator diagnosis without raw commands or secrets.
+**Current release highlight (v0.6.9)**: Persistence-write / SC-4 policy detects writes that create future automatic execution or re-entry entrypoints, then blocks, defers, audits, or routes to synchronous L3 review with redacted evidence.
 
 ---
 

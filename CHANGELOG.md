@@ -8,6 +8,21 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.6.9] — 2026-05-15
+
+### 新增
+
+- **Persistence-write / SC-4 policy** — 将未来自动执行/重入入口写入抽象为通用 L1-L3 策略面，新增 `CS_PERSISTENCE_WRITE_ACTION`、`CS_PERSISTENCE_WRITE_FALLBACK_ACTION` 和 L3 allow confidence 阈值；`force_l3` 走同步 pre-action verdict path，并默认向 L3 发送 redacted evidence summary。
+
+### 改进
+
+- **Pre-action write payload coverage** — Claude/A3S harness payload normalization now lifts nested write/edit fields (`content`, `new_string`, `edits`) before risk scoring, so file writes can be supervised before creation.
+- **Benchmark-mode safe shell boundary generalized** — the benchmark safe-shell allow path is limited to bounded read/setup/output-directory operations and no longer contains artifact-name special cases; SC-4 persistence-write verdicts still take precedence.
+
+### 测试与验证
+
+- 待发布前由 release worktree 重新记录。
+
 ## [0.6.8] — 2026-05-11
 
 ### 新增
@@ -1471,4 +1486,5 @@
 [0.6.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.5
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
+[0.6.9]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.9
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
