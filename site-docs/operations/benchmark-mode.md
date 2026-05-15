@@ -58,7 +58,7 @@ clawsentry benchmark run --dir . --framework codex --codex-home "$CS_CODEX_HOME"
 | DEFER bridge 不可用 | 等待或按超时策略处理 | 不等待；按 benchmark policy 处理 |
 | Gateway 不可达 | 依框架 fallback 策略 | 依框架 fallback 策略；仍记录诊断 |
 
-Benchmark 模式不会让“需要人确认”的操作静默通过。默认策略是 `block`，这样评测结果更保守、更容易审计。
+Benchmark 模式不会让“需要人确认”的操作静默通过。默认策略是 `block`，这样无人值守运行更保守、更容易审计。
 
 ---
 
