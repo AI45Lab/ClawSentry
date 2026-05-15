@@ -8,6 +8,17 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.7.1] — 2026-05-16
+
+### 修复
+
+- **Public release metadata correction** — 公开仓库 release surface 去除了私有 benchmark notes、内部 provider matrix runner/tests 和未脱敏 run-path fixture；公开 PyPI/docs 测试计数改为公开仓库实际可复验的 `3357 passed, 16 skipped` + Web UI `56 passed`。
+- **Public sync hardening** — `sync-to-public.sh` 现在会显式清理已同步过的私有 benchmark leftovers，避免单靠 rsync exclude 导致旧文件滞留。
+
+### 边界
+
+- 本 patch release 不改变 v0.7.0 runtime behavior；它修正公开发布元数据和同步边界。
+
 ## [0.7.0] — 2026-05-16
 
 ### 新增
@@ -1499,4 +1510,5 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.7.1]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.0

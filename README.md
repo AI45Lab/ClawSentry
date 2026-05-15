@@ -23,7 +23,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3468 Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
+- **3357 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,6 +34,10 @@ pip install clawsentry[all]      # everything
 ```
 
 Requires Python >= 3.11.
+
+## What's New in v0.7.1
+
+- **Public release metadata correction**: the public release surface now reports the public repository validation count (`3357 passed, 16 skipped`) and excludes private benchmark notes, provider matrix runners, and internal run-path fixtures from public sync.
 
 ## What's New in v0.7.0
 

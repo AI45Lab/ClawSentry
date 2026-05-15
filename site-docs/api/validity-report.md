@@ -5,7 +5,7 @@ description: ClawSentry API 文档、源码 route、OpenAPI 与示例的可溯�
 
 # API 有效性报告
 
-生成时间：`2026-05-15T21:12:38+00:00`
+生成时间：`2026-05-15T21:45:29+00:00`
 核验状态：**通过**
 
 本报告从同一份 docs-owned inventory 生成，核对源码 route decorator/registration、Markdown anchor、OpenAPI operation 和端点提及规则。它不修改后端 API 行为，也不会对写入型 API 做盲目 live 调用。

@@ -1,12 +1,12 @@
 # ClawSentry — AHP Supervision Gateway
 
-> **Python 3.11+** | **3468 Python regression tests + 56 Web UI tests** | Protocol `ahp.1.0`
+> **Python 3.11+** | **3357 public Python regression tests + 56 Web UI tests** | Protocol `ahp.1.0`
 
 **ClawSentry** is the Python reference implementation of AHP (Agent Harness Protocol) — a unified security supervision gateway for multi-agent frameworks. Deployed as a sidecar, it normalizes runtime events from different frameworks (a3s-code, Claude Code, Codex, Gemini CLI, Kimi CLI, OpenClaw) into a unified protocol, passes them through a three-layer progressive risk evaluation pipeline, and produces real-time decisions (allow / block / modify / defer) with complete audit trails.
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.7.0)**: Benchmark-oriented roadmap foundations now cover Skill Trust registry/preflight, AHP policy replay, deterministic compound/taint evidence, capability narrowing, redacted agent feedback, and policy drift traceability. Evidence remains targeted replay/readiness validation, not a complete benchmark leaderboard claim.
+**Current release highlight (v0.7.1)**: public release metadata now matches the public repository validation surface, while v0.7.0's benchmark-oriented roadmap foundations remain the runtime baseline: Skill Trust registry/preflight, AHP policy replay, deterministic compound/taint evidence, capability narrowing, redacted agent feedback, and policy drift traceability.
 
 ---
 
@@ -479,7 +479,7 @@ src/clawsentry/
 |-- ui/                                # Web security dashboard (React SPA)
 |   |-- src/                           # TypeScript source
 |   +-- dist/                          # Pre-built artifacts (shipped with pip)
-+-- tests/                             # Test suite (3468 Python regression tests)
++-- tests/                             # Public test suite (3357 Python regression tests)
 ```
 
 ---
@@ -620,7 +620,7 @@ pip install -e ".[dev]"
 
 # Full suite
 python -m pytest src/clawsentry/tests/ -v --tb=short
-# Expected: current release validation 3468 passed, 15 skipped
+# Expected: current public release validation 3357 passed, 16 skipped
 
 # E2E (requires LLM API key)
 A3S_SDK_E2E=1 python -m pytest src/clawsentry/tests/ -v --tb=short

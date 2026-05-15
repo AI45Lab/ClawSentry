@@ -77,6 +77,9 @@ hide:
 ---
 
 
+!!! tip "v0.7.1: Public release metadata correction"
+    公开发布面现在使用公开仓库实际可复验的测试计数，并排除了私有 benchmark notes、provider matrix runner/tests 与内部 run-path fixture。v0.7.0 的 benchmark-oriented roadmap foundations 仍是当前 runtime 基线。
+
 !!! tip "v0.7.0: Benchmark-oriented roadmap foundations"
     Skill Trust registry/preflight、AHP policy replay、compound/taint evidence、capability narrowing、redacted agent feedback 和 policy drift traceability 已进入主线。当前公开口径是 targeted replay/readiness evidence，不声明完整 benchmark leaderboard 结论。
 
@@ -399,7 +402,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3468 passed / 15 skipped**（v0.7.0 Python release validation；Web UI 56 passed） |
+| 测试用例 | **3357 passed / 16 skipped**（v0.7.1 public Python release validation；Web UI 56 passed） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |
