@@ -17,6 +17,7 @@ from typing import Any, Deque
 
 from .command_normalization import normalize_shell_command_head
 from .detection_config import DetectionConfig
+from .effect_normalizer import artifact_families, effect_hash, normalize_action_effect, target_hashes
 from .models import CanonicalDecision, CanonicalEvent, EventType, RiskSnapshot
 
 
@@ -59,6 +60,41 @@ class AntiBypassRecord:
     recorded_at: str
     expires_at: str
     source_framework: str
+
+
+@dataclass(frozen=True)
+class DeniedEffectMemoryRecord:
+    event_id: str
+    record_id: int
+    session_id_hash: str
+    capability: str
+    effect_hash: str
+    target_hashes: tuple[str, ...]
+    artifact_families: tuple[str, ...]
+    policy_id: str
+    policy_version: str
+    decision: str
+    risk_level: str
+    occurred_at: str
+    recorded_at: str
+    expires_at: str
+
+
+@dataclass(frozen=True)
+class PendingEffectHoldRecord:
+    event_id: str
+    record_id: int
+    session_id_hash: str
+    capability: str
+    effect_hash: str
+    target_hashes: tuple[str, ...]
+    artifact_families: tuple[str, ...]
+    policy_id: str
+    decision: str
+    risk_level: str
+    occurred_at: str
+    recorded_at: str
+    expires_at: str
 
 
 @dataclass(frozen=True)
@@ -152,6 +188,8 @@ class AntiBypassGuard:
 
     def __init__(self) -> None:
         self._records: dict[str, Deque[AntiBypassRecord]] = defaultdict(deque)
+        self._denied_effects: dict[str, Deque[DeniedEffectMemoryRecord]] = defaultdict(deque)
+        self._pending_effect_holds: dict[str, Deque[PendingEffectHoldRecord]] = defaultdict(deque)
         self.memory_evictions: int = 0
 
     def match_pre_action(
@@ -169,6 +207,12 @@ class AntiBypassGuard:
         session_id = str(event.session_id or "")
         self._evict(session_id, config)
         current = _fingerprints_for_event(event)
+        effect_match = self._match_denied_effect(event, session_id, config)
+        if effect_match is not None:
+            return effect_match
+        pending_match = self._match_pending_effect_hold(event, session_id)
+        if pending_match is not None:
+            return pending_match
         tool_name = str(event.tool_name or "")
         ranked_matches: list[tuple[int, int, AntiBypassMatch]] = []
         for index, prior in enumerate(self._records.get(session_id, ())):
@@ -443,10 +487,23 @@ class AntiBypassGuard:
             return
         if event.event_type != EventType.PRE_ACTION:
             return
+        decision_value = str(getattr(decision.decision, "value", decision.decision))
         if getattr(decision, "final", None) is not True:
+            if decision_value == "defer":
+                session_id = str(event.session_id or "")
+                self._evict(session_id, config)
+                now = time.time()
+                self._record_pending_effect_hold(
+                    event=event,
+                    decision=decision,
+                    record_id=record_id,
+                    risk_level=str(getattr(decision.risk_level, "value", decision.risk_level)),
+                    recorded_at=_iso_from_ts(now),
+                    expires_at=_iso_from_ts(now + float(config.anti_bypass_memory_ttl_s)),
+                    config=config,
+                )
             return
 
-        decision_value = str(getattr(decision.decision, "value", decision.decision))
         if decision_value == "allow" and not config.anti_bypass_record_allow_decisions:
             return
         if decision_value not in set(config.anti_bypass_prior_verdicts) and not (
@@ -487,19 +544,266 @@ class AntiBypassGuard:
         while len(records) > config.anti_bypass_memory_max_records_per_session:
             records.popleft()
             self.memory_evictions += 1
+        if decision_value == "block":
+            self._record_denied_effect(
+                event=event,
+                decision=decision,
+                record_id=record_id,
+                risk_level=risk_level,
+                recorded_at=_iso_from_ts(now),
+                expires_at=_iso_from_ts(now + float(config.anti_bypass_memory_ttl_s)),
+                config=config,
+            )
 
     def records_for_session(self, session_id: str) -> list[dict[str, Any]]:
         """Return serialized compact records for tests and reporting hooks."""
         return [asdict(record) for record in self._records.get(str(session_id or ""), ())]
 
-    def _evict(self, session_id: str, config: DetectionConfig) -> None:
-        records = self._records.get(session_id)
-        if not records:
+    def denied_effect_records_for_session(self, session_id: str) -> list[dict[str, Any]]:
+        """Return serialized denied-effect records for tests/reporting hooks."""
+        return [asdict(record) for record in self._denied_effects.get(str(session_id or ""), ())]
+
+    def pending_effect_holds_for_session(self, session_id: str) -> list[dict[str, Any]]:
+        """Return serialized pending-effect holds for tests/reporting hooks."""
+        return [asdict(record) for record in self._pending_effect_holds.get(str(session_id or ""), ())]
+
+    def resolve_pending_effect_hold(
+        self,
+        *,
+        event: CanonicalEvent,
+        decision: CanonicalDecision,
+        record_id: int,
+        config: DetectionConfig,
+    ) -> None:
+        """Clear a pending hold and promote terminal blocks into denied memory."""
+        if not config.anti_bypass_guard_enabled:
             return
-        now = time.time()
-        while records and _parse_iso(records[0].expires_at) <= now:
+        session_id = str(event.session_id or "")
+        pending = self._pending_effect_holds.get(session_id)
+        if pending:
+            retained = deque(
+                record for record in pending
+                if record.event_id != str(event.event_id or "")
+            )
+            self._pending_effect_holds[session_id] = retained
+        decision_value = str(getattr(decision.decision, "value", decision.decision))
+        if getattr(decision, "final", None) is True and decision_value == "block":
+            now = time.time()
+            self._evict(session_id, config)
+            self._record_denied_effect(
+                event=event,
+                decision=decision,
+                record_id=record_id,
+                risk_level=str(getattr(decision.risk_level, "value", decision.risk_level)),
+                recorded_at=_iso_from_ts(now),
+                expires_at=_iso_from_ts(now + float(config.anti_bypass_memory_ttl_s)),
+                config=config,
+            )
+
+    def _record_denied_effect(
+        self,
+        *,
+        event: CanonicalEvent,
+        decision: CanonicalDecision,
+        record_id: int,
+        risk_level: str,
+        recorded_at: str,
+        expires_at: str,
+        config: DetectionConfig,
+    ) -> None:
+        envelope = normalize_action_effect(event)
+        effect_targets = tuple(target_hashes(envelope))
+        effect_families = tuple(artifact_families(envelope))
+        if not envelope.effects or (not effect_targets and not effect_families):
+            return
+        session_id = str(event.session_id or "")
+        records = self._denied_effects[session_id]
+        compact_capabilities = [
+            effect for effect in envelope.effects
+            if effect in {
+                "filesystem.write",
+                "network.fetch",
+                "command.exec",
+                "package.install",
+                "delegated_effect_request",
+            }
+        ]
+        for capability in compact_capabilities:
+            records.append(
+                DeniedEffectMemoryRecord(
+                    event_id=str(event.event_id or ""),
+                    record_id=int(record_id or 0),
+                    session_id_hash=_sha256(session_id),
+                    capability=capability,
+                    effect_hash=effect_hash(envelope),
+                    target_hashes=effect_targets,
+                    artifact_families=effect_families,
+                    policy_id=str(decision.policy_id or ""),
+                    policy_version=str(decision.policy_version or ""),
+                    decision="block",
+                    risk_level=risk_level,
+                    occurred_at=str(event.occurred_at or ""),
+                    recorded_at=recorded_at,
+                    expires_at=expires_at,
+                )
+            )
+        while len(records) > config.anti_bypass_memory_max_records_per_session:
             records.popleft()
             self.memory_evictions += 1
+
+    def _record_pending_effect_hold(
+        self,
+        *,
+        event: CanonicalEvent,
+        decision: CanonicalDecision,
+        record_id: int,
+        risk_level: str,
+        recorded_at: str,
+        expires_at: str,
+        config: DetectionConfig,
+    ) -> None:
+        envelope = normalize_action_effect(event)
+        effect_targets = tuple(target_hashes(envelope))
+        effect_families = tuple(artifact_families(envelope))
+        if not envelope.effects or (not effect_targets and not effect_families):
+            return
+        session_id = str(event.session_id or "")
+        records = self._pending_effect_holds[session_id]
+        compact_capabilities = [
+            effect for effect in envelope.effects
+            if effect in {
+                "filesystem.write",
+                "network.fetch",
+                "command.exec",
+                "package.install",
+                "delegated_effect_request",
+            }
+        ]
+        for capability in compact_capabilities:
+            records.append(
+                PendingEffectHoldRecord(
+                    event_id=str(event.event_id or ""),
+                    record_id=int(record_id or 0),
+                    session_id_hash=_sha256(session_id),
+                    capability=capability,
+                    effect_hash=effect_hash(envelope),
+                    target_hashes=effect_targets,
+                    artifact_families=effect_families,
+                    policy_id=str(decision.policy_id or ""),
+                    decision="defer",
+                    risk_level=risk_level,
+                    occurred_at=str(event.occurred_at or ""),
+                    recorded_at=recorded_at,
+                    expires_at=expires_at,
+                )
+            )
+        while len(records) > config.anti_bypass_memory_max_records_per_session:
+            records.popleft()
+            self.memory_evictions += 1
+
+    def _evict(self, session_id: str, config: DetectionConfig) -> None:
+        records = self._records.get(session_id)
+        now = time.time()
+        if records:
+            while records and _parse_iso(records[0].expires_at) <= now:
+                records.popleft()
+                self.memory_evictions += 1
+        denied_effects = self._denied_effects.get(session_id)
+        if denied_effects:
+            while denied_effects and _parse_iso(denied_effects[0].expires_at) <= now:
+                denied_effects.popleft()
+                self.memory_evictions += 1
+        pending_effect_holds = self._pending_effect_holds.get(session_id)
+        if pending_effect_holds:
+            while pending_effect_holds and _parse_iso(pending_effect_holds[0].expires_at) <= now:
+                pending_effect_holds.popleft()
+                self.memory_evictions += 1
+
+    def _match_denied_effect(
+        self,
+        event: CanonicalEvent,
+        session_id: str,
+        config: DetectionConfig,
+    ) -> AntiBypassMatch | None:
+        current_effect = normalize_action_effect(event)
+        current_targets = set(target_hashes(current_effect))
+        current_families = set(artifact_families(current_effect))
+        current_capabilities = set(current_effect.effects)
+        if not current_capabilities:
+            return None
+
+        for prior in reversed(self._denied_effects.get(session_id, ())):
+            if prior.capability not in current_capabilities:
+                continue
+            target_match = bool(current_targets.intersection(prior.target_hashes))
+            family_match = bool(current_families.intersection(prior.artifact_families))
+            if not target_match and not family_match:
+                continue
+            reason_codes = ["denied_effect_repeat"]
+            if family_match and not target_match:
+                reason_codes.append("artifact_family_match")
+            action = "block"
+            if family_match and not target_match and config.mode in {"normal", "permissive"}:
+                action = "defer"
+            return AntiBypassMatch(
+                match_type="denied_effect_repeat",
+                action=action,
+                prior_event_id=prior.event_id,
+                prior_record_id=prior.record_id,
+                prior_policy_id=prior.policy_id,
+                prior_risk_level=prior.risk_level,
+                raw_payload_hash=current_effect.raw_payload_hash or "",
+                normalized_action_fingerprint=current_effect.canonical_argv_hash or "",
+                destructive_intent_fingerprint=effect_hash(current_effect),
+                destructive_intent_label=prior.capability,
+                destructive_operation_category=prior.capability,
+                match_reason="effect_target" if target_match else "artifact_family",
+                similarity_mode="effect_hash",
+                reason_codes=tuple(reason_codes),
+                evidence_categories=(prior.capability,),
+            )
+        return None
+
+    def _match_pending_effect_hold(
+        self,
+        event: CanonicalEvent,
+        session_id: str,
+    ) -> AntiBypassMatch | None:
+        current_effect = normalize_action_effect(event)
+        current_targets = set(target_hashes(current_effect))
+        current_families = set(artifact_families(current_effect))
+        current_capabilities = set(current_effect.effects)
+        if not current_capabilities:
+            return None
+
+        for prior in reversed(self._pending_effect_holds.get(session_id, ())):
+            if prior.capability not in current_capabilities:
+                continue
+            target_match = bool(current_targets.intersection(prior.target_hashes))
+            family_match = bool(current_families.intersection(prior.artifact_families))
+            if not target_match and not family_match:
+                continue
+            reason_codes = ["pending_effect_equivalent"]
+            if family_match and not target_match:
+                reason_codes.append("artifact_family_match")
+            return AntiBypassMatch(
+                match_type="pending_effect_equivalent",
+                action="defer",
+                prior_event_id=prior.event_id,
+                prior_record_id=prior.record_id,
+                prior_policy_id=prior.policy_id,
+                prior_risk_level=prior.risk_level,
+                raw_payload_hash=current_effect.raw_payload_hash or "",
+                normalized_action_fingerprint=current_effect.canonical_argv_hash or "",
+                destructive_intent_fingerprint=effect_hash(current_effect),
+                destructive_intent_label=prior.capability,
+                destructive_operation_category=prior.capability,
+                match_reason="effect_target" if target_match else "artifact_family",
+                similarity_mode="pending_effect_hold",
+                reason_codes=tuple(reason_codes),
+                evidence_categories=(prior.capability,),
+            )
+        return None
 
 
 def _eligible_prior(record: AntiBypassRecord, config: DetectionConfig) -> bool:

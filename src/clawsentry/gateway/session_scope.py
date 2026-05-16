@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Iterable
 from urllib.parse import urlparse
 
+from .effect_normalizer import normalize_action_effect
 from .models import (
     CanonicalEvent,
     DecisionContext,
@@ -86,6 +87,7 @@ def evaluate_session_scope(
     tool = (event.tool_name or "").lower()
     paths = _event_paths(event, command)
     domains = _event_domains(event, command)
+    capabilities = tuple(normalize_action_effect(event, context).effects)
     skill_id = _context_skill_id(context)
     skill_trust_state = _context_skill_trust_state(context)
     skill_identity_untrusted = _context_skill_identity_untrusted(context)
@@ -106,6 +108,7 @@ def evaluate_session_scope(
         mcp_tool,
         mcp_status,
         mcp_trust_level,
+        capabilities,
     )
     if deny_reasons:
         return SessionScopeEvaluation(
@@ -127,6 +130,7 @@ def evaluate_session_scope(
         mcp_tool,
         mcp_status,
         mcp_trust_level,
+        capabilities,
     )
     defer_reasons = _task_defer_reasons(
         profile,
@@ -142,6 +146,7 @@ def evaluate_session_scope(
         mcp_tool,
         mcp_status,
         mcp_trust_level,
+        capabilities,
     )
     if defer_reasons:
         return SessionScopeEvaluation(
@@ -269,6 +274,7 @@ def _base_deny_reasons(
     mcp_tool: str | None,
     mcp_status: str | None,
     mcp_trust_level: str | None,
+    capabilities: Iterable[str],
 ) -> list[str]:
     reasons: list[str] = []
     if tool and _contains_ci(profile.base_rules.denied_tools, tool):
@@ -296,6 +302,9 @@ def _base_deny_reasons(
         reasons.append(f"scope_deny:mcp_status {mcp_status}")
     if mcp_trust_level and _contains_ci(profile.base_rules.denied_mcp_trust_levels, mcp_trust_level):
         reasons.append(f"scope_deny:mcp_trust_level {mcp_trust_level}")
+    for capability in capabilities:
+        if _contains_ci(profile.base_rules.denied_capabilities, capability):
+            reasons.append(f"scope_deny:capability {capability}")
     if _DESTRUCTIVE_COMMAND_RE.search(command):
         # User-friendly base invariant even when the profile author forgot the
         # exact command prefix.
@@ -316,6 +325,7 @@ def _task_allow_reasons(
     mcp_tool: str | None,
     mcp_status: str | None,
     mcp_trust_level: str | None,
+    capabilities: Iterable[str],
 ) -> list[str]:
     reasons: list[str] = []
     if tool and _contains_ci(profile.task_rules.allowed_tools, tool):
@@ -351,6 +361,9 @@ def _task_allow_reasons(
         reasons.append(f"scope_allow:mcp_status {mcp_status}")
     if mcp_trust_level and _contains_ci(profile.task_rules.allowed_mcp_trust_levels, mcp_trust_level):
         reasons.append(f"scope_allow:mcp_trust_level {mcp_trust_level}")
+    for capability in capabilities:
+        if _contains_ci(profile.task_rules.allowed_capabilities, capability):
+            reasons.append(f"scope_allow:capability {capability}")
     return reasons
 
 
@@ -368,6 +381,7 @@ def _task_defer_reasons(
     mcp_tool: str | None,
     mcp_status: str | None,
     mcp_trust_level: str | None,
+    capabilities: Iterable[str],
 ) -> list[str]:
     reasons: list[str] = []
     task = profile.task_rules
@@ -421,6 +435,14 @@ def _task_defer_reasons(
         event.payload.get("url") or domains
     ) and not task.allowed_domains and "network" not in task.queued_categories:
         reasons.append("scope_defer:network_unscoped")
+    if task.queued_capabilities:
+        for capability in capabilities:
+            if _contains_ci(task.queued_capabilities, capability):
+                reasons.append(f"scope_defer:queued_capability {capability}")
+    if task.allowed_capabilities:
+        for capability in capabilities:
+            if not _contains_ci(task.allowed_capabilities, capability):
+                reasons.append(f"scope_defer:unknown_capability {capability}")
     return list(dict.fromkeys(reasons))
 
 

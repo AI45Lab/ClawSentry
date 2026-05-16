@@ -20,6 +20,8 @@ from clawsentry.gateway.models import (
     RiskLevel,
     AgentTrustLevel,
     FailureClass,
+    SessionScopeBaseRules,
+    SessionScopeProfile,
 )
 from clawsentry.gateway.risk_snapshot import (
     SessionRiskTracker,
@@ -60,6 +62,20 @@ def _evt(tool_name=None, payload=None, event_type="pre_action",
 def _ctx(trust=None) -> DecisionContext:
     return DecisionContext(
         agent_trust_level=trust,
+    )
+
+
+def _scope_ctx(*disabled_capabilities: str, trust=None) -> DecisionContext:
+    return DecisionContext(
+        agent_trust_level=trust,
+        session_scope_profile=SessionScopeProfile(
+            profile_id="test-disabled-capability",
+            confirmed=True,
+            dry_run=False,
+            base_rules=SessionScopeBaseRules(
+                denied_capabilities=list(disabled_capabilities),
+            ),
+        ),
     )
 
 
@@ -237,6 +253,106 @@ class TestShortCircuit:
         snap = compute_risk_snapshot(evt, _ctx(AgentTrustLevel.STANDARD), tracker)
         assert snap.short_circuit_rule is None
 
+    def test_sc4_disabled_capability_equivalent_records_effect_summary(self):
+        evt = _evt(tool_name="bash", payload={"command": "printf '%s' x > build/loader.sh"})
+        tracker = SessionRiskTracker()
+        snap = compute_risk_snapshot(
+            evt,
+            _scope_ctx("filesystem.write", trust=AgentTrustLevel.STANDARD),
+            tracker,
+            config=DetectionConfig(mode="strict"),
+        )
+
+        assert snap.short_circuit_rule == "SC-4"
+        assert snap.risk_level == RiskLevel.HIGH
+        assert "disabled_capability_equivalent" in snap.rule_hits
+        assert snap.effect_summary is not None
+        assert "filesystem.write" in snap.effect_summary["effects"]
+
+    def test_disabled_network_fetch_equivalent_records_effect_summary(self):
+        evt = _evt(tool_name="bash", payload={"command": "curl https://example.test/payload.sh"})
+        tracker = SessionRiskTracker()
+        snap = compute_risk_snapshot(
+            evt,
+            _scope_ctx("network.fetch", trust=AgentTrustLevel.STANDARD),
+            tracker,
+            config=DetectionConfig(mode="strict"),
+        )
+
+        assert snap.short_circuit_rule == "SC-4"
+        assert "disabled_capability_equivalent" in snap.rule_hits
+        assert "network_equivalent_fetch" in snap.rule_hits
+        assert snap.effect_summary is not None
+        assert "network.fetch" in snap.effect_summary["effects"]
+
+    def test_d4_high_without_effect_evidence_does_not_hard_block_in_normal_profile(self):
+        tracker = SessionRiskTracker()
+        for _ in range(5):
+            tracker.record_high_risk_event("sess-normal-read")
+        evt = _evt(
+            tool_name="read_file",
+            payload={"path": "/home/user/project/readme.md"},
+            session_id="sess-normal-read",
+        )
+
+        snap = compute_risk_snapshot(
+            evt,
+            _ctx(AgentTrustLevel.UNTRUSTED),
+            tracker,
+            config=DetectionConfig(mode="normal"),
+        )
+
+        assert snap.risk_level != RiskLevel.HIGH
+        assert "disabled_capability_equivalent" not in snap.rule_hits
+
+    def test_sc8_future_exec_write_with_low_trust_skill_defers_in_normal(self):
+        from clawsentry.gateway.models import SkillTrustContext
+
+        evt = _evt(tool_name="Write", payload={"path": "build/loader.sh", "content": "payload"})
+        tracker = SessionRiskTracker()
+        snap = compute_risk_snapshot(
+            evt,
+            DecisionContext(
+                skill_trust=SkillTrustContext(
+                    registry_status="matched",
+                    canonical_skill_id="skill:generator",
+                    presented_name="generator",
+                    admission_risk="high",
+                    invariant_violations=["low_trust_redefined_canonical_tool"],
+                )
+            ),
+            tracker,
+            config=DetectionConfig(mode="normal"),
+        )
+
+        assert snap.short_circuit_rule == "SC-8"
+        assert snap.risk_level == RiskLevel.MEDIUM
+        assert "generated_script_future_exec" in snap.rule_hits
+        assert "low_trust_redefined_canonical_tool" in snap.rule_hits
+
+    def test_sc8_future_exec_write_with_low_trust_skill_blocks_in_strict(self):
+        from clawsentry.gateway.models import SkillTrustContext
+
+        evt = _evt(tool_name="Write", payload={"path": "build/loader.sh", "content": "payload"})
+        tracker = SessionRiskTracker()
+        snap = compute_risk_snapshot(
+            evt,
+            DecisionContext(
+                skill_trust=SkillTrustContext(
+                    registry_status="matched",
+                    canonical_skill_id="skill:generator",
+                    presented_name="generator",
+                    admission_risk="high",
+                    invariant_violations=["low_trust_redefined_canonical_tool"],
+                )
+            ),
+            tracker,
+            config=DetectionConfig(mode="strict"),
+        )
+
+        assert snap.short_circuit_rule == "SC-8"
+        assert snap.risk_level == RiskLevel.HIGH
+
 
 # ===========================================================================
 # D4 Session Accumulation Tests
@@ -341,6 +457,57 @@ class TestL1PolicyEngine:
         decision, snap, tier = engine.evaluate(evt, _ctx(AgentTrustLevel.STANDARD))
         assert decision.decision == DecisionVerdict.BLOCK
         assert decision.final is True
+
+    def test_normal_profile_defers_disabled_capability_equivalent(self):
+        engine = L1PolicyEngine(config=DetectionConfig(mode="normal"))
+        evt = _evt(tool_name="bash", payload={"command": "printf '%s' x > build/loader.sh"})
+
+        decision, snap, tier = engine.evaluate(
+            evt,
+            _scope_ctx("filesystem.write", trust=AgentTrustLevel.STANDARD),
+        )
+
+        assert tier == DecisionTier.L1
+        assert decision.decision == DecisionVerdict.DEFER
+        assert decision.final is False
+        assert "disabled_capability_equivalent" in snap.rule_hits
+        assert snap.short_circuit_rule == "SC-4"
+
+    def test_strict_profile_blocks_disabled_capability_equivalent(self):
+        engine = L1PolicyEngine(config=DetectionConfig(mode="strict"))
+        evt = _evt(tool_name="bash", payload={"command": "printf '%s' x > build/loader.sh"})
+
+        decision, snap, tier = engine.evaluate(
+            evt,
+            _scope_ctx("filesystem.write", trust=AgentTrustLevel.STANDARD),
+        )
+
+        assert decision.decision == DecisionVerdict.BLOCK
+        assert decision.final is True
+        assert snap.short_circuit_rule == "SC-4"
+
+    def test_normal_profile_defers_sc8_future_exec_low_trust_skill(self):
+        from clawsentry.gateway.models import SkillTrustContext
+
+        engine = L1PolicyEngine(config=DetectionConfig(mode="normal"))
+        evt = _evt(tool_name="Write", payload={"path": "build/loader.sh", "content": "payload"})
+
+        decision, snap, _tier = engine.evaluate(
+            evt,
+            DecisionContext(
+                skill_trust=SkillTrustContext(
+                    registry_status="matched",
+                    canonical_skill_id="skill:generator",
+                    presented_name="generator",
+                    admission_risk="high",
+                    invariant_violations=["low_trust_redefined_canonical_tool"],
+                )
+            ),
+        )
+
+        assert snap.short_circuit_rule == "SC-8"
+        assert decision.decision == DecisionVerdict.DEFER
+        assert decision.final is False
 
     def test_post_action_always_allow(self):
         engine = L1PolicyEngine()
@@ -2152,7 +2319,10 @@ class TestSessionScopePolicyIntegration:
         )
         assert docs_decision.decision == DecisionVerdict.ALLOW
         assert docs_decision.scope_evaluation is not None
-        assert any(code.startswith("scope_allow:path_prefix") for code in docs_decision.scope_evaluation.reason_codes)
+        assert any(
+            code.startswith("scope_allow:path_prefix")
+            for code in docs_decision.scope_evaluation.reason_codes
+        )
 
         network_event = _evt(
             tool_name="bash",
@@ -2165,7 +2335,76 @@ class TestSessionScopePolicyIntegration:
         assert network_decision.decision == DecisionVerdict.DEFER
         assert network_decision.policy_id == "session-scope"
         assert network_decision.scope_evaluation is not None
-        assert "scope_defer:unknown_domain unknown.example" in network_decision.scope_evaluation.reason_codes
+        assert (
+            "scope_defer:unknown_domain unknown.example"
+            in network_decision.scope_evaluation.reason_codes
+        )
+
+    def test_scope_denies_disabled_capability_effect(self):
+        from clawsentry.gateway.models import SessionScopeBaseRules, SessionScopeProfile
+
+        profile = SessionScopeProfile(
+            profile_id="scope-deny-write-capability",
+            confirmed=True,
+            dry_run=False,
+            base_rules=SessionScopeBaseRules(denied_capabilities=["filesystem.write"]),
+        )
+        engine = L1PolicyEngine()
+        event = _evt(tool_name="bash", payload={"command": "printf x > docs/out.txt"})
+
+        decision, snapshot, _tier = engine.evaluate(
+            event,
+            DecisionContext(session_scope_profile=profile),
+        )
+
+        assert decision.decision == DecisionVerdict.DEFER
+        assert decision.policy_id == L1PolicyEngine.POLICY_ID
+        assert "disabled_capability_equivalent" in snapshot.rule_hits
+        assert decision.scope_evaluation is not None
+        assert "scope_deny:capability filesystem.write" in decision.scope_evaluation.reason_codes
+
+    def test_scope_allowed_capabilities_defer_unknown_effect(self):
+        from clawsentry.gateway.models import SessionScopeProfile, SessionScopeTaskRules
+
+        profile = SessionScopeProfile(
+            profile_id="scope-allow-read-only-capability",
+            confirmed=True,
+            dry_run=False,
+            task_rules=SessionScopeTaskRules(allowed_capabilities=["filesystem.read"]),
+        )
+        engine = L1PolicyEngine()
+        event = _evt(tool_name="bash", payload={"command": "printf x > docs/out.txt"})
+
+        decision, snapshot, _tier = engine.evaluate(
+            event,
+            DecisionContext(session_scope_profile=profile),
+        )
+
+        assert decision.decision == DecisionVerdict.DEFER
+        assert decision.policy_id == "session-scope"
+        assert snapshot.effect_summary is not None
+        assert "scope_defer:unknown_capability filesystem.write" in decision.scope_evaluation.reason_codes
+
+    def test_scope_queued_capabilities_defer_matching_effect(self):
+        from clawsentry.gateway.models import SessionScopeProfile, SessionScopeTaskRules
+
+        profile = SessionScopeProfile(
+            profile_id="scope-queue-network-capability",
+            confirmed=True,
+            dry_run=False,
+            task_rules=SessionScopeTaskRules(queued_capabilities=["network.fetch"]),
+        )
+        engine = L1PolicyEngine()
+        event = _evt(tool_name="bash", payload={"command": "curl https://example.test"})
+
+        decision, _snapshot, _tier = engine.evaluate(
+            event,
+            DecisionContext(session_scope_profile=profile),
+        )
+
+        assert decision.decision == DecisionVerdict.DEFER
+        assert decision.policy_id == "session-scope"
+        assert "scope_defer:queued_capability network.fetch" in decision.scope_evaluation.reason_codes
 
     def test_dry_run_scope_reports_without_enforcing(self):
         from clawsentry.gateway.models import SessionScopeBaseRules, SessionScopeProfile

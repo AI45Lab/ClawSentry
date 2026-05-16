@@ -226,6 +226,12 @@ def add_resolve_endpoint(app, approval_client, defer_manager=None):
             or body.get("replacement_payload")
         )
         resolver_identity = body.get("resolver_identity") or body.get("resolved_by")
+        resolution_binding = body.get("resolution_binding")
+        if resolution_binding is not None and not isinstance(resolution_binding, dict):
+            return JSONResponse(
+                {"error": "resolution_binding must be an object"},
+                status_code=400,
+            )
 
         if not approval_id or not decision:
             return JSONResponse(
@@ -264,6 +270,7 @@ def add_resolve_endpoint(app, approval_client, defer_manager=None):
                         if resolver_identity is not None
                         else None
                     ),
+                    resolution_binding=resolution_binding,
                 )
                 return JSONResponse({"status": "ok", "approval_id": approval_id})
 

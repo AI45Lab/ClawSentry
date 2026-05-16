@@ -1318,6 +1318,72 @@ def _payload_hash(payload: Any) -> str:
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
+def _approval_binding_from_snapshot(
+    *,
+    event: dict[str, Any],
+    snapshot: dict[str, Any],
+    context: DecisionContext | None,
+) -> dict[str, Any] | None:
+    effect_summary = snapshot.get("effect_summary")
+    if not isinstance(effect_summary, dict):
+        return None
+    binding: dict[str, Any] = {}
+    for source_key, target_key in (
+        ("canonical_argv_hash", "canonical_argv_hash"),
+        ("raw_payload_hash", "raw_payload_hash"),
+    ):
+        value = effect_summary.get(source_key)
+        if value:
+            binding[target_key] = str(value)
+    targets = effect_summary.get("targets")
+    if isinstance(targets, list) and targets:
+        binding["effect_hash"] = _payload_hash({
+            "effects": effect_summary.get("effects") or [],
+            "targets": [
+                {
+                    "kind": target.get("kind"),
+                    "path_hash": target.get("path_hash"),
+                    "path_role": target.get("path_role"),
+                }
+                for target in targets
+                if isinstance(target, dict)
+            ],
+        })
+    session_id = event.get("session_id")
+    agent_id = event.get("agent_id")
+    if session_id:
+        binding["session_id"] = str(session_id)
+    if agent_id:
+        binding["agent_id"] = str(agent_id)
+    if context and context.session_scope_profile:
+        profile = context.session_scope_profile
+        binding["capability_profile_id"] = profile.profile_id
+        binding["profile_fingerprint"] = _payload_hash(profile.model_dump(mode="json"))
+    cwd = event.get("cwd") or event.get("working_directory")
+    payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
+    if cwd is None:
+        cwd = payload.get("cwd") or payload.get("working_directory")
+    if cwd:
+        binding["cwd_hash"] = _payload_hash(str(cwd))
+    policy_projection = {
+        "schema": "cs.approval_binding_policy.v1",
+        "effect_schema": effect_summary.get("schema"),
+        "profile_id": binding.get("capability_profile_id"),
+    }
+    binding["policy_fingerprint"] = _payload_hash(policy_projection)
+    binding["env_fingerprint"] = _payload_hash({
+        "schema": "cs.policy_env_fingerprint.v1",
+        "env": "unavailable",
+    })
+    return binding or None
+
+
+def _event_for_effect_resolution(event: CanonicalEvent) -> CanonicalEvent:
+    if event.event_type == EventType.PRE_ACTION:
+        return event
+    return event.model_copy(update={"event_type": EventType.PRE_ACTION})
+
+
 def _redacted_preview(value: Any, *, max_len: int = 96) -> str:
     if isinstance(value, dict):
         for key in ("command", "input", "tool_input"):
@@ -2205,6 +2271,8 @@ class SupervisionGateway:
                     "exact_raw_repeat": "anti-bypass-exact-repeat",
                     "normalized_destructive_repeat": "anti-bypass-normalized-repeat",
                     "cross_tool_script_similarity": "anti-bypass-cross-tool-review",
+                    "denied_effect_repeat": "anti-bypass-denied-effect-repeat",
+                    "pending_effect_equivalent": "anti-bypass-pending-effect-review",
                 }.get(anti_bypass_match.match_type, "anti-bypass-follow-up-guard")
                 decision = CanonicalDecision(
                     decision=verdict,
@@ -2227,6 +2295,23 @@ class SupervisionGateway:
                         deadline_budget_ms=remaining_ms,
                         config=project_config,
                     )
+                    if anti_bypass_match.match_type in {
+                        "denied_effect_repeat",
+                        "pending_effect_equivalent",
+                    }:
+                        rule_hits = list(snapshot.rule_hits or [])
+                        match_rule = (
+                            "denied_effect_repeat"
+                            if anti_bypass_match.match_type == "denied_effect_repeat"
+                            else "pending_effect_equivalent"
+                        )
+                        for rule_id in (match_rule, *anti_bypass_match.reason_codes):
+                            if rule_id and rule_id not in rule_hits:
+                                rule_hits.append(rule_id)
+                        update = {"rule_hits": rule_hits}
+                        if anti_bypass_match.match_type == "denied_effect_repeat":
+                            update["short_circuit_rule"] = "SC-5"
+                        snapshot = snapshot.model_copy(update=update)
                 except Exception:
                     logger.exception("Policy engine error during anti-bypass snapshot")
                     from .policy_engine import RiskSnapshot
@@ -2307,6 +2392,8 @@ class SupervisionGateway:
             meta_dict["anti_bypass_memory_evictions"] = self.anti_bypass_guard.memory_evictions
         if anti_bypass_probe is not None:
             meta_dict["anti_bypass_probe"] = anti_bypass_probe
+        if snapshot_dict.get("effect_summary") is not None:
+            meta_dict["action_effect_summary"] = snapshot_dict["effect_summary"]
         compat_evidence_summary = build_compatibility_evidence_summary(event_dict)
         if compat_evidence_summary is not None:
             # Operator-facing replay/session summaries only; not a canonical
@@ -2613,6 +2700,8 @@ class SupervisionGateway:
         if effect_summary is not None:
             decision_event["effect_summary"] = effect_summary
             decision_event["decision_effect_summary"] = effect_summary
+        if meta_dict.get("action_effect_summary") is not None:
+            decision_event["action_effect_summary"] = meta_dict["action_effect_summary"]
         if decision_dict.get("scope_evaluation") is not None:
             decision_event["scope_evaluation"] = decision_dict["scope_evaluation"]
         for key in (
@@ -2785,7 +2874,7 @@ class SupervisionGateway:
                     approval_reason_code=_APPROVAL_NO_ROUTE_REASON_CODE,
                     approval_timeout_s=approval_timeout_s,
                 )
-                self._record_decision_path(
+                resolution_record_id = self._record_decision_path(
                     event=resolution_event,
                     decision=decision_dict,
                     snapshot=snapshot_dict,
@@ -2795,6 +2884,12 @@ class SupervisionGateway:
                         "record_type": "decision_resolution",
                     },
                     l3_trace=l3_trace,
+                )
+                self.anti_bypass_guard.resolve_pending_effect_hold(
+                    event=_event_for_effect_resolution(req.event),
+                    decision=decision,
+                    record_id=resolution_record_id,
+                    config=effective_config,
                 )
                 self.event_bus.broadcast({
                     "type": "defer_resolved",
@@ -2810,6 +2905,11 @@ class SupervisionGateway:
                 session_id=session_id,
                 tool_name=req.event.tool_name or "",
                 summary=str(req.event.payload.get("command", "") if req.event.payload else "") or None,
+                approval_binding=_approval_binding_from_snapshot(
+                    event=event_dict,
+                    snapshot=snapshot_dict,
+                    context=req.context,
+                ),
             ):
                 decision = CanonicalDecision(
                     decision=DecisionVerdict.BLOCK,
@@ -2829,7 +2929,7 @@ class SupervisionGateway:
                     approval_reason_code=_APPROVAL_QUEUE_FULL_REASON_CODE,
                     approval_timeout_s=approval_timeout_s,
                 )
-                self._record_decision_path(
+                resolution_record_id = self._record_decision_path(
                     event=resolution_event,
                     decision=decision_dict,
                     snapshot=snapshot_dict,
@@ -2839,6 +2939,12 @@ class SupervisionGateway:
                         "record_type": "decision_resolution",
                     },
                     l3_trace=l3_trace,
+                )
+                self.anti_bypass_guard.resolve_pending_effect_hold(
+                    event=_event_for_effect_resolution(req.event),
+                    decision=decision,
+                    record_id=resolution_record_id,
+                    config=effective_config,
                 )
                 self.event_bus.broadcast({
                     "type": "defer_resolved",
@@ -2987,7 +3093,7 @@ class SupervisionGateway:
                     approval_reason_code=approval_reason_code,
                     approval_timeout_s=float(approval_record.timeout_s or approval_timeout_s),
                 )
-                self._record_decision_path(
+                resolution_record_id = self._record_decision_path(
                     event=resolution_event,
                     decision=decision_dict,
                     snapshot=snapshot_dict,
@@ -2997,6 +3103,12 @@ class SupervisionGateway:
                         "record_type": "decision_resolution",
                     },
                     l3_trace=l3_trace,
+                )
+                self.anti_bypass_guard.resolve_pending_effect_hold(
+                    event=_event_for_effect_resolution(req.event),
+                    decision=decision,
+                    record_id=resolution_record_id,
+                    config=effective_config,
                 )
                 self.metrics.defer_resolved()
                 self.event_bus.broadcast({
@@ -3017,7 +3129,14 @@ class SupervisionGateway:
             and not enforcement_applied
         ):
             defer_id = f"cs-defer-{uuid.uuid4().hex[:12]}"
-            if not self.defer_manager.register_defer(defer_id):
+            if not self.defer_manager.register_defer(
+                defer_id,
+                approval_binding=_approval_binding_from_snapshot(
+                    event=event_dict,
+                    snapshot=snapshot_dict,
+                    context=req.context,
+                ),
+            ):
                 # Queue full — fall back to block
                 decision = CanonicalDecision(
                     decision=DecisionVerdict.BLOCK,
@@ -3045,7 +3164,7 @@ class SupervisionGateway:
                     **meta_dict,
                     **resolution_approval,
                 }
-                self._record_decision_path(
+                resolution_record_id = self._record_decision_path(
                     event=resolution_event,
                     decision=decision_dict,
                     snapshot=snapshot_dict,
@@ -3054,6 +3173,12 @@ class SupervisionGateway:
                         "record_type": "decision_resolution",
                     },
                     l3_trace=l3_trace,
+                )
+                self.anti_bypass_guard.resolve_pending_effect_hold(
+                    event=_event_for_effect_resolution(req.event),
+                    decision=decision,
+                    record_id=resolution_record_id,
+                    config=effective_config,
                 )
                 self.event_bus.broadcast({
                     "type": "defer_resolved",
@@ -3209,7 +3334,7 @@ class SupervisionGateway:
                     **meta_dict,
                     **resolution_approval,
                 }
-                self._record_decision_path(
+                resolution_record_id = self._record_decision_path(
                     event=resolution_event,
                     decision=decision_dict,
                     snapshot=snapshot_dict,
@@ -3218,6 +3343,12 @@ class SupervisionGateway:
                         "record_type": "decision_resolution",
                     },
                     l3_trace=l3_trace,
+                )
+                self.anti_bypass_guard.resolve_pending_effect_hold(
+                    event=_event_for_effect_resolution(req.event),
+                    decision=decision,
+                    record_id=resolution_record_id,
+                    config=effective_config,
                 )
 
                 self.metrics.defer_resolved()

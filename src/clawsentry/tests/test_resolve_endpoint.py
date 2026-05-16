@@ -219,6 +219,71 @@ class TestResolveDeferManager:
         mock_approval_client.resolve.assert_not_awaited()
 
     @pytest.mark.asyncio
+    async def test_resolve_local_bridge_passes_resolution_binding(
+        self, gateway, defer_manager, mock_approval_client,
+    ):
+        binding = {
+            "effect_hash": "sha256:effect",
+            "canonical_argv_hash": "sha256:argv",
+            "profile_fingerprint": "sha256:profile",
+        }
+        assert defer_manager.register_approval(
+            "approval-bound-001",
+            approval_kind="defer",
+            approval_binding=binding,
+        ) is True
+        app = create_http_app(gateway)
+        add_resolve_endpoint(app, mock_approval_client, defer_manager=defer_manager)
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            resp = await client.post("/ahp/resolve", json={
+                "approval_id": "approval-bound-001",
+                "decision": "allow-once",
+                "reason": "operator approved",
+                "resolution_binding": {
+                    **binding,
+                    "effect_hash": "sha256:mutated",
+                },
+            })
+
+        assert resp.status_code == 200
+        approval = defer_manager.get_approval("approval-bound-001")
+        assert approval.decision == "block"
+        assert approval.reason_code == "approval_binding_drift"
+        mock_approval_client.resolve.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_resolve_local_bridge_rejects_missing_resolution_binding_for_bound_approval(
+        self, gateway, defer_manager, mock_approval_client,
+    ):
+        assert defer_manager.register_approval(
+            "approval-bound-missing-001",
+            approval_kind="defer",
+            approval_binding={"effect_hash": "sha256:effect"},
+        ) is True
+        app = create_http_app(gateway)
+        add_resolve_endpoint(app, mock_approval_client, defer_manager=defer_manager)
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            resp = await client.post("/ahp/resolve", json={
+                "approval_id": "approval-bound-missing-001",
+                "decision": "allow-once",
+                "reason": "operator approved",
+            })
+
+        assert resp.status_code == 200
+        approval = defer_manager.get_approval("approval-bound-missing-001")
+        assert approval.decision == "block"
+        assert approval.reason_code == "approval_binding_drift"
+        mock_approval_client.resolve.assert_not_awaited()
+
+    @pytest.mark.asyncio
     async def test_resolve_defer_manager_not_pending_fallback(
         self, gateway, defer_manager, mock_approval_client,
     ):

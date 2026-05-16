@@ -8,6 +8,31 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.7.2] — 2026-05-16
+
+### 新增
+
+- **Anti-bypass L1 capability-equivalence enforcement** — 新增 redacted action-effect normalization，将 shell、API、文件写入、下载执行、网络传输和持久化入口写入等行为统一为 capability / scope / sink-source / sensitivity / evidence markers，不持久化原始命令、路径、URL、环境变量值或 secret。
+- **Denied and pending effect ledgers** — Anti-bypass guard 现在会记录被拒绝和待审批的 session-level effect summary，后续等价效果不能通过换工具、换 shell 语法或换表达形式重新进入 allow 路径。
+- **Approval effect binding** — defer / approval resolution 绑定被审批的 effect；缺失 binding、binding 不完整或审批后效果漂移时失败关闭。
+
+### 改进
+
+- **Profile-aware fallback and scope behavior** — normal / benchmark / strict profile 的 defer、block、force review 与 session scope fallback 口径对齐 SC-4/SC-7/SC-8。
+- **Replay coverage** — 新增 14-case anti-bypass L1 replay fixture，覆盖 training、holdout 和 false-positive guard；replay 报告补齐 evidence、fallback、rule 与 schema sync coverage。
+- **Wrapper parsing hardening** — 改进 network download write、PowerShell quoted path 与等价执行效果识别，减少文本级绕过。
+
+### 测试与验证
+
+- Python 完整回归：开发仓库 `python -m pytest -q` → `3563 passed, 15 skipped`；公开仓库 release surface（不含根目录 `benchmarks/`）→ `3419 passed, 16 skipped`。
+- AHP anti-bypass L1 replay：14 cases，`decision_match_rate=1.0`、`unsafe_pass_proxy=0.0`、`overblock_proxy=0.0`、`evidence_coverage=1.0`、`fallback_correctness=1.0`、`rule_coverage=1.0`、`schema_sync_coverage=1.0`。
+- Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
+
+### 边界
+
+- Replay proxy 指标是离线 policy-regression 证据，不声明完整 benchmark leaderboard、ASR/TSR/TFR 排名或 full raw-vs-protected sweep。
+- Effect summary、ledger、replay 和公开文档继续保持脱敏边界，不写入原始命令、私有路径、secret、API key 或环境变量值。
+
 ## [0.7.1] — 2026-05-16
 
 ### 修复
@@ -1510,5 +1535,6 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.7.2]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.2
 [0.7.1]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.0

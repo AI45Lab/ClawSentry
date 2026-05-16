@@ -138,10 +138,10 @@ clawsentry service validate --env-file /etc/clawsentry/gateway.env
 
 ## 发布状态核对 {#release-status}
 
-截至 2026-05-16，本仓库发布面刷新到 `v0.7.1`：
+截至 2026-05-16，本仓库发布面刷新到 `v0.7.2`：
 
-- GitHub latest release / tags：`v0.7.1`
-- PyPI：`clawsentry` 最新版本为 `0.7.1`
-- 运行时配置来源仍保持 env-first strict split；v0.7.0 起新增 Skill Trust registry/preflight、capability narrowing、agent safety feedback 和 policy drift traceability 配置面；benchmark / dry-run / no-network 模式默认不自动启用外部 LLM recognition
+- GitHub latest release / tags：`v0.7.2`
+- PyPI：`clawsentry` 最新版本为 `0.7.2`
+- 运行时配置来源仍保持 env-first strict split；v0.7.2 起 Anti-bypass L1 使用脱敏 effect summary、denied/pending effect ledger 和 approval binding 处理等价绕过；benchmark / dry-run / no-network 模式默认不自动启用外部 LLM recognition
 
 若你看到更早版本，优先清浏览器/CDN 缓存，并确认访问的是 <https://github.com/Elroyper/ClawSentry> 与 <https://pypi.org/project/clawsentry/>。

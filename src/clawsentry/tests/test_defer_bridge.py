@@ -113,6 +113,8 @@ def _confirmation_jsonrpc_request(
     approval_id="approval-confirm-001",
     session_id="test-confirm-session-1",
     event_id=None,
+    tool_name="Bash",
+    payload=None,
     deadline_ms=60000,
 ) -> bytes:
     """Build a confirmation compat event routed through canonical SESSION."""
@@ -136,8 +138,8 @@ def _confirmation_jsonrpc_request(
                 "source_framework": "a3s-code",
                 "occurred_at": utc_now_iso(),
                 "approval_id": approval_id,
-                "tool_name": "Bash",
-                "payload": {
+                "tool_name": tool_name,
+                "payload": payload or {
                     "command": "sudo rm -rf /tmp/test",
                     "_clawsentry_meta": {
                         "ahp_compat": {
@@ -704,6 +706,176 @@ class TestDeferBridge:
         assert resolution["meta"]["approval_state"] == "queue_full"
         assert resolution["meta"]["approval_reason_code"] == "approval_queue_full"
         assert "queue full" in resolution["meta"]["approval_reason"].lower()
+
+    @pytest.mark.asyncio
+    async def test_confirmation_queue_full_promotes_pending_effect_hold(self):
+        config = DetectionConfig(
+            defer_bridge_enabled=True,
+            defer_timeout_s=10.0,
+            defer_max_pending=1,
+            anti_bypass_guard_enabled=True,
+        )
+        gw = SupervisionGateway(detection_config=config)
+        _force_allow(gw, RiskLevel.HIGH)
+        assert gw.defer_manager.register_defer("existing-pending") is True
+        event_id = "evt-confirm-effect-queue-full"
+        session_id = "sess-confirm-effect-queue-full"
+        payload = {"command": "printf '%s' payload > build/loader.sh"}
+        gw.anti_bypass_guard.record_final_decision(
+            CanonicalEvent(
+                event_id=event_id,
+                trace_id="trace-confirm-effect-queue-full",
+                event_type=EventType.PRE_ACTION,
+                session_id=session_id,
+                agent_id="test-agent",
+                source_framework="test",
+                occurred_at=utc_now_iso(),
+                tool_name="Bash",
+                payload=payload,
+            ),
+            CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason="pending review",
+                policy_id="test",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.POLICY,
+                final=False,
+            ),
+            None,
+            {},
+            1,
+            config,
+        )
+
+        body = _confirmation_jsonrpc_request(
+            approval_id="approval-confirm-effect-queue-full",
+            session_id=session_id,
+            event_id=event_id,
+            payload=payload,
+        )
+        resp = await gw.handle_jsonrpc(body)
+
+        assert resp["result"]["decision"]["decision"] == "block"
+        assert gw.anti_bypass_guard.pending_effect_holds_for_session(session_id) == []
+        assert gw.anti_bypass_guard.denied_effect_records_for_session(session_id)
+
+    @pytest.mark.asyncio
+    async def test_confirmation_resolution_deny_promotes_pending_effect_hold(self):
+        config = DetectionConfig(
+            defer_bridge_enabled=True,
+            defer_timeout_s=10.0,
+            anti_bypass_guard_enabled=True,
+        )
+        gw = SupervisionGateway(detection_config=config)
+        _force_allow(gw, RiskLevel.HIGH)
+        event_id = "evt-confirm-effect-deny"
+        session_id = "sess-confirm-effect-deny"
+        payload = {"command": "printf '%s' payload > build/loader.sh"}
+        gw.anti_bypass_guard.record_final_decision(
+            CanonicalEvent(
+                event_id=event_id,
+                trace_id="trace-confirm-effect-deny",
+                event_type=EventType.PRE_ACTION,
+                session_id=session_id,
+                agent_id="test-agent",
+                source_framework="test",
+                occurred_at=utc_now_iso(),
+                tool_name="Bash",
+                payload=payload,
+            ),
+            CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason="pending review",
+                policy_id="test",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.POLICY,
+                final=False,
+            ),
+            None,
+            {},
+            1,
+            config,
+        )
+
+        async def resolve_soon():
+            await asyncio.sleep(0.1)
+            gw.defer_manager.resolve_approval(
+                "approval-confirm-effect-deny",
+                "deny",
+                "operator denied confirmation",
+            )
+
+        asyncio.create_task(resolve_soon())
+        body = _confirmation_jsonrpc_request(
+            approval_id="approval-confirm-effect-deny",
+            session_id=session_id,
+            event_id=event_id,
+            payload=payload,
+        )
+        resp = await gw.handle_jsonrpc(body)
+
+        assert resp["result"]["decision"]["decision"] == "block"
+        assert gw.anti_bypass_guard.pending_effect_holds_for_session(session_id) == []
+        assert gw.anti_bypass_guard.denied_effect_records_for_session(session_id)
+
+    @pytest.mark.asyncio
+    async def test_confirmation_resolution_allow_clears_pending_effect_hold(self):
+        config = DetectionConfig(
+            defer_bridge_enabled=True,
+            defer_timeout_s=10.0,
+            anti_bypass_guard_enabled=True,
+        )
+        gw = SupervisionGateway(detection_config=config)
+        _force_allow(gw, RiskLevel.HIGH)
+        event_id = "evt-confirm-effect-allow"
+        session_id = "sess-confirm-effect-allow"
+        payload = {"command": "printf '%s' payload > build/loader.sh"}
+        gw.anti_bypass_guard.record_final_decision(
+            CanonicalEvent(
+                event_id=event_id,
+                trace_id="trace-confirm-effect-allow",
+                event_type=EventType.PRE_ACTION,
+                session_id=session_id,
+                agent_id="test-agent",
+                source_framework="test",
+                occurred_at=utc_now_iso(),
+                tool_name="Bash",
+                payload=payload,
+            ),
+            CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason="pending review",
+                policy_id="test",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.POLICY,
+                final=False,
+            ),
+            None,
+            {},
+            1,
+            config,
+        )
+
+        async def resolve_soon():
+            await asyncio.sleep(0.1)
+            gw.defer_manager.resolve_approval(
+                "approval-confirm-effect-allow",
+                "allow-once",
+                "operator approved confirmation",
+            )
+
+        asyncio.create_task(resolve_soon())
+        body = _confirmation_jsonrpc_request(
+            approval_id="approval-confirm-effect-allow",
+            session_id=session_id,
+            event_id=event_id,
+            payload=payload,
+        )
+        resp = await gw.handle_jsonrpc(body)
+
+        assert resp["result"]["decision"]["decision"] == "allow"
+        assert gw.anti_bypass_guard.pending_effect_holds_for_session(session_id) == []
+        assert gw.anti_bypass_guard.denied_effect_records_for_session(session_id) == []
 
     @pytest.mark.asyncio
     async def test_confirmation_fast_lane_no_route_is_explicit_terminal_state(self):

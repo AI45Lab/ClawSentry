@@ -96,6 +96,109 @@ class TestDeferManager:
         assert approval.tool_name == "bash"
         assert approval.summary == "confirm destructive command"
 
+    def test_register_approval_tracks_effect_binding(self):
+        dm = DeferManager()
+        binding = {
+            "effect_hash": "sha256:effect",
+            "canonical_argv_hash": "sha256:argv",
+            "cwd_hash": "sha256:cwd",
+            "env_fingerprint": "sha256:env",
+            "profile_fingerprint": "sha256:profile",
+            "session_id": "sess-1",
+            "agent_id": "agent-1",
+        }
+
+        assert dm.register_approval(
+            "approval-bound",
+            approval_kind="defer",
+            session_id="sess-1",
+            tool_name="bash",
+            approval_binding=binding,
+        ) is True
+
+        approval = dm.get_approval("approval-bound")
+        assert approval.approval_binding == binding
+
+    @pytest.mark.asyncio
+    async def test_resolved_approval_rejects_effect_binding_drift(self):
+        dm = DeferManager(timeout_s=5.0)
+        binding = {
+            "effect_hash": "sha256:effect-original",
+            "canonical_argv_hash": "sha256:argv",
+            "cwd_hash": "sha256:cwd",
+            "profile_fingerprint": "sha256:profile",
+        }
+        assert dm.register_approval(
+            "approval-drift",
+            approval_kind="defer",
+            approval_binding=binding,
+        ) is True
+
+        wait_task = asyncio.create_task(dm.wait_for_resolution("approval-drift"))
+        await asyncio.sleep(0)
+        dm.resolve_approval(
+            "approval-drift",
+            "allow",
+            "approved",
+            resolution_binding={
+                **binding,
+                "effect_hash": "sha256:effect-mutated",
+            },
+        )
+        decision, reason = await wait_task
+
+        approval = dm.get_approval("approval-drift")
+        assert decision == "block"
+        assert approval.reason_code == "approval_binding_drift"
+        assert "binding drift" in reason.lower()
+
+    @pytest.mark.asyncio
+    async def test_resolved_approval_rejects_missing_resolution_binding(self):
+        dm = DeferManager(timeout_s=5.0)
+        assert dm.register_approval(
+            "approval-missing-binding",
+            approval_kind="defer",
+            approval_binding={"effect_hash": "sha256:effect-original"},
+        ) is True
+
+        wait_task = asyncio.create_task(dm.wait_for_resolution("approval-missing-binding"))
+        await asyncio.sleep(0)
+        dm.resolve_approval("approval-missing-binding", "allow", "approved")
+        decision, reason = await wait_task
+
+        approval = dm.get_approval("approval-missing-binding")
+        assert decision == "block"
+        assert approval.reason_code == "approval_binding_drift"
+        assert "resolution_binding_missing" in reason
+
+    @pytest.mark.asyncio
+    async def test_resolved_approval_rejects_partial_resolution_binding(self):
+        dm = DeferManager(timeout_s=5.0)
+        binding = {
+            "effect_hash": "sha256:effect-original",
+            "cwd_hash": "sha256:cwd",
+        }
+        assert dm.register_approval(
+            "approval-partial-binding",
+            approval_kind="defer",
+            approval_binding=binding,
+        ) is True
+
+        wait_task = asyncio.create_task(dm.wait_for_resolution("approval-partial-binding"))
+        await asyncio.sleep(0)
+        dm.resolve_approval(
+            "approval-partial-binding",
+            "allow",
+            "approved",
+            resolution_binding={"effect_hash": "sha256:effect-original"},
+        )
+        decision, reason = await wait_task
+
+        approval = dm.get_approval("approval-partial-binding")
+        assert decision == "block"
+        assert approval.reason_code == "approval_binding_drift"
+        assert "cwd_hash" in reason
+
     def test_register_defer_populates_defer_kind(self):
         dm = DeferManager()
 

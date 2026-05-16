@@ -173,6 +173,8 @@ class ClassifiedBy(str, enum.Enum):
 DECISION_EFFECTS_VERSION = "cs.decision_effects.v1"
 ADAPTER_EFFECT_RESULT_VERSION = "cs.adapter_effect_result.v1"
 SESSION_SCOPE_VERSION = "cs.session_scope.v1"
+ACTION_EFFECT_VERSION = "cs.action_effect.v1"
+DENIED_EFFECT_VERSION = "cs.denied_effect.v1"
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +215,7 @@ class SessionScopeBaseRules(BaseModel):
     denied_mcp_statuses: list[str] = Field(default_factory=list)
     denied_mcp_trust_levels: list[str] = Field(default_factory=list)
     denied_skill_trust_states: list[str] = Field(default_factory=list)
+    denied_capabilities: list[str] = Field(default_factory=list)
 
 
 class SessionScopeTaskRules(BaseModel):
@@ -231,6 +234,86 @@ class SessionScopeTaskRules(BaseModel):
     allowed_mcp_trust_levels: list[str] = Field(default_factory=list)
     allowed_skill_trust_states: list[str] = Field(default_factory=list)
     queued_categories: list[str] = Field(default_factory=list)
+    allowed_capabilities: list[str] = Field(default_factory=list)
+    queued_capabilities: list[str] = Field(default_factory=list)
+
+
+class ActionEffectTarget(BaseModel):
+    """Redacted target evidence for a normalized action effect."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str = "path"
+    path_hash: Optional[str] = None
+    path_role: Optional[str] = None
+    workspace_relation: Optional[str] = None
+
+
+class ActionEffectEnvelope(BaseModel):
+    """Deterministic, redacted effect profile for a pre-action event."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    schema_: str = Field(default=ACTION_EFFECT_VERSION, alias="schema")
+    effects: list[str] = Field(default_factory=list)
+    tool_name: Optional[str] = None
+    canonical_argv_hash: Optional[str] = None
+    raw_payload_hash: Optional[str] = None
+    targets: list[ActionEffectTarget] = Field(default_factory=list)
+    interpreters: list[str] = Field(default_factory=list)
+    wrapper_chain: list[str] = Field(default_factory=list)
+    confidence: Literal["low", "medium", "high"] = "low"
+    evidence_rules: list[str] = Field(default_factory=list)
+    analysis_state: Literal["complete", "incomplete", "unsupported", "failed"] = "complete"
+    disabled_capabilities: list[str] = Field(default_factory=list)
+
+    @field_validator("schema_")
+    @classmethod
+    def validate_schema(cls, v: str) -> str:
+        if v != ACTION_EFFECT_VERSION:
+            raise ValueError(f"schema must be '{ACTION_EFFECT_VERSION}', got '{v}'")
+        return v
+
+    def to_summary(self) -> dict[str, Any]:
+        return {
+            "schema": self.schema_,
+            "effects": list(self.effects),
+            "tool_name": self.tool_name,
+            "canonical_argv_hash": self.canonical_argv_hash,
+            "raw_payload_hash": self.raw_payload_hash,
+            "targets": [target.model_dump(mode="json", exclude_none=True) for target in self.targets],
+            "interpreters": list(self.interpreters),
+            "wrapper_chain": list(self.wrapper_chain),
+            "confidence": self.confidence,
+            "evidence_rules": list(self.evidence_rules),
+            "analysis_state": self.analysis_state,
+            "disabled_capabilities": list(self.disabled_capabilities),
+        }
+
+
+class DeniedEffectRecord(BaseModel):
+    """Compact terminal-denial memory for capability-equivalent repeats."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    schema_: str = Field(default=DENIED_EFFECT_VERSION, alias="schema")
+    session_id_hash: str
+    prior_event_id: str
+    prior_decision: str
+    capability: str
+    effect_hash: str
+    target_hashes: list[str] = Field(default_factory=list)
+    artifact_family: Optional[str] = None
+    policy_id: str
+    policy_version: str
+    expires_at: str
+
+    @field_validator("schema_")
+    @classmethod
+    def validate_schema(cls, v: str) -> str:
+        if v != DENIED_EFFECT_VERSION:
+            raise ValueError(f"schema must be '{DENIED_EFFECT_VERSION}', got '{v}'")
+        return v
 
 
 class SessionScopeProvenance(BaseModel):
@@ -949,7 +1032,7 @@ class RiskSnapshot(BaseModel):
     risk_level: RiskLevel
     composite_score: float = Field(..., ge=0)  # v2: base*injection_multiplier (D6)
     dimensions: RiskDimensions
-    short_circuit_rule: Optional[str] = None  # SC-1/SC-2/SC-3 or null
+    short_circuit_rule: Optional[str] = None  # SC-1..SC-8 or null
     missing_dimensions: list[str] = Field(default_factory=list)
     classified_by: ClassifiedBy
     classified_at: str  # UTC ISO8601
@@ -960,12 +1043,22 @@ class RiskSnapshot(BaseModel):
     rule_hits: list[str] = Field(default_factory=list)
     skill_trust_findings: list[dict[str, Any]] = Field(default_factory=list)
     taint_flow_summary: Optional[dict[str, Any]] = None
+    effect_summary: Optional[dict[str, Any]] = None
 
     @field_validator("short_circuit_rule")
     @classmethod
     def validate_short_circuit(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in ("SC-1", "SC-2", "SC-3"):
-            raise ValueError(f"short_circuit_rule must be SC-1/SC-2/SC-3, got '{v}'")
+        if v is not None and v not in (
+            "SC-1",
+            "SC-2",
+            "SC-3",
+            "SC-4",
+            "SC-5",
+            "SC-6",
+            "SC-7",
+            "SC-8",
+        ):
+            raise ValueError(f"short_circuit_rule must be SC-1..SC-8, got '{v}'")
         return v
 
     @field_validator("classified_at")

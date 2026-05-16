@@ -77,8 +77,11 @@ hide:
 ---
 
 
+!!! tip "v0.7.2: Anti-bypass L1 capability enforcement"
+    Anti-bypass L1 现在用脱敏 effect summary、denied/pending effect ledger 和 approval binding 处理等价绕过尝试。Replay evidence 覆盖 14 cases，decision match 与 coverage gates 均为 `1.0`。
+
 !!! tip "v0.7.1: Public release metadata correction"
-    公开发布面现在使用公开仓库实际可复验的测试计数，并刷新了首页、配置页、API 文档和 PyPI/GitHub README 的版本说明。
+    公开发布面使用公开仓库实际可复验的测试计数，并刷新了首页、配置页、API 文档和 PyPI/GitHub README 的版本说明。
 
 !!! tip "v0.7.0: Runtime safety controls"
     Skill Trust registry/preflight、capability narrowing、agent safety feedback 和 policy drift traceability 已进入主线。Benchmark 模式的运行方式见 [部署运维 / Benchmark 模式](operations/benchmark-mode.md)。
@@ -402,7 +405,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3357 passed / 16 skipped**（v0.7.1 public Python release validation；Web UI 56 passed） |
+| 测试用例 | **3419 passed / 16 skipped**（v0.7.2 public Python release validation；Web UI 56 passed） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |

@@ -295,6 +295,11 @@ class L1PolicyEngine:
         actual_tier = DecisionTier.L1
 
         automatic_l2_trigger = _automatic_l2_trigger_reason(event, context, l1_snapshot)
+        if (
+            requested_tier == DecisionTier.L1
+            and "disabled_capability_equivalent" in set(l1_snapshot.rule_hits or [])
+        ):
+            automatic_l2_trigger = None
         if _benchmark_l2_auto_disabled(effective_config, automatic_l2_trigger):
             snapshot = l1_snapshot.model_copy(update={
                 "l2_l3_summary": {
@@ -417,6 +422,29 @@ class L1PolicyEngine:
                 context,
             )
 
+        if (
+            etype == EventType.PRE_ACTION
+            and "disabled_capability_equivalent" in set(snapshot.rule_hits or [])
+        ):
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.DEFER,
+                    reason=self._build_reason(
+                        event,
+                        snapshot,
+                        "Disabled capability equivalent requires operator review",
+                    ),
+                    policy_id=self.POLICY_ID,
+                    risk_level=risk,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=False,
+                ),
+                event,
+                context,
+            )
+
         first_use_action = _first_use_action_from_snapshot(snapshot)
         if event.event_type == EventType.PRE_ACTION and first_use_action == "defer":
             return self._with_scope_evaluation(
@@ -426,6 +454,29 @@ class L1PolicyEngine:
                         event,
                         snapshot,
                         "First-use skill trust scan requires operator review",
+                    ),
+                    policy_id=self.POLICY_ID,
+                    risk_level=risk,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=False,
+                ),
+                event,
+                context,
+            )
+
+        if (
+            etype == EventType.PRE_ACTION
+            and snapshot.short_circuit_rule == "SC-8"
+        ):
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.DEFER,
+                    reason=self._build_reason(
+                        event,
+                        snapshot,
+                        "Future-execution write with low-trust evidence requires operator review",
                     ),
                     policy_id=self.POLICY_ID,
                     risk_level=risk,
@@ -495,6 +546,17 @@ class L1PolicyEngine:
         )
 
         if not summary.enforced:
+            return decision.model_copy(update={
+                "reason": decision.reason + reason_suffix,
+                "scope_evaluation": summary,
+            })
+
+        capability_only_deny = (
+            summary.verdict == SessionScopeVerdict.DENY
+            and bool(summary.reason_codes)
+            and all(code.startswith("scope_deny:capability ") for code in summary.reason_codes)
+        )
+        if capability_only_deny and decision.decision == DecisionVerdict.DEFER:
             return decision.model_copy(update={
                 "reason": decision.reason + reason_suffix,
                 "scope_evaluation": summary,
@@ -682,6 +744,7 @@ class L1PolicyEngine:
             rule_hits=list(l1_snapshot.rule_hits),
             skill_trust_findings=list(l1_snapshot.skill_trust_findings),
             taint_flow_summary=l1_snapshot.taint_flow_summary,
+            effect_summary=l1_snapshot.effect_summary,
         ), actual_tier
 
     @staticmethod

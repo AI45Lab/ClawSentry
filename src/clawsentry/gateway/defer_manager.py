@@ -27,6 +27,7 @@ class ApprovalRecord:
     reason: str = ""
     reason_code: str = ""
     timeout_s: float | None = None
+    approval_binding: dict[str, Any] | None = None
     resolution_payload: dict[str, Any] | None = None
     resolver_identity: str | None = None
 
@@ -43,6 +44,7 @@ class _PendingApproval:
     reason: str = ""
     reason_code: str = ""
     timeout_s: float | None = None
+    approval_binding: dict[str, Any] | None = None
     resolution_payload: dict[str, Any] | None = None
     resolver_identity: str | None = None
 
@@ -79,6 +81,7 @@ class DeferManager:
         session_id: str | None = None,
         tool_name: str | None = None,
         summary: str | None = None,
+        approval_binding: dict[str, Any] | None = None,
     ) -> bool:
         """Register a new approval. Returns False if queue is full or duplicate."""
         if approval_id in self._pending:
@@ -97,12 +100,22 @@ class DeferManager:
             tool_name=tool_name,
             summary=summary,
             timeout_s=self.timeout_s,
+            approval_binding=_compact_binding(approval_binding),
         )
         return True
 
-    def register_defer(self, request_id: str) -> bool:
+    def register_defer(
+        self,
+        request_id: str,
+        *,
+        approval_binding: dict[str, Any] | None = None,
+    ) -> bool:
         """Register a new DEFER request. Returns False if queue is full."""
-        return self.register_approval(request_id, approval_kind="defer")
+        return self.register_approval(
+            request_id,
+            approval_kind="defer",
+            approval_binding=approval_binding,
+        )
 
     def get_approval(self, approval_id: str) -> ApprovalRecord:
         """Return approval state and metadata for a pending/final/missing ID."""
@@ -129,19 +142,26 @@ class DeferManager:
         reason_code: str | None = None,
         resolution_payload: dict[str, Any] | None = None,
         resolver_identity: str | None = None,
+        resolution_binding: dict[str, Any] | None = None,
     ) -> None:
         """Resolve a pending approval with an explicit decision."""
         pending = self._pending.pop(approval_id, None)
         if pending is None:
             return
+        binding_drift = _binding_drift(pending.approval_binding, resolution_binding)
         pending.approval_state = "resolved"
-        pending.decision = decision
-        pending.reason = reason
-        pending.reason_code = reason_code or (
-            "approval_allowed"
-            if decision in {"allow", "allow-once", "allow-always"}
-            else "approval_denied"
-        )
+        if binding_drift and decision in {"allow", "allow-once", "allow-always"}:
+            pending.decision = "block"
+            pending.reason = f"Approval binding drift: {','.join(binding_drift)}"
+            pending.reason_code = "approval_binding_drift"
+        else:
+            pending.decision = decision
+            pending.reason = reason
+            pending.reason_code = reason_code or (
+                "approval_allowed"
+                if decision in {"allow", "allow-once", "allow-always"}
+                else "approval_denied"
+            )
         pending.resolution_payload = dict(resolution_payload) if resolution_payload else None
         pending.resolver_identity = resolver_identity
         self._store_finalized(approval_id, self._record_from_pending(approval_id, pending))
@@ -201,6 +221,11 @@ class DeferManager:
             reason=pending.reason,
             reason_code=pending.reason_code,
             timeout_s=pending.timeout_s,
+            approval_binding=(
+                dict(pending.approval_binding)
+                if pending.approval_binding is not None
+                else None
+            ),
             resolution_payload=(
                 dict(pending.resolution_payload)
                 if pending.resolution_payload is not None
@@ -214,3 +239,40 @@ class DeferManager:
         if self.max_finalized > 0:
             while len(self._finalized) > self.max_finalized:
                 self._finalized.popitem(last=False)
+
+
+def _compact_binding(binding: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not binding:
+        return None
+    allowed = {
+        "effect_hash",
+        "canonical_argv_hash",
+        "raw_payload_hash",
+        "cwd_hash",
+        "env_fingerprint",
+        "profile_fingerprint",
+        "session_id",
+        "agent_id",
+        "capability_profile_id",
+        "policy_fingerprint",
+    }
+    return {str(key): value for key, value in binding.items() if key in allowed and value is not None}
+
+
+def _binding_drift(
+    approved: dict[str, Any] | None,
+    resolved: dict[str, Any] | None,
+) -> list[str]:
+    if not approved:
+        return []
+    if resolved is None:
+        return ["resolution_binding_missing"]
+    compact_resolved = _compact_binding(resolved) or {}
+    drifted: list[str] = []
+    for key, value in approved.items():
+        if key not in compact_resolved:
+            drifted.append(key)
+            continue
+        if compact_resolved[key] != value:
+            drifted.append(key)
+    return drifted

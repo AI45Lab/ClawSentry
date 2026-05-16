@@ -182,6 +182,324 @@ class TestGatewayCore:
         assert rec["meta"]["caller_adapter"] == "openclaw-adapter.v1"
 
     @pytest.mark.asyncio
+    async def test_sync_decision_strict_disabled_write_equivalent_blocks_with_effect_summary(self):
+        gw = SupervisionGateway(detection_config=DetectionConfig(mode="strict"))
+        params = _sync_decision_params(
+            request_id="req-effect-strict-001",
+            event={
+                "event_id": "evt-effect-strict-001",
+                "trace_id": "trace-effect-strict-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-strict-001",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:00+00:00",
+                "payload": {"command": "printf '%s' secret > build/loader.sh"},
+                "tool_name": "bash",
+            },
+            context={
+                "session_scope_profile": {
+                    "profile_id": "scope-effect-strict",
+                    "confirmed": True,
+                    "dry_run": False,
+                    "base_rules": {"denied_capabilities": ["filesystem.write"]},
+                }
+            },
+        )
+
+        result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", params))
+
+        decision = result["result"]["decision"]
+        assert decision["decision"] == "block"
+        rec = gw.trajectory_store.records[-1]
+        effect_summary = rec["risk_snapshot"]["effect_summary"]
+        assert effect_summary["effects"] == ["filesystem.write", "future_execution.artifact"]
+        assert "disabled_capability_equivalent" in effect_summary["evidence_rules"]
+        serialized = json.dumps(effect_summary, sort_keys=True)
+        assert "build/loader.sh" not in serialized
+        assert "secret" not in serialized
+
+    @pytest.mark.asyncio
+    async def test_sync_decision_normal_disabled_write_equivalent_routes_review(self):
+        gw = SupervisionGateway(
+            detection_config=DetectionConfig(mode="normal", defer_bridge_enabled=False)
+        )
+        params = _sync_decision_params(
+            request_id="req-effect-normal-001",
+            event={
+                "event_id": "evt-effect-normal-001",
+                "trace_id": "trace-effect-normal-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-normal-001",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:00+00:00",
+                "payload": {"command": "printf '%s' secret > build/loader.sh"},
+                "tool_name": "bash",
+            },
+            context={
+                "session_scope_profile": {
+                    "profile_id": "scope-effect-normal",
+                    "confirmed": True,
+                    "dry_run": False,
+                    "base_rules": {"denied_capabilities": ["filesystem.write"]},
+                }
+            },
+        )
+
+        result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", params))
+
+        decision = result["result"]["decision"]
+        assert decision["decision"] == "defer"
+        assert decision["final"] is False
+        rec = gw.trajectory_store.records[-1]
+        assert rec["risk_snapshot"]["effect_summary"]["disabled_capabilities"] == ["filesystem.write"]
+
+    @pytest.mark.asyncio
+    async def test_sync_decision_denied_effect_repeat_records_sc5_evidence(self):
+        gw = SupervisionGateway(
+            detection_config=DetectionConfig(
+                mode="strict",
+                anti_bypass_guard_enabled=True,
+            )
+        )
+        first = _sync_decision_params(
+            request_id="req-effect-denied-001",
+            event={
+                "event_id": "evt-effect-denied-001",
+                "trace_id": "trace-effect-denied-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-denied-repeat",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:00+00:00",
+                "payload": {"path": "build/loader.sh", "content": "payload"},
+                "tool_name": "Write",
+            },
+            context={
+                "session_scope_profile": {
+                    "profile_id": "scope-effect-denied",
+                    "confirmed": True,
+                    "dry_run": False,
+                    "base_rules": {"denied_capabilities": ["filesystem.write"]},
+                }
+            },
+        )
+        second = _sync_decision_params(
+            request_id="req-effect-repeat-001",
+            event={
+                "event_id": "evt-effect-repeat-001",
+                "trace_id": "trace-effect-repeat-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-denied-repeat",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:01+00:00",
+                "payload": {"command": "printf '%s' payload > build/loader.sh"},
+                "tool_name": "bash",
+            },
+        )
+
+        first_result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", first))
+        second_result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", second))
+
+        assert first_result["result"]["decision"]["decision"] == "block"
+        assert second_result["result"]["decision"]["decision"] == "block"
+        assert second_result["result"]["decision"]["policy_id"] == "anti-bypass-denied-effect-repeat"
+        rec = gw.trajectory_store.records[-1]
+        assert rec["risk_snapshot"]["short_circuit_rule"] == "SC-5"
+        assert "denied_effect_repeat" in rec["risk_snapshot"]["rule_hits"]
+        assert rec["meta"]["anti_bypass"]["match_type"] == "denied_effect_repeat"
+
+    @pytest.mark.asyncio
+    async def test_sync_decision_pending_effect_hold_routes_review_without_sc5(self):
+        gw = SupervisionGateway(
+            detection_config=DetectionConfig(
+                mode="normal",
+                anti_bypass_guard_enabled=True,
+                defer_bridge_enabled=False,
+            )
+        )
+        first = _sync_decision_params(
+            request_id="req-effect-pending-001",
+            event={
+                "event_id": "evt-effect-pending-001",
+                "trace_id": "trace-effect-pending-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-pending-repeat",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:00+00:00",
+                "payload": {"path": "build/loader.sh", "content": "payload"},
+                "tool_name": "Write",
+            },
+            context={
+                "session_scope_profile": {
+                    "profile_id": "scope-effect-pending",
+                    "confirmed": True,
+                    "dry_run": False,
+                    "base_rules": {"denied_capabilities": ["filesystem.write"]},
+                }
+            },
+        )
+        second = _sync_decision_params(
+            request_id="req-effect-pending-repeat-001",
+            event={
+                "event_id": "evt-effect-pending-repeat-001",
+                "trace_id": "trace-effect-pending-repeat-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-pending-repeat",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:01+00:00",
+                "payload": {"command": "printf '%s' payload > build/loader.sh"},
+                "tool_name": "bash",
+            },
+        )
+
+        first_result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", first))
+        second_result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", second))
+
+        assert first_result["result"]["decision"]["decision"] == "defer"
+        assert first_result["result"]["decision"]["final"] is False
+        assert second_result["result"]["decision"]["decision"] == "defer"
+        assert second_result["result"]["decision"]["policy_id"] == "anti-bypass-pending-effect-review"
+        rec = gw.trajectory_store.records[-1]
+        assert rec["risk_snapshot"]["short_circuit_rule"] is None
+        assert "pending_effect_equivalent" in rec["risk_snapshot"]["rule_hits"]
+        assert "denied_effect_repeat" not in rec["risk_snapshot"]["rule_hits"]
+        assert rec["meta"]["anti_bypass"]["match_type"] == "pending_effect_equivalent"
+
+    @pytest.mark.asyncio
+    async def test_defer_resolution_deny_promotes_pending_hold_to_denied_effect(self):
+        gw = SupervisionGateway(
+            detection_config=DetectionConfig(
+                mode="normal",
+                anti_bypass_guard_enabled=True,
+                defer_bridge_enabled=True,
+                defer_timeout_s=10.0,
+            )
+        )
+        first = _sync_decision_params(
+            request_id="req-effect-resolve-deny-001",
+            event={
+                "event_id": "evt-effect-resolve-deny-001",
+                "trace_id": "trace-effect-resolve-deny-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-resolve-deny",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:00+00:00",
+                "payload": {"path": "build/loader.sh", "content": "payload"},
+                "tool_name": "Write",
+            },
+            context={
+                "session_scope_profile": {
+                    "profile_id": "scope-effect-resolve-deny",
+                    "confirmed": True,
+                    "dry_run": False,
+                    "base_rules": {"denied_capabilities": ["filesystem.write"]},
+                }
+            },
+        )
+        second = _sync_decision_params(
+            request_id="req-effect-after-deny-001",
+            event={
+                "event_id": "evt-effect-after-deny-001",
+                "trace_id": "trace-effect-after-deny-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-resolve-deny",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:01+00:00",
+                "payload": {"command": "printf '%s' payload > build/loader.sh"},
+                "tool_name": "bash",
+            },
+        )
+
+        async def deny_soon():
+            await asyncio.sleep(0.05)
+            for approval_id in list(gw.defer_manager._pending.keys()):
+                gw.defer_manager.resolve_approval(approval_id, "deny", "too risky")
+
+        asyncio.create_task(deny_soon())
+        first_result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", first))
+        second_result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", second))
+
+        assert first_result["result"]["decision"]["decision"] == "block"
+        assert gw.anti_bypass_guard.pending_effect_holds_for_session("sess-effect-resolve-deny") == []
+        assert gw.anti_bypass_guard.denied_effect_records_for_session("sess-effect-resolve-deny")
+        assert second_result["result"]["decision"]["decision"] == "block"
+        assert second_result["result"]["decision"]["policy_id"] == "anti-bypass-denied-effect-repeat"
+
+    @pytest.mark.asyncio
+    async def test_defer_resolution_allow_clears_pending_hold(self):
+        gw = SupervisionGateway(
+            detection_config=DetectionConfig(
+                mode="normal",
+                anti_bypass_guard_enabled=True,
+                defer_bridge_enabled=True,
+                defer_timeout_s=10.0,
+            )
+        )
+        first = _sync_decision_params(
+            request_id="req-effect-resolve-allow-001",
+            event={
+                "event_id": "evt-effect-resolve-allow-001",
+                "trace_id": "trace-effect-resolve-allow-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-resolve-allow",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:00+00:00",
+                "payload": {"path": "build/loader.sh", "content": "payload"},
+                "tool_name": "Write",
+            },
+            context={
+                "session_scope_profile": {
+                    "profile_id": "scope-effect-resolve-allow",
+                    "confirmed": True,
+                    "dry_run": False,
+                    "base_rules": {"denied_capabilities": ["filesystem.write"]},
+                }
+            },
+        )
+        second = _sync_decision_params(
+            request_id="req-effect-after-allow-001",
+            event={
+                "event_id": "evt-effect-after-allow-001",
+                "trace_id": "trace-effect-after-allow-001",
+                "event_type": "pre_action",
+                "session_id": "sess-effect-resolve-allow",
+                "agent_id": "agent-effect",
+                "source_framework": "test",
+                "occurred_at": "2026-05-16T00:00:01+00:00",
+                "payload": {"command": "printf '%s' payload > build/loader.sh"},
+                "tool_name": "bash",
+            },
+        )
+
+        async def allow_soon():
+            await asyncio.sleep(0.05)
+            for approval_id, pending in list(gw.defer_manager._pending.items()):
+                gw.defer_manager.resolve_approval(
+                    approval_id,
+                    "allow-once",
+                    "approved",
+                    resolution_binding=pending.approval_binding,
+                )
+
+        asyncio.create_task(allow_soon())
+        first_result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", first))
+        second_result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", second))
+
+        assert first_result["result"]["decision"]["decision"] == "allow"
+        assert gw.anti_bypass_guard.pending_effect_holds_for_session("sess-effect-resolve-allow") == []
+        assert gw.anti_bypass_guard.denied_effect_records_for_session("sess-effect-resolve-allow") == []
+        assert second_result["result"]["decision"]["policy_id"] != "anti-bypass-pending-effect-review"
+        assert second_result["result"]["decision"]["policy_id"] != "anti-bypass-denied-effect-repeat"
+
+    @pytest.mark.asyncio
     async def test_replay_session_preserves_nested_payload_compat_metadata(self, gw):
         params = _sync_decision_params(
             request_id="req-traj-compat-001",

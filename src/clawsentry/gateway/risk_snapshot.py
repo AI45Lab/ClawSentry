@@ -14,6 +14,7 @@ from collections import deque
 from typing import Optional
 
 from .detection_config import DetectionConfig
+from .effect_normalizer import normalize_action_effect
 from .injection_detector import score_layer1
 from .models import (
     AgentTrustLevel,
@@ -1171,15 +1172,33 @@ def compute_risk_snapshot(
     ) if payload_text else 0.0
 
     dims = RiskDimensions(d1=d1, d2=d2, d3=d3, d4=d4, d5=d5, d6=d6)
+    effect_envelope = normalize_action_effect(event, context)
+    effect_summary = effect_envelope.to_summary() if effect_envelope.effects or effect_envelope.evidence_rules else None
 
     # Short-circuit rules (priority over scoring)
     sc_rule: Optional[str] = None
     sc_level: Optional[RiskLevel] = None
-    for rule_id, predicate, level in _SHORT_CIRCUIT_RULES:
-        if predicate(dims):
-            sc_rule = rule_id
-            sc_level = level
-            break
+    if (
+        "disabled_capability_equivalent" in effect_envelope.evidence_rules
+        and effect_envelope.confidence == "high"
+    ):
+        sc_rule = "SC-4"
+        sc_level = RiskLevel.HIGH if config.mode in ("strict", "benchmark") else RiskLevel.MEDIUM
+    elif (
+        (
+            "script_analysis_unavailable" in effect_envelope.evidence_rules
+            or "wrapper_chain_unresolved" in effect_envelope.evidence_rules
+        )
+        and config.mode in ("strict", "benchmark")
+    ):
+        sc_rule = "SC-7"
+        sc_level = RiskLevel.HIGH
+    else:
+        for rule_id, predicate, level in _SHORT_CIRCUIT_RULES:
+            if predicate(dims):
+                sc_rule = rule_id
+                sc_level = level
+                break
 
     # Composite scoring (E-4 v2 formula)
     score = _composite_score_v2(dims, config)
@@ -1201,6 +1220,27 @@ def compute_risk_snapshot(
         score,
         config,
     )
+    for rule_id in effect_envelope.evidence_rules:
+        if rule_id not in rule_hits:
+            rule_hits.append(rule_id)
+    if "disabled_capability_equivalent" in effect_envelope.evidence_rules:
+        if config.mode == "normal":
+            risk_level = _max_risk_level(risk_level, RiskLevel.MEDIUM)
+            score = max(score, _min_score_for_level(risk_level, config))
+        elif config.mode in ("strict", "benchmark"):
+            risk_level = _max_risk_level(risk_level, RiskLevel.HIGH)
+            score = max(score, _min_score_for_level(risk_level, config))
+    if (
+        sc_rule is None
+        and "generated_script_future_exec" in effect_envelope.evidence_rules
+        and _has_low_trust_skill_evidence(rule_hits, skill_trust_findings)
+    ):
+        sc_rule = "SC-8"
+        if config.mode in ("strict", "benchmark"):
+            risk_level = _max_risk_level(risk_level, RiskLevel.HIGH)
+        else:
+            risk_level = _max_risk_level(risk_level, RiskLevel.MEDIUM)
+        score = max(score, _min_score_for_level(risk_level, config))
     taint_flow_summary = _taint_flow_summary(event)
     if taint_flow_summary is not None:
         taint_rule_hits = [
@@ -1234,6 +1274,7 @@ def compute_risk_snapshot(
         rule_hits=rule_hits,
         skill_trust_findings=skill_trust_findings,
         taint_flow_summary=taint_flow_summary,
+        effect_summary=effect_summary,
     )
 
     # Update session tracker if risk >= high
@@ -1244,3 +1285,25 @@ def compute_risk_snapshot(
         session_tracker.record_high_risk_event(event.session_id)
 
     return snapshot
+
+
+def _has_low_trust_skill_evidence(
+    rule_hits: list[str],
+    skill_trust_findings: list[dict[str, Any]],
+) -> bool:
+    rule_set = set(rule_hits)
+    if rule_set.intersection({
+        "low_trust_redefined_canonical_tool",
+        "provenance_label_conflict",
+        "unknown_skill_provenance_rewrite",
+        "blacklisted_skill_identity",
+        "revoked_skill_identity",
+        "skill_hash_mismatch",
+    }):
+        return True
+    for finding in skill_trust_findings:
+        if finding.get("admission_risk") in {"high", "critical"}:
+            return True
+        if finding.get("trust_list_state") in {"greylist", "blacklist", "revoked", "disabled"}:
+            return True
+    return False

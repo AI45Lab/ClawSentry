@@ -23,7 +23,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3357 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
+- **3419 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -35,9 +35,15 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
+## What's New in v0.7.2
+
+- **Anti-bypass L1 capability-equivalence enforcement**: denied and pending risky effects are normalized into redacted action summaries, so equivalent follow-up attempts cannot bypass policy by changing tool, shell syntax, or execution wrapper.
+- **Approval effect binding**: defer approvals are bound to the approved effect and fail closed if the resolved action drifts.
+- **Replay evidence**: the anti-bypass L1 replay fixture covers 14 cases with decision match, evidence, fallback, rule, and schema-sync coverage at `1.0`.
+
 ## What's New in v0.7.1
 
-- **Public release metadata correction**: the public release surface now reports the public repository validation count (`3357 passed, 16 skipped`) and keeps the online documentation focused on install, integration, operations, and Benchmark mode usage.
+- **Public release metadata correction**: the public release surface now reports the public repository validation count consistently and keeps the online documentation focused on install, integration, operations, and Benchmark mode usage.
 
 ## What's New in v0.7.0
 
