@@ -187,6 +187,17 @@ class TestReadFile:
         assert f"[truncated at {ReadOnlyToolkit.MAX_FILE_READ_BYTES} bytes]" in result
 
     @pytest.mark.asyncio
+    async def test_read_file_range_does_not_load_unbounded_content(self, tmp_path: Path) -> None:
+        big_file = tmp_path / "big.txt"
+        big_file.write_text("\n".join(f"line-{idx}" for idx in range(10000)), encoding="utf-8")
+        tk = ReadOnlyToolkit(tmp_path, StubTrajectoryStore())
+
+        result = await tk.read_file_range("big.txt", start_line=10, max_lines=3)
+
+        assert result["content"] == "line-9\nline-10\nline-11"
+        assert result["truncated"] is True
+
+    @pytest.mark.asyncio
     async def test_binary_content_replaced(self, tmp_path: Path) -> None:
         """Binary bytes that aren't valid UTF-8 should be replaced, not crash."""
         (tmp_path / "bin.dat").write_bytes(b"\x80\x81\x82hello\xff")
@@ -328,6 +339,16 @@ class TestTranscriptAndSessionRisk:
         assert len(result["risk_timeline"]) == 1
         assert result["risk_timeline"][0]["event_id"] == "evt-1"
 
+    @pytest.mark.asyncio
+    async def test_read_l3_trace_accepts_string_limit(self, tmp_path: Path) -> None:
+        tk = ReadOnlyToolkit(tmp_path, StubTrajectoryStore(), session_registry=StubSessionRegistry())
+        tk = tk.fork(workspace_root=tmp_path, session_id="sess-risk")
+
+        result = await tk.read_l3_trace(limit="1")
+
+        assert len(result["records"]) == 1
+        assert result["records"][0]["event_id"] == "evt-2"
+
 
 # ---------------------------------------------------------------------------
 # search_codebase
@@ -385,6 +406,20 @@ class TestSearchCodebase:
         results = await tk.search_codebase("hello world")
         assert len(results) == 1
 
+    @pytest.mark.asyncio
+    async def test_ignores_generated_and_vendor_dirs_by_default(self, tmp_path: Path) -> None:
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "app.py").write_text("target_line\n", encoding="utf-8")
+        (tmp_path / "node_modules" / "pkg").mkdir(parents=True)
+        (tmp_path / "node_modules" / "pkg" / "index.js").write_text("target_line\n", encoding="utf-8")
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".git" / "config").write_text("target_line\n", encoding="utf-8")
+
+        tk = ReadOnlyToolkit(tmp_path, StubTrajectoryStore())
+        results = await tk.search_codebase("target_line")
+
+        assert [item["file"] for item in results] == ["src/app.py"]
+
 
 # ---------------------------------------------------------------------------
 # query_git_diff
@@ -412,6 +447,21 @@ class TestQueryGitDiff:
             result = await tk.query_git_diff(ref)
             # Should not be rejected by safety check (may have git errors though)
             assert "unsafe ref pattern" not in result
+
+    @pytest.mark.asyncio
+    async def test_read_package_manifest_structures_pyproject(self, tmp_path: Path) -> None:
+        (tmp_path / "pyproject.toml").write_text(
+            "[project]\nname = \"demo\"\ndependencies = [\"requests>=2\"]\n",
+            encoding="utf-8",
+        )
+        tk = ReadOnlyToolkit(tmp_path, StubTrajectoryStore())
+
+        result = await tk.read_package_manifest("pyproject.toml")
+
+        assert result["path"] == "pyproject.toml"
+        assert result["manifest_type"] == "pyproject.toml"
+        assert result["name"] == "demo"
+        assert result["dependencies"] == ["requests>=2"]
 
     @pytest.mark.asyncio
     async def test_long_ref_rejected(self, tmp_path: Path) -> None:

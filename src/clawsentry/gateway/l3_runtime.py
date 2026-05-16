@@ -27,6 +27,7 @@ class L3ReasonCode(str, enum.Enum):
     FORMAT_RETRY_FAILED = "format_retry_failed"
     ANALYSIS_EXCEPTION = "analysis_exception"
     REQUESTED_NON_WHITELISTED_TOOL = "requested_non_whitelisted_tool"
+    REQUESTED_TOOL_NOT_ALLOWED_BY_SKILL = "requested_tool_not_allowed_by_skill"
     TOOL_CALL_BUDGET_EXHAUSTED = "tool_call_budget_exhausted"
     BUDGET_EXHAUSTED = "budget_exhausted"
     ANALYSIS_BUDGET_EXCEEDED = "analysis_budget_exceeded"
@@ -61,6 +62,8 @@ def infer_l3_reason_code(
         return L3ReasonCode.LLM_RESPONSE_UNRESOLVABLE_RISK_LEVEL.value
     if "requested non-whitelisted tool" in normalized:
         return L3ReasonCode.REQUESTED_NON_WHITELISTED_TOOL.value
+    if "requested tool not allowed by skill" in normalized:
+        return L3ReasonCode.REQUESTED_TOOL_NOT_ALLOWED_BY_SKILL.value
     if "tool call budget exhausted" in normalized:
         return L3ReasonCode.TOOL_CALL_BUDGET_EXHAUSTED.value
     if "analysis_budget_exceeded" in normalized or "analysis budget exceeded" in normalized:

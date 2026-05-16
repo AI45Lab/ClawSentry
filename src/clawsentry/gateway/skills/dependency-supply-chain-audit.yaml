@@ -1,0 +1,47 @@
+name: dependency-supply-chain-audit
+schema_version: clawsentry.l3_skill.v1
+description: Audit dependency, installer, package manifest, and CI supply-chain changes.
+enabled: true
+priority: 9
+allowed_tools:
+  - list_changed_files
+  - read_package_manifest
+  - query_git_diff
+  - query_git_status
+  - read_file_range
+required_evidence:
+  - current_event
+  - trigger
+severity_rubric:
+  high:
+    - suspicious install script, dependency pin change, or CI execution path
+  critical:
+    - confirmed malicious postinstall, curl-pipe-shell, or credential exfiltration path
+output_tags:
+  - supply_chain
+  - dependency
+field_notes:
+  effect_summary: "Look for package manager, lockfile, installer, and CI effects."
+triggers:
+  risk_hints:
+    - supply_chain_attack
+    - dependency_change
+  tool_names:
+    - write_file
+    - edit_file
+    - bash
+  payload_patterns:
+    - package.json
+    - pyproject.toml
+    - Cargo.toml
+    - postinstall
+    - curl | sh
+system_prompt: |
+  You are a dependency and supply-chain security reviewer. Focus on package manifests, installer scripts, lockfiles, CI workflow changes, and download-and-execute patterns.
+evaluation_criteria:
+  - name: install_script
+    severity: high
+    description: Risky install or postinstall behavior is present.
+  - name: malicious_dependency
+    severity: critical
+    description: Dependency or installer behavior enables compromise or exfiltration.

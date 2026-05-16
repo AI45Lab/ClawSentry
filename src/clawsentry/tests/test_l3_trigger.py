@@ -65,6 +65,72 @@ def test_triggers_on_manual_l3_escalation_flag():
     assert result is True
 
 
+def test_trigger_metadata_prioritizes_anti_bypass_metadata_over_generic_force_l3():
+    policy = L3TriggerPolicy()
+    ctx = DecisionContext(
+        session_risk_summary={
+            "force_l3": True,
+            "l3_request_reason": "anti_bypass_followup",
+            "l3_trigger_source_metadata": {
+                "match_type": "cross_tool_script_similarity",
+                "prior_record_id": 12,
+                "reason_codes": ["operation_scope"],
+            },
+        }
+    )
+
+    metadata = policy.trigger_metadata(
+        _evt(tool_name="bash"),
+        ctx,
+        _snap(RiskLevel.MEDIUM),
+        [],
+    )
+
+    assert metadata == {
+        "trigger_reason": "anti_bypass_followup",
+        "trigger_detail": "cross_tool_script_similarity",
+        "source_metadata": {
+            "match_type": "cross_tool_script_similarity",
+            "prior_record_id": 12,
+            "reason_codes": ["operation_scope"],
+        },
+    }
+
+
+def test_trigger_metadata_prioritizes_skill_trust_and_session_require_sources():
+    policy = L3TriggerPolicy()
+
+    skill_metadata = policy.trigger_metadata(
+        _evt(tool_name="bash"),
+        DecisionContext(
+            session_risk_summary={
+                "force_l3": True,
+                "first_use_skill_trust_action": "force_l3",
+                "l3_trigger_source_metadata": {"skill_id": "skill-a"},
+            }
+        ),
+        _snap(RiskLevel.MEDIUM),
+        [],
+    )
+    assert skill_metadata["trigger_reason"] == "first_use_skill_trust_action"
+    assert skill_metadata["source_metadata"] == {"skill_id": "skill-a"}
+
+    session_metadata = policy.trigger_metadata(
+        _evt(tool_name="bash"),
+        DecisionContext(
+            session_risk_summary={
+                "force_l3": True,
+                "l3_require_enforced": True,
+                "l3_trigger_source_metadata": {"enforcement_action": "L3_REQUIRE"},
+            }
+        ),
+        _snap(RiskLevel.MEDIUM),
+        [],
+    )
+    assert session_metadata["trigger_reason"] == "session_l3_require"
+    assert session_metadata["source_metadata"] == {"enforcement_action": "L3_REQUIRE"}
+
+
 def test_triggers_on_cumulative_risk_threshold():
     policy = L3TriggerPolicy()
 

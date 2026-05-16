@@ -21,6 +21,7 @@ Skill 是以 **YAML 文件**定义的领域审查专长，由 `SkillRegistry` �
 - **触发条件 (triggers)** -- 决定何时激活该 Skill
 - **系统提示词 (system_prompt)** -- 提供给 LLM 的领域专家角色指令
 - **评估标准 (evaluation_criteria)** -- 定义该领域的安全评估维度
+- **Manifest v1 字段** -- `schema_version`、`allowed_tools`、`required_evidence`、`severity_rubric`、`output_tags`、`field_notes`、`example_policy` 和 `example_cases`
 
 当一个高风险事件需要 L3 审查时，`SkillRegistry` 会根据事件特征（工具名称、风险提示、payload 内容）**自动选择**最匹配的 Skill，确保 LLM 以正确的领域专家身份进行审查。
 
@@ -38,9 +39,29 @@ SkillRegistry 使用**加权评分**算法选择最佳 Skill：
 
 ---
 
+## Manifest v1 {#manifest-v1}
+
+新的推荐 schema 是 `schema_version: clawsentry.l3_skill.v1`。Legacy YAML 仍可加载，但内置 skills 已迁移到 v1。
+
+关键字段：
+
+| 字段 | 作用 |
+|---|---|
+| `allowed_tools` | 当前 skill 可调用的 L3 read-only tools 子集；这是运行时安全边界，不只是文档 |
+| `required_evidence` | skill 期望 prompt 中具备的证据类别，如 `current_event`、`trigger`、`trajectory_summary`、`skill_trust` |
+| `recommended_tools` | 给模型的取证建议，不会放宽 `allowed_tools` |
+| `severity_rubric` | 至少覆盖 `high` 或 `critical`，用于领域化风险判断 |
+| `benign_exceptions` | 常见良性边界情况 |
+| `output_tags` | 可审计 taxonomy 标签，必须唯一且为安全标签格式 |
+| `field_notes` | 对 evidence capsule 或 tool envelope 字段的领域解释 |
+| `example_policy` | 限制 few-shot 示例数量、长度和隔离策略 |
+| `example_cases` | 只能是 `synthetic: true` 且 `not_current_case: true` 的非证据示例 |
+
+示例必须是合成、脱敏、非当前案例。`examples.*` 不能作为 L2/L3 final `evidence_refs`，也不能进入 findings。`rules lint --skills-dir` 会拒绝非法 `allowed_tools`、缺失 `required_evidence`、重复 `output_tags`、非 synthetic 示例、过长示例、真实路径或 secret-like 示例。
+
 ## 内置 Skills
 
-ClawSentry 内置 6 个安全审查 Skill，覆盖主要安全领域。它们位于 `src/clawsentry/gateway/skills/` 目录：
+ClawSentry 内置多组安全审查 Skill，覆盖主要安全领域。它们位于 `src/clawsentry/gateway/skills/` 目录：
 
 ### shell-audit (优先级: 10)
 

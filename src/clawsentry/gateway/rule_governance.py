@@ -12,7 +12,7 @@ import yaml
 
 from .models import CanonicalEvent
 from .pattern_matcher import AttackPattern, PatternMatcher, _parse_evolved_pattern, _parse_pattern
-from .review_skills import ReviewSkill
+from .review_skills import ReviewSkill, _validate_manifest_v1_fields
 
 _REPORT_SCHEMA_VERSION = "cs-01.rule-governance.v1"
 _DEFAULT_PATTERNS_PATH = Path(__file__).parent / "attack_patterns.yaml"
@@ -522,6 +522,7 @@ def _validate_review_skill(data: dict[str, Any], path: Path) -> ReviewSkill:
     priority = data.get("priority", 0)
     if not isinstance(priority, int):
         priority = 0
+    manifest = _validate_manifest_v1_fields(data, path)
     return ReviewSkill(
         name=name,
         description=description,
@@ -530,6 +531,7 @@ def _validate_review_skill(data: dict[str, Any], path: Path) -> ReviewSkill:
         evaluation_criteria=normalized_criteria,
         enabled=enabled,
         priority=priority,
+        **manifest,
     )
 
 

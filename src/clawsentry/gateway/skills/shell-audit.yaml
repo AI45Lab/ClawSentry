@@ -1,7 +1,29 @@
 name: shell-audit
+schema_version: clawsentry.l3_skill.v1
 description: 审查 Shell 命令执行，检测命令注入和权限升级 / Audit shell command execution for injection and privilege escalation
 enabled: true
 priority: 10
+allowed_tools:
+  - read_trajectory
+  - read_trajectory_page
+  - read_session_risk
+  - read_file_range
+  - search_codebase
+  - query_git_diff
+  - list_directory
+required_evidence:
+  - current_event
+  - trigger
+severity_rubric:
+  high:
+    - privilege escalation, destructive shell, or download-and-execute risk
+  critical:
+    - confirmed destructive operation, credential theft, or system compromise
+output_tags:
+  - shell
+  - privilege
+field_notes:
+  effect_summary: "Prioritize process, filesystem, network, and credential effects."
 triggers:
   risk_hints:
     - privilege_escalation

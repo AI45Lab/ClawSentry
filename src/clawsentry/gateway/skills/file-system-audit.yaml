@@ -1,7 +1,27 @@
 name: file-system-audit
+schema_version: clawsentry.l3_skill.v1
 description: 审查文件系统操作，检测越权访问和敏感文件修改 / Audit filesystem operations for unauthorized access and sensitive file modification
 enabled: true
 priority: 8
+allowed_tools:
+  - read_trajectory
+  - read_trajectory_page
+  - read_file_range
+  - list_directory
+  - search_codebase
+required_evidence:
+  - current_event
+  - trigger
+severity_rubric:
+  high:
+    - sensitive file read or persistence-related write
+  critical:
+    - confirmed system file tampering or durable persistence
+output_tags:
+  - filesystem
+  - persistence
+field_notes:
+  effect_summary: "Review path scope, write effects, and persistence targets."
 triggers:
   risk_hints:
     - path_traversal

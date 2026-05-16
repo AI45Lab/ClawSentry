@@ -768,6 +768,15 @@ class AdmissionScanner:
             scan_id=_sha256(f"{root.resolve()}:{skill_root_hash}".encode("utf-8"))[:24],
             skill_root_hash=skill_root_hash,
             content_hashes=content_hashes,
+            sbom={
+                "components": [
+                    {"name": name, "hash": value}
+                    for name, value in sorted(content_hashes.items())
+                ]
+            },
+            checksum_evidence=dict(content_hashes),
+            signature_evidence={"state": "not_configured"},
+            advisory_evidence=[],
             findings=findings,
             admission_risk=admission_risk,
             policy_fingerprint=POLICY_FINGERPRINT,

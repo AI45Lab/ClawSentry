@@ -1729,7 +1729,7 @@ class TestGatewayCore:
         record = gw.trajectory_store.records[-1]
         assert record["meta"]["actual_tier"] == "L3"
         assert record["meta"]["l3_state"] == "completed"
-        assert record["l3_trace"]["trigger_reason"] == "eager"
+        assert record["l3_trace"]["trigger_reason"] == "replace_l2_routing"
         assert record["l3_trace"]["skill_selected"] == "credential-audit"
         assert record["l3_trace"]["mode"] == "single_turn"
         assert record["l3_trace"]["turns"][0]["type"] == "llm_call"

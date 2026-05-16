@@ -1,7 +1,28 @@
 name: network-audit
+schema_version: clawsentry.l3_skill.v1
 description: 审查网络操作，检测数据外传和不安全连接 / Audit network operations for data exfiltration and insecure connections
 enabled: true
 priority: 8
+allowed_tools:
+  - read_trajectory
+  - read_trajectory_page
+  - read_session_risk
+  - read_transcript
+  - search_codebase
+required_evidence:
+  - current_event
+  - trigger
+  - trajectory_summary
+severity_rubric:
+  high:
+    - suspicious external network transfer path
+  critical:
+    - confirmed sensitive data exfiltration or remote code execution
+output_tags:
+  - network
+  - exfiltration
+field_notes:
+  taint_flow_summary: "Look for sensitive source to external network sink."
 triggers:
   risk_hints:
     - data_exfiltration

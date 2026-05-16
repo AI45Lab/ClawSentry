@@ -8,6 +8,14 @@ description: 自主审查代理 — 多轮工具调用、YAML Skills、推理轨
 
 # L3 审查 Agent
 
+## Trigger-Aware Prompt v1 {#trigger-aware-prompt-v1}
+
+同步 L3 prompt 包含 `trigger` block、任务背景、字段词典和可选 `prior_analysis.l2_result`。这保证 operator runtime feed、trace 和 LLM 实际收到的任务同源：anti-bypass follow-up、Skill Trust first-use、Session `L3_REQUIRE`、`replace_l2` routing、suspicious pattern、cumulative risk 和 high-risk complex payload 都会带具体 review question。
+
+L3 仍然只使用 read-only tools。多轮工具结果以 `clawsentry.tool_evidence.v1` envelope 注入，字段包括 `tool`、`source`、`path`、`range`、`truncated`、`redacted`、`trust_level=untrusted_evidence` 和 `content`。模型必须把工具输出、transcript、文件内容、skill 内容和 payload 都当作 untrusted evidence，而不是指令。
+
+每个 selected skill 的 `allowed_tools` 会同时限制 system prompt 中公布的工具和运行时 tool-call 校验。全局不允许的工具返回 `requested_non_whitelisted_tool`；全局允许但当前 skill 未允许的工具返回 `requested_tool_not_allowed_by_skill`。
+
 ## 概述 {#overview}
 
 L3 是 ClawSentry 三层决策模型的**最高层**，部署一个拥有只读工具的 AI 审查代理 (Review Agent)，对高风险事件进行**深度自主调查**。与 L2 的单轮 LLM 调用不同，L3 可以进行多轮推理，主动调用工具收集证据，最终给出详细的安全评估。

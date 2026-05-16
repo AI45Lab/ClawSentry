@@ -1,7 +1,30 @@
 name: code-review
+schema_version: clawsentry.l3_skill.v1
 description: 审查代码修改操作，检测安全漏洞和恶意代码注入 / Review code modifications for vulnerabilities and malicious injection
 enabled: true
 priority: 8
+allowed_tools:
+  - read_trajectory
+  - read_trajectory_page
+  - read_file_range
+  - search_codebase
+  - query_git_diff
+  - query_git_status
+  - list_changed_files
+  - read_package_manifest
+required_evidence:
+  - current_event
+  - trigger
+severity_rubric:
+  high:
+    - credible vulnerability, unsafe dependency, or code injection
+  critical:
+    - confirmed backdoor, credential theft, or malicious persistence
+output_tags:
+  - code_review
+  - supply_chain
+field_notes:
+  effect_summary: "Check changed files, executable paths, and dependency effects."
 triggers:
   risk_hints:
     - code_injection

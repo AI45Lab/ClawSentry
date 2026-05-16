@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from clawsentry.gateway.models import CanonicalEvent, EventType
 from clawsentry.gateway.review_skills import SkillRegistry
 
@@ -306,6 +308,55 @@ evaluation_criteria:
     assert skill.name == "skill-b"
 
 
+def test_secondary_skill_criteria_selects_close_distinct_family(tmp_path: Path):
+    _write_skill(tmp_path / "general-review.yaml", _GENERAL_SKILL)
+    _write_skill(
+        tmp_path / "credential.yaml",
+        """
+name: credential
+description: credential
+priority: 10
+triggers:
+  risk_hints: [credential_exfiltration]
+  tool_names: [bash]
+  payload_patterns: []
+system_prompt: reviewer
+evaluation_criteria:
+  - name: credential
+    severity: critical
+    description: credential check
+""".strip(),
+    )
+    _write_skill(
+        tmp_path / "network.yaml",
+        """
+name: network
+description: network
+priority: 9
+risk_families: [network]
+triggers:
+  risk_hints: [network_exfiltration]
+  tool_names: [bash]
+  payload_patterns: []
+system_prompt: reviewer
+evaluation_criteria:
+  - name: network
+    severity: high
+    description: network check
+""".strip(),
+    )
+    registry = SkillRegistry(tmp_path)
+
+    secondary = registry.secondary_criteria(
+        _evt(tool_name="bash", risk_hints=["credential_exfiltration", "network_exfiltration"]),
+        ["credential_exfiltration", "network_exfiltration"],
+        primary_name="credential",
+    )
+
+    assert secondary[0]["skill"] == "network"
+    assert secondary[0]["evaluation_criteria"][0]["name"] == "network"
+
+
 def test_backward_compat_no_enabled_field(tmp_path: Path):
     """Skill without 'enabled' field defaults to True."""
     _write_skill(tmp_path / "general-review.yaml", _GENERAL_SKILL)
@@ -323,11 +374,95 @@ def test_backward_compat_no_priority_field(tmp_path: Path):
     assert skill.priority == 0
 
 
+def test_manifest_v1_rejects_illegal_allowed_tool(tmp_path: Path):
+    _write_skill(tmp_path / "general-review.yaml", _GENERAL_SKILL)
+    _write_skill(
+        tmp_path / "bad-tool.yaml",
+        """
+schema_version: clawsentry.l3_skill.v1
+name: bad-tool
+description: bad tool
+triggers:
+  risk_hints: [credential_exfiltration]
+  tool_names: []
+  payload_patterns: []
+allowed_tools:
+  - write_file
+required_evidence:
+  - current_event
+severity_rubric:
+  high:
+    - risky
+output_tags:
+  - credential
+system_prompt: reviewer
+evaluation_criteria:
+  - name: check
+    severity: high
+    description: check
+""".strip(),
+    )
+
+    with pytest.raises(ValueError, match="allowed_tools"):
+        SkillRegistry(tmp_path)
+
+
+def test_manifest_v1_rejects_bad_examples_and_duplicate_output_tags(tmp_path: Path):
+    _write_skill(tmp_path / "general-review.yaml", _GENERAL_SKILL)
+    _write_skill(
+        tmp_path / "bad-example.yaml",
+        """
+schema_version: clawsentry.l3_skill.v1
+name: bad-example
+description: bad example
+triggers:
+  risk_hints: [credential_exfiltration]
+  tool_names: []
+  payload_patterns: []
+allowed_tools:
+  - read_file
+required_evidence:
+  - current_event
+severity_rubric:
+  high:
+    - risky
+output_tags:
+  - credential
+  - credential
+example_policy:
+  max_examples: 1
+  max_chars_per_example: 100
+  synthetic_only: true
+  examples_are_not_evidence: true
+example_cases:
+  - example_id: real_case
+    synthetic: false
+    not_current_case: true
+    input_summary: "/home/alice/real/project"
+    expected_focus: "bad"
+system_prompt: reviewer
+evaluation_criteria:
+  - name: check
+    severity: high
+    description: check
+""".strip(),
+    )
+
+    with pytest.raises(ValueError, match="example_cases|output_tags"):
+        SkillRegistry(tmp_path)
+
+
 def test_builtin_skills_load_with_new_fields():
-    """Verify all 6 builtin skills load correctly with enabled/priority."""
+    """Verify builtin skills load correctly with manifest fields."""
     skills_dir = Path(__file__).parents[1] / "gateway" / "skills"
     registry = SkillRegistry(skills_dir)
-    assert len(registry.skills) == 6
+    assert len(registry.skills) >= 11
+    assert "skill-trust-audit" in registry.skills
+    assert "data-staging-exfil-chain-audit" in registry.skills
     for name, skill in registry.skills.items():
         assert isinstance(skill.enabled, bool)
         assert isinstance(skill.priority, int)
+        assert skill.schema_version == "clawsentry.l3_skill.v1"
+        assert skill.allowed_tools
+        assert skill.required_evidence
+        assert skill.output_tags

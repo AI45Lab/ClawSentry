@@ -123,6 +123,40 @@ def test_run_rules_lint_json_reports_failures_and_returns_nonzero(tmp_path: Path
     assert "duplicate_review_skill_name" in kinds
 
 
+def test_rules_lint_reports_manifest_v1_skill_failures(tmp_path: Path, capsys) -> None:
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    _write_general_review_skill(skills_dir / "general-review.yaml")
+    _write_text(
+        skills_dir / "bad.yaml",
+        """
+        schema_version: clawsentry.l3_skill.v1
+        name: bad
+        description: bad
+        triggers:
+          risk_hints: []
+          tool_names: []
+          payload_patterns: []
+        allowed_tools: [write_file]
+        required_evidence: []
+        severity_rubric:
+          high: [bad]
+        output_tags: [bad, bad]
+        system_prompt: reviewer
+        evaluation_criteria:
+          - name: check
+            severity: high
+            description: check
+        """,
+    )
+
+    exit_code = run_rules_lint(skills_dir=skills_dir, as_json=True)
+
+    assert exit_code == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert any(finding["kind"] == "invalid_review_skill_schema" for finding in payload["findings"])
+
+
 def test_run_rules_dry_run_json_reports_matches_and_selected_skill(tmp_path: Path, capsys) -> None:
     attack_patterns_path = tmp_path / "attack_patterns.yaml"
     _write_text(

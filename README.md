@@ -23,7 +23,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3419 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
+- **3444 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,6 +34,12 @@ pip install clawsentry[all]      # everything
 ```
 
 Requires Python >= 3.11.
+
+## What's New in v0.7.3
+
+- **L2/L3 shared evidence path**: L2 semantic analysis now emits a redacted evidence capsule that L3 review prompts and audit metadata can reuse.
+- **Triggered L3 review prompt**: L3 reviews are organized around trigger reason, policy intent, skill context, review skill manifest, evidence, and operator next steps.
+- **Expanded review skills**: prompt-injection transcript, data-staging exfil chain, dependency supply-chain, persistence, and skill-trust audit skills are available as manifest entries.
 
 ## What's New in v0.7.2
 

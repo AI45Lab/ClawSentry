@@ -701,6 +701,53 @@ class TestL1PolicyEngine:
         assert snapshot.l3_trace["trigger_reason"] == "manual_l3_escalate"
         assert decision.decision == DecisionVerdict.BLOCK
 
+    def test_requested_l3_preserves_specific_l3_request_reason_context(self):
+        class ContextSpyL3Analyzer:
+            analyzer_id = "test-l3-spy"
+
+            def __init__(self):
+                self.context = None
+
+            async def analyze(self, event, context, l1_snapshot, budget_ms):
+                self.context = context
+                return L2Result(
+                    target_level=RiskLevel.HIGH,
+                    reasons=["anti-bypass reviewed"],
+                    confidence=0.94,
+                    analyzer_id=self.analyzer_id,
+                    trace={
+                        "trigger_reason": "anti_bypass_followup",
+                        "mode": "single_turn",
+                        "turns": [],
+                        "degraded": False,
+                    },
+                    decision_tier=DecisionTier.L3,
+                )
+
+        analyzer = ContextSpyL3Analyzer()
+        engine = L1PolicyEngine(analyzer=analyzer)
+        ctx = DecisionContext(
+            session_risk_summary={
+                "force_l3": True,
+                "l3_request_reason": "anti_bypass_followup",
+                "l3_trigger_source_metadata": {"match_type": "cross_tool_script_similarity"},
+            }
+        )
+
+        _decision, _snapshot, tier = engine.evaluate(
+            _evt(tool_name="bash", payload={"command": "cat archive.tgz"}),
+            ctx,
+            requested_tier=DecisionTier.L3,
+        )
+
+        assert tier == DecisionTier.L3
+        assert analyzer.context is not None
+        assert analyzer.context.session_risk_summary["l3_request_reason"] == "anti_bypass_followup"
+        assert analyzer.context.session_risk_summary["l3_trigger_source_metadata"] == {
+            "match_type": "cross_tool_script_similarity"
+        }
+        assert analyzer.context.session_risk_summary["force_l3"] is True
+
     def test_requested_l3_tier_can_fall_back_to_l1_and_preserve_trace(self):
         class DegradedL3Analyzer:
             analyzer_id = "test-l3-degraded"

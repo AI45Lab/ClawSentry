@@ -49,7 +49,10 @@ class L3TriggerPolicy:
         context: DecisionContext | None,
         l1_snapshot: RiskSnapshot,
         session_risk_history: list[Any],
-    ) -> dict[str, str] | None:
+    ) -> dict[str, Any] | None:
+        explicit = self._explicit_trigger_metadata(context)
+        if explicit is not None:
+            return explicit
         if self._has_manual_flag(context):
             return {"trigger_reason": "manual_l3_escalate"}
         if self._has_eager_profile(context):
@@ -64,6 +67,52 @@ class L3TriggerPolicy:
             return {"trigger_reason": "cumulative_risk"}
         if self._is_high_risk_tool(event) and self._payload_complexity(event.payload or {}):
             return {"trigger_reason": "high_risk_complex_payload"}
+        return None
+
+    def _explicit_trigger_metadata(self, context: DecisionContext | None) -> dict[str, Any] | None:
+        if context is None or not isinstance(context.session_risk_summary, dict):
+            return None
+        summary = context.session_risk_summary
+        source_metadata = summary.get("l3_trigger_source_metadata")
+        if not isinstance(source_metadata, dict):
+            source_metadata = {}
+
+        if summary.get("l3_request_reason") == "anti_bypass_followup":
+            detail = source_metadata.get("match_type") or summary.get("l3_trigger_detail")
+            metadata: dict[str, Any] = {"trigger_reason": "anti_bypass_followup"}
+            if detail:
+                metadata["trigger_detail"] = str(detail)
+            metadata["source_metadata"] = dict(source_metadata)
+            return metadata
+
+        if summary.get("first_use_skill_trust_action") == "force_l3":
+            return {
+                "trigger_reason": "first_use_skill_trust_action",
+                "trigger_detail": "force_l3",
+                "source_metadata": dict(source_metadata),
+            }
+
+        if summary.get("l3_require_enforced") is True:
+            return {
+                "trigger_reason": "session_l3_require",
+                "trigger_detail": "enforcement",
+                "source_metadata": dict(source_metadata),
+            }
+
+        if str(summary.get("l3_routing_mode") or "").lower() == "replace_l2":
+            return {
+                "trigger_reason": "replace_l2_routing",
+                "trigger_detail": "replace_l2",
+                "source_metadata": dict(source_metadata),
+            }
+
+        if summary.get("l3_request_reason") == "requested_tier_l3":
+            return {
+                "trigger_reason": "requested_tier_l3",
+                "trigger_detail": "requested_tier",
+                "source_metadata": dict(source_metadata),
+            }
+
         return None
 
     def trigger_reason(

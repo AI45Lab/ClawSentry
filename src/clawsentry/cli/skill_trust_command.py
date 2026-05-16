@@ -128,6 +128,10 @@ def _registry_record_for_scan(
         canonical_name=canonical_name,
         aliases=aliases,
         content_hashes=report.content_hashes,
+        sbom=report.sbom,
+        checksum_evidence=report.checksum_evidence,
+        signature_evidence=report.signature_evidence,
+        advisory_evidence=report.advisory_evidence,
         source={
             "framework": framework,
             "path_hash": _sha256_text(str(skill_root.resolve())),

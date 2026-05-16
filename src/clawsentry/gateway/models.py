@@ -819,6 +819,10 @@ class SkillRegistryRecord(BaseModel):
     canonical_name: str = Field(..., min_length=1)
     aliases: list[str] = Field(default_factory=list)
     content_hashes: dict[str, str] = Field(default_factory=dict)
+    sbom: Optional[dict[str, Any]] = None
+    checksum_evidence: dict[str, str] = Field(default_factory=dict)
+    signature_evidence: Optional[dict[str, Any]] = None
+    advisory_evidence: list[dict[str, Any]] = Field(default_factory=list)
     source: dict[str, Any] = Field(default_factory=dict)
     trust_level: Literal["trusted", "local_unreviewed", "unknown", "untrusted"] = "unknown"
     admission_scan_id: Optional[str] = None
@@ -918,6 +922,10 @@ class AdmissionReport(BaseModel):
     scan_id: str = "scan-local"
     skill_root_hash: str
     content_hashes: dict[str, str] = Field(default_factory=dict)
+    sbom: Optional[dict[str, Any]] = None
+    checksum_evidence: dict[str, str] = Field(default_factory=dict)
+    signature_evidence: Optional[dict[str, Any]] = None
+    advisory_evidence: list[dict[str, Any]] = Field(default_factory=list)
     findings: list[AdmissionFinding] = Field(default_factory=list)
     admission_risk: RiskLevel = RiskLevel.LOW
     policy_fingerprint: Optional[str] = None

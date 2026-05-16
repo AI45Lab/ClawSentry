@@ -7,6 +7,13 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
+## v0.7.3
+
+- L2 现在输出结构化、脱敏的 semantic evidence capsule，L3 审查可以复用同一份动作、证据、skill context 和 redaction metadata。
+- L3 Agent 审查提示词按 trigger reason、policy intent、review skill manifest 和 operator next steps 组织，并对只读工具结果使用统一 envelope。
+- Review skills 扩展到 prompt-injection transcript、data-staging exfil chain、dependency supply-chain、persistence 与 skill-trust audit。
+- 公开 Python release surface 验证为 `3444 passed, 16 skipped`；Web UI 验证仍为 `56 passed`。
+
 ## v0.7.2
 
 - Anti-bypass L1 现在把高风险动作归一为脱敏 effect summary，并用 denied / pending effect ledger 追踪同一 session 内的等价绕过尝试。

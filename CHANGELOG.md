@@ -8,6 +8,40 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.7.3] — 2026-05-16
+
+### 新增
+
+- **L2 semantic evidence capsule v1** — L2 现在输出结构化、脱敏的 evidence capsule，覆盖命令动作、路径/网络/凭据/持久化线索、L1 compound/taint 证据和 semantic confidence，供 L3 与审计链复用。
+- **L3 triggered review prompt v1** — L3 Agent 审查提示词按 trigger reason、policy intent、skill context、evidence capsule 与 operator next steps 组织，降低泛化审查噪声。
+- **Review skill manifest v1** — 内置 review skills 扩展为可校验 manifest，新增 prompt-injection transcript、data-staging exfil chain、dependency supply-chain、persistence 与 skill-trust audit 技能。
+
+### 改进
+
+- **Read-only tool envelope** — AgentAnalyzer 对 L3 只读工具结果统一包裹 `ok/error`、artifact summary、review notes 和 redaction metadata；ReadOnlyToolkit 公共方法继续保留原始返回，兼容既有调用者。
+- **First-use Skill Trust review path** — first-use / local-unreviewed skill 可以进入 L2/L3 审查，并在 metadata 中保留 registry state、matched identity、action 与触发原因。
+- **Large payload summarization** — L2/L3 对超长命令、transcript 和工具响应使用脱敏摘要，避免把原始敏感内容传入审查 prompt 或公开证据。
+
+### 文档
+
+- 新增中文任务总结：`docs/materials/2026-05-16-clawsentry-l2-l3-prompt-skill-optimization-summary.md`。
+- 在线文档刷新 L2/L3 决策层、custom skills、Skill Trust、首页、安装页与 changelog。
+- README、包内 README、项目状态与开发动态日志同步 v0.7.3 发布口径。
+
+### 测试与验证
+
+- Python 完整回归：`python -m pytest -q --tb=short` → `3588 passed, 15 skipped`。
+- 公开 Python release surface：公开仓库 `python -m pytest -q --tb=short` → `3444 passed, 16 skipped`。
+- 受影响聚焦回归：`988 passed`。
+- Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
+- Rules lint：`PYTHONPATH=src python -m clawsentry.cli.main rules lint --json` → no findings。
+- `git diff --check` → PASS。
+
+### 边界
+
+- 本版本发布的是 L2/L3 prompt、review skill 和 evidence plumbing 的主线能力，不新增公开评测结论或排名声明。
+- L3 工具 envelope 的稳定边界在 AgentAnalyzer；ReadOnlyToolkit 的公共方法仍保持原始返回类型。
+
 ## [0.7.2] — 2026-05-16
 
 ### 新增
@@ -1535,6 +1569,7 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.7.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.3
 [0.7.2]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.2
 [0.7.1]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.0

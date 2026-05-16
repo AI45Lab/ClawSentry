@@ -1,7 +1,32 @@
 name: general-review
+schema_version: clawsentry.l3_skill.v1
 description: 通用 fallback 审查，评估整体行为合理性 / General fallback review for overall behavior assessment
 enabled: true
 priority: 0
+allowed_tools:
+  - read_trajectory
+  - read_trajectory_page
+  - read_session_risk
+  - read_file
+  - read_file_range
+  - read_transcript
+  - search_codebase
+  - query_git_diff
+  - list_directory
+required_evidence:
+  - current_event
+  - trigger
+  - trajectory_summary
+severity_rubric:
+  high:
+    - suspicious intent mismatch or multi-step risky behavior
+  critical:
+    - confirmed destructive, credential theft, or privilege escalation chain
+output_tags:
+  - general_review
+field_notes:
+  trigger: "Use the trigger reason as the primary review question."
+  effect_summary: "Use local effect evidence before inferring impact."
 triggers:
   risk_hints: []
   tool_names: []

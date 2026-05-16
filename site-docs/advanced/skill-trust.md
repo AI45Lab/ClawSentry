@@ -17,6 +17,20 @@ Skill Trust 用来把本地 skill 包的身份、来源、hash、别名和安全
 3. Gateway 在 `pre_action` 决策中解析请求携带的 skill raw metadata，与 registry 做 identity/provenance/hash 匹配。
 4. 首次使用、unknown、unbound、greylist、blacklist、disabled 或 invariant violation 会按 profile 动作进入 audit、L2/L3、DEFER 或 BLOCK。
 
+## Provenance Evidence v1 {#provenance-evidence-v1}
+
+Admission scan 和 registry record 现在保留更明确的 provenance evidence：
+
+| 字段 | 含义 |
+|---|---|
+| `content_hashes` | `SKILL.md`、`scripts`、`references`、`data` 等本地内容 hash |
+| `checksum_evidence` | 供 L3/审计复用的 checksum 摘要，默认来自 deterministic scan hash |
+| `sbom` | 轻量组件清单，列出 skill 内容组件及 hash |
+| `signature_evidence` | 签名/验签状态；未配置时为 `not_configured`，不会伪造通过 |
+| `advisory_evidence` | 未来接入 signed advisory feed 的有界证据列表 |
+
+当 first-use action 为 `force_l3` 时，Policy Engine 会写入 `l3_request_reason=first_use_skill_trust_action` 和 compact `l3_trigger_source_metadata`。L3 prompt 会选择或辅助 `skill-trust-audit`，并把这些字段作为 untrusted evidence 解释，不会把 skill 文档内容当作指令。
+
 ## CLI
 
 ```bash

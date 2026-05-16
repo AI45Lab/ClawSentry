@@ -13,7 +13,7 @@ import asyncio
 import concurrent.futures
 import logging
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from .models import (
     RISK_LEVEL_ORDER,
@@ -88,17 +88,17 @@ def _context_with_l3_config(
 ) -> Optional[DecisionContext]:
     if requested_tier != DecisionTier.L3:
         return context
-    updates: dict[str, str] = {}
+    updates: dict[str, Any] = {"force_l3": True}
     if config.l3_trigger_profile == "eager":
         updates["l3_trigger_profile"] = "eager"
     if config.l3_routing_mode == "replace_l2":
         updates["l3_routing_mode"] = "replace_l2"
-    if not updates:
-        return context
 
     session_summary = {}
     if context is not None and isinstance(context.session_risk_summary, dict):
         session_summary.update(context.session_risk_summary)
+    if not session_summary.get("l3_request_reason"):
+        updates["l3_request_reason"] = "requested_tier_l3"
     session_summary.update(updates)
     if context is not None:
         return context.model_copy(update={"session_risk_summary": session_summary})
@@ -117,6 +117,20 @@ def _context_with_first_use_action(
     session_summary["first_use_skill_trust_action"] = action
     if action == "force_l3":
         session_summary["force_l3"] = True
+        session_summary["l3_request_reason"] = "first_use_skill_trust_action"
+        metadata = session_summary.get("l3_trigger_source_metadata")
+        if not isinstance(metadata, dict):
+            metadata = {}
+        if context is not None and getattr(context, "skill_trust", None) is not None:
+            skill_trust = context.skill_trust
+            metadata.update({
+                "canonical_skill_id": getattr(skill_trust, "canonical_skill_id", None),
+                "display_name": getattr(skill_trust, "display_name", None),
+                "trust_state": getattr(skill_trust, "trust_state", None),
+            })
+        session_summary["l3_trigger_source_metadata"] = {
+            key: value for key, value in metadata.items() if value is not None
+        }
     else:
         session_summary["force_l2"] = True
     if context is not None:

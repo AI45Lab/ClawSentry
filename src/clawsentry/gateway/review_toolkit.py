@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
+import time
+import tomllib
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
@@ -19,6 +22,9 @@ class ReadOnlyToolkit:
     MAX_TRAJECTORY_EVENTS = 500
     MAX_TRAJECTORY_PAGE_SIZE = 100
     MAX_SESSION_RISK_EVENTS = 200
+    MAX_SEARCH_FILES = 2000
+    MAX_SEARCH_SECONDS = 2.0
+    DEFAULT_SEARCH_IGNORES = {".git", "node_modules", ".venv", "dist", "ui/dist"}
 
     def __init__(
         self,
@@ -184,6 +190,34 @@ class ReadOnlyToolkit:
         except (ValueError, OSError) as exc:
             return f"[error: {exc}]"
 
+    async def read_file_range(self, relative_path: str, start_line: int = 1, max_lines: int = 120) -> dict[str, Any]:
+        self._consume_call()
+        try:
+            target = self._safe_path(relative_path)
+            if not target.is_file():
+                return {"error": f"'{relative_path}' is not a file or does not exist"}
+            start = max(1, int(start_line))
+            limit = min(max(int(max_lines), 1), 500)
+            selected: list[str] = []
+            truncated = False
+            with open(target, "r", encoding="utf-8", errors="replace") as fh:
+                for lineno, line in enumerate(fh, 1):
+                    if lineno < start:
+                        continue
+                    if len(selected) >= limit:
+                        truncated = True
+                        break
+                    selected.append(line.rstrip("\n\r"))
+            return {
+                "path": str(target.relative_to(self.workspace_root)),
+                "start_line": start,
+                "end_line": start + len(selected) - 1 if selected else start,
+                "truncated": truncated,
+                "content": "\n".join(selected),
+            }
+        except (ValueError, OSError) as exc:
+            return {"error": str(exc)}
+
     async def read_transcript(self) -> str:
         self._consume_call()
         transcript_path = self.transcript_path
@@ -226,9 +260,20 @@ class ReadOnlyToolkit:
             return [{"error": f"Invalid regex: {exc}"}]
         results: list[dict[str, Any]] = []
         workspace_root = self.workspace_root
+        scanned_files = 0
+        deadline = time.monotonic() + self.MAX_SEARCH_SECONDS
         for path in sorted(workspace_root.glob(glob)):
+            if time.monotonic() > deadline or scanned_files >= self.MAX_SEARCH_FILES:
+                break
             if not path.is_file() or len(results) >= max_results:
                 continue
+            try:
+                rel_parts = path.relative_to(workspace_root).parts
+            except ValueError:
+                continue
+            if any(part in self.DEFAULT_SEARCH_IGNORES for part in rel_parts):
+                continue
+            scanned_files += 1
             try:
                 with open(path, "rb") as fh:
                     raw = fh.read(self.MAX_FILE_READ_BYTES)
@@ -265,6 +310,132 @@ class ReadOnlyToolkit:
             if len(output) > self.MAX_FILE_READ_BYTES:
                 output = output[: self.MAX_FILE_READ_BYTES] + "\n[truncated]"
             return output if output else stderr.decode("utf-8", errors="replace")
+        except (asyncio.TimeoutError, OSError, FileNotFoundError) as exc:
+            return f"[error: {exc}]"
+
+    async def query_git_status(self) -> str:
+        self._consume_call()
+        return await self._run_git("status", "--short")
+
+    async def list_changed_files(self, ref: str = "HEAD") -> list[str]:
+        self._consume_call()
+        if not re.match(r"^[A-Za-z0-9_.^~\-/]{1,200}$", ref):
+            return ["[error: unsafe ref pattern]"]
+        output = await self._run_git("diff", "--name-only", ref)
+        return [line for line in output.splitlines() if line.strip()]
+
+    async def query_git_show(self, ref: str = "HEAD", path: str | None = None) -> str:
+        self._consume_call()
+        if not re.match(r"^[A-Za-z0-9_.^~\-/:]{1,240}$", ref):
+            return "[error: unsafe ref pattern]"
+        args = ["show", ref]
+        if path:
+            args.extend(["--", path])
+        return await self._run_git(*args)
+
+    async def read_package_manifest(self, relative_path: str) -> dict[str, Any]:
+        self._consume_call()
+        try:
+            target = self._safe_path(relative_path)
+            if not target.is_file():
+                return {"error": f"'{relative_path}' is not a file or does not exist"}
+            with open(target, "rb") as fh:
+                raw = fh.read(self.MAX_FILE_READ_BYTES + 1)
+            truncated = len(raw) > self.MAX_FILE_READ_BYTES
+            raw = raw[: self.MAX_FILE_READ_BYTES]
+            text = raw.decode("utf-8", errors="replace")
+            if target.name == "package.json":
+                data = json.loads(text)
+                return {
+                    "path": str(target.relative_to(self.workspace_root)),
+                    "manifest_type": "package.json",
+                    "name": data.get("name"),
+                    "scripts": data.get("scripts", {}),
+                    "dependencies": sorted((data.get("dependencies") or {}).keys())[:100],
+                    "devDependencies": sorted((data.get("devDependencies") or {}).keys())[:100],
+                    "truncated": truncated,
+                }
+            if target.name == "pyproject.toml":
+                data = tomllib.loads(text)
+                project = data.get("project") if isinstance(data, dict) else {}
+                project = project if isinstance(project, dict) else {}
+                optional = project.get("optional-dependencies") or {}
+                optional_deps = {
+                    str(group): [str(item) for item in deps[:100]]
+                    for group, deps in optional.items()
+                    if isinstance(deps, list)
+                } if isinstance(optional, dict) else {}
+                return {
+                    "path": str(target.relative_to(self.workspace_root)),
+                    "manifest_type": "pyproject.toml",
+                    "name": project.get("name"),
+                    "dependencies": [str(item) for item in (project.get("dependencies") or [])[:100]],
+                    "optional_dependencies": optional_deps,
+                    "truncated": truncated,
+                }
+            if target.name == "Cargo.toml":
+                data = tomllib.loads(text)
+                package = data.get("package") if isinstance(data, dict) else {}
+                deps = data.get("dependencies") if isinstance(data, dict) else {}
+                return {
+                    "path": str(target.relative_to(self.workspace_root)),
+                    "manifest_type": "Cargo.toml",
+                    "name": package.get("name") if isinstance(package, dict) else None,
+                    "dependencies": sorted(str(key) for key in deps.keys())[:100] if isinstance(deps, dict) else [],
+                    "truncated": truncated,
+                }
+            lockfile_names = {"package-lock.json", "pnpm-lock.yaml", "yarn.lock", "Cargo.lock", "poetry.lock"}
+            return {
+                "path": str(target.relative_to(self.workspace_root)),
+                "manifest_type": target.name if target.name in lockfile_names else "raw",
+                "content": text[: self.MAX_FILE_READ_BYTES],
+                "truncated": truncated,
+            }
+        except (ValueError, OSError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
+            return {"error": str(exc)}
+
+    async def read_l3_trace(self, limit: int = 20) -> dict[str, Any]:
+        self._consume_call()
+        if self._session_registry is None:
+            return {"records": [], "error": "session_registry is not configured"}
+        try:
+            effective_limit = min(max(int(limit), 1), 100)
+        except (TypeError, ValueError):
+            effective_limit = 20
+        try:
+            risk = self._session_registry.get_session_risk(
+                self.session_id,
+                limit=self.MAX_SESSION_RISK_EVENTS,
+            )
+        except Exception as exc:
+            return {"records": [], "error": str(exc)}
+        records = []
+        for item in risk.get("risk_timeline", []) if isinstance(risk, dict) else []:
+            if item.get("actual_tier") == "L3" or item.get("l3_reason_code"):
+                records.append({
+                    "event_id": item.get("event_id"),
+                    "risk_level": item.get("risk_level"),
+                    "l3_reason_code": item.get("l3_reason_code"),
+                    "tool_name": item.get("tool_name"),
+                })
+        return {"records": records[:effective_limit]}
+
+    async def _run_git(self, *args: str) -> str:
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "git",
+                *args,
+                cwd=str(self.workspace_root),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10.0)
+            output = stdout.decode("utf-8", errors="replace")
+            if not output:
+                output = stderr.decode("utf-8", errors="replace")
+            if len(output) > self.MAX_FILE_READ_BYTES:
+                output = output[: self.MAX_FILE_READ_BYTES] + "\n[truncated]"
+            return output
         except (asyncio.TimeoutError, OSError, FileNotFoundError) as exc:
             return f"[error: {exc}]"
 
