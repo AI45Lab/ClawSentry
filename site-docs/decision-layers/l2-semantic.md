@@ -619,7 +619,7 @@ flowchart TD
 | `CS_LLM_MODEL` | 覆盖默认模型名称 | 任意模型 ID | 按 Provider 默认 |
 | `CS_LLM_BASE_URL` | OpenAI 兼容端点 URL | URL | Provider 默认 |
 | `CS_L3_ENABLED` | 启用 L3 审查 Agent | `true` / `false` | `false` |
-| `CS_L3_MULTI_TURN` | L3 运行模式；`false` 强制单轮 | `true` / `false` | `true`（L3 启用时） |
+| `CS_L3_MULTI_TURN` | L3 运行模式；默认多轮，仅 `false`/`0`/`no`/`off` 强制 legacy 单轮 | `true` / `false` | `true`（L3 启用时） |
 
 ### 配置示例
 

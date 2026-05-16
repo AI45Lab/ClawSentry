@@ -114,6 +114,10 @@ evaluation_criteria:
     return skills_dir
 
 
+def test_agent_analyzer_config_defaults_to_multi_turn():
+    assert AgentAnalyzerConfig().enable_multi_turn is True
+
+
 def test_mvp_returns_degraded_result_when_trigger_not_matched(tmp_path: Path):
     provider = MagicMock()
     provider.provider_id = "mock-llm"

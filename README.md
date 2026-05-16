@@ -23,7 +23,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3444 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
+- **3446 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,6 +34,12 @@ pip install clawsentry[all]      # everything
 ```
 
 Requires Python >= 3.11.
+
+## What's New in v0.7.4
+
+- **L3 multi-turn by default**: L3 AgentAnalyzer now uses multi-turn review unless `CS_L3_MULTI_TURN=false`, `0`, `no`, or `off` explicitly requests legacy single-turn mode.
+- **Benchmark Docker alignment**: protected SkillsSafetyBench sweeps set `CS_L3_MULTI_TURN=true`, matching the public runtime default for unattended Docker benchmark runs.
+- **Docs and config refresh**: env-var docs, L3 docs, and benchmark notes now describe multi-turn as the default path.
 
 ## What's New in v0.7.3
 

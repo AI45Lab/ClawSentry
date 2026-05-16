@@ -143,7 +143,7 @@ class AgentAnalyzerConfig:
     max_reasoning_turns: int = 8            # 多轮模式最大推理轮数
     initial_trajectory_limit: int = 20      # 初始轨迹回放条数
     max_findings: int = 10                  # 最终 findings 列表最大条数
-    enable_multi_turn: bool = False         # 裸配置默认单轮；工厂可覆盖为多轮
+    enable_multi_turn: bool = True          # 默认多轮；false 仅用于 legacy 单轮回退
 ```
 
 !!! warning "Hard Cap 保证"
@@ -184,7 +184,7 @@ sequenceDiagram
 当 `enable_multi_turn=True` 时，L3 进入多轮推理循环，LLM 可以主动调用工具收集更多证据。
 
 !!! tip "运行时默认值"
-    直接实例化 `AgentAnalyzerConfig()` 时，`enable_multi_turn` 的裸默认值仍是 `False`。但通过 `build_analyzer_from_env()` 启用 L3 时，默认运行模式是 `multi_turn`；只有显式设置 `CS_L3_MULTI_TURN=false` 才会退回单轮 MVP。
+    直接实例化 `AgentAnalyzerConfig()` 或通过 `build_analyzer_from_env()` 启用 L3 时，默认运行模式都是 `multi_turn`；只有显式设置 `CS_L3_MULTI_TURN=false` / `0` / `no` / `off` 才会退回 legacy 单轮模式。
 
 **每轮 LLM 响应的两种格式：**
 
@@ -782,7 +782,7 @@ def _payload_complexity(self, payload) -> bool:
 | 环境变量 | 说明 | 默认值 |
 |----------|------|:------:|
 | `CS_L3_ENABLED` | 启用 L3 审查 Agent | `false` |
-| `CS_L3_MULTI_TURN` | 运行模式开关；`false` 强制单轮 | `true`（L3 启用时） |
+| `CS_L3_MULTI_TURN` | 运行模式开关；`false` / `0` / `no` / `off` 强制 legacy 单轮 | `true`（L3 启用时） |
 | `CS_L3_ADVISORY_ASYNC_ENABLED` | 在 high/critical decision 或 high+ trajectory alert 后自动创建 frozen advisory snapshot；当前不启动真实 review scheduler | `false` |
 | `CS_L3_HEARTBEAT_REVIEW_ENABLED` | 预留 heartbeat/idle 聚合后的 advisory snapshot review 开关；不启用 timer-only full review | `false` |
 | `CS_L3_ADVISORY_RUN_REAL_SMOKE` | 测试套件里的真实 provider readiness gate；未显式启用时真实网络调用默认跳过 | `false` |

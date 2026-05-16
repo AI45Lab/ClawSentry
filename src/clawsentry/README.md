@@ -1,12 +1,12 @@
 # ClawSentry — AHP Supervision Gateway
 
-> **Python 3.11+** | **3444 public Python regression tests + 56 Web UI tests** | Protocol `ahp.1.0`
+> **Python 3.11+** | **3446 public Python regression tests + 56 Web UI tests** | Protocol `ahp.1.0`
 
 **ClawSentry** is the Python reference implementation of AHP (Agent Harness Protocol) — a unified security supervision gateway for multi-agent frameworks. Deployed as a sidecar, it normalizes runtime events from different frameworks (a3s-code, Claude Code, Codex, Gemini CLI, Kimi CLI, OpenClaw) into a unified protocol, passes them through a three-layer progressive risk evaluation pipeline, and produces real-time decisions (allow / block / modify / defer) with complete audit trails.
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.7.3)**: L2 semantic evidence capsules, L3 triggered review prompts, and review skill manifests now share a redacted evidence path, so Agent review can reason about trigger reason, policy intent, skill context, artifacts, and operator next steps without exposing raw sensitive payloads.
+**Current release highlight (v0.7.4)**: L3 now defaults to multi-turn Agent review. Set `CS_L3_MULTI_TURN=false`, `0`, `no`, or `off` only when you intentionally need the legacy single-turn path.
 
 ---
 
@@ -452,7 +452,7 @@ src/clawsentry/
 |   |-- semantic_analyzer.py           # L2 pluggable semantic (Protocol + 3 implementations)
 |   |-- llm_provider.py                # LLM Provider base (Anthropic/OpenAI)
 |   |-- llm_factory.py                 # Environment-driven analyzer builder
-|   |-- agent_analyzer.py              # L3 review Agent (single-turn MVP + multi-turn runtime)
+|   |-- agent_analyzer.py              # L3 review Agent (multi-turn default + legacy single-turn fallback)
 |   |-- review_toolkit.py              # L3 ReadOnlyToolkit (7 read-only tools incl. transcript/session risk)
 |   |-- review_skills.py               # L3 SkillRegistry (YAML load/select)
 |   |-- l3_trigger.py                  # L3 trigger policy (explicit trigger reasons)
@@ -479,7 +479,7 @@ src/clawsentry/
 |-- ui/                                # Web security dashboard (React SPA)
 |   |-- src/                           # TypeScript source
 |   +-- dist/                          # Pre-built artifacts (shipped with pip)
-+-- tests/                             # Public test suite (3444 Python regression tests)
++-- tests/                             # Public test suite (3446 Python regression tests)
 ```
 
 ---
@@ -523,7 +523,7 @@ src/clawsentry/
 | `CS_LLM_BASE_URL` | Custom API endpoint |
 | `CS_LLM_MODEL` | Model name |
 | `CS_L3_ENABLED` | Enable L3 review Agent |
-| `CS_L3_MULTI_TURN` | Force L3 `multi_turn`/single-turn runtime mode (`false` keeps MVP single-turn) |
+| `CS_L3_MULTI_TURN` | L3 runtime mode guard; defaults to multi-turn, only `false`/`0`/`no`/`off` forces legacy single-turn |
 | `CS_L3_ADVISORY_ASYNC_ENABLED` | Auto-create frozen advisory snapshots after high/critical decisions or high+ trajectory alerts (default off; automatic snapshots do not run a real review scheduler) |
 | `CS_L3_HEARTBEAT_REVIEW_ENABLED` | Reserved heartbeat/idle advisory snapshot review trigger (default off; no timer-only review is started by the current implementation) |
 | `CS_LLM_TEMPERATURE` | Shared LLM provider temperature for L2/L3/advisory provider calls |
@@ -532,7 +532,7 @@ src/clawsentry/
 | `CS_L3_ADVISORY_SMOKE_STRIP_PROXY_ENV` | Manual smoke proxy hygiene; defaults to `true` |
 
 When `CS_L3_ENABLED=true`, the env-driven factory now defaults L3 to `multi_turn`.
-Set `CS_L3_MULTI_TURN=false` to force the older single-turn MVP behavior. The
+Set `CS_L3_MULTI_TURN=false` only when you intentionally need the older single-turn behavior. The
 `clawsentry test-llm` probe surfaces the active L3 mode and trigger reason in
 its detail output so operators can verify the runtime path.
 
@@ -620,7 +620,7 @@ pip install -e ".[dev]"
 
 # Full suite
 python -m pytest src/clawsentry/tests/ -v --tb=short
-# Expected: current public release validation 3444 passed, 16 skipped
+# Expected: current public release validation 3446 passed, 16 skipped
 
 # E2E (requires LLM API key)
 A3S_SDK_E2E=1 python -m pytest src/clawsentry/tests/ -v --tb=short

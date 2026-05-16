@@ -12,7 +12,7 @@ Environment variables:
   CS_LLM_PROVIDER_TIMEOUT_MS = optional per-call provider timeout override
   CS_L3_ENABLED       = "true" to enable AgentAnalyzer (L3 review agent)
   CS_LLM_L3_ENABLED   = alias for CS_L3_ENABLED
-  CS_L3_MULTI_TURN    = "false" to force MVP single-turn mode when L3 is enabled
+  CS_L3_MULTI_TURN    = "false" to force legacy single-turn mode when L3 is enabled
   CS_ENTERPRISE_ENABLED = enterprise compatibility feature flag
 """
 
@@ -124,9 +124,8 @@ def build_analyzer_from_env(
                     loaded = skill_registry.load_additional(custom_path)
                     logger.info("Custom skills loaded from %s (%d skills)", custom_path, loaded)
             from .agent_analyzer import AgentAnalyzerConfig
-            enable_multi_turn = str(os.getenv("CS_L3_MULTI_TURN", "").strip()).lower() in ("true", "1", "yes", "on")
-            if not str(os.getenv("CS_L3_MULTI_TURN", "")).strip():
-                enable_multi_turn = True
+            l3_multi_turn_raw = str(os.getenv("CS_L3_MULTI_TURN", "")).strip().lower()
+            enable_multi_turn = l3_multi_turn_raw not in {"false", "0", "no", "off"}
             agent_config = AgentAnalyzerConfig(
                 l3_budget_ms=l3_budget_ms,
                 enable_multi_turn=enable_multi_turn,

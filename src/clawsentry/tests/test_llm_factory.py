@@ -242,6 +242,30 @@ class TestBuildAnalyzerFromEnv:
         assert isinstance(result._analyzers[1], AgentAnalyzer)
         assert result._analyzers[1]._config.enable_multi_turn is False
 
+    def test_l3_multi_turn_invalid_value_keeps_default_multi_turn(self):
+        """Unexpected CS_L3_MULTI_TURN values should not silently force single-turn."""
+        from pathlib import Path
+        from clawsentry.gateway.server import TrajectoryStore
+        from clawsentry.gateway.agent_analyzer import AgentAnalyzer
+
+        env = {
+            **_clean_env(),
+            "CS_LLM_PROVIDER": "openai",
+            "OPENAI_API_KEY": "sk-test-key-123",
+            "CS_L3_ENABLED": "true",
+            "CS_L3_MULTI_TURN": "maybe",
+        }
+        store = TrajectoryStore(db_path=":memory:")
+        with mock.patch.dict(os.environ, env, clear=False):
+            result = build_analyzer_from_env(
+                trajectory_store=store,
+                workspace_root=Path("/tmp"),
+            )
+
+        assert isinstance(result, CompositeAnalyzer)
+        assert isinstance(result._analyzers[1], AgentAnalyzer)
+        assert result._analyzers[1]._config.enable_multi_turn is True
+
     def test_l3_toolkit_receives_session_registry(self):
         """Factory-built L3 should pass SessionRegistry into ReadOnlyToolkit."""
         from pathlib import Path

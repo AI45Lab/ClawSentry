@@ -74,7 +74,7 @@ clawsentry config show --effective --env-file .clawsentry.env.local
 | `CS_LLM_MODEL` | (provider 默认) | 覆盖默认模型名称。如 `claude-sonnet-4-20250514`、`gpt-4o-mini` |
 | `CS_LLM_BASE_URL` | (provider 默认) | OpenAI 兼容 API 基础 URL。用于自托管模型（Ollama、vLLM 等） |
 | `CS_L3_ENABLED` | `false` | 启用 L3 审查 Agent。需要先配置 LLM provider。可选值：`true`/`1`/`yes` |
-| `CS_L3_MULTI_TURN` | `true`（仅在 `CS_L3_ENABLED=true` 时生效） | 控制 L3 运行模式。`true`/`1`/`yes`/`on` = 标准多轮；`false`/其他非空值 = 强制单轮 MVP；留空时使用默认值 |
+| `CS_L3_MULTI_TURN` | `true`（仅在 `CS_L3_ENABLED=true` 时生效） | 控制 L3 运行模式。默认标准多轮；仅 `false`/`0`/`no`/`off` 会强制 legacy 单轮；留空或其他值使用多轮 |
 | `ANTHROPIC_API_KEY` | - | Anthropic API 密钥。`CS_LLM_PROVIDER=anthropic` 时必填 |
 | `OPENAI_API_KEY` | - | OpenAI API 密钥。`CS_LLM_PROVIDER=openai` 时必填 |
 | `CS_LLM_API_KEY` | - | 通用 LLM API 密钥。作为 `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` 的替代方案，`doctor` 检查时也会检测此变量 |
@@ -93,7 +93,7 @@ CS_L3_ENABLED=true       →  L1 + L2 + L3 审查 Agent（完整三层）
 
 !!! note "L3 运行模式默认值"
     通过 `build_analyzer_from_env()` 装配时，只要 `CS_L3_ENABLED=true` 且未显式关闭，L3 默认以 `multi_turn` 模式运行。
-    如需保留旧的单轮 MVP 行为，请设置 `CS_L3_MULTI_TURN=false`。
+    如需临时保留旧的单轮行为，请设置 `CS_L3_MULTI_TURN=false`。
 
 ---
 
@@ -468,7 +468,7 @@ Prometheus 指标导出配置，需安装 `clawsentry[metrics]` 可选依赖。
 | `CS_L3_ADVISORY_SMOKE_STRIP_PROXY_ENV` | `true` | 手动 readiness check 默认剥离 proxy 环境变量，避免本地 SOCKS proxy 缺依赖污染 provider client；需经代理时可显式设为 `false` |
 
 !!! note "多轮模式的延迟与成本"
-    `CS_L3_ENABLED=true` 时，运行时默认使用多轮 L3。相比单轮 MVP，这会增加平均延迟和 token 成本；若需要保守 rollout，可显式设置 `CS_L3_MULTI_TURN=false`。
+    `CS_L3_ENABLED=true` 时，运行时默认使用多轮 L3。相比 legacy 单轮，这会增加平均延迟和 token 成本；若需要保守 rollout，可显式设置 `CS_L3_MULTI_TURN=false`。
 
 !!! info "本地 L3 不可用时的运行态语义"
     如果配置了 `CS_L3_ROUTING_MODE=replace_l2` 或 `CS_L3_TRIGGER_PROFILE=eager`，但网关启动时没有本地 L3 能力，系统不会伪装成已执行 L3。它会保留原有 L1/L2 回退路径，同时明确输出：

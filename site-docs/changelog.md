@@ -7,6 +7,13 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
+## v0.7.4
+
+- L3 AgentAnalyzer 现在默认使用 multi-turn review；只有显式设置 `CS_L3_MULTI_TURN=false`、`0`、`no` 或 `off` 才会进入 legacy single-turn。
+- Protected SkillsSafetyBench Docker sweep 固定环境改为 `CS_L3_MULTI_TURN=true`，与公开默认模式一致。
+- 配置页、L3 决策层文档和 README 已刷新到多轮默认口径。
+- 公开 Python release surface 验证为 `3446 passed, 16 skipped`；Web UI 验证仍为 `56 passed`。
+
 ## v0.7.3
 
 - L2 现在输出结构化、脱敏的 semantic evidence capsule，L3 审查可以复用同一份动作、证据、skill context 和 redaction metadata。

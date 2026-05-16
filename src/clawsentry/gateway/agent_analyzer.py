@@ -1,14 +1,14 @@
-"""L3 AgentAnalyzer — MVP (single-turn) and standard (multi-turn) modes.
+"""L3 AgentAnalyzer — standard multi-turn mode with a legacy single-turn fallback.
 
 Design basis: 11-long-term-evolution-vision.md section 3 (Phase 5.2)
-
-MVP mode (enable_multi_turn=False):
-  trigger -> select skill -> collect min context -> single LLM call -> L2Result
 
 Standard mode (enable_multi_turn=True):
   same entry; LLM drives tool selection each turn via structured JSON protocol.
   Each turn: LLM returns {thought, tool_call, done} or final {risk_level, findings, confidence}.
   Hard constraints: MAX_TOOL_CALLS budget, max_reasoning_turns, hard_cap_ms.
+
+Legacy single-turn mode (enable_multi_turn=False):
+  trigger -> select skill -> collect min context -> single LLM call -> L2Result
 
 Fail-safe: any error / timeout / budget exhaustion -> degrade to l1_snapshot level, confidence=0.
 """
@@ -86,7 +86,7 @@ class AgentAnalyzerConfig:
     max_reasoning_turns: int = 8
     initial_trajectory_limit: int = 20
     max_findings: int = 10
-    enable_multi_turn: bool = False
+    enable_multi_turn: bool = True
 
 
 class AgentAnalyzer:

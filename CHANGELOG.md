@@ -8,6 +8,33 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.7.4] — 2026-05-16
+
+### 改进
+
+- **L3 default multi-turn mode** — `AgentAnalyzerConfig` 与 env-driven factory 现在默认启用 L3 多轮审查；只有显式设置 `CS_L3_MULTI_TURN=false`、`0`、`no` 或 `off` 才会回退 legacy single-turn。
+- **Benchmark protected profile alignment** — SkillsSafetyBench protected sweep 的 Docker 固定环境现在设置 `CS_L3_MULTI_TURN=true`，与公开默认模式一致。
+
+### 文档
+
+- 新增中文任务总结：`docs/materials/2026-05-16-clawsentry-l3-default-multiturn-release-summary.md`。
+- 更新 L3/env 文档、benchmark 配置说明、README、在线文档 changelog 与项目状态文档，明确 L3 多轮为默认路径。
+
+### 测试与验证
+
+- Python 完整回归：`python -m pytest -q --tb=short` → `3590 passed, 15 skipped`。
+- 公开 Python release surface：公开仓库 `python -m pytest -q --tb=short` → `3446 passed, 16 skipped`。
+- L3/factory/benchmark sweep 聚焦回归：`96 passed`。
+- Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
+- Rules lint：`PYTHONPATH=src python -m clawsentry.cli.main rules lint --json` → no findings。
+- Web UI：`npm test -- --run` → `56 passed`；`npm run build` → PASS。
+- `git diff --check`、`mkdocs build --strict`、`python -m build` → PASS。
+
+### 边界
+
+- 本版本只改变 L3 默认运行模式与 benchmark protected sweep 固定环境，不新增 benchmark leaderboard、ASR/TSR/TFR 结论或 raw-vs-protected 评测声明。
+- Docker benchmark 可以直接使用公开 PyPI 包；需要 legacy 单轮审查时必须显式设置 `CS_L3_MULTI_TURN=false`。
+
 ## [0.7.3] — 2026-05-16
 
 ### 新增
@@ -1569,6 +1596,7 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.7.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.4
 [0.7.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.3
 [0.7.2]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.2
 [0.7.1]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.1
