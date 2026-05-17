@@ -4,18 +4,28 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to publish/backfill, for example v0.7.5'
+        required: true
+        type: string
 
 permissions:
   id-token: write   # required for OIDC trusted publisher
-  contents: read
+  contents: write   # required to create/update GitHub Releases
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     environment: pypi-release
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - uses: actions/setup-python@v6
         with:
@@ -29,3 +39,42 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # release/v1
+        with:
+          skip-existing: true
+
+      - name: Build GitHub release notes
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          import re
+
+          tag = os.environ["RELEASE_TAG"]
+          version = tag.removeprefix("v")
+          changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          pattern = rf"^## \[{re.escape(version)}\].*?\n(?P<body>.*?)(?=^## \[|\Z)"
+          match = re.search(pattern, changelog, flags=re.MULTILINE | re.DOTALL)
+          body = match.group("body").strip() if match else f"Release {tag}."
+          pathlib.Path("release-notes.md").write_text(
+              f"# ClawSentry {tag}\n\n{body}\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" \
+              --title "ClawSentry $RELEASE_TAG" \
+              --notes-file release-notes.md \
+              --latest
+          else
+            gh release create "$RELEASE_TAG" \
+              --verify-tag \
+              --title "ClawSentry $RELEASE_TAG" \
+              --notes-file release-notes.md \
+              --latest
+          fi
