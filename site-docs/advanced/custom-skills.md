@@ -1,498 +1,385 @@
 ---
-title: 自定义 L3 Skills
-description: 为 L3 审查 Agent 编写和加载自定义 YAML 领域审查技能
+title: 自定义 L3 技能
+description: Write and load custom YAML domain-review skills for the L3 review agent.
 ---
 
 <div class="cs-doc-hero" markdown>
-<div class="cs-eyebrow">Advanced · L3 Review Agent</div>
+<div class="cs-eyebrow">高级功能 · L3 审查代理</div>
 
-## 自定义 L3 Skills
+## 自定义 L3 审查技能
 
-为 L3 审查 Agent 编写和加载自定义 YAML 领域审查技能，扩展 ClawSentry 的深度安全审查能力。
+编写 YAML 技能清单，使用自定义触发条件、提示词和评估标准，扩展 L3 代理的领域安全专业知识。
 
 <div class="cs-pill-row" markdown>
-<span class="cs-pill">Manifest v1 (v0.7.0)</span>
-<span class="cs-pill">v0.7.3 新增 skill 类型</span>
-<span class="cs-pill">AHP_SKILLS_DIR</span>
-<span class="cs-pill">rules lint 校验</span>
+<span class="cs-pill">Skill Schema v1</span>
+<span class="cs-pill">SkillRegistry</span>
+<span class="cs-pill">自定义技能目录</span>
+<span class="cs-pill">规则检查</span>
 </div>
 </div>
 
-# 自定义 L3 Skills
-
-L3 审查 Agent 是 ClawSentry 三层决策模型的最深层。它通过多轮 LLM 工具调用对高风险事件进行深度安全审查。**Skill** 是 L3 Agent 的领域知识载体——每个 Skill 定义了一个特定安全领域的审查专长，包括触发条件、审查提示词和评估标准。
-
-本文介绍如何理解内置 Skills，以及如何编写和加载自定义 Skills 来扩展 L3 Agent 的审查能力。
-
-!!! note "作用范围"
-    自定义 Skill 只影响**同步 L3 审查 Agent** 的技能选择和审查提示词。它不会改变 L1/L2 评分、不会写文件，也不会让 [L3 咨询审查](../decision-layers/l3-advisory.md) 自动联网或自动执行 job。Advisory full-review 仍由 frozen snapshot/job/review 流程和独立 provider gates 控制。
+L3 审查代理在运行时从注册表中选择最匹配的技能，并将其 `system_prompt` 和 `evaluation_criteria` 注入 LLM 调用。技能文件为纯 YAML 格式，无需编写任何 Python 代码。
 
 ---
 
-## 什么是 Skill
+## 技能清单字段参考
 
-Skill 是以 **YAML 文件**定义的领域审查专长，由 `SkillRegistry` 加载和管理。每个 Skill 包含：
+以下为顶层 YAML 字段及其类型、约束条件和默认值。
 
-- **触发条件 (triggers)** -- 决定何时激活该 Skill
-- **系统提示词 (system_prompt)** -- 提供给 LLM 的领域专家角色指令
-- **评估标准 (evaluation_criteria)** -- 定义该领域的安全评估维度
-- **Manifest v1 字段** -- `schema_version`、`allowed_tools`、`required_evidence`、`severity_rubric`、`output_tags`、`field_notes`、`example_policy` 和 `example_cases`
+### 核心字段（所有 schema 版本适用）
 
-当一个高风险事件需要 L3 审查时，`SkillRegistry` 会根据事件特征（工具名称、风险提示、payload 内容）**自动选择**最匹配的 Skill，确保 LLM 以正确的领域专家身份进行审查。
+| 字段 | 类型 | 是否必填 | 默认值 | 约束条件 |
+|---|---|---|---|---|
+| `name` | `string` | 是 | — | 非空；在内置技能与自定义技能中全局唯一。 |
+| `description` | `string` | 是 | — | 非空的人类可读摘要。 |
+| `system_prompt` | `string` | 是 | — | 非空；定义 LLM 审查员角色和输出格式。 |
+| `triggers` | `dict` | 否 | `{}` | 必须为 dict；包含三个可选子列表：`risk_hints`、`tool_names`、`payload_patterns`。 |
+| `evaluation_criteria` | `list[dict]` | 否 | `[]` | 每个条目必须包含 `name`、`description` 和 `severity`（`low`/`medium`/`high`/`critical`）。 |
+| `enabled` | `bool` | 否 | `true` | 设为 `false` 可禁用技能而不删除文件。 |
+| `priority` | `int` | 否 | `0` | 得分相同时的优先级决胜；值越高越优先。 |
+| `schema_version` | `string` | 否 | `"legacy"` | 设为 `clawsentry.l3_skill.v1` 可启用严格的 v1 校验。 |
 
-### Skill 选择算法
+### 清单 v1 专属字段（`schema_version: clawsentry.l3_skill.v1`）
 
-SkillRegistry 使用**加权评分**算法选择最佳 Skill：
+| 字段 | 类型 | v1 是否必填 | 默认值 | 约束条件 |
+|---|---|---|---|---|
+| `allowed_tools` | `list[string]` | 否 | 全部 `VALID_L3_TOOLS` | 必须是全局工具白名单的子集（见下文）。 |
+| `required_evidence` | `list[string]` | **是** | — | 每个值必须在有效证据集内（见下文）。非空。 |
+| `recommended_tools` | `list[dict]` | 否 | `[]` | 每个条目格式为 `{name, reason}`；`name` 必须在全局工具白名单中。 |
+| `severity_rubric` | `dict` | **是** | — | 键：`low`/`medium`/`high`/`critical`；至少必须覆盖 `high` 或 `critical`。 |
+| `benign_exceptions` | `list[string]` | 否 | `[]` | 展示给审查员的自由文本例外说明。 |
+| `output_tags` | `list[string]` | **是** | — | 非空；不得重复；每个标签须匹配 `^[a-z][a-z0-9_]{1,63}$`。 |
+| `field_notes` | `dict` | 否 | — | 键限于有效的 field-notes 集合（见下文），值为字符串。 |
+| `example_policy` | `dict` | 否 | — | `{max_examples: int, max_chars_per_example: int（默认 900）}`。 |
+| `example_cases` | `list[dict]` | 否 | `[]` | 每个条目必须包含 `synthetic: true` 和 `not_current_case: true`，不得含真实路径或类密钥文本，长度受 `example_policy` 限制。 |
+| `max_tool_calls` | `int` | 否 | — | 加载时截断至 `[1, 20]`。 |
 
-| 匹配维度 | 权重 | 说明 |
-|----------|------|------|
-| `risk_hints` 匹配 | 每命中 1 个 +10 分 | 事件的 risk_hints 与 Skill triggers 的交集 |
-| `tool_names` 匹配 | 命中 +5 分 | 事件的 tool_name 是否在 Skill 的 tool_names 列表中 |
-| `payload_patterns` 匹配 | 每命中 1 个 +1 分 | payload 文本中是否包含 Skill 定义的模式子串 |
+!!! 警告 "v1 比 legacy 更严格"
+    当设置 `schema_version: clawsentry.l3_skill.v1` 时，加载器会强制要求 `required_evidence`、`severity_rubric`（须覆盖 `high` 或 `critical`）以及 `output_tags` 均存在且非空。未设置 `schema_version` 或设为 `"legacy"` 的旧版技能跳过上述检查，但不能安全使用 v1 专属字段。
 
-得分最高的 Skill 被选中。如果最高分 <= 0（无任何匹配），则 fallback 到 `general-review` Skill。得分相同时，`priority` 值更高的 Skill 优先。
+### 全局工具白名单（`VALID_L3_TOOLS`）
+
+`allowed_tools` 中的值必须来自以下集合，任何未列出的工具将在加载时抛出 `ValueError`。
+
+```
+read_trajectory          read_trajectory_page     read_file
+read_file_range          read_transcript          read_session_risk
+read_l3_trace            search_codebase          query_git_diff
+query_git_status         query_git_show           list_changed_files
+list_directory           read_package_manifest
+```
+
+### `required_evidence` 有效值
+
+```
+current_event    trigger          trajectory_summary    session_risk
+workspace_context    l1_snapshot    prior_analysis    skill_trust
+```
+
+### `field_notes` 有效键
+
+```
+event    trigger    local_evidence    rule_hits    effect_summary
+taint_flow_summary    skill_trust_findings    session_scope_summary
+mcp_summary    tool_evidence    prior_analysis
+```
 
 ---
 
-## Manifest v1 {#manifest-v1}
+## 技能评分算法
 
-新的推荐 schema 是 `schema_version: clawsentry.l3_skill.v1`。Legacy YAML 仍可加载，但内置 skills 已迁移到 v1。
+`SkillRegistry._ranked_skills()` 为每个已启用的非 `general-review` 技能计算 `(score, priority, -insertion_order)` 三元组，然后降序排列。当所有已启用技能的得分均为 `0` 时，`_ranked_skills()` 会将 `general-review` 以 `0` 分注入排名列表，确保列表永不为空。随后 `select_skill()` 返回列表中的第一个结果。
 
-关键字段：
+### 技能评分与选择流程
 
-| 字段 | 作用 |
-|---|---|
-| `allowed_tools` | 当前 skill 可调用的 L3 read-only tools 子集；这是运行时安全边界，不只是文档 |
-| `required_evidence` | skill 期望 prompt 中具备的证据类别，如 `current_event`、`trigger`、`trajectory_summary`、`skill_trust` |
-| `recommended_tools` | 给模型的取证建议，不会放宽 `allowed_tools` |
-| `severity_rubric` | 至少覆盖 `high` 或 `critical`，用于领域化风险判断 |
-| `benign_exceptions` | 常见良性边界情况 |
-| `output_tags` | 可审计 taxonomy 标签，必须唯一且为安全标签格式 |
-| `field_notes` | 对 evidence capsule 或 tool envelope 字段的领域解释 |
-| `example_policy` | 限制 few-shot 示例数量、长度和隔离策略 |
-| `example_cases` | 只能是 `synthetic: true` 且 `not_current_case: true` 的非证据示例 |
+```mermaid
+flowchart TD
+    A([收到事件]) --> B{是否存在<br/>强制路由覆盖规则？}
+    B -- 是 --> C[直接返回指定技能]
+    B -- 否 --> D[遍历所有 enabled 且非 general-review 的技能]
 
-示例必须是合成、脱敏、非当前案例。`examples.*` 不能作为 L2/L3 final `evidence_refs`，也不能进入 findings。`rules lint --skills-dir` 会拒绝非法 `allowed_tools`、缺失 `required_evidence`、重复 `output_tags`、非 synthetic 示例、过长示例、真实路径或 secret-like 示例。
+    D --> E[计算每个技能的得分]
 
-## 内置 Skills
+    subgraph scoring ["评分计算（每个技能）"]
+        E1["检查 triggers.risk_hints<br/>事件 risk_hints 与技能列表取交集<br/>每命中 1 个 +10 分"]
+        E2["检查 triggers.tool_names<br/>event.tool_name.lower() 是否在列表中<br/>最多命中一次 +5 分"]
+        E3["检查 triggers.payload_patterns<br/>每个模式字符串作为子串匹配 payload<br/>每命中 1 个 +1 分"]
+        E1 --> E2 --> E3
+    end
 
-ClawSentry 内置多组安全审查 Skill，覆盖主要安全领域。它们位于 `src/clawsentry/gateway/skills/` 目录：
+    E --> scoring
 
-### shell-audit (优先级: 10)
+    E3 --> F["按 (score DESC, priority DESC, insertion_order ASC) 排序"]
+    F --> G{所有技能得分<br/>是否均为 0？}
+    G -- 是 --> H["注入 general-review（score=0）作为兜底"]
+    G -- 否 --> I[过滤掉得分为 0 的技能]
+    H --> J[select_skill 取排名第一的技能]
+    I --> J
+    J --> K([返回选中技能])
 
-**Shell 命令安全审查**，检测命令注入和权限升级。
+    style scoring fill:#f0f4ff,stroke:#6b7fc4
+    style C fill:#ffe4b5,stroke:#c4963b
+    style H fill:#ffe4e4,stroke:#c44b4b
+```
 
-| 属性 | 值 |
-|------|-----|
-| 触发 risk_hints | `privilege_escalation`, `sudo_usage`, `shell_injection`, `destructive_intent`, `shell_execution`, `destructive_pattern` 等 |
-| 触发 tool_names | `bash`, `shell`, `exec`, `sudo`, `chmod`, `chown` |
-| 触发 payload_patterns | `sudo`, `chmod 777`, `rm -rf`, `dd if=`, `curl \| sh`, `wget \| sh` 等 |
+### 得分组成
 
-审查重点：命令注入风险、权限升级（sudo/chmod 777/setuid）、破坏性命令、代码下载执行、数据外传。
-
-### credential-audit (优先级: 10)
-
-**凭证安全审查**，审查涉及凭证、密钥、令牌的操作。
-
-| 属性 | 值 |
-|------|-----|
-| 触发 risk_hints | `credential_access`, `credential_exfiltration`, `secret_access`, `key_access`, `env_access`, `config_access` 等 |
-| 触发 tool_names | `read_file`, `bash`, `shell`, `exec` |
-| 触发 payload_patterns | `password`, `secret`, `token`, `api_key`, `.pem`, `.ssh`, `.env`, `credentials.json` 等 |
-
-审查重点：读取敏感凭证文件、凭证写入不安全位置、凭证外传、最小权限原则违反。
-
-### code-review (优先级: 8)
-
-**代码安全审查**，检测安全漏洞和恶意代码注入。
-
-| 属性 | 值 |
-|------|-----|
-| 触发 risk_hints | `code_injection`, `supply_chain_attack`, `malicious_code` |
-| 触发 tool_names | `write_file`, `edit_file`, `create_file`, `edit`, `write` |
-| 触发 payload_patterns | `eval(`, `exec(`, `__import__`, `subprocess`, `os.system`, `pickle.loads`, `base64.b64decode` 等 |
-
-审查重点：后门/恶意代码注入、危险函数调用（eval/exec/pickle）、供应链攻击、硬编码凭证。
-
-### file-system-audit (优先级: 8)
-
-**文件系统安全审查**，检测越权访问和敏感文件修改。
-
-| 属性 | 值 |
-|------|-----|
-| 触发 risk_hints | `path_traversal`, `unauthorized_file_access`, `sensitive_file_write`, `sensitive_file_read` |
-| 触发 tool_names | `read_file`, `write_file`, `edit_file`, `bash`, `shell` |
-| 触发 payload_patterns | `/etc/`, `/root/`, `/usr/`, `../`, `.ssh`, `authorized_keys`, `/proc/`, `sudoers`, `crontab` 等 |
-
-审查重点：路径遍历越权、系统敏感目录访问、SSH authorized_keys/sudoers 修改、cron 持久化。
-
-### network-audit (优先级: 8)
-
-**网络安全审查**，检测数据外传和不安全连接。
-
-| 属性 | 值 |
-|------|-----|
-| 触发 risk_hints | `data_exfiltration`, `network_exfiltration`, `suspicious_network` |
-| 触发 tool_names | `http_request`, `fetch`, `web_fetch`, `bash`, `shell` |
-| 触发 payload_patterns | `curl`, `wget`, `http://`, `https://`, `nc`, `ncat`, `socat`, `ftp://`, `scp`, `rsync`, `base64` 等 |
-
-审查重点：敏感数据外传、可疑域名/IP 连接、DNS 隧道、远程代码下载执行。
-
-### general-review (优先级: 0)
-
-**通用 Fallback 审查**，当无其他 Skill 匹配时使用。
-
-此 Skill 的 triggers 列表为空，不会通过匹配算法被选中，仅在所有其他 Skill 评分为 0 时作为兜底。
-
-审查重点：行为与意图一致性、异常操作序列、安全最佳实践违反、整体风险评估。
-
-!!! warning "`general-review` 是必需的"
-    `SkillRegistry` 初始化时会验证 `general-review` Skill 必须存在。如果缺失，将抛出 `ValueError` 异常。
-
-### v0.7.3 新增内置 Skills {#v073-skills}
-
-v0.7.3 将内置 review skills 扩展为可校验 manifest（`schema_version: clawsentry.l3_skill.v1`），并新增以下专项审查技能：
-
-| Skill 名称 | 审查领域 | 典型触发场景 |
+| 来源 | 每次命中得分 | 匹配逻辑 |
 |---|---|---|
-| `prompt-injection-transcript` | 提示词注入 transcript 审查 | 对话历史中疑似注入的指令片段 |
-| `data-staging-exfil-chain` | 数据暂存到外传链路 | 先 read/write 暂存、再 curl/wget 外传的组合操作 |
-| `dependency-supply-chain` | 依赖供应链风险 | pip/npm/cargo 安装非标来源包、私有源劫持 |
-| `persistence` | 持久化驻留审查 | crontab、systemd service 安装、LD_PRELOAD 注入等 |
-| `skill-trust-audit` | Skill Trust 供应链审计 | first-use / local-unreviewed skill 触发 `force_l3` 时自动选用 |
+| `triggers.risk_hints` | **+10** | 事件 `risk_hints`（小写）与技能 `risk_hints` 列表取交集。 |
+| `triggers.tool_names` | **+5**（最多命中一次） | `event.tool_name.lower()` 是否在技能 `tool_names` 列表中。 |
+| `triggers.payload_patterns` | **+1** 每个 | 每个模式字符串（小写）作为子串匹配 `str(event.payload).lower()`。 |
 
-这些 skills 的 manifest 包含完整的 `allowed_tools`、`required_evidence`、`severity_rubric`、`output_tags` 和 `example_cases`（均为 synthetic），可通过 `rules lint --json` 校验。`skill-trust-audit` 专用于 Skill Trust first-use `force_l3` 路径，L3 prompt 会把 skill 文档内容和 provenance labels 以 `trust_level=untrusted_evidence` 方式注入，模型不会将其当作指令。
+### 得分并列时的决胜规则
+
+两个技能总分相同时，`priority` 字段值较高的技能获胜。若 `priority` 也相同，则按目录排序中较早出现的技能获胜（文件按字母顺序加载）。
+
+### 兜底规则
+
+得分为 `0` 的非 `general-review` 技能不会进入排名池，但 `_ranked_skills()` 会在无其他技能得分时将 `general-review` 以 `0` 分注入，作为最终兜底。
+
+!!! 警告 "`general-review` 必须存在"
+    若内置技能目录加载完成后不存在名为 `general-review` 的技能，`SkillRegistry.__init__` 将抛出 `ValueError`。删除或重命名该文件将导致网关无法启动。
+
+### 技能生命周期
+
+```mermaid
+flowchart LR
+    A([YAML 文件]) --> B[加载\nload_from_dir / load_additional]
+    B --> C{schema 校验}
+    C -- 通过 --> D[注册到 SkillRegistry\n检查 name 冲突]
+    C -- 失败 --> E([抛出 ValueError\n跳过该文件])
+    D --> F{name 是否已存在？}
+    F -- 否 --> G[加入注册表]
+    F -- 是 --> H([WARNING 日志\n跳过不覆盖])
+    G --> I[运行时评分\n_ranked_skills]
+    I --> J[select_skill\n返回最高分技能]
+    J --> K([注入 system_prompt\n+ evaluation_criteria\n到 LLM 调用])
+
+    style E fill:#ffe4e4,stroke:#c44b4b
+    style H fill:#fff3cd,stroke:#c4963b
+```
 
 ---
 
-## 创建自定义 Skill
+## 触发覆盖说明
 
-### 步骤 1: 创建 YAML 文件
+`select_skill()` 路径没有超越得分机制的覆盖手段。若要强制某个技能处理特定事件类型，需为其 `risk_hints` 设置足够高的特异性，使其他竞争技能无法匹配。`priority` 字段仅用于并列决胜，不会叠加到得分上。
 
-在你选择的目录下创建一个 `.yaml` 文件。建议使用描述性的文件名：
-
-```bash
-mkdir -p /etc/clawsentry/skills
-touch /etc/clawsentry/skills/database-audit.yaml
-```
-
-### 步骤 2: 编写 Skill 定义
-
-以下是一个完整的 **数据库安全审查** Skill 示例：
-
-```yaml title="database-audit.yaml"
-name: database-audit
-description: 审查数据库操作，检测未授权访问和数据泄露 / Audit database operations for unauthorized access and data leaks
-enabled: true
-priority: 9
-
-triggers:
-  risk_hints:
-    - database_access
-    - sql_injection
-    - data_leak
-    - unauthorized_query
-  tool_names:
-    - bash
-    - shell
-    - exec
-    - psql
-    - mysql
-    - sqlite3
-  payload_patterns:
-    - SELECT
-    - INSERT
-    - UPDATE
-    - DELETE
-    - DROP TABLE
-    - ALTER TABLE
-    - GRANT
-    - REVOKE
-    - mysqldump
-    - pg_dump
-    - "INTO OUTFILE"
-    - LOAD DATA
-
-system_prompt: |
-  你是一个数据库安全审查专家。分析 AI agent 的数据库操作，判断是否存在:
-  1. SQL 注入风险（用户输入未参数化，拼接 SQL 语句）
-  2. 未授权数据访问（查询敏感表：users, credentials, payments）
-  3. 数据外泄风险（SELECT INTO OUTFILE, mysqldump 到外部位置）
-  4. 破坏性 DDL 操作（DROP TABLE, TRUNCATE, ALTER 关键约束）
-  5. 权限升级（GRANT ALL, 修改 root 密码）
-
-  You are a database security auditor. Analyze the AI agent's database operations for:
-  1. SQL injection risks (unsanitized user input, string concatenation in queries)
-  2. Unauthorized data access (queries on sensitive tables: users, credentials, payments)
-  3. Data exfiltration risks (SELECT INTO OUTFILE, mysqldump to external locations)
-  4. Destructive DDL operations (DROP TABLE, TRUNCATE, ALTER critical constraints)
-  5. Privilege escalation (GRANT ALL, modifying root password)
-
-  Respond ONLY with JSON: {"risk_level": "low|medium|high|critical", "findings": ["..."], "confidence": 0.0}
-
-evaluation_criteria:
-  - name: sql_injection
-    severity: critical
-    description: SQL 注入风险 / SQL injection risk
-  - name: unauthorized_data_access
-    severity: high
-    description: 未授权数据访问 / Unauthorized data access
-  - name: data_exfiltration
-    severity: critical
-    description: 数据外泄 / Data exfiltration via database tools
-  - name: destructive_ddl
-    severity: high
-    description: 破坏性 DDL 操作 / Destructive DDL operations
-```
-
-### 步骤 3: 设置环境变量
-
-通过 `AHP_SKILLS_DIR` 环境变量指向包含自定义 Skill 文件的目录：
-
-```bash
-export AHP_SKILLS_DIR="/etc/clawsentry/skills"
-```
-
-### 步骤 4: 重启 Gateway
-
-```bash
-clawsentry gateway
-```
-
-启动时日志会显示加载的自定义 Skill 数量：
-
-```
-[ahp.llm-factory] Custom skills loaded from /etc/clawsentry/skills (1 skills)
-```
-
-### 步骤 5: 用 `clawsentry rules` 做作者期验证
-
-在当前版本里，推荐把自定义 Skill 的作者期检查和 sample event 预演放在上线前做一遍：
-
-```bash
-clawsentry rules lint --skills-dir /etc/clawsentry/skills --json
-clawsentry rules dry-run --skills-dir /etc/clawsentry/skills \
-  --events examples/sample-events.jsonl --json
-```
-
-`rules lint` 会报告重复 skill 名称、触发签名冲突、缺失 source 等问题；`rules dry-run` 会告诉你 sample canonical events 最终会选中哪个 skill。完整治理面说明见：[规则治理](rule-governance.md)。
+对于跨域事件，`secondary_criteria()` 从不同的非 `general-review` 技能中返回最多 `limit=2` 个接近匹配的评估标准，从而在单次 L3 调用中实现多域审查。
 
 ---
 
-## Skill Schema 完整参考
+## 内置技能
 
-```yaml
-# ===== 必需字段 =====
-name: string               # Skill 的唯一标识符（不可与其他 Skill 重名）
-description: string         # Skill 的人类可读描述
-system_prompt: string       # LLM 的系统提示词（角色指令 + 审查要求 + 输出格式）
+所有内置技能位于 `src/clawsentry/gateway/skills/` 目录，均使用 `schema_version: clawsentry.l3_skill.v1`。
 
-# ===== 可选字段 =====
-enabled: bool               # 是否启用此 Skill（默认 true）
-priority: int               # 优先级 0-10（默认 0，值越大优先级越高）
-
-triggers:                   # 触发条件（所有子列表可选，为空则永不通过匹配被选中）
-  risk_hints:               # 匹配事件 risk_hints（小写比较）
-    - string
-  tool_names:               # 匹配事件 tool_name（小写比较）
-    - string
-  payload_patterns:         # 匹配 payload 文本的子串（小写比较）
-    - string
-
-evaluation_criteria:        # 评估标准列表（可选但推荐）
-  - name: string            # 标准名称
-    severity: string        # 严重性: low / medium / high / critical
-    description: string     # 标准描述
-```
-
-### 字段详细说明
-
-#### `name` (必需)
-
-Skill 的唯一标识符。在整个系统中（内置 + 自定义）不能重复。如果自定义 Skill 的 name 与内置 Skill 冲突，自定义 Skill 将被跳过并打印警告日志。
-
-#### `description` (必需)
-
-人类可读的描述文字。建议使用双语格式：中文 + 英文用 `/` 分隔。
-
-#### `system_prompt` (必需)
-
-提供给 LLM 的系统提示词。这是 Skill 最核心的部分，决定了 L3 Agent 以何种专家身份进行审查。
-
-#### `enabled`
-
-布尔值，控制是否启用此 Skill。设为 `false` 可以在不删除文件的情况下临时禁用。默认 `true`。
-
-#### `priority`
-
-整数，取值 0-10。当两个 Skill 对同一事件的匹配得分相同时，priority 更高的 Skill 被选中。内置 Skill 的 priority 分配：
-
-- `shell-audit` / `credential-audit`: **10**（最高优先级，安全关键）
-- `code-review` / `file-system-audit` / `network-audit`: **8**
-- `general-review`: **0**（最低优先级，兜底）
-
-#### `triggers`
-
-包含三个子列表，全部使用**小写比较**：
-
-- `risk_hints` -- 事件的 `risk_hints` 字段与此列表取交集，每命中一个加 10 分
-- `tool_names` -- 事件的 `tool_name` 是否在此列表中，命中加 5 分
-- `payload_patterns` -- 事件 payload 的文本表示中是否包含此列表中的子串，每命中一个加 1 分
-
-#### `evaluation_criteria`
-
-定义该领域关注的安全评估维度。每个标准包含：
-
-- `name` -- 标准标识符（如 `sql_injection`）
-- `severity` -- 严重性等级，必须是 `low` / `medium` / `high` / `critical` 之一
-- `description` -- 标准的人类可读描述
+| 技能 | 优先级 | 关键 `risk_hints` 触发器 | 关键 `payload_patterns` |
+|---|---|---|---|
+| `shell-audit` | 10 | `privilege_escalation`, `sudo_usage`, `shell_injection`, `destructive_intent` | `sudo`, `rm -rf`, `curl \| sh`, `dd if=` |
+| `credential-audit` | 10 | `credential_access`, `credential_exfiltration`, `secret_access`, `env_access` | `password`, `secret`, `.ssh`, `.env`, `credentials.json` |
+| `skill-trust-audit` | 10 | `skill_trust`, `first_use_skill`, `provenance_conflict` | `SKILL.md`, `skill trust` |
+| `code-review` | 8 | `code_injection`, `supply_chain_attack`, `malicious_code` | `eval(`, `exec(`, `pickle.loads`, `subprocess` |
+| `file-system-audit` | 8 | `path_traversal`, `unauthorized_file_access`, `sensitive_file_write` | `/etc/`, `/root/`, `../`, `authorized_keys`, `sudoers` |
+| `network-audit` | 8 | `data_exfiltration`, `network_exfiltration`, `suspicious_network` | `curl`, `wget`, `nc`, `socat`, `base64` |
+| `persistence-audit` | 9 | persistence 相关 risk hints | crontab, systemd, launchctl, authorized_keys, .bashrc |
+| `prompt-injection-transcript-audit` | — | 提示词注入相关 transcript hints | 注入标记模式 |
+| `data-staging-exfil-chain-audit` | — | 数据暂存 + 外泄链路 hints | 先读后上传模式 |
+| `dependency-supply-chain-audit` | — | 供应链相关 hints | pip/npm/cargo install 模式 |
+| `general-review` | 0 | *（无触发器——仅作兜底）* | — |
 
 ---
 
-## 加载机制详解
-
-### SkillRegistry 初始化
-
-Gateway 启动时，`SkillRegistry` 按以下顺序加载 Skills：
-
-1. **加载内置 Skills** -- 从 `src/clawsentry/gateway/skills/*.yaml` 目录加载所有 YAML 文件
-2. **验证 `general-review` 存在** -- 缺失则抛出 `ValueError`
-3. **加载自定义 Skills** -- 如果设置了 `AHP_SKILLS_DIR` 环境变量，调用 `load_additional()` 加载外部 Skills
-
-### load_additional() 行为
-
-```python
-def load_additional(self, skills_dir: Path) -> int:
-    """加载额外的 Skills。返回加载数量。"""
-```
-
-- 遍历目录中所有 `.yaml` 文件（按文件名排序）
-- 每个文件经过完整的 schema 验证
-- **重名 Skill 被跳过** -- 不会覆盖内置 Skill，打印 WARNING 日志
-- 返回成功加载的 Skill 数量
-
-### 验证规则
-
-加载每个 YAML 文件时，以下条件会导致 `ValueError`：
-
-- `name` 为空
-- `description` 为空
-- `system_prompt` 为空
-- `triggers` 不是字典类型
-- `evaluation_criteria` 不是列表类型
-- `evaluation_criteria` 中的条目缺少必需字段或 severity 值不合法
-
----
-
-## 编写有效的 system_prompt
-
-system_prompt 是 Skill 的核心，直接决定 L3 审查的质量。以下是编写建议：
-
-### 1. 明确角色身份
-
-```yaml
-system_prompt: |
-  你是一个 [具体领域] 安全审查专家。
-```
-
-### 2. 列出具体审查要点
-
-使用编号列表，每个要点聚焦一个风险类别：
-
-```yaml
-system_prompt: |
-  分析 AI agent 的操作，判断是否存在:
-  1. [风险类别 A]（具体描述 + 示例）
-  2. [风险类别 B]（具体描述 + 示例）
-```
-
-### 3. 提供双语支持
-
-内置 Skills 使用中英双语提示词，确保不同语言的 LLM 都能理解：
-
-```yaml
-system_prompt: |
-  你是一个安全审查专家。...
-
-  You are a security auditor. ...
-```
-
-### 4. 严格约束输出格式
-
-L3 Agent 需要解析 LLM 的输出，务必指定 JSON 格式：
-
-```yaml
-system_prompt: |
-  ...
-  Respond ONLY with JSON: {"risk_level": "low|medium|high|critical", "findings": ["..."], "confidence": 0.0}
-```
-
-### 5. 避免过于宽泛
-
-不好的示例：`"检查所有安全问题"` -- 过于宽泛，LLM 容易分散注意力。
-
-好的示例：`"专注检查 SQL 注入、未授权数据访问和 DDL 破坏"` -- 聚焦具体领域。
-
----
-
-## 完整示例：Kubernetes 审查 Skill
+## 带注释的示例技能
 
 ```yaml title="kubernetes-audit.yaml"
+# Required: unique identifier across all loaded skills
 name: kubernetes-audit
-description: 审查 Kubernetes 集群操作，检测越权和破坏性变更 / Audit K8s cluster operations for privilege escalation and destructive changes
+
+# Required: schema version — enables strict v1 validation
+schema_version: clawsentry.l3_skill.v1
+
+# Required: human-readable summary shown in lint output and dashboards
+description: >
+  Audit Kubernetes cluster operations for privilege escalation and
+  destructive changes.
+
+# Optional: set false to disable without deleting the file (default: true)
 enabled: true
+
+# Optional: tie-breaker when two skills have equal scores (default: 0)
 priority: 9
 
+# Trigger conditions — all comparison is lowercased
 triggers:
   risk_hints:
-    - cluster_admin
+    - cluster_admin            # +10 per match
     - pod_security_bypass
     - namespace_deletion
   tool_names:
-    - bash
-    - shell
-    - exec
+    - bash                     # +5 if event.tool_name matches any entry
     - kubectl
   payload_patterns:
-    - kubectl
-    - "delete namespace"
-    - "delete pod"
+    - kubectl                  # +1 per pattern found as substring in payload
     - "--privileged"
-    - hostNetwork
-    - hostPID
-    - securityContext
+    - hostnetwork
     - clusterrole
     - "create secret"
-    - "get secret"
+    - "delete namespace"
 
+# Required (v1): at least "high" or "critical" must be present
+severity_rubric:
+  high:
+    - Destructive cluster operations or privilege binding without justification
+  critical:
+    - Confirmed cluster-admin grant, pod escape, or namespace destruction
+
+# Required (v1): non-empty; values must be in the valid evidence set
+required_evidence:
+  - current_event
+  - trigger
+  - trajectory_summary
+
+# Required (v1): non-empty; each tag matches ^[a-z][a-z0-9_]{1,63}$
+output_tags:
+  - kubernetes
+  - privilege
+
+# Optional: restrict which L3 tools this skill may invoke
+# Default: all 14 VALID_L3_TOOLS
+allowed_tools:
+  - read_trajectory
+  - read_trajectory_page
+  - read_session_risk
+  - query_git_diff
+  - search_codebase
+
+# Optional: advisory suggestions shown to the LLM (do not expand allowed_tools)
+recommended_tools:
+  - name: read_trajectory_page
+    reason: "Page through tool calls looking for kubectl privilege operations."
+
+# Optional: max concurrent tool calls (clamped to [1, 20])
+max_tool_calls: 8
+
+# Optional: domain hints for specific evidence capsule fields
+field_notes:
+  effect_summary: "Check for ClusterRoleBinding creates and namespace-level deletes."
+  taint_flow_summary: "Look for kubectl get secret piped to external network sinks."
+
+# Optional: common benign cases to reduce false positives
+benign_exceptions:
+  - "kubectl get pods in a dev namespace by an authorized CI identity"
+  - "namespace delete during known teardown pipeline"
+
+# Optional: few-shot synthetic examples (never real cases)
+example_policy:
+  max_examples: 2
+  max_chars_per_example: 900
+
+example_cases:
+  - synthetic: true
+    not_current_case: true
+    label: high_privilege_binding
+    scenario: "Agent creates ClusterRoleBinding granting cluster-admin to unknown SA"
+    expected_risk: high
+
+# Required: LLM reviewer persona — must end with JSON output instruction
 system_prompt: |
-  你是一个 Kubernetes 安全审查专家。分析 AI agent 的集群操作，判断是否存在:
-  1. 权限升级（创建 ClusterRoleBinding、使用 cluster-admin）
-  2. Pod 安全策略绕过（privileged 容器、hostNetwork、hostPID）
-  3. 破坏性操作（删除 namespace、强制删除 Pod、清空 Deployment）
-  4. 敏感信息访问（get secret、describe configmap 含凭证）
-  5. 不安全的镜像来源（未知仓库、latest 标签、无签名验证）
-
-  You are a Kubernetes security auditor. Analyze the AI agent's cluster operations for:
-  1. Privilege escalation (creating ClusterRoleBinding, using cluster-admin)
+  You are a Kubernetes security auditor. Analyze the AI agent's cluster
+  operations for:
+  1. Privilege escalation (ClusterRoleBinding, cluster-admin grants)
   2. Pod Security bypass (privileged containers, hostNetwork, hostPID)
-  3. Destructive operations (deleting namespaces, force-deleting pods)
-  4. Sensitive data access (get secrets, describe configmaps with credentials)
-  5. Insecure image sources (unknown registries, latest tags, no signature verification)
+  3. Destructive operations (namespace deletion, force pod removal)
+  4. Sensitive data access (get/describe secret, configmap with credentials)
+  5. Insecure image sources (unknown registries, unverified images)
 
-  Respond ONLY with JSON: {"risk_level": "low|medium|high|critical", "findings": ["..."], "confidence": 0.0}
+  Respond ONLY with JSON:
+  {"risk_level": "low|medium|high|critical", "findings": ["..."], "confidence": 0.0}
 
+# Required: evaluation dimensions — severity in {low, medium, high, critical}
 evaluation_criteria:
   - name: privilege_escalation
     severity: critical
-    description: 集群权限升级 / Cluster privilege escalation
+    description: ClusterRoleBinding or cluster-admin grant
   - name: pod_security_bypass
     severity: critical
-    description: Pod 安全策略绕过 / Pod security policy bypass
+    description: Privileged container, hostNetwork, or hostPID
   - name: destructive_cluster_ops
     severity: high
-    description: 破坏性集群操作 / Destructive cluster operations
+    description: Namespace deletion or forced pod removal
   - name: secret_exposure
     severity: high
-    description: Kubernetes Secret 暴露 / Kubernetes secret exposure
+    description: Kubernetes Secret accessed or exfiltrated
 ```
+
+---
+
+## 添加自定义技能
+
+### 1. 创建 YAML 文件
+
+将 `.yaml` 文件放置在任意目录中。文件名不影响技能名称——文件内的 `name:` 字段才是标识符。
+
+### 2. 部署前先做校验
+
+```bash
+clawsentry rules lint --skills-dir /path/to/my-skills --json
+clawsentry rules dry-run --skills-dir /path/to/my-skills \
+    --events examples/sample-events.jsonl --json
+```
+
+`rules lint` 检测以下问题：非法的 `allowed_tools` 条目、未知的 `required_evidence` 值、重复的 `output_tags`、非合成示例、超长示例、真实路径以及类密钥字符串。
+
+`rules dry-run` 显示每个示例事件选中了哪个技能及其得分。
+
+### 3. 将网关指向技能目录
+
+```bash
+export AHP_SKILLS_DIR="/path/to/my-skills"
+clawsentry gateway
+```
+
+启动日志会确认加载数量：
+
+```
+[ahp.llm-factory] Custom skills loaded from /path/to/my-skills (1 skills)
+```
+
+### 4. 了解名称冲突行为
+
+`load_additional()` 按字母顺序处理文件。若自定义技能的 `name` 与已加载技能（内置或先前加载的自定义技能）重复，该文件将被**跳过并记录 WARNING 日志**，不会覆盖已有技能。
+
+!!! 注意 "自定义技能无法替换内置技能"
+    内置技能目录优先加载。名为 `shell-audit.yaml` 的自定义文件将被静默跳过。若需修改内置技能的行为，请 fork 对应的内置技能文件并使用不同的 `name`。
+
+---
+
+## 校验错误参考
+
+| 触发条件 | 错误信息 |
+|---|---|
+| `name` 为空 | `skill missing name` |
+| `description` 为空 | `skill missing description` |
+| `system_prompt` 为空 | `skill missing system_prompt` |
+| `triggers` 不是 dict | `skill triggers must be a dict` |
+| `evaluation_criteria` 不是 list | `skill evaluation_criteria must be a list` |
+| `evaluation_criteria[i].severity` 不在 `{low,medium,high,critical}` 中 | `invalid evaluation_criteria[i]` |
+| `allowed_tools` 包含不在白名单的工具 | `skill allowed_tools contain non-whitelisted tools` |
+| `required_evidence` 包含未知值 | `skill required_evidence contains unknown values` |
+| `output_tags` 有重复值 | `skill output_tags must not contain duplicates` |
+| `output_tags` 值不匹配 `^[a-z][a-z0-9_]{1,63}$` | `skill output_tags contain invalid tags` |
+| `field_notes` 键不在有效集合中 | `skill field_notes references unknown fields` |
+| `severity_rubric` 键不在 `{low,medium,high,critical}` 中 | `skill severity_rubric has invalid severity` |
+| `example_cases[i]` 缺少 `synthetic: true` 或 `not_current_case: true` | `skill example_cases[i] must be synthetic and not_current_case` |
+| `example_cases[i]` 包含真实路径或类密钥文本 | `skill example_cases[i] contains real path or secret-like text` |
+| `example_cases` 数量超过 `example_policy.max_examples` | `skill example_cases exceed example_policy.max_examples` |
+| `max_tool_calls` 不是整数 | `skill max_tool_calls must be an integer` |
+| 同一目录中存在重复 `name` | `duplicate skill name` |
+| `schema_version` 为 v1 且 `required_evidence` 为空 | `skill required_evidence is required for clawsentry.l3_skill.v1` |
+| `schema_version` 为 v1 且 `severity_rubric` 未覆盖 `high` 或 `critical` | `skill severity_rubric must cover high or critical` |
+| `schema_version` 为 v1 且 `output_tags` 为空 | `skill output_tags is required for clawsentry.l3_skill.v1` |
+| `schema_version` 既非 `"legacy"` 也非 `clawsentry.l3_skill.v1` | `unsupported skill schema_version` |
+
+!!! 警告 "`example_cases` 不属于证据"
+    示例案例必须包含 `synthetic: true` 和 `not_current_case: true`，仅用于向 LLM 展示模式样例。它们不能出现在 L2/L3 `evidence_refs` 或 findings 输出中。

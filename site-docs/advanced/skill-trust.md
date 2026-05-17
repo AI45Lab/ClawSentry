@@ -1,20 +1,20 @@
 ---
-title: Skill Trust / Registry
-description: 管理 agent skill 供应链风险：registry、preflight scan、cross-CLI runtime binding、first-use action
+title: 技能信任与注册表
+description: 管理 agent skill 供应链风险：admission scan、registry 生命周期、trust-list state、跨框架运行时绑定
 ---
 
 <div class="cs-doc-hero" markdown>
-<div class="cs-eyebrow">Advanced · Skill Supply Chain Security</div>
+<div class="cs-eyebrow">高级功能 · 技能供应链安全</div>
 
-## Skill Trust / Registry
+## 技能信任与注册表
 
-Skill Trust 把本地 skill 包的身份、来源、hash、别名和安全扫描结果接入 Gateway，变成可审计的运行时上下文。它解决的是 skill 供应链与 metadata trust 问题：低信任 skill 不能只靠文档声称自己是 canonical，也不能通过近名、改名或 provenance label 绕过策略。
+Skill Trust 把本地 skill 包的身份、来源、hash、别名和 admission scan 结果接入 Gateway，变成可审计的运行时上下文。低信任 skill 不能仅凭文档声称自己是 canonical，也不能通过近名、改名或 provenance label 绕过策略。
 
 <div class="cs-pill-row" markdown>
-<span class="cs-pill">v0.7.0 基础能力</span>
-<span class="cs-pill">v0.7.5 Cross-CLI binding</span>
+<span class="cs-pill">v0.7.0+</span>
+<span class="cs-pill">v0.7.5 跨 CLI</span>
+<span class="cs-pill">trust-mvp-v1 指纹</span>
 <span class="cs-pill">默认 audit-only</span>
-<span class="cs-pill">6 个支持框架</span>
 </div>
 </div>
 
@@ -23,168 +23,323 @@ Skill Trust 把本地 skill 包的身份、来源、hash、别名和安全扫描
 <div class="cs-step-flow" markdown>
 <div markdown>
 <span>1</span>
-**Scan**
-对 skill 根目录运行 deterministic scan，生成 content hash、SBOM 和 provenance evidence
+**扫描（scan）**
+对 skill 根目录运行 deterministic admission scan：生成 `SKILL.md`、`scripts`、`references`、`data` 的 content hash，提取 frontmatter identity 和 provenance labels，产出 `AdmissionReport`。
 </div>
 <div markdown>
 <span>2</span>
-**Register**
-把通过 review 的 skill 写入 registry，并生成 Gateway-owned runtime metadata
+**注册（register）**
+根据 admission risk 决定 list state，将 `SkillRegistryRecord` 写入 registry JSON；每次变更生成一条可审计的 `SkillTrustTransitionEvent`。
 </div>
 <div markdown>
 <span>3</span>
-**Runtime binding**
-各框架 setup 时把 skill 路径和 metadata 文件路径写入 hook command 的 env；harness 在执行时自动找到 registry
+**运行时绑定**
+框架 `init --setup` 把 registry 和 metadata 文件路径写入 hook env；harness 在每次 `pre_action` 执行时自动加载。
 </div>
 <div markdown>
 <span>4</span>
-**Decision**
-Gateway 在 `pre_action` 决策中解析请求携带的 skill raw metadata，与 registry 做 identity/provenance/hash 匹配，按 trust state 执行配置的动作
+**策略决策**
+Gateway 解析请求携带的 skill raw metadata，调用 `resolve_skill_trust()` 做 identity / provenance / hash 匹配，产出 `SkillTrustContext`，供 policy rule 按 trust state 执行配置的动作。
 </div>
 </div>
 
-## Cross-CLI Runtime Binding（v0.7.5）{#cross-cli-binding}
+## Trust-list 状态 {#trust-list-states}
 
-v0.7.5 统一了所有框架的 skill 路径和运行时 metadata 接入方式。各框架 `init --setup` 命令会把以下 env 写入 hook command：
+| `list_state` | `trust_level` | `status` | 含义 | 默认 Gateway 动作 |
+|---|---|---|---|---|
+| `allowlist` | `trusted` | `trusted` | 已登记，经 policy 或 operator 认可 | `audit` |
+| `greylist` | `local_unreviewed` | `local_unreviewed` | 已知但需复核或更严格 profile | `force_l2` |
+| `blacklist` | `untrusted` | `quarantined` | 明确禁用 | `block` |
+| `revoked` | `untrusted` | `revoked` | 曾可信，已撤销 | `block` |
+| `disabled` | （保留原值） | `local_unreviewed` | 临时禁用，不清除 trust 历史 | 按 first-use 配置 |
+| `unlisted` | `unknown` | `unknown` | 尚未注册 | 按 first-use 配置 |
 
-| 框架 | Setup 命令 | 写入的 Skill Trust env |
-|---|---|---|
-| Codex | `clawsentry init codex --setup` | `CS_SKILL_TRUST_REGISTRY_PATH`, `CS_SKILL_TRUST_METADATA_PATH` |
-| Claude Code | `clawsentry init claude-code --setup` | `CS_SKILL_TRUST_REGISTRY_PATH`, `CS_SKILL_TRUST_METADATA_PATH` |
-| Kimi CLI | `clawsentry init kimi-cli --setup` | `CS_KIMI_SKILLS_DIR`, `CS_SKILL_TRUST_REGISTRY_PATH`, `CS_SKILL_TRUST_METADATA_PATH` |
-| Gemini CLI | `clawsentry init gemini-cli --setup` | `CS_SKILL_TRUST_REGISTRY_PATH`, `CS_SKILL_TRUST_METADATA_PATH` |
-| a3s-code | 通过 StdioTransport/HttpTransport 接入 | `CS_SKILL_TRUST_REGISTRY_PATH`, `CS_SKILL_TRUST_METADATA_PATH` |
+!!! note "allowlist 升级条件"
+    `allowlist` 仅接受以下三种 `reason_code`：`clean_admission_report`（admission risk = low）、`trusted_migration`（需 evidence hashes）、`operator_override`（需 actor_type = `operator` 或 `manual_migration`）。其他 reason_code 或高风险 scan 未带 operator_override 时，注册会报错拒绝。
 
-**Fallback 路径：** 若 `CS_SKILL_TRUST_METADATA_PATH` 指向的文件不存在，harness 会从当前 `cwd` 向上查找 `.clawsentry/skill-trust-runtime.json`，因此隔离 benchmark、项目级注册和用户级框架 home 目录可以共用同一套 Gateway 风险上下文。
+### 允许的状态转换
 
-**Replay safety：** Session replay 只保留 replay-safe 的 Skill Trust identity labels 和 hash；原始 skill root path、path-like canonical fields、framework/scope 注入值不会进入公开 replay payload。
-
-## Trust States {#trust-states}
+| 起始状态 | 可转移至 |
+|---|---|
+| `unlisted` | `greylist`、`allowlist`、`blacklist`、`disabled` |
+| `greylist` | `allowlist`、`blacklist`、`revoked`、`disabled` |
+| `allowlist` | `greylist`、`blacklist`、`revoked`、`disabled` |
+| `blacklist` | `greylist`（需 operator）、`revoked`、`disabled` |
+| `revoked` | `allowlist`、`greylist`（需 trusted_migration + operator） |
+| `disabled` | `allowlist`、`greylist`、`blacklist` |
 
 ```mermaid
 stateDiagram-v2
-    [*] --> unknown : 首次见到，无 registry 记录
-    unknown --> local_unreviewed : 本地存在但未 scan
-    local_unreviewed --> greylist : scan 完成，等待 review
-    greylist --> allowlist : operator approve
-    greylist --> blacklist : operator deny
-    allowlist --> revoked : 撤销（如发现供应链问题）
-    blacklist --> [*]
-    revoked --> [*]
-    unknown --> unbound : metadata 无法与任何 registry 条目匹配
+    direction LR
+    [*] --> unlisted
+
+    unlisted --> greylist
+    unlisted --> allowlist
+    unlisted --> blacklist
+    unlisted --> disabled
+
+    greylist --> allowlist
+    greylist --> blacklist
+    greylist --> revoked
+    greylist --> disabled
+
+    allowlist --> greylist
+    allowlist --> blacklist
+    allowlist --> revoked
+    allowlist --> disabled
+
+    blacklist --> greylist : 需要 operator 授权
+    blacklist --> revoked
+    blacklist --> disabled
+
+    revoked --> allowlist : 需要 trusted_migration\n+ operator
+    revoked --> greylist : 需要 trusted_migration\n+ operator
+
+    disabled --> allowlist
+    disabled --> greylist
+    disabled --> blacklist
+
+    note right of revoked
+        单向终态：无条件出口
+        恢复需要 trusted_migration
+        + operator 双重授权
+    end note
 ```
 
-| 状态 | 典型含义 | 默认动作 |
+## Admission Scan {#admission-scan}
+
+`AdmissionScanner` 对单个 skill 根目录运行以下检查，产出 `admission_risk`（`low` / `medium` / `high` / `critical` / `unknown`）：
+
+| 检查族（`finding_family`） | 触发条件 | 默认严重级别 |
 |---|---|---|
-| `allowlist` | 已登记并经 operator 或 policy 认可 | `audit`（记录，不改判决）|
-| `greylist` | 已知但需要复核或更严格 profile | `force_l2` |
-| `blacklist` | 禁用或明确不可信 | `block` |
-| `revoked` | 之前可信但已撤销 | `block` |
-| `local_unreviewed` | 本地存在，但缺少 registry review | 按 first-use action 配置 |
-| `unknown` / `unbound` | 请求侧 metadata 无法绑定到 registry | 按 first-use action 配置 |
+| `hash` | 成功捕获 content hash（始终产生） | `low` |
+| `alias` | frontmatter alias 规范化后与 canonical name 近似，或跨 skill 近名重复 | `medium`（跨 skill）、`low`（单 skill） |
+| `control_language` | SKILL.md 包含 `canonical`、`renamed`、`deprecated`、`priority`、`prefer` 等路由语言 | `medium` |
+| `provenance` | SKILL.md 包含 `tool_called`、`provenance`、`source label`、`registry label` 等 | `medium` |
+| `description_consistency` | 脚本入口未在 SKILL.md 中声明；输出 label 与声明名称不一致；有排序/过滤逻辑但未声明；读取 data/fixture 但未在 SKILL.md 中声明 | `medium` |
+| `cross_skill_overlap` | 多个 skill 共享同一 data 目录 hash | `medium` |
 
-## First-use Action 配置 {#first-use-actions}
+`scan_many()` 还会跨 skill 根目录检测 hyphen/underscore 重复和 near-name 重复，并将额外 finding 注入各自的 report。
 
-当 skill 是 `local_unreviewed`、`unknown` 或 `unbound` 时，Gateway 按以下配置处理：
+## 运行时解析与 Invariant Violations {#runtime-resolution}
 
-| Profile | 环境变量 | 默认动作 | 典型场景 |
-|---|---|---|---|
-| normal | `CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION` | `audit` | 开发环境，记录但不阻断 |
-| permissive | `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION` | `audit` | 最宽松，仅记录 |
-| strict | `CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION` | `defer` | 生产环境，人工确认 |
-| benchmark | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION` | `block` | 无人值守测试，阻断未知 skill |
+`resolve_skill_trust()` 将请求侧 raw metadata 解析为 `SkillTrustContext`。`registry_status` 取值：
+
+| `registry_status` | 含义 |
+|---|---|
+| `matched` | 唯一命中，且别名类型为 `exact` / `hyphen_underscore` / `singular_plural` / `near_name` |
+| `ambiguous` | 多条 registry 记录命中 |
+| `hash_mismatch` | 命中记录但 content hash 不一致 |
+| `unknown` | 有 `presented_name` 但找不到记录 |
+| `unbound` | 无 `presented_name`，无法绑定 |
+
+产出的 `invariant_violations` 列表可包含以下值：
+
+- `runtime_registry_claim_untrusted` — 请求侧 registry 记录不被 Gateway 信任
+- `request_skill_trust_raw_untrusted` — 请求侧 skill_trust_raw 字段不被信任
+- `provenance_label_conflict` — provenance claim 与 canonical name 不一致
+- `unknown_skill_provenance_rewrite` — 未知 skill 携带 canonical_name_claim 或 routing_claim
+- `ambiguous_skill_alias` — 多条 registry 记录匹配
+- `skill_hash_mismatch` — content hash 与 registry 不符
+- `blacklisted_skill_identity` — skill 在 blacklist
+- `revoked_skill_identity` — skill 已 revoked
+- `greylisted_skill_identity` — skill 在 greylist（admission_risk 最低升为 `medium`）
+- `low_trust_redefined_canonical_tool` — 低信任 skill 试图重新定义 canonical tool
+
+!!! warning "Hash mismatch 与 revoked 行为"
+    `skill_hash_mismatch` 将 `admission_risk` 提升至 `high`；`revoked_skill_identity` 提升至 `critical`。两者均不会因缺少 hash 证据而单独触发（见下方脱敏边界）。
+
+## 首次使用动作配置 {#first-use-actions}
+
+当 skill 处于 `unlisted`、`disabled` 或 `unknown`/`unbound` 时，Gateway 按以下 profile 配置决定动作：
+
+| Profile | 环境变量 | 默认值 |
+|---|---|---|
+| normal | `CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION` | `audit` |
+| permissive | `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION` | `audit` |
+| strict | `CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION` | `defer` |
+| benchmark | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION` | `block` |
+
+可配置动作：
 
 | 动作 | 含义 |
 |---|---|
 | `audit` | 记录 evidence，不改变当前判决 |
 | `force_l2` | 要求语义分析参与复核 |
-| `force_l3` | 要求 L3 review agent 参与复核（会触发 `skill-trust-audit` skill）|
+| `force_l3` | 要求 L3 review agent 参与（触发 `skill-trust-audit` skill） |
 | `defer` | 进入 operator approval / DEFER path |
 | `block` | 直接阻断首次或不可信 skill 使用 |
 
-## 与 L2/L3 的联动 {#l2-l3-integration}
+`FirstUseScanState.state` 可取值：`scan_not_started`、`scan_running_sync`、`scan_completed`、`scan_pending_budget_exhausted`、`scan_failed`。
 
-当 first-use action 为 `force_l3` 时，Policy Engine 会：
+```mermaid
+flowchart TD
+    A([触发首次使用]) --> B[计算 skill_hash\ncontent hash + name]
+    B --> C[在 registry 中查找]
+    C --> D{registry_status}
 
-1. 写入 `l3_request_reason=first_use_skill_trust_action`
-2. 携带 compact `l3_trigger_source_metadata`
-3. L3 prompt 选择或辅助 `skill-trust-audit` skill
-4. 工具结果、skill 文档内容、provenance labels 均以 `trust_level=untrusted_evidence` 注入——模型不会把 skill 文档当作指令
+    D -->|matched| E[命中唯一记录\nalias 类型匹配]
+    D -->|ambiguous| F[多条记录命中\nambiguous_skill_alias violation]
+    D -->|hash_mismatch| G[命中记录但\ncontent hash 不一致\nskill_hash_mismatch violation]
+    D -->|unknown| H[有 presented_name\n但无 registry 记录]
+    D -->|unbound| I[无 presented_name\n无法绑定]
 
-## CLI 参考 {#cli-reference}
+    E --> J{trust_list_state}
+    J -->|allowlist| K[admission_risk: low\n动作: audit]
+    J -->|greylist| L[admission_risk: medium\n动作: force_l2\ngreylisted_skill_identity violation]
+    J -->|blacklist| M[admission_risk: high\n动作: block\nblacklisted_skill_identity violation]
+    J -->|revoked| N[admission_risk: critical\n动作: block\nrevoked_skill_identity violation]
+    J -->|disabled / unlisted| O[admission_risk: 由 profile 决定\n动作: 按 first-use profile]
 
-**扫描 skill：**
+    F --> P[admission_risk: medium\n动作: 按 profile 配置]
+    G --> Q[admission_risk 提升至 high\n动作: 按 profile 配置]
 
-```bash
-clawsentry skill-trust scan \
-  --skill-root ~/.codex/skills/travel_planning \
-  --json
+    H --> R[admission_risk: unknown\n动作: 按 first-use profile\nnormal/permissive → audit\nstrict → defer / benchmark → block]
+    I --> S[admission_risk: unknown\n动作: 按 first-use profile\nnormal/permissive → audit\nstrict → defer / benchmark → block]
 ```
 
-输出示例：
+## 脱敏边界 {#redaction}
 
-```json
-{
-  "skill_name": "travel_planning",
-  "content_hashes": { "SKILL.md": "sha256:...", "scripts/": "sha256:..." },
-  "trust_state": "local_unreviewed",
-  "sbom": []
-}
-```
+Gateway 不信任请求侧的 raw skill metadata。以下字段被清洗或降级，不进入 operator-approved 路径：
 
-**注册单个 skill：**
+- 原始 skill root 路径及 path-like canonical 字段
+- 任意 raw package 内容
+- framework / scope 注入值（仅用于审计，不参与 allowlist 决策）
+- `_registry_records_untrusted` 为 true 时，所有 runtime registry claim
 
-```bash
-clawsentry skill-trust register \
-  --skill-root ~/.codex/skills/travel_planning \
-  --registry .clawsentry/skill-trust-registry.json \
-  --framework codex \
-  --scope workspace \
-  --list-state allowlist \
-  --operator-override review-2026-05-16 \
-  --json
-```
+以下字段在清洗后保留用于审计：
 
-**批量注册目录：**
+- `presented_name`、`framework`、`scope`
+- `registry_status`、`trust_list_state`、`admission_risk`
+- `invariant_violations`、`admission_scan_id`
 
-```bash
-clawsentry skill-trust register-dir \
-  --skills-dir ~/.codex/skills \
-  --registry .clawsentry/skill-trust-registry.json \
-  --metadata .clawsentry/skill-trust-runtime.json \
-  --framework codex \
-  --scope workspace \
-  --json
-```
+!!! note "Session replay 安全"
+    Session replay payload 只保留 replay-safe 的 identity labels 和 content hash；skill root 路径、path-like canonical fields、framework/scope 注入值不进入公开 replay payload。
 
-## Provenance Evidence v1 {#provenance-evidence-v1}
+## Provenance Evidence 字段 {#provenance-evidence}
 
-Admission scan 和 registry record 现在保留更明确的 provenance evidence：
+`SkillRegistryRecord` 中的 provenance 证据字段：
 
 | 字段 | 含义 |
 |---|---|
-| `content_hashes` | `SKILL.md`、`scripts`、`references`、`data` 等本地内容 hash |
-| `checksum_evidence` | 供 L3/审计复用的 checksum 摘要，默认来自 deterministic scan hash |
+| `content_hashes` | `SKILL.md`、`scripts`、`references`、`data` 的 SHA-256 hash |
+| `skill_root_hash` | 整个 skill 根目录的递归 SHA-256 hash |
+| `checksum_evidence` | 供 L3 / 审计复用的 checksum 摘要 |
 | `sbom` | 轻量组件清单，列出 skill 内容组件及 hash |
-| `signature_evidence` | 签名/验签状态；未配置时为 `not_configured`，不会伪造通过 |
+| `signature_evidence` | 签名/验签状态；未配置时固定为 `{"state": "not_configured"}`，不伪造通过 |
 | `advisory_evidence` | 未来接入 signed advisory feed 的有界证据列表 |
 
-## Runtime 配置 {#configuration}
-
-```bash
-CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json
-CS_SKILL_TRUST_METADATA_PATH=.clawsentry/skill-trust-runtime.json
-
-CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION=audit
-CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION=block
-CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=defer
-CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION=audit
-```
-
-## Redaction Boundary {#redaction}
-
-Gateway 不信任请求侧 raw skill metadata。请求 raw 字段会被降级/清洗，只保留 presented name、framework、scope、registry status、invariant violations 等审计所需字段；不会把任意 raw package content 当作 operator-approved metadata。
+符号链接文件不参与内容 hash，改为记录为 `symlink-skipped:<name>`。超过 1 MB 的文件记录为 `large-file-skipped:<name>:<size>`。
 
 ## 与 Capability Narrowing 的关系 {#capability-narrowing}
 
-Skill Trust 是 identity/provenance evidence；capability narrowing 是后续能力收紧。启用 `CS_CAPABILITY_NARROWING_ENABLED=true` 后，高会话风险可自动应用更窄的 `SessionScopeProfile`，限制不可信 skill state、MCP server/tool 或外部域名。它不会静默改写历史 canonical decision。
+Skill Trust 是 **identity / provenance evidence**；Capability Narrowing 是基于风险的 **能力收紧**。两者独立工作，但风险信号可以联动：
+
+- **`CS_CAPABILITY_NARROWING_ENABLED=true`** 时，高 session 风险可自动应用更窄的 `SessionScopeProfile`
+- Skill Trust 的 **`trust_list_state`** 和 **`invariant_violations`** 可作为会话风险的输入，触发 MCP server/tool 或外部域名的范围限制
+- Capability Narrowing 不会静默改写历史 canonical decision，也不会改变 skill registry 记录本身
+
+## 跨框架运行时绑定 {#cross-cli-binding}
+
+`init --setup` 命令将以下 env 注入各框架 hook：
+
+| 框架 | `CS_SKILL_TRUST_REGISTRY_PATH` | `CS_SKILL_TRUST_METADATA_PATH` |
+|---|---|---|
+| `codex` | 写入 | 写入 |
+| `claude-code` | 写入 | 写入 |
+| `kimi-cli` | 写入（+ `CS_KIMI_SKILLS_DIR`） | 写入 |
+| `gemini-cli` | 写入 | 写入 |
+
+!!! note "兜底路径"
+    若 `CS_SKILL_TRUST_METADATA_PATH` 指向的文件不存在，harness 从当前 `cwd` 向上查找 `.clawsentry/skill-trust-runtime.json`。
+
+## 运行时环境变量 {#env-vars}
+
+```bash
+# 文件路径
+CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json
+CS_SKILL_TRUST_METADATA_PATH=.clawsentry/skill-trust-runtime.json
+
+# First-use 动作（可选值：audit | force_l2 | force_l3 | defer | block）
+CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION=audit
+CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION=audit
+CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=defer
+CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION=block
+```
+
+## CLI 参考 {#cli-reference}
+
+### `skill-trust scan`
+
+扫描单个 skill 根目录，产出 `AdmissionReport`。
+
+```bash
+clawsentry skill-trust scan \
+  --skill-root PATH \
+  [--output PATH] \
+  [--json]
+```
+
+| 参数 | 必需 | 说明 |
+|---|---|---|
+| `--skill-root` | 是 | 包含 `SKILL.md` 的 skill 目录路径 |
+| `--output` | 否 | 将报告写入指定 JSON 文件 |
+| `--json` | 否 | 将结果以 JSON 格式打印到 stdout |
+
+### `skill-trust register`
+
+扫描并将单个 skill 写入 registry，生成 transition event。
+
+```bash
+clawsentry skill-trust register \
+  --skill-root PATH \
+  --registry PATH \
+  [--framework {codex|claude-code|kimi-cli|gemini-cli}] \
+  [--scope {workspace|user_home|project|global}] \
+  [--list-state {auto|allowlist|greylist|blacklist}] \
+  [--operator-override OVERRIDE_ID] \
+  [--json]
+```
+
+| 参数 | 必需 | 默认值 | 说明 |
+|---|---|---|---|
+| `--skill-root` | 是 | — | skill 目录路径 |
+| `--registry` | 是 | — | registry JSON 文件路径（不存在时自动创建） |
+| `--framework` | 否 | `codex` | skill 所属框架 |
+| `--scope` | 否 | `workspace` | 注册范围 |
+| `--list-state` | 否 | `auto` | `auto` 时：admission risk = low → `allowlist`，否则 → `greylist` |
+| `--operator-override` | 否 | — | 高风险 scan 强制 allowlist 时必须提供的 operator review ID |
+| `--json` | 否 | — | 以 JSON 格式打印注册结果 |
+
+!!! warning "高风险 scan 的 allowlist"
+    若 admission risk 不为 `low` 且未提供 `--operator-override`，`--list-state allowlist` 会报错退出（exit code 2）。
+
+### `skill-trust register-dir`
+
+扫描整个 skills 目录，批量写入 registry 并生成 runtime metadata 文件。
+
+```bash
+clawsentry skill-trust register-dir \
+  --skills-dir PATH \
+  --registry PATH \
+  --metadata PATH \
+  [--framework {codex|claude-code|kimi-cli|gemini-cli}] \
+  [--scope {workspace|user_home|project|global}] \
+  [--json]
+```
+
+| 参数 | 必需 | 默认值 | 说明 |
+|---|---|---|---|
+| `--skills-dir` | 是 | — | 包含多个 skill 子目录的父目录 |
+| `--registry` | 是 | — | registry JSON 文件路径 |
+| `--metadata` | 是 | — | runtime metadata JSON 文件路径（供 harness 运行时加载） |
+| `--framework` | 否 | `codex` | 框架标识 |
+| `--scope` | 否 | `workspace` | 注册范围 |
+| `--json` | 否 | — | 以 JSON 格式打印汇总结果 |
+
+`register-dir` 执行以下合并策略：
+
+1. `blacklist` / `revoked` / `disabled` 的现有记录的 `trust_level`、`list_state`、`status` 不被覆盖
+2. 新扫描结果更新 content hash、scan_id、skill_root_hash
+3. 现有记录的 `previous_skill_root_hash` 写入 `source` 以供审计
+4. 检测跨 skill 的 ambiguous alias（相同身份键的多个目录），写入 `preflight_actions`

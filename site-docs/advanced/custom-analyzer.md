@@ -1,69 +1,38 @@
 ---
-title: 自定义 L2 Analyzer
-description: 实现和集成自定义的 L2 语义分析器，扩展 ClawSentry 的风险评估能力
+title: 自定义 L2 分析器
+description: Implement and register a custom SemanticAnalyzer to extend ClawSentry L2 risk assessment.
 ---
 
 <div class="cs-doc-hero" markdown>
-<div class="cs-eyebrow">Advanced · L2 Semantic Analysis</div>
+<div class="cs-eyebrow">进阶 · L2 语义分析</div>
 
-## 自定义 L2 Analyzer
+## 自定义 L2 语义分析器
 
-实现和集成自定义的 L2 语义分析器，通过 `SemanticAnalyzer` Protocol 扩展 ClawSentry 的风险评估能力。
+将自定义 `SemanticAnalyzer` 接入 `CompositeAnalyzer` 链，在 ClawSentry 内置规则分析器与 LLM 分析器之上叠加业务域特定的风险逻辑。
 
 <div class="cs-pill-row" markdown>
-<span class="cs-pill">SemanticAnalyzer Protocol</span>
+<span class="cs-pill">SemanticAnalyzer 协议</span>
 <span class="cs-pill">CompositeAnalyzer</span>
-<span class="cs-pill">upgrade-only</span>
-<span class="cs-pill">budget_ms 超时保护</span>
+<span class="cs-pill">只升不降</span>
+<span class="cs-pill">超时熔断保护</span>
 </div>
 </div>
 
-# 自定义 L2 Analyzer
-
-L2 语义分析是 ClawSentry 三层决策模型的中间层，负责在 L1 规则引擎的基础上进行更深层的语义风险评估。ClawSentry 提供了 **可插拔的 Analyzer 架构**，你可以实现自定义的 `SemanticAnalyzer` 来引入特定领域的风险评估逻辑。
+L2 语义分析位于确定性 L1 规则引擎与最终决策之间。任何满足 `SemanticAnalyzer` Protocol 的对象都可以组合进分析器链，无需继承任何基类。
 
 ---
 
-## 架构概览
+## SemanticAnalyzer 协议
 
-L2 分析在决策流程中的位置：
-
-```
-事件 → L1 规则引擎（D1-D5 评分） → L2 语义分析 → 最终决策
-                                      ↑
-                              SemanticAnalyzer Protocol
-                              ├── RuleBasedAnalyzer（内置）
-                              ├── LLMAnalyzer（LLM 驱动）
-                              ├── CompositeAnalyzer（组合多个）
-                              └── YourCustomAnalyzer（自定义）
-```
-
-### L2 触发条件
-
-并非所有事件都会经过 L2 分析。以下条件触发 L2：
-
-1. Adapter 请求的 `decision_tier` 为 `L2`
-2. L1 评估结果为 MEDIUM 风险的 `pre_action` 事件
-3. 事件涉及关键领域资产（匹配 `prod`, `credential`, `secret`, `token`, `password`, `key` 等关键词）
-4. DecisionContext 中设置了手动 L2 升级标志（`l2_escalate`, `force_l2`, `manual_l2_escalation`）
-
----
-
-## SemanticAnalyzer Protocol
-
-所有 L2 分析器必须满足 `SemanticAnalyzer` 协议。这是一个 Python `Protocol`（结构化子类型），使用 `@runtime_checkable` 装饰器支持运行时类型检查：
-
-```python
+```python title="clawsentry/gateway/semantic_analyzer.py (excerpt)"
 from typing import Optional, Protocol, runtime_checkable
 
 @runtime_checkable
 class SemanticAnalyzer(Protocol):
-    """L2 可插拔语义分析器协议。"""
+    """Protocol for pluggable L2 semantic analyzers."""
 
     @property
-    def analyzer_id(self) -> str:
-        """分析器的唯一标识符。"""
-        ...
+    def analyzer_id(self) -> str: ...
 
     async def analyze(
         self,
@@ -71,192 +40,77 @@ class SemanticAnalyzer(Protocol):
         context: Optional[DecisionContext],
         l1_snapshot: RiskSnapshot,
         budget_ms: float,
-    ) -> L2Result:
-        """
-        分析事件并返回风险评估结果。
-
-        Args:
-            event: 归一化后的 AHP 标准事件
-            context: 可选的决策上下文（会话风险、Agent 信任等级等）
-            l1_snapshot: L1 规则引擎产生的风险快照
-            budget_ms: 时间预算（毫秒），分析器应在此时间内返回
-
-        Returns:
-            L2Result: 包含目标风险等级、原因、置信度等
-        """
-        ...
+    ) -> L2Result: ...
 ```
 
-!!! note "关键约束"
-    - `analyze()` 是 **async** 方法——支持 I/O 密集型操作（如 LLM 调用、外部 API 查询）
-    - L2 分析结果**只能升级**风险等级，不能降级——PolicyEngine 会确保最终等级 >= L1 等级
-    - 分析器应尊重 `budget_ms` 时间预算，超时应降级返回而非阻塞
+`@runtime_checkable` 意味着 `isinstance(obj, SemanticAnalyzer)` 在运行时可用——不要求继承任何基类。
 
 ---
 
-## L2Result 结构
+## L2Result 字段说明
 
 ```python
-from dataclasses import dataclass, field
-from typing import Optional
-
 @dataclass(frozen=True)
 class L2Result:
-    """L2 语义分析的不可变结果。"""
-
     target_level: RiskLevel
-    """目标风险等级。PolicyEngine 会取 max(L1 等级, 此值)。"""
-
     reasons: list[str] = field(default_factory=list)
-    """分析发现的风险原因列表。"""
-
     confidence: float = 0.0
-    """置信度 (0.0-1.0)。confidence=0.0 表示分析降级/失败。"""
-
     analyzer_id: str = ""
-    """产生此结果的分析器标识符。"""
-
     latency_ms: float = 0.0
-    """分析耗时（毫秒）。"""
-
     trace: Optional[dict] = None
-    """可选的调试/审计追踪信息。"""
+    decision_tier: DecisionTier = DecisionTier.L2
 ```
 
-### 关键字段说明
-
-| 字段 | 说明 |
-|------|------|
-| `target_level` | 分析器建议的风险等级。PolicyEngine 会取 `max(l1_snapshot.risk_level, target_level)`，确保**只升不降** |
-| `confidence` | 置信度。**`0.0` 有特殊含义**——CompositeAnalyzer 会忽略 confidence=0.0 的结果，视为分析降级 |
-| `reasons` | 人类可读的原因列表，会包含在最终决策的 `reason` 字段中 |
-| `trace` | 可选的追踪信息，会存储到 TrajectoryStore 的 `l3_trace_json` 列中供审计 |
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `target_level` | `RiskLevel` | 必填。`PolicyEngine` 执行 `max(l1_level, target_level)`——结果只升不降。 |
+| `confidence` | `float` 0.0–1.0 | **`0.0` 表示降级/失败。** `CompositeAnalyzer` 会丢弃所有 `confidence == 0.0` 的结果。 |
+| `reasons` | `list[str]` | 人类可读的发现描述，显示于决策记录和仪表盘。 |
+| `analyzer_id` | `str` | 应与 `self.analyzer_id` 一致，用于审计日志。 |
+| `latency_ms` | `float` | 已用毫秒数。传入 `round((time.monotonic() - start) * 1000, 3)`。 |
+| `trace` | `Optional[dict]` | 任意调试/审计字典，存储于 `TrajectoryStore.l3_trace_json`。 |
+| `decision_tier` | `DecisionTier` | 默认为 `DecisionTier.L2`。降级回 L1 兜底时设为 `DecisionTier.L1`。 |
 
 ---
 
-## 内置 Analyzer 实现
+## 接入流程概览
 
-### RuleBasedAnalyzer
-
-基于规则的语义分析器，无需外部依赖，延迟亚毫秒级：
-
-```python
-class RuleBasedAnalyzer:
-    @property
-    def analyzer_id(self) -> str:
-        return "rule-based"
+```mermaid
+flowchart TD
+    A([实现 SemanticAnalyzer Protocol]) --> B[处理预算与异常\nbudget_ms / TimeoutError / Exception]
+    B --> C[注入 L1PolicyEngine\nL1PolicyEngine&#40;analyzer=...&#41;]
+    C --> D{是否启用 LLM 栈？}
+    D -- 否 --> E[CompositeAnalyzer\nRuleBasedAnalyzer + 自定义]
+    D -- 是 --> F[build_analyzer_from_env\n获取环境驱动分析器]
+    F --> G[CompositeAnalyzer\nenv_analyzer + 自定义]
+    E --> H([引擎就绪，进入决策流程])
+    G --> H
 ```
-
-**分析逻辑**：
-
-1. 检查 `risk_hints` 是否包含已确认的高风险信号（`credential_exfiltration_confirmed`, `privilege_escalation_confirmed`）→ 升级到 CRITICAL
-2. 检查 `risk_hints` 是否包含高风险信号（`credential_exfiltration`, `privilege_escalation`, `prompt_injection` 等）→ 升级到 HIGH
-3. 检查是否在关键领域资产上使用了危险工具 → 升级到 HIGH
-4. 检查是否同时存在关键领域关键词和危险意图关键词 → 升级到 CRITICAL
-5. 检查是否有手动 L2 升级标志 → 升级到 HIGH
-
-**特点**：
-
-- 始终返回 `confidence=1.0`
-- 延迟在微秒级
-- 作为 L2 分析的基线，即使 LLM 不可用也能提供增强评估
-
-### LLMAnalyzer
-
-基于 LLM 的语义分析器，通过 LLM 提供商进行深度语义评估：
-
-```python
-class LLMAnalyzer:
-    @property
-    def analyzer_id(self) -> str:
-        return f"llm-{self._provider.provider_id}"
-```
-
-**特点**：
-
-- 使用预定义的安全分析系统提示词
-- 将事件的工具名称、事件类型、payload、risk_hints、L1 评分等信息发送给 LLM
-- 要求 LLM 以 JSON 格式返回 `{"risk_assessment": "...", "reasons": [...], "confidence": 0.0-1.0}`
-- 超时或解析失败时降级为 L1 结果（confidence=0.0）
-- 默认配置：超时 3000ms，max_tokens 256，temperature 0.0
-
-### CompositeAnalyzer
-
-组合分析器，递进运行多个分析器并取最高风险结果：
-
-```python
-class CompositeAnalyzer:
-    @property
-    def analyzer_id(self) -> str:
-        ids = ",".join(a.analyzer_id for a in self._analyzers)
-        return f"composite({ids})"
-```
-
-**行为**：
-
-1. 先运行第一个子分析器
-2. 若第一个结果已对 HIGH+ 风险给出高置信度结论，则跳过后续分析器
-3. 否则再运行后续子分析器
-4. 过滤掉 confidence=0.0 的结果（视为降级/失败）
-5. 从有效结果中选择风险等级最高的；风险等级相同时选择 confidence 最高的
-6. 如果所有分析器都降级（无有效结果），返回 L1 等级，confidence=0.0
 
 ---
 
-## 实现自定义 Analyzer
+## 集成步骤
 
-### 步骤 1: 定义 Analyzer 类
+### 第一步 — 实现分析器
 
-```python title="company_blocklist_analyzer.py"
-"""
-基于公司内部黑名单的 L2 语义分析器。
-
-检查 Agent 操作是否命中公司安全团队维护的命令/路径黑名单。
-"""
-
+```python title="my_analyzer.py"
 import time
 from typing import Optional
 
 from clawsentry.gateway.models import (
-    CanonicalEvent,
-    DecisionContext,
-    RiskLevel,
-    RiskSnapshot,
+    CanonicalEvent, DecisionContext, RiskLevel, RiskSnapshot,
 )
 from clawsentry.gateway.semantic_analyzer import L2Result
 
 
-class CompanyBlocklistAnalyzer:
-    """基于公司内部黑名单的 L2 语义分析器。"""
+class DomainBlocklistAnalyzer:
+    """Example: block commands matching a domain-specific deny list."""
 
-    # 公司安全团队维护的高危命令黑名单
-    BLOCKED_COMMANDS = {
-        "rm -rf /",
-        "chmod -R 777 /",
-        "curl | bash",
-        "wget -O- | sh",
-        "nc -e /bin/sh",
-    }
-
-    # 公司内部受保护路径
-    PROTECTED_PATHS = {
-        "/opt/production/",
-        "/var/lib/secrets/",
-        "/etc/company/",
-        "/home/deploy/.ssh/",
-    }
-
-    # 公司特定的敏感环境变量名
-    SENSITIVE_ENV_VARS = {
-        "DATABASE_URL",
-        "STRIPE_SECRET_KEY",
-        "AWS_SECRET_ACCESS_KEY",
-        "COMPANY_API_MASTER_KEY",
-    }
+    BLOCKED = {"rm -rf /", "nc -e /bin/sh", "curl | bash"}
 
     @property
     def analyzer_id(self) -> str:
-        return "company-blocklist"
+        return "domain-blocklist"
 
     async def analyze(
         self,
@@ -266,224 +120,163 @@ class CompanyBlocklistAnalyzer:
         budget_ms: float,
     ) -> L2Result:
         start = time.monotonic()
+        target_level = l1_snapshot.risk_level  # never go below L1
         reasons: list[str] = []
-        target_level = l1_snapshot.risk_level
 
-        # 提取命令文本
-        command = str(event.payload.get("command", "")).strip()
-        command_lower = command.lower()
-
-        # 检查 1: 命令黑名单
-        for blocked in self.BLOCKED_COMMANDS:
-            if blocked in command_lower:
+        cmd = str((event.payload or {}).get("command", "")).lower()
+        for blocked in self.BLOCKED:
+            if blocked in cmd:
                 target_level = RiskLevel.CRITICAL
-                reasons.append(
-                    f"Command matches company blocklist: '{blocked}'"
-                )
-
-        # 检查 2: 受保护路径
-        payload_text = str(event.payload)
-        for path in self.PROTECTED_PATHS:
-            if path in payload_text:
-                target_level = RiskLevel.HIGH
-                reasons.append(
-                    f"Operation targets protected path: {path}"
-                )
-
-        # 检查 3: 敏感环境变量
-        for env_var in self.SENSITIVE_ENV_VARS:
-            if env_var in payload_text:
-                target_level = RiskLevel.HIGH
-                reasons.append(
-                    f"References sensitive env var: {env_var}"
-                )
-
-        elapsed_ms = (time.monotonic() - start) * 1000
+                reasons.append(f"blocked command pattern: {blocked!r}")
 
         return L2Result(
             target_level=target_level,
             reasons=reasons,
             confidence=1.0 if reasons else 0.5,
             analyzer_id=self.analyzer_id,
-            latency_ms=round(elapsed_ms, 3),
+            latency_ms=round((time.monotonic() - start) * 1000, 3),
         )
 ```
 
-### 步骤 2: 集成到 Gateway
+!!! warning "只升不降"
+    始终用 `target_level = l1_snapshot.risk_level` 初始化。`PolicyEngine` 内部会强制执行 `max(l1, l2)`，但从 L1 级别起步可避免在无操作结果上产生误导性的 `confidence` 信号。
 
-目前 ClawSentry 通过 `llm_factory.py` 中的 `build_analyzer_from_env()` 函数构建 Analyzer 链。要集成自定义 Analyzer，你可以修改 `llm_factory.py` 或创建一个启动脚本：
+!!! warning "confidence=0.0 具有特殊含义"
+    `CompositeAnalyzer` 会静默丢弃所有 `confidence == 0.0` 的 `L2Result`。`0.0` 专门用于降级/失败路径——表示希望透传给下一个分析器或回退到 L1。
 
-```python title="custom_gateway.py"
-"""使用自定义 Analyzer 启动 Gateway 的示例脚本。"""
+### 第二步 — 处理预算与异常
 
-import asyncio
-from clawsentry.gateway.server import AHPSupervisionGateway
+```python
+    async def analyze(self, event, context, l1_snapshot, budget_ms):
+        try:
+            result = await asyncio.wait_for(
+                self._external_check(event),
+                timeout=budget_ms / 1000,
+            )
+            return result
+        except asyncio.TimeoutError:
+            return L2Result(
+                target_level=l1_snapshot.risk_level,
+                reasons=["external check timed out"],
+                confidence=0.0,          # degraded — CompositeAnalyzer will skip
+                analyzer_id=self.analyzer_id,
+                decision_tier=DecisionTier.L1,
+            )
+        except Exception:
+            return L2Result(
+                target_level=l1_snapshot.risk_level,
+                reasons=["analysis failed"],
+                confidence=0.0,
+                analyzer_id=self.analyzer_id,
+                decision_tier=DecisionTier.L1,
+            )
+```
+
+!!! note "不要抛出异常"
+    `CompositeAnalyzer` 会捕获每个子分析器抛出的异常并将其记录为失败。请返回 `confidence=0.0` 的结果，而不是直接抛出异常。
+
+### 第三步 — 构建 CompositeAnalyzer 并传入 L1PolicyEngine
+
+```python title="gateway_startup.py"
 from clawsentry.gateway.policy_engine import L1PolicyEngine
-from clawsentry.gateway.semantic_analyzer import (
-    CompositeAnalyzer,
-    RuleBasedAnalyzer,
-)
-from company_blocklist_analyzer import CompanyBlocklistAnalyzer
+from clawsentry.gateway.semantic_analyzer import CompositeAnalyzer, RuleBasedAnalyzer
+from my_analyzer import DomainBlocklistAnalyzer
 
+analyzer = CompositeAnalyzer([
+    RuleBasedAnalyzer(),          # fast, deterministic — run first
+    DomainBlocklistAnalyzer(),    # domain logic
+])
 
-def main():
-    # 构建自定义 Analyzer 链
-    analyzers = [
-        RuleBasedAnalyzer(),           # 内置规则分析
-        CompanyBlocklistAnalyzer(),     # 公司黑名单分析
-    ]
-    composite = CompositeAnalyzer(analyzers)
-
-    # 使用自定义 Analyzer 创建 PolicyEngine
-    policy_engine = L1PolicyEngine(analyzer=composite)
-
-    # 创建并启动 Gateway
-    gateway = AHPSupervisionGateway(policy_engine=policy_engine)
-    gateway.run()
-
-
-if __name__ == "__main__":
-    main()
+engine = L1PolicyEngine(analyzer=analyzer)
 ```
 
-### 步骤 3: 与 LLM 分析器组合
+`L1PolicyEngine.__init__` 接受任何满足 `SemanticAnalyzer` Protocol 的 `analyzer=` 参数。若 `analyzer` 为 `None`，则默认使用裸 `RuleBasedAnalyzer`。
 
-如果同时需要公司黑名单检查和 LLM 语义分析，使用 CompositeAnalyzer 组合：
+### 第四步 — 可选：与 LLM 分析栈组合
 
 ```python
-from clawsentry.gateway.semantic_analyzer import (
-    CompositeAnalyzer,
-    LLMAnalyzer,
-    RuleBasedAnalyzer,
-)
-from clawsentry.gateway.llm_provider import OpenAIProvider, LLMProviderConfig
+from clawsentry.gateway.llm_factory import build_analyzer_from_env
+from clawsentry.gateway.semantic_analyzer import CompositeAnalyzer, RuleBasedAnalyzer
 
-# 构建 LLM 提供商
-config = LLMProviderConfig(api_key="sk-...", model="gpt-4")
-provider = OpenAIProvider(config)
+# Build the default env-driven analyzer (rule + LLM [+ L3 agent if CS_L3_ENABLED])
+env_analyzer = build_analyzer_from_env()
 
-# 组合三个分析器
-analyzers = [
-    RuleBasedAnalyzer(),           # L2 规则分析（亚毫秒级）
-    LLMAnalyzer(provider),          # LLM 语义分析（~1-3 秒）
-    CompanyBlocklistAnalyzer(),     # 公司黑名单分析（亚毫秒级）
-]
-composite = CompositeAnalyzer(analyzers)
+if env_analyzer is not None:
+    # Prepend or append your custom analyzer
+    analyzer = CompositeAnalyzer([env_analyzer, DomainBlocklistAnalyzer()])
+else:
+    analyzer = CompositeAnalyzer([RuleBasedAnalyzer(), DomainBlocklistAnalyzer()])
+
+engine = L1PolicyEngine(analyzer=analyzer)
 ```
 
-CompositeAnalyzer 会递进运行这些分析器，并最终取风险等级最高的有效结果。
+`build_analyzer_from_env()` 在 `CS_LLM_PROVIDER` 未设置时返回 `None`；配置了 LLM 提供商时返回 `CompositeAnalyzer(RuleBasedAnalyzer, LLMAnalyzer)`；当 `CS_L3_ENABLED=true` 时还会额外包装一个 `AgentAnalyzer`（L3）。
 
 ---
 
-## 最佳实践
+## CompositeAnalyzer 合并规则
 
-### 1. 始终遵循 upgrade-only 原则
-
-L2 分析器的结果应只升级风险等级，不应降级。即使你的分析器认为 L1 评估过高，也应返回与 L1 相同或更高的等级：
-
-```python
-# 正确：使用 l1_snapshot.risk_level 作为底线
-target_level = l1_snapshot.risk_level
-if some_condition:
-    target_level = RiskLevel.HIGH  # 升级
-
-# 错误：可能降级
-target_level = RiskLevel.LOW  # 不要这样做
+```mermaid
+flowchart TD
+    A([开始：收集所有子分析器结果]) --> B{结果 confidence == 0.0？}
+    B -- 是 --> C[丢弃该结果]
+    B -- 否 --> D{context 含 force_l3 / l3_escalate？}
+    C --> E{所有结果均被丢弃？}
+    D -- 是 --> F[强制运行所有后续分析器\n不短路]
+    D -- 否 --> G{首个结果 HIGH+ 且\nconfidence >= 0.8？}
+    G -- 是 --> H[短路：跳过后续分析器\n采用该决定性结果]
+    G -- 否 --> I[继续运行后续分析器]
+    F --> J[汇总所有有效结果]
+    H --> J
+    I --> J
+    E -- 是 --> K([返回 L1 级别\nconfidence=0.0\ndecision_tier=L1])
+    E -- 否 --> J
+    J --> L[多个有效结果：\ntarget_level 取最高值\n同级别时 confidence 更高者胜出]
+    L --> M([输出最终 L2Result])
 ```
 
-PolicyEngine 内部会强制执行 `max(l1_level, l2_level)`，但分析器自身遵循此原则可以避免混淆。
-
-### 2. 正确使用 confidence
-
-- `1.0` -- 确定性分析（规则匹配、黑名单命中）
-- `0.5-0.9` -- LLM 或启发式分析结果
-- `0.0` -- 分析失败或降级。**CompositeAnalyzer 会忽略 confidence=0.0 的结果**
-
-### 3. 尊重时间预算
-
-```python
-async def analyze(self, event, context, l1_snapshot, budget_ms):
-    # 如果需要调用外部服务，使用 asyncio.wait_for 限制超时
-    try:
-        result = await asyncio.wait_for(
-            self._external_check(event),
-            timeout=budget_ms / 1000,
-        )
-    except asyncio.TimeoutError:
-        # 超时降级
-        return L2Result(
-            target_level=l1_snapshot.risk_level,
-            reasons=["External check timed out; falling back to L1"],
-            confidence=0.0,
-            analyzer_id=self.analyzer_id,
-        )
-```
-
-### 4. 异常处理与降级
-
-分析器不应抛出异常到调用方。所有异常应在内部捕获并降级：
-
-```python
-async def analyze(self, event, context, l1_snapshot, budget_ms):
-    try:
-        # 正常分析逻辑
-        ...
-    except Exception:
-        # 降级：返回 L1 等级 + confidence=0.0
-        return L2Result(
-            target_level=l1_snapshot.risk_level,
-            reasons=["Analysis failed; falling back to L1"],
-            confidence=0.0,
-            analyzer_id=self.analyzer_id,
-        )
-```
-
-### 5. 提供有意义的 reasons
-
-`reasons` 列表会出现在决策结果和仪表板中。确保每个 reason 清晰描述发现了什么风险：
-
-```python
-# 好的 reason
-reasons.append("Command matches company blocklist: 'rm -rf /'")
-reasons.append("Operation targets protected production path: /opt/production/")
-
-# 不好的 reason
-reasons.append("suspicious")
-reasons.append("blocked")
-```
+| 场景 | 结果 |
+|---|---|
+| 首个分析器返回 HIGH+ 且 `confidence >= 0.8` | 后续分析器被**跳过**（决定性结果短路）。 |
+| `context.session_risk_summary` 含 `force_l3 / l3_escalate` | 无论首个结果如何，后续分析器始终执行。 |
+| 某结果 `confidence == 0.0` | 从候选集中丢弃。 |
+| 所有结果均被丢弃（全部降级） | 返回 L1 级别，`confidence=0.0`，`decision_tier=L1`。 |
+| 多个有效结果 | 最高 `target_level` 胜出；同级别时以 `confidence` 更高者为准。 |
 
 ---
 
-## 相关 API 参考
+## CanonicalEvent 与 RiskSnapshot 参考
 
-### CanonicalEvent 关键字段
+**L2 中使用的 CanonicalEvent 字段**
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `tool_name` | `Optional[str]` | 工具名称（如 `bash`, `read_file`） |
-| `event_type` | `EventType` | 事件类型（`pre_action`, `post_action` 等） |
-| `risk_hints` | `list[str]` | 风险提示标签列表 |
-| `payload` | `dict[str, Any]` | 事件载荷（包含 `command`, `tool` 等） |
-| `session_id` | `str` | 会话标识符 |
-| `agent_id` | `str` | Agent 标识符 |
-| `source_framework` | `str` | 来源框架（`a3s-code`, `openclaw`） |
+| 字段 | 类型 | 描述 |
+|---|---|---|
+| `tool_name` | `Optional[str]` | 调用的工具（如 `bash`、`read_file`）。 |
+| `event_type` | `EventType` | `pre_action`、`post_action` 等。 |
+| `risk_hints` | `list[str]` | 来自适配器的提示标签（如 `prompt_injection`）。 |
+| `payload` | `dict[str, Any]` | 事件载荷；应视为不可信输入处理。 |
+| `session_id` | `str` | 会话标识符。 |
+| `agent_id` | `str` | 智能体标识符。 |
+| `source_framework` | `str` | 框架标签（如 `a3s-code`、`openclaw`）。 |
 
-### RiskSnapshot 关键字段
+**L2 中使用的 RiskSnapshot 字段**
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `risk_level` | `RiskLevel` | L1 评估的风险等级 |
-| `composite_score` | `int` (0-7) | 综合评分 = max(D1,D2,D3) + D4 + D5 |
-| `dimensions` | `RiskDimensions` | D1-D5 各维度评分 |
-| `short_circuit_rule` | `Optional[str]` | 短路规则（SC-1/SC-2/SC-3，跳过常规评分） |
-| `classified_by` | `ClassifiedBy` | 评估来源（L1/L2/manual） |
+| 字段 | 类型 | 描述 |
+|---|---|---|
+| `risk_level` | `RiskLevel` | L1 计算的风险级别——作为 `target_level` 基线使用。 |
+| `composite_score` | `int` 0–7 | `max(D1,D2,D3) + D4 + D5`。 |
+| `dimensions` | `RiskDimensions` | D1–D5 各维度得分。 |
+| `short_circuit_rule` | `Optional[str]` | 当短路规则（SC-1/2/3）触发时设置。 |
+| `rule_hits` | `list[str]` | L1 匹配到的规则 ID 列表。 |
+| `effect_summary` | `Optional[str]` | 文件/网络/进程/凭证影响证据。 |
+| `taint_flow_summary` | `Optional[str]` | 源到汇的污点传播提示。 |
 
-### RiskLevel 枚举
+**RiskLevel 枚举值**
 
 ```python
 class RiskLevel(str, enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
+    LOW      = "low"
+    MEDIUM   = "medium"
+    HIGH     = "high"
     CRITICAL = "critical"
 ```

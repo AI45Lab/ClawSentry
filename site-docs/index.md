@@ -7,14 +7,15 @@ hide:
 
 <div class="hero" markdown>
 
-## :shield: ClawSentry
+<div class="cs-eyebrow">AI Agent Security Gateway</div>
 
-**ClawSentry 为 AI Agent 工具调用提供统一安全网关：能拦截的框架前置阻断，不能完全拦截的框架清晰标注为监控或可选增强。**
+<div class="cs-hero-brand"><span class="cs-hero-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><defs><linearGradient id="csg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0891b2"/><stop offset="100%" style="stop-color:#16a34a"/></linearGradient></defs><path d="M24 3L6 10v13c0 10.5 7.7 20.3 18 22.5C34.3 43.3 42 33.5 42 23V10L24 3z" fill="url(#csg)" opacity="0.92"/><path d="M18 24.5l4.5 4.5 8-9" stroke="white" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h2>ClawSentry</h2></div>
+
+**为 AI Agent 工具调用提供统一安全网关：能拦截的框架前置阻断，不能完全拦截的框架清晰标注为监控或可选增强。**
 { .tagline }
 
-从本地体验到团队部署，按“安装 → 配置 → 接入框架 → 查看 Web UI → 调优/部署”的路线逐步完成。<br>
-三层递进决策（规则 → 语义 → Agent 审查）帮助你在安全性、延迟和可解释性之间取得平衡。
-{ .tagline }
+三层递进决策（L1 规则 → L2 语义 → L3 审查）在安全性、延迟与可解释性之间取得平衡。
+{ .tagline-sub }
 
 <div class="cs-pill-row" markdown>
 <span class="cs-version-badge">v0.7.5</span>
@@ -30,49 +31,35 @@ hide:
 
 </div>
 
+!!! tip "v0.7.5 — Cross-CLI Skill Trust runtime binding"
+    Kimi CLI、Claude Code、Gemini CLI、Codex 与 a3s-code 现已把真实 skill 路径和运行时上下文接入 Skill Trust metadata；Claude prompt hook 阻断、replay 安全字段和 benchmark matrix 口径同步修正。[查看完整更新日志 →](changelog.md)
+
 ---
 
-
-!!! tip "v0.7.5: Cross-CLI Skill Trust runtime binding"
-    Kimi CLI、Claude Code、Gemini CLI、Codex 与 a3s-code 现在把真实 skill 路径和运行时上下文接入 Skill Trust metadata；Claude prompt hook 阻断、replay 安全字段和 benchmark matrix 口径同步修正。
-
-!!! tip "v0.7.4: L3 multi-turn default"
-    L3 AgentAnalyzer 现在默认使用 multi-turn review；只有显式 `CS_L3_MULTI_TURN=false`、`0`、`no` 或 `off` 才回退 legacy single-turn。公开 release surface 验证为 `3446 passed, 16 skipped`，Web UI `56 passed`。
-
-!!! tip "v0.7.3: L2/L3 review evidence and skills"
-    L2 semantic evidence capsule、L3 triggered review prompt 和 review skill manifest 现在共享同一条脱敏证据链。
-
-!!! tip "v0.7.2: Anti-bypass L1 capability enforcement"
-    Anti-bypass L1 现在用脱敏 effect summary、denied/pending effect ledger 和 approval binding 处理等价绕过尝试。Replay evidence 覆盖 14 cases，decision match 与 coverage gates 均为 `1.0`。
-
-!!! tip "v0.7.1: Public release metadata correction"
-    公开发布面使用公开仓库实际可复验的测试计数，并刷新了首页、配置页、API 文档和 PyPI/GitHub README 的版本说明。
-
-!!! tip "v0.7.0: Runtime safety controls"
-    Skill Trust registry/preflight、capability narrowing、agent safety feedback 和 policy drift traceability 已进入主线。Benchmark 模式的运行方式见 [部署运维 / Benchmark 模式](operations/benchmark-mode.md)。
+## 三大核心能力
 
 <div class="grid-cards" markdown>
 
 <div class="card" markdown>
 ### :shield: 拦截优先，监控兜底
-Claude Code、a3s-code 和 OpenClaw 支持高危操作前阻断；Codex 通过默认 managed hooks + session watcher 接入；Gemini CLI 和 Kimi CLI 通过 native hooks 接入。每个集成页都会说明可阻断范围、监控范围和 fallback 行为。
+Claude Code、a3s-code 和 OpenClaw 支持高危操作**前置阻断**；Codex 通过 managed hooks + session watcher 接入；Gemini CLI 和 Kimi CLI 通过 native hooks 接入。每个集成页都会说明可阻断范围、监控范围和 fallback 行为。
 </div>
 
 <div class="card" markdown>
 ### :zap: 不拖慢你的工作流
-L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要时触发。
+L1 规则引擎 <0.3ms 完成约 95% 的事件决策；L2 语义分析和 L3 审查 Agent 仅在必要时触发，绝大多数请求无感知延迟。
 </div>
 
 <div class="card" markdown>
 ### :eye: 从事件到证据
-每条工具调用都有记录、决策原因和审计轨迹。你可以先用 CLI 观察，再在 Web 仪表板中按 framework / workspace / session 追踪风险。
+每条工具调用都有记录、决策原因和审计轨迹。CLI `watch`、Web 仪表板（按 framework / workspace / session 分组）和移动端 Latch 三端同步，全链路可观测。
 </div>
 
 </div>
 
 ---
 
-## 选择你的框架 { #choose-framework }
+## 支持的框架 { #choose-framework }
 
 <div class="framework-cards" markdown>
 
@@ -84,7 +71,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 - `PreToolUse` 阻塞式安全审查
 - 一键初始化 + 一键卸载
 
-[:octicons-arrow-right-24: Claude Code 快速开始](integration/claude-code.md)
+[:octicons-arrow-right-24: Claude Code 集成指南](integration/claude-code.md)
 </div>
 
 <div class="card framework-card" markdown>
@@ -95,7 +82,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 - `HttpTransport` 直连 `/ahp/a3s`
 - 只通过显式 SDK 传输接入
 
-[:octicons-arrow-right-24: a3s-code 快速开始](integration/a3s-code.md)
+[:octicons-arrow-right-24: a3s-code 集成指南](integration/a3s-code.md)
 </div>
 
 <div class="card framework-card" markdown>
@@ -106,7 +93,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 - 自动检测 OpenClaw 配置
 - 支持交互式 DEFER 审批
 
-[:octicons-arrow-right-24: OpenClaw 快速开始](integration/openclaw.md)
+[:octicons-arrow-right-24: OpenClaw 集成指南](integration/openclaw.md)
 </div>
 
 <div class="card framework-card" markdown>
@@ -115,32 +102,29 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 
 - 自动监控 session 日志目录
 - `clawsentry init codex --setup` 非破坏式安装 managed native hooks
-- 同步 host-deny / approval gate 范围：`PreToolUse(Bash)`、`PermissionRequest(Bash)`；其他 native events 默认仍为异步观察
-- 建议继续配合 `--approval-policy untrusted`
+- 同步阻断范围：`PreToolUse(Bash)`、`PermissionRequest(Bash)`；其他事件默认异步观察
+- 建议配合 `--approval-policy untrusted`
 
-[:octicons-arrow-right-24: Codex 快速开始](integration/codex.md)
+[:octicons-arrow-right-24: Codex 集成指南](integration/codex.md)
 </div>
-
 
 <div class="card framework-card" markdown>
 ### :material-moon-waxing-crescent: Kimi CLI
-通过 Kimi native `[[hooks]]` 接入，可阻断 prompt 和危险 Shell，并记录安全 Shell 与生命周期观察事件。
+通过 Kimi native `[[hooks]]` 接入，可阻断 prompt 和危险 Shell。
 
-- `clawsentry init kimi-cli --setup` 写 `$KIMI_SHARE_DIR/config.toml` 或 `~/.kimi/config.toml`
-- 保留非 ClawSentry hooks，只替换 marker-managed blocks
-- 可阻断 `UserPromptSubmit` 和 `PreToolUse` 高危调用；post/session/subagent/compact/notification 作为观察面
-- 不提供 native `modify` / true `defer` parity
+- `clawsentry init kimi-cli --setup` 写入配置，保留非 ClawSentry hooks
+- 可阻断 `UserPromptSubmit` 和 `PreToolUse` 高危调用
+- post / session / subagent / compact / notification 作为观察面
 
 [:octicons-arrow-right-24: Kimi CLI 集成指南](integration/kimi-cli.md)
 </div>
 
 <div class="card framework-card" markdown>
 ### :material-creation: Gemini CLI
-通过 Gemini CLI native command hooks 接入，支持 prompt、model 与 tool 阶段的安全检查。
+通过 Gemini CLI native command hooks 接入，覆盖 prompt / model / tool 阶段安全检查。
 
-- `clawsentry init gemini-cli --setup` 默认只写项目 `.gemini/settings.json`
-- 同步 hook 覆盖 prompt/model/tool 入口
-- 自定义 provider 或代理前，请先确认它兼容 Gemini CLI 所需接口
+- `clawsentry init gemini-cli --setup` 默认写项目级 `.gemini/settings.json`
+- 同步 hook 覆盖 prompt / model / tool 入口
 
 [:octicons-arrow-right-24: Gemini CLI 集成指南](integration/gemini-cli.md)
 </div>
@@ -149,47 +133,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 
 <div class="latch-banner" markdown>
 
-:material-cellphone: **Latch 移动监控（可选增强）**
-
-随时随地在手机上查看安全事件，远程审批 DEFER 操作。支持所有框架，需单独安装。
-
-[:octicons-arrow-right-24: 了解 Latch 集成](integration/latch.md)
-
-</div>
-
----
-
-## 核心亮点
-
-<div class="grid-cards" markdown>
-
-<div class="card" markdown>
-### :zap: 深度防御
-**L1 规则** (<0.3ms) → **L2 语义** (<3s) → **L3 Agent** (<30s)
-
-逐层升级，绝大多数决策在 L1 毫秒级完成。
-</div>
-
-<div class="card" markdown>
-### :link: 统一多种 AI 框架
-**a3s-code** + **Claude Code** + **Codex** + **Gemini CLI** + **Kimi CLI** + **OpenClaw**
-
-统一 AHP 协议归一化所有框架事件。
-</div>
-
-<div class="card" markdown>
-### :satellite: 多端实时可见
-**CLI 终端** + **Web 仪表板** + **移动端（Latch）**
-
-决策/告警/会话三端同步，全链路可观测。当前 UI 优先显示 token usage / token limit 与 LLM 用量概览、稳定的 Unbound workspace 分组、最新优先的 session timeline，以及 L3 advisory 自然语言分析。
-</div>
-
-<div class="card" markdown>
-### :lock: 安全优先
-**Fail-closed 高危** + **Bearer Token** + **HMAC 签名**
-
-生产级安全加固
-</div>
+:material-cellphone: **Latch 移动监控（可选增强）** — 随时随地在手机上查看安全事件、远程审批 DEFER 操作，支持所有框架。[了解 Latch 集成 →](integration/latch.md)
 
 </div>
 
@@ -199,16 +143,19 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 
 ```mermaid
 flowchart LR
-    A["AI Agent\n执行工具调用"] -->|"pre_action 事件"| B["ClawSentry\n风险评估 &lt;1ms"]
+    A["AI Agent\n执行工具调用"] -->|"pre_action 事件"| B["ClawSentry\n风险评估 <1ms"]
     B -->|"低风险"| C["✅ ALLOW\n正常执行"]
     B -->|"高风险"| D["❌ BLOCK\n自动拦截"]
     B -->|"中等风险"| E["⏸ DEFER\n等待审批"]
 ```
 
-<figure markdown>
-  ![ClawSentry 架构总览](assets/architecture-overview.png)
-  <figcaption>ClawSentry — 统一 AI Agent 安全监督网关</figcaption>
-</figure>
+| 层级 | 触发条件 | 延迟 |
+|:---:|:---|:---:|
+| **L1** 规则引擎（约 95% 事件） | 所有事件，毫秒级黑白名单与注入检测 | <0.3ms |
+| **L2** 语义分析 | L1 不确定、medium+ 风险、上下文歧义 | <3s |
+| **L3** 审查 Agent | HIGH+ 风险、累积异常、显式触发 | <30s |
+
+每层仅在无法确定时向上升级；L3 为终审，永不降级。L3 内部失败降级为 `confidence=0.0`（fail-closed）。
 
 ---
 
@@ -220,7 +167,7 @@ flowchart LR
     pip install clawsentry
     ```
 
-=== "含 LLM 支持"
+=== "含 LLM 支持（L2/L3）"
 
     ```bash
     pip install clawsentry[llm]
@@ -241,18 +188,34 @@ flowchart LR
     ```
 
 !!! info "环境要求"
-    - Python >= 3.11
-    - 核心依赖：FastAPI, Uvicorn, Pydantic v2
-    - 可选依赖组：`[llm]`（Anthropic / OpenAI）、`[enforcement]`（WebSocket）、`[dev]`（测试）
+    Python >= 3.11，核心依赖：FastAPI、Uvicorn、Pydantic v2。可选依赖组 `[llm]`（Anthropic / OpenAI）、`[enforcement]`（WebSocket）、`[metrics]`（Prometheus）。
+
+安装完成后运行 `clawsentry --help` 验证，然后继续阅读 [安装指南](getting-started/installation.md) 或直接进入 [快速开始](getting-started/quickstart.md)。
+
+---
+
+## Web 安全仪表板
+
+内置 React 18 + TypeScript + Vite 单页应用，Gateway 在 `/ui` 自动挂载，无需额外配置。
+
+| 页面 | 功能 |
+|:---|:---|
+| **Dashboard** | Operator Brief、实时决策 feed、token-first LLM 用量、风险概览 |
+| **Sessions** | Framework / workspace / session 分组，Unbound workspace fallback |
+| **Session Detail** | 最新优先决策时间线、D1-D6 风险构成、L3 narrative analysis |
+| **Alerts** | 告警表格、过滤、确认、SSE 自动推送 |
+| **DEFER Panel** | 审批倒计时、Allow / Deny 操作、503 降级提示 |
+
+[Web 仪表板文档 →](dashboard/index.md)
 
 ---
 
 ??? info "三层决策模型详解"
     | 层级 | 名称 | 延迟 | 机制 | 适用场景 |
     |:---:|:---|:---:|:---|:---|
-    | **L1** (~95% 事件直接返回) | 规则引擎 | <0.3ms | D1-D6 六维评分（命令危险度/参数敏感度/命令模式/历史行为/作用域权限/注入检测） | 明确的黑白名单、已知危险模式、注入尝试 |
+    | **L1** | 规则引擎 | <0.3ms | D1-D6 六维评分（命令危险度 / 参数敏感度 / 命令模式 / 历史行为 / 作用域权限 / 注入检测） | 明确的黑白名单、已知危险模式、注入尝试 |
     | **L2** | 语义分析 | <3s | RuleBased / LLM / Composite 三种实现，SemanticAnalyzer 协议 | 需要上下文理解的灰度命令 |
-    | **L3** (~5% 高风险事件) | 审查 Agent | <30s | AgentAnalyzer + ReadOnlyToolkit + SkillRegistry，多轮工具调用推理 | 复杂意图判断、需要取证分析 |
+    | **L3** | 审查 Agent | <30s | AgentAnalyzer + ReadOnlyToolkit + SkillRegistry，多轮工具调用推理 | 复杂意图判断、取证分析 |
 
     ```
                       ┌─ ALLOW/DENY ──→ 直接返回
@@ -261,12 +224,7 @@ flowchart LR
                                           └─ 不确定 ──→ L3 ──→ 最终判决
     ```
 
-    !!! note "升级策略"
-        每层仅在无法确定时才向上升级，保证绝大多数请求在 L1 毫秒级完成。L3 是终审，**永不降级**——任何 L3 内部失败将降级为 `confidence=0.0`（fail-closed）。
-
----
-
-??? info "各框架接入详情"
+??? info "各框架接入方式速查"
     === "a3s-code"
 
         通过显式 SDK **StdioTransport** 或 **HttpTransport** 接入。
@@ -279,137 +237,50 @@ flowchart LR
         HttpTransport("http://127.0.0.1:8080/ahp/a3s?token=...")
         ```
 
-        详见 [a3s-code 集成指南](integration/a3s-code.md)
+        [a3s-code 集成指南 →](integration/a3s-code.md)
 
     === "Claude Code"
 
         通过 **Hook 系统** + **stdio harness** 接入，自动注入 `settings.json`。
 
         ```bash
-        clawsentry init claude-code   # 一键配置 hooks
-        clawsentry start --env-file .clawsentry.env.local
-        clawsentry gateway &          # 启动 Gateway
-        claude                        # 正常使用，所有工具调用自动监控
+        clawsentry init claude-code
+        clawsentry gateway &
+        claude  # 所有工具调用自动监控
         ```
 
-        详见 [Claude Code 集成指南](integration/claude-code.md)
+        [Claude Code 集成指南 →](integration/claude-code.md)
 
     === "Codex CLI"
 
-        默认通过 **Session 日志监控**接入；如需最小同步防护，可显式安装 managed native hooks。
+        默认通过 **Session 日志监控**接入；如需最小同步防护，可安装 managed native hooks。
 
         ```bash
-        clawsentry init codex         # 生成 watcher 配置
-        clawsentry init codex --setup # 可选：安装 PreToolUse(Bash) preflight + 异步观察 hooks
-        clawsentry start --env-file .clawsentry.env.local
-        clawsentry gateway            # 启动 Gateway
+        clawsentry init codex --setup
+        clawsentry gateway
         codex --approval-policy untrusted
         ```
 
-        同步 host 阻断主要覆盖 `PreToolUse(Bash)`；`PostToolUse`、`UserPromptSubmit`、`Stop`、`SessionStart` 默认保持异步观察，不承诺前置阻断。
-
-        详见 [Codex CLI 集成指南](integration/codex.md)
+        [Codex CLI 集成指南 →](integration/codex.md)
 
     === "Gemini CLI"
 
-        通过 **Gemini native command hooks** 接入；默认写项目级 `.gemini/settings.json`。
+        通过 **Gemini native command hooks** 接入，默认写项目级 `.gemini/settings.json`。
 
         ```bash
-        clawsentry init gemini-cli
-        clawsentry init gemini-cli --setup --dry-run
         clawsentry init gemini-cli --setup
-        clawsentry start --env-file .clawsentry.env.local
         clawsentry gateway
         gemini --prompt "say hello"
         ```
 
-        `SessionStart`、`BeforeAgent`、`BeforeModel`、`BeforeTool` 等 hook 可接入 Gateway；shell 工具会规范化为 policy tool `bash`，便于复用统一规则。
-
-        详见 [Gemini CLI 集成指南](integration/gemini-cli.md)
+        [Gemini CLI 集成指南 →](integration/gemini-cli.md)
 
     === "OpenClaw"
 
         通过 **WebSocket 实时监听** + **Webhook 接收** + **审批执行器** 接入。
 
         ```bash
-        # 一键启动（自动检测 OpenClaw 配置）
-        clawsentry gateway
+        clawsentry gateway  # 自动检测 OpenClaw 配置
         ```
 
-        详见 [OpenClaw 集成指南](integration/openclaw.md)
-
----
-
-## CLI 与 API
-
-- [CLI 命令参考 →](cli/index.md) — `init / gateway / watch / l3 full-review / doctor / audit / config / rules / integrations / start / stop / latch`
-- [REST API 文档 →](api/decisions.md) — 决策端点、报表监控、SSE 推送、认证
-
----
-
-
-## Web 安全仪表板
-
-内置 **React 18 + TypeScript + Vite** 单页应用，现已升级为面向值班人员扫描路径的 operator console。当前 UI 重点回答：现在先看哪个 framework / workspace / session、token pressure 是否接近上限、L3 advisory 给出的解释和下一步是什么。
-
-| 页面 | 功能 |
-|:---|:---|
-| **Dashboard** | Operator Brief、实时决策 feed、token-first LLM usage、风险概览 |
-| **Sessions** | Framework / workspace / session 分组；缺失 workspace 时使用稳定 Unbound workspace fallback |
-| **Session Detail** | 最新优先决策时间线、D1-D6 风险构成、L3 narrative analysis、advisory-only 边界 |
-| **Alerts** | 告警表格、过滤、确认、SSE 自动推送 |
-| **DEFER Panel** | 审批倒计时、Allow/Deny 操作、503 降级提示 |
-
-Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
-
-详见 [Web 仪表板文档](dashboard/index.md)
-
----
-
-## 项目数据
-
-| 指标 | 数据 |
-|:---:|:---:|
-| 测试用例 | **3456 passed / 16 skipped**（v0.7.5 public Python release validation；Web UI 56 passed） |
-| 测试耗时 | 随可选依赖与 smoke 范围变化 |
-| 协议版本 | `sync_decision.1.0` |
-| Python 版本 | >= 3.11 |
-| 许可证 | MIT |
-
----
-
-## 文档导航
-
-<div class="grid-cards" markdown>
-
-<div class="card" markdown>
-### [:material-rocket-launch: 入门指南](getting-started/installation.md)
-安装、快速开始、核心概念
-</div>
-
-<div class="card" markdown>
-### [:material-connection: 集成接入](integration/a3s-code.md)
-a3s-code / Claude Code / Codex / OpenClaw 集成
-</div>
-
-<div class="card" markdown>
-### [:material-cog: 配置参考](configuration/env-vars.md)
-环境变量、策略调优、LLM 配置
-</div>
-
-<div class="card" markdown>
-### [:material-api: REST API](api/decisions.md)
-决策端点、报表监控、认证
-</div>
-
-<div class="card" markdown>
-### [:material-layers-triple: 决策详解](decision-layers/l1-rules.md)
-L1 规则 / L2 语义 / L3 Agent
-</div>
-
-<div class="card" markdown>
-### [:material-monitor-dashboard: Web 仪表板](dashboard/index.md)
-浅色优先安全运营控制台
-</div>
-
-</div>
+        [OpenClaw 集成指南 →](integration/openclaw.md)

@@ -1,569 +1,537 @@
 ---
-title: 自定义 Adapter
-description: 为新的 AI Agent 框架编写适配器，将框架事件归一化为 AHP 标准事件
+title: 自定义适配器
+description: 实现适配器，将新的 AI Agent 框架接入 ClawSentry 的 AHP Gateway。
 ---
 
 <div class="cs-doc-hero" markdown>
-<div class="cs-eyebrow">Advanced · Framework Integration</div>
+<div class="cs-eyebrow">高级 · 框架集成</div>
 
-## 自定义 Adapter
+## 实现自定义 AHP 适配器
 
-为新的 AI Agent 框架编写适配器，将框架原生事件归一化为 AHP 标准 `CanonicalEvent`，接入 ClawSentry Gateway 的统一安全决策链。
+通过编写适配器，将任意 AI Agent 框架接入 ClawSentry：将框架原生事件规范化为 `CanonicalEvent`，并转发至 Gateway 的统一策略决策链。
 
 <div class="cs-pill-row" markdown>
-<span class="cs-pill">6 个已支持框架</span>
+<span class="cs-pill">6 个内置框架</span>
 <span class="cs-pill">鸭子类型接口</span>
-<span class="cs-pill">UDS / HTTP / WebSocket</span>
-<span class="cs-pill">fail-closed fallback</span>
+<span class="cs-pill">UDS / HTTP / 进程内</span>
+<span class="cs-pill">失败关闭兜底</span>
 </div>
 </div>
 
-# 自定义 Adapter
-
-Adapter（适配器）是 ClawSentry 连接不同 AI Agent 框架的桥梁。每个 Adapter 负责将特定框架的原生事件**归一化**为 AHP 协议定义的 `CanonicalEvent`，然后交给 Gateway 的 PolicyEngine 进行统一的安全评估。
-
-如果你使用的 AI Agent 框架不在 ClawSentry 已支持的列表中，可以通过编写自定义 Adapter 来完成接入。
+**适配器**是框架与 ClawSentry Gateway 之间的桥梁。其唯一职责是将框架原生事件转译为 `CanonicalEvent` 对象，并提交给 Gateway 的 `PolicyEngine` 进行安全决策 —— 所有允许/阻断/延迟判断均由 Gateway 作出，适配器本身不做任何策略判断。
 
 ---
 
-## Adapter 的角色
+## 已支持的框架
 
-在 ClawSentry 架构中，Adapter 处于以下位置：
+ClawSentry 内置了六个框架的适配器。仅当你的框架不在以下列表中时，才需要编写自定义适配器。
 
-```
-AI Agent 框架                ClawSentry
-┌──────────────┐            ┌──────────────────────────┐
-│              │   原生事件   │ Adapter                  │
-│  a3s-code    │ ─────────→ │  ├─ 归一化 → CanonicalEvent │
-│  OpenClaw    │            │  └─ 发送 → Gateway        │
-│  自定义框架   │            │                          │
-│              │ ←───────── │ Gateway                  │
-│              │ 决策(allow/ │  ├─ PolicyEngine          │
-│              │  block/    │  ├─ L1 规则引擎           │
-│              │  defer)    │  ├─ L2 语义分析           │
-│              │            │  └─ L3 审查 Agent         │
-└──────────────┘            └──────────────────────────┘
-```
-
-### 核心职责
-
-1. **事件归一化** -- 将框架的原生事件格式映射为 `CanonicalEvent`
-2. **元数据保留** -- 通过 `framework_meta` 保留框架特有的元信息
-3. **Risk Hints 提取** -- 从原生事件中识别并标注风险提示
-4. **Gateway 通信** -- 将归一化事件发送到 Gateway 并接收决策
-
-### 设计原则
-
-!!! warning "关键原则：Adapter 不做最终决策"
-    Adapter 的职责是**归一化**和**传递**，最终的安全决策**只由 PolicyEngine 产生**。Adapter 只能生成 `CanonicalEvent`，不能直接返回 `CanonicalDecision`。
-
-    唯一的例外是**本地降级 (fallback)**：当 Gateway 不可达时，Adapter 可以调用 `make_fallback_decision()` 生成保守的降级决策。
-
-其他设计原则：
-
-- **归一化失败优雅处理** -- 遇到无法映射的事件类型时返回 `None`，不抛出异常
-- **缺失字段使用 Sentinel 值** -- session_id、agent_id 缺失时使用标准 sentinel 值（如 `unknown_session:framework-name`）
-- **双通道处理** -- `pre_action` 事件同步阻塞等待决策，`post_action` 事件异步审计
-
----
-
-## 现有 Adapter 参考
-
-ClawSentry 目前为 **6 个框架**提供官方 Adapter 和 native hook/transport 支持：
-
-| 框架 | Adapter / 接入方式 | Hook 类型 |
+| 框架 | 适配器类 (Adapter class) | Hook 类型 (Hook type) |
 |---|---|---|
-| a3s-code | `A3SCodeAdapter`，stdio harness + `POST /ahp/a3s` | StdioTransport / HttpTransport |
-| OpenClaw | `OpenClawAdapter`，WebSocket 实时事件 + Webhook | WebSocket + HMAC webhook |
-| Claude Code | `ClaudeCodeAdapter`，native hook harness | `PreToolUse`（阻塞）+ `PostToolUse`/`UserPromptSubmit`（异步）|
-| Codex | `CodexAdapter`，managed hook + `POST /ahp/codex` | `PreToolUse`（阻塞）+ `PermissionRequest`/`PostToolUse`（异步）|
-| Gemini CLI | `GeminiAdapter`，`BeforeTool` native hook | `BeforeTool`（阻塞）|
-| Kimi CLI | `KimiAdapter`，native `PreToolUse`/`UserPromptSubmit` hook | `PreToolUse`（阻塞）+ `UserPromptSubmit`/`PostToolUse`（异步）|
+| a3s-code | `A3SCodeAdapter` | `PreToolUse`（阻断）+ `PostToolUse`/`PostResponse`（审计） |
+| OpenClaw | `OpenClawAdapter` | WebSocket `exec.approval.requested` + Webhook |
+| Claude Code | `A3SCodeAdapter` | `PreToolUse`（阻断）+ `PostToolUse`/`UserPromptSubmit`（审计） |
 
-如果你使用的 AI Agent 框架不在以上列表中，可以通过编写自定义 Adapter 来完成接入。
+!!! note "Claude Code 共用 A3S 适配器"
+    Claude Code 使用 `A3SCodeAdapter`，并设置 `source_framework="claude-code"` —— 不存在独立的 `ClaudeCodeAdapter` 类。
 
-### A3SCodeAdapter
-
-**文件**: `src/clawsentry/adapters/a3s_adapter.py`
-
-将 a3s-code 的 Hook 事件归一化为 CanonicalEvent。
-
-**事件映射**:
-
-| a3s-code Hook 类型 | AHP EventType | 阻塞? |
-|---------------------|---------------|-------|
-| `PreToolUse` | `pre_action` | 是 |
-| `PostToolUse` | `post_action` | 否 |
-| `PrePrompt` | `pre_prompt` | 是 |
-| `GenerateStart` | `pre_prompt` | 是 |
-| `PostResponse` | `post_response` | 否 |
-| `SessionStart` | `session` | 否 |
-| `SessionEnd` | `session` | 否 |
-| `OnError` | `error` | 否 |
-
-**关键特性**:
-
-- PostResponse 再分类规则：根据 payload 字段签名判断是 `post_action` 还是 `post_response`
-- 稳定的 event_id 生成：基于 SHA-256 哈希
-- UDS 通信：使用长度前缀帧的 JSON-RPC 2.0
-- 重试逻辑：可配置的最大重试次数和退避时间
-- 本地降级：Gateway 不可达时的 fail-closed / fail-open 策略
-
-**通信方式**:
-
-- 主通道：Unix Domain Socket (UDS)
-- 备用通道：HTTP（通过 `InProcessA3SAdapter`）
-
-### OpenClawAdapter
-
-**文件**: `src/clawsentry/adapters/openclaw_adapter.py` 及相关模块
-
-将 OpenClaw Gateway 的 WebSocket 事件归一化为 CanonicalEvent。
-
-**模块组成**:
-
-| 文件 | 职责 |
-|------|------|
-| `openclaw_adapter.py` | 主适配器，组合 normalizer + state machine + gateway client |
-| `openclaw_normalizer.py` | 事件归一化核心逻辑 |
-| `openclaw_ws_client.py` | WebSocket 客户端，连接 OpenClaw Gateway |
-| `openclaw_webhook_receiver.py` | Webhook 接收器（HTTP 回调方式） |
-| `openclaw_approval.py` | 审批状态机（Approval lifecycle） |
-| `openclaw_bootstrap.py` | OpenClaw 启动引导配置 |
-| `webhook_security.py` | Webhook 安全验证（签名、IP 白名单） |
-
-**关键特性**:
-
-- WebSocket 实时事件监听
-- 审批状态机：`requested` → `pending` → `resolved`/`no_route`
-- 自动决策执行：收到 Gateway 决策后通过 WS 回传 allow/deny
-- mapping_profile 版本化：`openclaw@<sha>/protocol.v<ver>/profile.v<n>`
+| Codex | `CodexAdapter` | `PreToolUse`/`PermissionRequest`（阻断）+ `PostToolUse`（审计） |
+| Gemini CLI | `GeminiAdapter` | `BeforeTool`（阻断） |
+| Kimi CLI | `KimiAdapter` | `PreToolUse`/`UserPromptSubmit`（阻断）+ `PostToolUse`（审计） |
 
 ---
 
-## 编写新 Adapter
+## 适配器接口
 
-### 接口模式
-
-ClawSentry 没有定义严格的 Adapter 基类（采用鸭子类型），但所有 Adapter 应该提供以下方法：
+ClawSentry 使用**鸭子类型** —— 没有正式的基类。任何提供以下属性和方法的对象均为合法适配器。
 
 ```python
-class CustomAdapter:
-    """自定义 Agent 框架适配器的推荐接口。"""
+class MyAdapter:
+    SOURCE_FRAMEWORK: str = "my-framework"    # CanonicalEvent.source_framework
+    CALLER_ADAPTER_ID: str = "my-adapter.v1"  # DecisionContext.caller_adapter
 
-    SOURCE_FRAMEWORK: str = "custom-agent"
-    """框架标识符，用于 CanonicalEvent.source_framework 字段。"""
-
-    CALLER_ADAPTER_ID: str = "custom-adapter.v1"
-    """适配器标识符，用于 DecisionContext.caller_adapter 字段。"""
-
-    def normalize(
+    def normalize_hook_event(
         self,
-        event_type: str,
+        hook_type: str,
         payload: dict,
         session_id: str | None = None,
         agent_id: str | None = None,
-        **kwargs,
-    ) -> CanonicalEvent | None:
-        """
-        将框架原生事件归一化为 CanonicalEvent。
+    ) -> CanonicalEvent | None: ...
 
-        Returns:
-            CanonicalEvent 或 None（不可映射的事件）
-        """
-        ...
-
-    def is_blocking(self, event_type: str) -> bool:
-        """判断事件类型是否需要同步决策（阻塞 Agent 直到收到决策）。"""
-        ...
+    def is_blocking(self, hook_type: str) -> bool: ...
 
     async def request_decision(
         self,
         event: CanonicalEvent,
         context: DecisionContext | None = None,
         deadline_ms: int | None = None,
-    ) -> CanonicalDecision:
-        """
-        将归一化事件发送到 Gateway 并返回决策。
-
-        包含重试逻辑和本地降级。
-        """
-        ...
+        decision_tier: DecisionTier = DecisionTier.L1,
+    ) -> CanonicalDecision: ...
 ```
 
-### CanonicalEvent 字段映射指南
+### 方法契约
 
-以下是将框架事件映射到 CanonicalEvent 时的关键字段说明：
-
-```python
-from clawsentry.gateway.models import (
-    CanonicalEvent,
-    EventType,
-    FrameworkMeta,
-    NormalizationMeta,
-    extract_risk_hints,
-    utc_now_iso,
-)
-```
-
-#### 必需字段
-
-| CanonicalEvent 字段 | 来源 | 说明 |
-|---------------------|------|------|
-| `schema_version` | 常量 | 固定为 `"ahp.1.0"` |
-| `event_id` | 生成 | 稳定的唯一标识符，建议基于 SHA-256 |
-| `trace_id` | 框架或生成 | 请求跟踪 ID，用于关联同一请求链 |
-| `event_type` | 映射 | 框架事件类型 → AHP EventType 枚举 |
-| `session_id` | 框架 | 框架的会话标识符 |
-| `agent_id` | 框架 | 框架的 Agent 标识符 |
-| `source_framework` | 常量 | Adapter 的 `SOURCE_FRAMEWORK` |
-| `occurred_at` | 时间戳 | UTC ISO8601 格式 |
-| `payload` | 框架 | 事件载荷字典 |
-
-#### 建议字段
-
-| CanonicalEvent 字段 | 来源 | 说明 |
-|---------------------|------|------|
-| `event_subtype` | 映射 | 框架事件的具体子类型（a3s-code/openclaw 必需） |
-| `tool_name` | 框架 | 工具名称，从 payload 提取 |
-| `risk_hints` | 提取 | 风险提示列表，使用 `extract_risk_hints()` 工具函数 |
-| `framework_meta` | 构造 | 包含归一化元数据和框架特有信息 |
-| `depth` | 框架 | Agent 调用栈深度 |
-| `run_id` | 框架 | 框架的运行/任务标识符 |
-| `approval_id` | 框架 | 审批请求标识符（如果适用） |
+| 方法 (Method) | 返回值 (Returns) | 用途 (Purpose) |
+|---|---|---|
+| `normalize_hook_event` | `CanonicalEvent \| None` | 将原始 Hook 事件映射到规范模型。对未知或需跳过的事件类型返回 `None`，不得抛出异常。 |
+| `is_blocking` | `bool` | 当 Agent 必须等待决策后才能继续执行时（例如 `pre_action`）返回 `True`；纯审计事件返回 `False`。 |
+| `request_decision` | `CanonicalDecision` | 将规范事件发送至 Gateway 并返回决策结果。Gateway 不可达时必须实现本地兜底。 |
 
 ---
 
-### 完整示例：CustomAgent 适配器
+## 事件处理数据流
 
-```python title="custom_agent_adapter.py"
-"""
-假设的 CustomAgent 框架适配器示例。
+```mermaid
+flowchart LR
+    A["框架原生事件\n(Native Hook Event)"] --> B["normalize_hook_event()"]
+    B --> C["CanonicalEvent"]
+    C --> D["PolicyEngine\n(Gateway)"]
+    D --> E{"决策结果\n(CanonicalDecision)"}
+    E -->|ALLOW| F["框架继续执行"]
+    E -->|BLOCK| G["框架拒绝操作"]
+    E -->|DEFER| H["框架等待人工审批"]
+    D -.->|"Gateway 不可达"| I["make_fallback_decision()\n本地兜底"]
+    I --> E
+```
 
-CustomAgent 是一个虚构的 AI Agent 框架，通过 HTTP Webhook
-发送事件通知。事件格式如下：
+---
 
-{
-    "type": "tool_call" | "tool_result" | "user_input" | "error",
-    "session": "sess-abc123",
-    "agent": "agent-1",
-    "tool": "file_write",
-    "args": {"path": "/etc/passwd", "content": "..."},
-    "timestamp": "2026-03-23T10:00:00Z"
-}
-"""
+## CanonicalEvent 字段
 
-from __future__ import annotations
+`CanonicalEvent` 是定义在 `src/clawsentry/gateway/models.py` 中的 Pydantic 模型。
 
-import hashlib
-import json
-import logging
-import uuid
-from typing import Any, Optional
+### 必填字段
 
+| 字段 (Field) | 类型 (Type) | 说明 (Description) |
+|---|---|---|
+| `schema_version` | `str` | 固定为 `"ahp.1.0"`，须匹配模式 `ahp.<major>.<minor>`。 |
+| `event_id` | `str` | 稳定的 24 位十六进制 ID，使用 `generate_event_id()` 生成（见下文）。 |
+| `trace_id` | `str` | 请求链路关联 ID。可使用 `tool_use_id`、`turn_id` 或新生成的 UUID。 |
+| `event_type` | `EventType` | 取值之一：`pre_action`、`post_action`、`pre_prompt`、`post_response`、`error`、`session`。 |
+| `session_id` | `str` | 框架会话标识符。缺失时使用 `CanonicalEvent.sentinel_session_id(framework)`。 |
+| `agent_id` | `str` | 框架 Agent 标识符。缺失时使用 `CanonicalEvent.sentinel_agent_id(framework)`。 |
+| `source_framework` | `str` | 必须与适配器的 `SOURCE_FRAMEWORK` 一致。 |
+| `occurred_at` | `str` | UTC ISO8601 时间戳。框架未提供时使用 `utc_now_iso()`。 |
+| `payload` | `dict` | 完整的规范化事件载荷。 |
+
+### 可选字段
+
+| 字段 (Field) | 类型 (Type) | 说明 (Description) |
+|---|---|---|
+| `event_subtype` | `str \| None` | 框架特定的事件名称，例如 `"PreToolUse"`。当 `source_framework` 为 `"a3s-code"` 或 `"openclaw"` 时为必填。 |
+| `tool_name` | `str \| None` | 被调用的工具名。从 `payload["tool"]` 或 `payload["tool_name"]` 中提取。 |
+| `risk_hints` | `list[str]` | 由 `extract_risk_hints(tool_name, command)` 填充。 |
+| `framework_meta` | `FrameworkMeta \| None` | 携带 `NormalizationMeta` 及框架特定的扩展字段。 |
+| `depth` | `int \| None` | Agent 调用栈深度。 |
+| `run_id` | `str \| None` | 框架任务或运行标识符。 |
+| `approval_id` | `str \| None` | 审批生命周期标识符（OpenClaw / Codex）。 |
+| `source_seq` | `int \| None` | 运行内单调递增的事件序列号。 |
+
+!!! warning "验证约束"
+    当 `source_framework` 为 `"a3s-code"` 或 `"openclaw"` 时，Pydantic 校验器**要求**填写 `event_subtype`。自定义框架名称不受此约束，但强烈建议填写以提升审计可读性。
+
+    对于 `source_framework="openclaw"`，还需额外提供以下两个字段：
+
+    - `source_protocol_version` — 必须提供（非空字符串）。
+    - `mapping_profile` — 必须提供，且须匹配模式 `^openclaw@[A-Za-z0-9._-]+/protocol\.v\d+(?:\.\d+)*/profile\.v[1-9]\d*$`（例如 `openclaw@abc1234/protocol.v1/profile.v1`）。
+
+---
+
+## 共享工具函数
+
+请直接导入以下辅助函数，而非自行实现。
+
+```python
+from clawsentry.adapters.event_id import generate_event_id
 from clawsentry.gateway.models import (
-    CanonicalEvent,
-    CanonicalDecision,
-    DecisionContext,
-    DecisionTier,
-    EventType,
-    FrameworkMeta,
-    NormalizationMeta,
-    extract_risk_hints,
-    utc_now_iso,
+    CanonicalEvent, CanonicalDecision,
+    DecisionContext, DecisionTier,
+    EventType, FrameworkMeta, NormalizationMeta,
+    extract_risk_hints, utc_now_iso,
+)
+from clawsentry.adapters.a3s_adapter import infer_content_origin
+from clawsentry.gateway.policy_engine import make_fallback_decision
+```
+
+| 辅助函数 (Helper) | 签名 (Signature) | 用途 (Purpose) |
+|---|---|---|
+| `generate_event_id` | `(source_framework, session_id, event_subtype, occurred_at, payload) → str` | 基于 SHA-256 的稳定 24 位事件 ID。 |
+| `extract_risk_hints` | `(tool_name, command) → list[str]` | 返回风险标签，例如 `"destructive_pattern"` 和 `"shell_execution"`。 |
+| `infer_content_origin` | `(tool_name, payload) → "external" \| "user" \| "unknown"` | 判断载荷数据是否来源于外部。将结果注入 `payload["_clawsentry_meta"]["content_origin"]`。 |
+| `utc_now_iso` | `() → str` | 返回当前 UTC 时间的 ISO8601 字符串。 |
+| `make_fallback_decision` | `(event, risk_hints_contain_high_danger) → CanonicalDecision` | Gateway 不可达时产生保守的本地决策。 |
+| `CanonicalEvent.sentinel_session_id` | `(framework) → str` | 返回 `"unknown_session:{framework}"`。 |
+| `CanonicalEvent.sentinel_agent_id` | `(framework) → str` | 返回 `"unknown_agent:{framework}"`。 |
+
+---
+
+## 分步集成指南
+
+```mermaid
+flowchart TD
+    S1["步骤 1\n定义事件类型映射\n(_HOOK_MAP)"] --> S2["步骤 2\n实现 normalize_hook_event()"]
+    S2 --> S3["步骤 3\n实现 is_blocking()"]
+    S3 --> S4["步骤 4\n实现 request_decision()\n含 Gateway 兜底逻辑"]
+    S4 --> S5["步骤 5\n将适配器接入 Gateway\n(stack.py 或独立进程)"]
+    S5 --> S6["完成集成"]
+```
+
+### 步骤 1 — 定义事件类型映射
+
+创建一个字典，将框架的 Hook 名称映射到 `(EventType, is_blocking)` 元组。
+
+```python
+from clawsentry.gateway.models import EventType
+
+_HOOK_MAP: dict[str, tuple[EventType, bool]] = {
+    "tool_call":   (EventType.PRE_ACTION,  True),
+    "tool_result": (EventType.POST_ACTION, False),
+    "user_input":  (EventType.PRE_PROMPT,  True),
+    "error":       (EventType.ERROR,       False),
+}
+```
+
+阻断事件（`True`）会暂停 Agent，直到 Gateway 响应。非阻断事件仅用于审计，异步发送。
+
+### 步骤 2 — 实现 `normalize_hook_event`
+
+```python
+from clawsentry.adapters.event_id import generate_event_id
+from clawsentry.adapters.a3s_adapter import infer_content_origin
+from clawsentry.gateway.models import (
+    CanonicalEvent, EventType, FrameworkMeta, NormalizationMeta,
+    extract_risk_hints, utc_now_iso,
+)
+import uuid
+
+def normalize_hook_event(self, hook_type, payload, session_id=None, agent_id=None):
+    mapping = _HOOK_MAP.get(hook_type)
+    if mapping is None:
+        return None  # unknown type — return None, do not raise
+
+    event_type, _ = mapping
+    occurred_at = utc_now_iso()
+
+    # Fall back to sentinel values for missing identifiers
+    effective_session = session_id or CanonicalEvent.sentinel_session_id(self.SOURCE_FRAMEWORK)
+    effective_agent   = agent_id   or CanonicalEvent.sentinel_agent_id(self.SOURCE_FRAMEWORK)
+    missing = ([f for f in ("session_id", "agent_id")
+                if not locals()[f.replace("_id", "_" + f.split("_")[0])]])
+
+    tool_name = payload.get("tool") or payload.get("tool_name")
+    command   = str(payload.get("command", "") or payload.get("path", ""))
+    risk_hints = extract_risk_hints(tool_name, command)
+
+    # Enrich payload with content-origin classification
+    enriched = dict(payload)
+    enriched["_clawsentry_meta"] = {"content_origin": infer_content_origin(tool_name, payload)}
+
+    norm_meta = NormalizationMeta(
+        rule_id="my-framework-direct-map",
+        inferred=False,
+        confidence="high",
+        raw_event_type=hook_type,
+        raw_event_source=self.SOURCE_FRAMEWORK,
+        missing_fields=[f for f in ("session_id", "agent_id")
+                        if not (session_id if f == "session_id" else agent_id)],
+        fallback_rule="sentinel_value" if not (session_id and agent_id) else None,
+    )
+
+    return CanonicalEvent(
+        event_id=generate_event_id(
+            self.SOURCE_FRAMEWORK, effective_session, hook_type, occurred_at, enriched
+        ),
+        trace_id=str(uuid.uuid4()),
+        event_type=event_type,
+        session_id=effective_session,
+        agent_id=effective_agent,
+        source_framework=self.SOURCE_FRAMEWORK,
+        occurred_at=occurred_at,
+        payload=enriched,
+        event_subtype=hook_type,
+        tool_name=tool_name,
+        risk_hints=risk_hints,
+        framework_meta=FrameworkMeta(normalization=norm_meta),
+    )
+```
+
+### 步骤 3 — 实现 `is_blocking`
+
+```python
+def is_blocking(self, hook_type: str) -> bool:
+    mapping = _HOOK_MAP.get(hook_type)
+    return mapping[1] if mapping else False
+```
+
+### 步骤 4 — 实现带兜底逻辑的 `request_decision`
+
+通过 UDS 连接 Gateway。每当 Gateway 不可达时，应用 `make_fallback_decision`。
+
+```python
+import asyncio, json, struct, time
+from clawsentry.gateway.models import (
+    CanonicalDecision, DecisionContext, DecisionTier, SyncDecisionRequest,
 )
 from clawsentry.gateway.policy_engine import make_fallback_decision
 
-logger = logging.getLogger("custom-agent-adapter")
+async def request_decision(self, event, context=None, deadline_ms=None,
+                           decision_tier=DecisionTier.L1):
+    effective_deadline = deadline_ms or self.default_deadline_ms
+    ctx = context or DecisionContext(caller_adapter=self.CALLER_ADAPTER_ID)
 
+    req = SyncDecisionRequest(
+        request_id=f"my-{event.event_id}-{int(time.monotonic() * 1000)}",
+        deadline_ms=effective_deadline,
+        decision_tier=decision_tier,
+        event=event,
+        context=ctx,
+    )
+    body = json.dumps({
+        "jsonrpc": "2.0", "id": 1,
+        "method": "ahp/sync_decision",
+        "params": req.model_dump(mode="json"),
+    }).encode()
 
-# ---------------------------------------------------------------------------
-# 事件类型映射
-# ---------------------------------------------------------------------------
+    try:
+        reader, writer = await asyncio.open_unix_connection(self.uds_path)
+        writer.write(struct.pack("!I", len(body)) + body)
+        await writer.drain()
+        length = struct.unpack("!I", await asyncio.wait_for(
+            reader.readexactly(4), timeout=effective_deadline / 1000.0 + 0.5
+        ))[0]
+        data = await asyncio.wait_for(
+            reader.readexactly(length), timeout=effective_deadline / 1000.0 + 0.5
+        )
+        writer.close()
+        resp = json.loads(data)
+        if resp.get("result", {}).get("rpc_status") == "ok":
+            return CanonicalDecision(**resp["result"]["decision"])
+    except Exception:
+        pass  # fall through to local fallback
 
-_EVENT_MAPPING: dict[str, tuple[EventType, bool]] = {
-    "tool_call":   (EventType.PRE_ACTION, True),    # 工具调用前 → 阻塞
-    "tool_result": (EventType.POST_ACTION, False),   # 工具调用后 → 审计
-    "user_input":  (EventType.PRE_PROMPT, True),     # 用户输入前 → 阻塞
-    "error":       (EventType.ERROR, False),          # 错误 → 审计
+    has_high_danger = bool(
+        set(event.risk_hints) & {"destructive_pattern", "shell_execution"}
+    )
+    return make_fallback_decision(event, risk_hints_contain_high_danger=has_high_danger)
+```
+
+### 步骤 5 — 将适配器接入 Gateway
+
+在 `src/clawsentry/gateway/stack.py` 中添加适配器的启动逻辑，以环境变量作为开关：
+
+```python
+if os.getenv("MY_FRAMEWORK_ENABLED"):
+    from my_package.my_adapter import MyAdapter
+    adapter = MyAdapter(uds_path=uds_socket_path)
+    # register HTTP endpoint or WS listener that calls adapter.handle_event()
+```
+
+也可以将适配器作为**独立进程**运行，通过 UDS 或 HTTP 连接到已启动的 Gateway：
+
+```bash
+# 终端 1 — 启动 Gateway
+clawsentry gateway
+
+# 终端 2 — 启动适配器服务
+python my_adapter_service.py
+```
+
+---
+
+## 兜底行为
+
+当 Gateway 不可达时，`make_fallback_decision` 按以下矩阵执行：
+
+| 事件类型 (Event type) | 条件 (Condition) | 兜底裁决 (Fallback verdict) |
+|---|---|---|
+| `pre_action` | `risk_hints` 包含 `destructive_pattern` 或 `shell_execution` | **BLOCK**（失败关闭） |
+| `pre_action` | 无高危 hint | **DEFER** |
+| `pre_prompt` | — | **ALLOW**（失败开放） |
+| `post_action` / `post_response` / `error` / `session` | — | **ALLOW**（纯审计事件） |
+
+!!! warning "务必实现兜底逻辑"
+    `request_decision` 绝不能抛出未处理的异常。Gateway 不可用时，应返回 `make_fallback_decision(event, ...)`。因未处理异常而阻塞 Agent，比保守的本地决策更糟糕。
+
+---
+
+## 配置
+
+适配器通过以下环境变量选择，优先级从高到低：CLI 参数覆盖 > 进程环境变量 > `--env-file` > 内置默认值。
+
+| 环境变量 (Env var) | 默认值 (Default) | 说明 (Description) |
+|---|---|---|
+| `CS_FRAMEWORK` | `""` | 默认激活的框架标识符（例如 `my-framework`）。 |
+| `CS_ENABLED_FRAMEWORKS` | `[]` | 逗号分隔的已启用框架标识符列表。 |
+| `CS_MODE` | `normal` | 运行模式：`normal`、`strict`、`permissive`、`benchmark`。 |
+| `CS_PRESET` | `medium` | 检测预设：`low`、`medium`、`high`、`strict`。 |
+| `CS_L2_ENABLED` | `false` | 启用 L2 语义分析以进行深度检测。 |
+| `CS_L3_ENABLED` | `false` | 启用 L3 咨询 Agent 处理复杂情况。 |
+
+`CS_FRAMEWORK` / `CS_ENABLED_FRAMEWORKS` 的有效值仅限六个内置框架标识符：`a3s-code`、`openclaw`、`codex`、`claude-code`、`gemini-cli`、`kimi-cli`。`env_config.py` 中的 `parse_enabled_frameworks` 会根据固定的 `_SUPPORTED_FRAMEWORKS` frozenset 进行过滤，静默丢弃无法识别的名称。自定义适配器必须通过 UDS 或 HTTP 独立连接 Gateway —— 无法通过这些环境变量激活。
+
+!!! note "UDS 套接字路径"
+    Gateway 默认监听 `/tmp/clawsentry.sock`。如需使用其他路径，请在适配器的 `__init__` 中显式传入 `uds_path`。
+
+---
+
+## 完整最小示例
+
+```python title="my_framework_adapter.py"
+"""Minimal ClawSentry adapter for MyFramework."""
+from __future__ import annotations
+
+import asyncio, json, struct, time, uuid
+from typing import Any
+
+from clawsentry.adapters.a3s_adapter import infer_content_origin
+from clawsentry.adapters.event_id import generate_event_id
+from clawsentry.gateway.models import (
+    CanonicalDecision, CanonicalEvent, DecisionContext, DecisionTier,
+    EventType, FrameworkMeta, NormalizationMeta,
+    SyncDecisionRequest, extract_risk_hints, utc_now_iso,
+)
+from clawsentry.gateway.policy_engine import make_fallback_decision
+
+_HOOK_MAP: dict[str, tuple[EventType, bool]] = {
+    "tool_call":   (EventType.PRE_ACTION,  True),
+    "tool_result": (EventType.POST_ACTION, False),
+    "user_input":  (EventType.PRE_PROMPT,  True),
+    "error":       (EventType.ERROR,       False),
 }
 
 
-# ---------------------------------------------------------------------------
-# event_id 生成
-# ---------------------------------------------------------------------------
+class MyFrameworkAdapter:
+    SOURCE_FRAMEWORK = "my-framework"
+    CALLER_ADAPTER_ID = "my-framework-adapter.v1"
 
-def _generate_event_id(
-    framework: str,
-    session_id: str,
-    event_type: str,
-    occurred_at: str,
-    payload: dict[str, Any],
-) -> str:
-    """基于事件内容生成稳定的 event_id。"""
-    payload_digest = hashlib.sha256(
-        json.dumps(payload, sort_keys=True, default=str).encode()
-    ).hexdigest()[:16]
-    raw = f"{framework}:{session_id}:{event_type}:{occurred_at}:{payload_digest}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:24]
-
-
-# ---------------------------------------------------------------------------
-# Adapter 主类
-# ---------------------------------------------------------------------------
-
-class CustomAgentAdapter:
-    """CustomAgent 框架的 AHP 适配器。"""
-
-    SOURCE_FRAMEWORK = "custom-agent"
-    CALLER_ADAPTER_ID = "custom-agent-adapter.v1"
-
-    def __init__(
-        self,
-        gateway_client=None,  # Gateway 客户端（UDS 或 HTTP）
-        default_deadline_ms: int = 200,
-    ) -> None:
-        self._gateway_client = gateway_client
+    def __init__(self, uds_path: str = "/tmp/clawsentry.sock",
+                 default_deadline_ms: int = 4500) -> None:
+        self.uds_path = uds_path
         self.default_deadline_ms = default_deadline_ms
 
-    def normalize(
+    # ------------------------------------------------------------------
+    # Normalization
+    # ------------------------------------------------------------------
+
+    def normalize_hook_event(
         self,
-        raw_event: dict[str, Any],
-    ) -> Optional[CanonicalEvent]:
-        """
-        将 CustomAgent 原生事件归一化为 CanonicalEvent。
-
-        Returns:
-            CanonicalEvent 或 None（不可映射的事件）
-        """
-        raw_type = raw_event.get("type", "")
-
-        # 查找映射
-        mapping = _EVENT_MAPPING.get(raw_type)
+        hook_type: str,
+        payload: dict[str, Any],
+        session_id: str | None = None,
+        agent_id: str | None = None,
+    ) -> CanonicalEvent | None:
+        mapping = _HOOK_MAP.get(hook_type)
         if mapping is None:
-            logger.warning("Unknown event type: %s", raw_type)
-            return None
+            return None  # unknown type — skip silently
 
         event_type, _ = mapping
+        occurred_at = utc_now_iso()
+        effective_session = session_id or CanonicalEvent.sentinel_session_id(self.SOURCE_FRAMEWORK)
+        effective_agent   = agent_id   or CanonicalEvent.sentinel_agent_id(self.SOURCE_FRAMEWORK)
+        missing = [f for f, v in (("session_id", session_id), ("agent_id", agent_id)) if not v]
 
-        # 提取字段
-        session_id = raw_event.get("session") or CanonicalEvent.sentinel_session_id(
-            self.SOURCE_FRAMEWORK
-        )
-        agent_id = raw_event.get("agent") or CanonicalEvent.sentinel_agent_id(
-            self.SOURCE_FRAMEWORK
-        )
-        tool_name = raw_event.get("tool")
-        occurred_at = raw_event.get("timestamp") or utc_now_iso()
-
-        # 构建 payload
-        payload = dict(raw_event.get("args", {}))
-        if tool_name:
-            payload["tool"] = tool_name
-            payload["tool_name"] = tool_name
-
-        # 提取命令文本（用于 risk_hints）
-        command = str(payload.get("command", ""))
-        if not command and "path" in payload:
-            command = str(payload["path"])
-
-        # 追踪缺失字段
-        missing_fields: list[str] = []
-        if not raw_event.get("session"):
-            missing_fields.append("session_id")
-        if not raw_event.get("agent"):
-            missing_fields.append("agent_id")
-
-        # 构建归一化元数据
-        norm_meta = NormalizationMeta(
-            rule_id="custom-agent-direct-map",
-            inferred=False,
-            confidence="high",
-            raw_event_type=raw_type,
-            raw_event_source=self.SOURCE_FRAMEWORK,
-            missing_fields=missing_fields,
-            fallback_rule="sentinel_value" if missing_fields else None,
-        )
-
-        # 生成稳定的 event_id
-        event_id = _generate_event_id(
-            self.SOURCE_FRAMEWORK,
-            session_id,
-            raw_type,
-            occurred_at,
-            payload,
-        )
-
-        # 提取 risk_hints
+        tool_name = payload.get("tool") or payload.get("tool_name")
+        command   = str(payload.get("command", "") or payload.get("path", ""))
         risk_hints = extract_risk_hints(tool_name, command)
 
+        enriched = dict(payload)
+        enriched["_clawsentry_meta"] = {"content_origin": infer_content_origin(tool_name, payload)}
+
+        norm_meta = NormalizationMeta(
+            rule_id="my-framework-direct-map",
+            inferred=False,
+            confidence="high",
+            raw_event_type=hook_type,
+            raw_event_source=self.SOURCE_FRAMEWORK,
+            missing_fields=missing,
+            fallback_rule="sentinel_value" if missing else None,
+        )
+
         return CanonicalEvent(
-            event_id=event_id,
+            event_id=generate_event_id(
+                self.SOURCE_FRAMEWORK, effective_session, hook_type, occurred_at, enriched
+            ),
             trace_id=str(uuid.uuid4()),
             event_type=event_type,
-            session_id=session_id,
-            agent_id=agent_id,
+            session_id=effective_session,
+            agent_id=effective_agent,
             source_framework=self.SOURCE_FRAMEWORK,
             occurred_at=occurred_at,
-            payload=payload,
-            event_subtype=raw_type,
+            payload=enriched,
+            event_subtype=hook_type,
             tool_name=tool_name,
             risk_hints=risk_hints,
             framework_meta=FrameworkMeta(normalization=norm_meta),
         )
 
-    def is_blocking(self, raw_type: str) -> bool:
-        """判断事件类型是否需要同步决策。"""
-        mapping = _EVENT_MAPPING.get(raw_type)
+    def is_blocking(self, hook_type: str) -> bool:
+        mapping = _HOOK_MAP.get(hook_type)
         return mapping[1] if mapping else False
+
+    # ------------------------------------------------------------------
+    # Gateway communication
+    # ------------------------------------------------------------------
+
+    async def request_decision(
+        self,
+        event: CanonicalEvent,
+        context: DecisionContext | None = None,
+        deadline_ms: int | None = None,
+        decision_tier: DecisionTier = DecisionTier.L1,
+    ) -> CanonicalDecision:
+        effective_deadline = deadline_ms or self.default_deadline_ms
+        ctx = context or DecisionContext(caller_adapter=self.CALLER_ADAPTER_ID)
+        req = SyncDecisionRequest(
+            request_id=f"my-{event.event_id}-{int(time.monotonic() * 1000)}",
+            deadline_ms=effective_deadline,
+            decision_tier=decision_tier,
+            event=event,
+            context=ctx,
+        )
+        body = json.dumps({
+            "jsonrpc": "2.0", "id": 1,
+            "method": "ahp/sync_decision",
+            "params": req.model_dump(mode="json"),
+        }).encode()
+
+        try:
+            reader, writer = await asyncio.open_unix_connection(self.uds_path)
+            writer.write(struct.pack("!I", len(body)) + body)
+            await writer.drain()
+            raw_len = await asyncio.wait_for(reader.readexactly(4),
+                                             timeout=effective_deadline / 1000.0 + 0.5)
+            resp_bytes = await asyncio.wait_for(
+                reader.readexactly(struct.unpack("!I", raw_len)[0]),
+                timeout=effective_deadline / 1000.0 + 0.5,
+            )
+            writer.close()
+            resp = json.loads(resp_bytes)
+            if resp.get("result", {}).get("rpc_status") == "ok":
+                return CanonicalDecision(**resp["result"]["decision"])
+        except Exception:
+            pass  # gateway unreachable — use local fallback
+
+        has_high_danger = bool(
+            set(event.risk_hints) & {"destructive_pattern", "shell_execution"}
+        )
+        return make_fallback_decision(event, risk_hints_contain_high_danger=has_high_danger)
+
+    # ------------------------------------------------------------------
+    # Convenience handler
+    # ------------------------------------------------------------------
 
     async def handle_event(
         self,
-        raw_event: dict[str, Any],
-    ) -> Optional[CanonicalDecision]:
-        """
-        处理一个原生事件：归一化 → 发送到 Gateway → 返回决策。
-
-        对于非阻塞事件，发送后返回 None。
-        """
-        # 1. 归一化
-        event = self.normalize(raw_event)
+        hook_type: str,
+        payload: dict[str, Any],
+        session_id: str | None = None,
+        agent_id: str | None = None,
+    ) -> CanonicalDecision | None:
+        """Normalize + send to Gateway. Returns decision for blocking events, None otherwise."""
+        event = self.normalize_hook_event(hook_type, payload, session_id, agent_id)
         if event is None:
             return None
-
-        # 2. 非阻塞事件：异步发送，不等待决策
-        raw_type = raw_event.get("type", "")
-        if not self.is_blocking(raw_type):
-            # 可选：异步发送到 Gateway 用于审计
-            logger.debug("Non-blocking event %s: audit only", event.event_id)
-            return None
-
-        # 3. 阻塞事件：发送到 Gateway 等待决策
-        if self._gateway_client is None:
-            logger.warning("No gateway client; using fallback decision")
-            return make_fallback_decision(
-                event,
-                risk_hints_contain_high_danger=bool(
-                    set(event.risk_hints) & {"destructive_pattern", "shell_execution"}
-                ),
-            )
-
-        try:
-            context = DecisionContext(
-                caller_adapter=self.CALLER_ADAPTER_ID,
-            )
-            decision = await self._gateway_client.request_decision(
-                event, context=context, deadline_ms=self.default_deadline_ms,
-            )
-            return decision
-        except Exception as e:
-            logger.error("Gateway request failed: %s", e)
-            return make_fallback_decision(
-                event,
-                risk_hints_contain_high_danger=bool(
-                    set(event.risk_hints) & {"destructive_pattern", "shell_execution"}
-                ),
-            )
+        if not self.is_blocking(hook_type):
+            return None  # fire-and-forget audit event
+        return await self.request_decision(event)
 ```
-
----
-
-## Gateway 通信方式
-
-Adapter 与 Gateway 通信有三种方式，选择取决于部署模式：
-
-### 1. Unix Domain Socket (UDS)
-
-**最推荐**，用于同一主机上的 Sidecar 部署：
-
-```python
-# A3SCodeAdapter 的 UDS 通信示例
-reader, writer = await asyncio.open_unix_connection("/tmp/clawsentry.sock")
-# 发送 4 字节长度前缀 + JSON-RPC 2.0 body
-writer.write(struct.pack("!I", len(body)))
-writer.write(body)
-```
-
-- 延迟极低（无网络开销）
-- 自动继承 Unix 文件权限控制
-- UDS 路径默认 `chmod 600`
-
-### 2. HTTP API
-
-用于跨主机部署或作为 UDS 的备用通道：
-
-```python
-# 使用 InProcessA3SAdapter 的进程内路由
-response = await gateway.handle_jsonrpc(jsonrpc_body)
-```
-
-- 通过 `POST /ahp/a3s` 端点（a3s-code HTTP Transport）
-- 或直接使用 JSON-RPC 2.0 over HTTP
-- 支持 Bearer Token 认证
-
-### 3. WebSocket
-
-用于需要实时双向通信的框架（如 OpenClaw）：
-
-```python
-# OpenClaw WS 客户端示例
-async with websockets.connect(ws_url, extra_headers=headers) as ws:
-    async for message in ws:
-        event = json.loads(message)
-        await adapter.handle_ws_approval_event(event["payload"])
-```
-
----
-
-## 注册 Adapter 到 Gateway
-
-### 方式 1: 修改 stack.py
-
-如果你的 Adapter 需要在 `clawsentry gateway` 启动时自动加载：
-
-```python
-# 在 stack.py 中添加自定义 Adapter 的初始化逻辑
-if os.getenv("CUSTOM_AGENT_ENABLED"):
-    from my_adapter import CustomAgentAdapter
-    adapter = CustomAgentAdapter(gateway_client=gateway)
-    # 注册事件接收端点等
-```
-
-### 方式 2: 独立进程
-
-Adapter 也可以作为独立进程运行，通过 UDS 或 HTTP 与 Gateway 通信：
-
-```bash
-# 终端 1: 启动 Gateway
-clawsentry gateway
-
-# 终端 2: 启动自定义 Adapter
-python my_adapter_service.py
-```
-
-这种方式的优势是 Adapter 和 Gateway 可以独立部署、升级和重启。
-
----
-
-## 降级策略
-
-当 Gateway 不可达时，Adapter 必须能够独立做出保守的安全决策。ClawSentry 提供了 `make_fallback_decision()` 工厂函数：
-
-```python
-from clawsentry.gateway.policy_engine import make_fallback_decision
-```
-
-| 事件类型 | 降级行为 |
-|----------|----------|
-| `pre_action` + 高危标记 | **BLOCK**（fail-closed） |
-| `pre_action` + 无高危标记 | **DEFER**（等待重试） |
-| `pre_prompt` | **ALLOW**（fail-open） |
-| `post_action` / `post_response` / `error` / `session` | **ALLOW**（观察型事件） |
-
-!!! tip "高危标记判断"
-    ```python
-    has_high_danger = bool(
-        set(event.risk_hints) & {"destructive_pattern", "shell_execution"}
-    )
-    ```
-    `risk_hints` 中包含 `destructive_pattern` 或 `shell_execution` 时视为高危。
