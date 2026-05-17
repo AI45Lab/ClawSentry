@@ -1,3 +1,18 @@
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Configuration</div>
+
+## LLM 配置
+
+配置 L2 语义分析和 L3 审查 Agent 所使用的 LLM 提供商：Anthropic Claude、OpenAI GPT 或任意 OpenAI 兼容本地端点。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">anthropic</span>
+<span class="cs-pill">openai</span>
+<span class="cs-pill">local / OpenAI-compatible</span>
+<span class="cs-pill">token budget</span>
+</div>
+</div>
+
 # LLM 配置
 
 ClawSentry 的三层决策模型中，L2（语义分析）和 L3（审查 Agent）依赖 LLM 提供深度安全分析。本页介绍如何配置各种 LLM 提供商，以及各决策模式的特性和成本考量。
@@ -143,6 +158,31 @@ CS_LLM_MODEL=gpt-4o  # 路由到 LiteLLM 配置的模型
     - `temperature`（ClawSentry 固定使用 `0.0` 确保确定性输出）
 
     返回格式必须包含 `choices[0].message.content`。
+
+---
+
+## API 密钥配置 {#api-key-config}
+
+ClawSentry 支持多种 API 密钥注入方式，适合不同的 secret manager 集成场景：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `ANTHROPIC_API_KEY` | - | Anthropic API 密钥。`CS_LLM_PROVIDER=anthropic` 时使用 |
+| `OPENAI_API_KEY` | - | OpenAI API 密钥。`CS_LLM_PROVIDER=openai` 时使用 |
+| `CS_LLM_API_KEY` | - | 通用 LLM API 密钥。作为 `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` 的替代方案；`clawsentry doctor` 会检查此变量 |
+| `CS_LLM_API_KEY_ENV` | `CS_LLM_API_KEY` | 指向自定义 API key 环境变量名。适合 secret manager 注入：secret manager 把密钥注入到自定义变量名后，用此变量告知 ClawSentry 去哪里读取 |
+
+**`CS_LLM_API_KEY_ENV` 使用示例（secret manager 场景）：**
+
+```bash
+# secret manager 把密钥注入到 MY_SECRET_LLM_KEY
+export MY_SECRET_LLM_KEY=sk-ant-xxx
+# 告知 ClawSentry 使用该变量
+export CS_LLM_API_KEY_ENV=MY_SECRET_LLM_KEY
+```
+
+!!! warning "密钥安全"
+    API 密钥属于敏感信息，建议通过进程/部署环境、密钥管理系统，或显式 `--env-file .clawsentry.env.local` 注入，切勿写入 `.clawsentry.env.example`、脚本或版本控制。
 
 ---
 

@@ -3,7 +3,16 @@ title: 生产部署
 description: ClawSentry 生产环境部署指南，涵盖安全配置、SSL、系统服务和运维最佳实践
 ---
 
-# 生产部署
+<section class="cs-doc-hero cs-doc-hero--ops" markdown>
+<div class="cs-eyebrow">ClawSentry 运维</div>
+## 生产部署
+ClawSentry 生产环境部署指南，涵盖安全配置、SSL、系统服务和运维最佳实践。
+<div class="cs-actions" markdown>
+[Benchmark 模式](benchmark-mode.md){ .md-button .md-button--primary }
+[故障排查](troubleshooting.md){ .md-button }
+[配置参考](../configuration/configuration-overview.md){ .md-button }
+</div>
+</section>
 
 本指南涵盖 ClawSentry 在生产环境中的部署配置。ClawSentry 设计为轻量级单进程服务，适合以 Sidecar 模式运行在 AI Agent 旁边。
 

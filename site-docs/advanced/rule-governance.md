@@ -3,6 +3,21 @@ title: 规则治理
 description: YAML 规则与技能的上线前治理：lint、dry-run、fingerprint 与 发布前检查
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Advanced · Policy Governance</div>
+
+## 规则治理
+
+把 YAML 攻击模式库和 L3 review skills 的上线前治理补齐：在发布或策略变更前检查规则是否能加载、是否有冲突，以及 sample events 在当前规则面上会命中什么。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">rules lint</span>
+<span class="cs-pill">rules dry-run</span>
+<span class="cs-pill">rules report</span>
+<span class="cs-pill">CI artifact</span>
+</div>
+</div>
+
 # 规则治理
 
 规则治理功能的目标不是把 ClawSentry 重写成一个横跨 L1/L2/L3 的全局运行时 DSL，而是把现有 YAML 规则和技能的**上线前治理**补齐：在 发布或策略变更前检查规则是否能加载、是否有冲突，以及 sample events 在当前规则面上会命中什么。

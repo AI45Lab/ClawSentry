@@ -3,6 +3,21 @@ title: CLI 命令参考
 description: ClawSentry 全部命令行工具的完整使用手册
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">CLI Reference</div>
+
+## CLI 命令参考
+
+ClawSentry CLI 提供从初始化、Gateway 启动、实时监控到审计查询的完整操作面。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">clawsentry init</span>
+<span class="cs-pill">clawsentry gateway</span>
+<span class="cs-pill">clawsentry watch</span>
+<span class="cs-pill">clawsentry skill-trust</span>
+</div>
+</div>
+
 # CLI 命令参考
 
 ClawSentry 提供统一的命令行入口 `clawsentry`，通过子命令完成框架初始化、网关启动、事件监控等操作。
@@ -1106,6 +1121,31 @@ review:   l3adv-... (completed, risk=high)
 advisory_only: true
 canonical_decision_mutated: false
 ```
+
+### clawsentry l3 jobs
+
+管理 L3 advisory job 队列。用于在 `full-review --queue-only` 之后手动驱动 worker 执行排队的 advisory job。
+
+```bash
+clawsentry l3 jobs run-next [--gateway-url URL] [--token TOKEN]
+                              [--runner llm_provider|deterministic_local]
+                              [--json] [--timeout SECONDS]
+```
+
+| 选项 | 说明 |
+|------|------|
+| `--runner` | 执行 runner：`llm_provider`（默认，复用 `CS_LLM_*` 配置）或 `deterministic_local`（本地/离线） |
+| `--queue-only` | 只看队列状态，不执行 worker |
+| `--json` | 输出原始 JSON |
+
+```bash
+# 排队后手动执行下一个 advisory job
+clawsentry l3 jobs run-next --runner deterministic_local --json
+clawsentry l3 jobs run-next --runner llm_provider --token "$CS_AUTH_TOKEN"
+```
+
+!!! note "advisory-only 边界"
+    `l3 jobs run-next` 执行 advisory review job，不修改历史 canonical decision，结果可通过 `clawsentry watch` 的 `l3_advisory_review` 事件类型观察。
 
 ---
 

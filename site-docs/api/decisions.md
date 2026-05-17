@@ -3,9 +3,19 @@ title: 决策端点
 description: ClawSentry 决策相关 API 端点完整参考，包括 Webhook、HTTP 传输、DEFER 代理和 UDS 传输
 ---
 
-# 决策端点
+<section class="cs-doc-hero cs-doc-hero--api" markdown>
+<div class="cs-eyebrow">ClawSentry 决策 API</div>
+
+## 决策端点
 
 ClawSentry 网关接收 AI Agent 运行时事件，并返回统一的 `CanonicalDecision`。本页列出所有决策相关端点。
+
+<div class="cs-actions" markdown>
+[API 概览](overview.md){ .md-button .md-button--primary }
+[报表与监控](reporting.md){ .md-button }
+[认证](authentication.md){ .md-button }
+</div>
+</section>
 
 ## 决策模型概览
 
@@ -358,49 +368,64 @@ curl -X POST http://127.0.0.1:8080/ahp/a3s \
 
 - **Bearer Token**: `Authorization: Bearer <CS_AUTH_TOKEN>`
 
-### 请求格式
+### 请求格式（v0.7.5 公开 HTTP contract）
+
+`event_type` 字段位于顶层（不嵌套在 event 对象内）：
 
 ```json
 {
-  "event_type": "function_call",
+  "event_type": "pre_action",
+  "session_id": "sess-abc123",
+  "tool_name": "bash",
   "payload": {
-    "name": "bash",
-    "arguments": {
-      "command": "rm -rf /tmp/data"
-    }
-  },
-  "session_id": "codex-session-001",
-  "agent_id": "codex-agent-001"
+    "command": "ls -la"
+  }
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `event_type` | string | :material-check: | 事件类型：`function_call` / `function_call_output` / `session_meta` / `session_end` |
+| `event_type` | string | :material-check: | 事件类型（见下表映射） |
 | `payload` | object | :material-check: | 工具调用负载 |
 | `session_id` | string | :material-close: | 会话 ID（缺省自动生成） |
+| `tool_name` | string | :material-close: | 工具名称（如 `bash`、`exec`） |
 | `agent_id` | string | :material-close: | Agent ID（缺省自动生成） |
 
 ### 事件类型映射
 
-| `event_type` | 归一化 EventType | 说明 |
+| `event_type` 输入值 | 归一化 EventType | 说明 |
 |-------------|-----------------|------|
-| `function_call` | `pre_action` | 工具调用前（阻塞决策） |
-| `function_call_output` | `post_action` | 工具调用后（异步审计） |
+| `pre_action` | `pre_action` | 工具调用前（阻塞决策，推荐直接使用） |
+| `function_call` | `pre_action` | 旧 Codex hook 映射兼容 |
+| `post_action` | `post_action` | 工具调用后（异步审计） |
+| `function_call_output` | `post_action` | 旧 Codex hook 映射兼容 |
 | `session_meta` | `session` | 会话元数据 |
 | `session_end` | `session` | 会话结束 |
 
-### 成功响应
+### 成功响应（v0.7.5 公开 HTTP contract）
+
+响应包裹在 `{"result": ...}` 中：
 
 ```json
 {
   "result": {
-    "action": "block",
-    "reason": "Critical risk: action blocked",
-    "risk_level": "critical"
+    "decision": "allow",
+    "reason": "Low-risk read operation",
+    "risk_level": "low",
+    "policy_id": "l1-default-allow"
   }
 }
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `decision` | string | 判决：`allow` / `block` / `defer` / `modify` |
+| `reason` | string | 人类可读的判决原因 |
+| `risk_level` | string | `low` / `medium` / `high` / `critical` |
+| `policy_id` | string | 触发该判决的策略或规则标识 |
+
+!!! info "格式说明"
+    该格式与 `/ahp` 主端点（JSON-RPC 2.0 格式）不同；`/ahp/codex` 使用简化的 REST-style 格式，适合 Codex 原生 hook 集成。
 
 ### 安全默认
 

@@ -3,6 +3,21 @@ title: 自定义 L2 Analyzer
 description: 实现和集成自定义的 L2 语义分析器，扩展 ClawSentry 的风险评估能力
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Advanced · L2 Semantic Analysis</div>
+
+## 自定义 L2 Analyzer
+
+实现和集成自定义的 L2 语义分析器，通过 `SemanticAnalyzer` Protocol 扩展 ClawSentry 的风险评估能力。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">SemanticAnalyzer Protocol</span>
+<span class="cs-pill">CompositeAnalyzer</span>
+<span class="cs-pill">upgrade-only</span>
+<span class="cs-pill">budget_ms 超时保护</span>
+</div>
+</div>
+
 # 自定义 L2 Analyzer
 
 L2 语义分析是 ClawSentry 三层决策模型的中间层，负责在 L1 规则引擎的基础上进行更深层的语义风险评估。ClawSentry 提供了 **可插拔的 Analyzer 架构**，你可以实现自定义的 `SemanticAnalyzer` 来引入特定领域的风险评估逻辑。

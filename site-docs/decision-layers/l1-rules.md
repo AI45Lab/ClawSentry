@@ -5,6 +5,20 @@ description: 纯规则驱动的快速路径决策 — D1-D6 六维评分、短�
 
 # L1 规则引擎
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Decision Engine · Rules Layer</div>
+
+## 零外部依赖，毫秒级确定性过滤
+
+L1 是 ClawSentry 三层决策模型的第一层，也是唯一始终在线的决策层。完全基于确定性规则，不调用任何 LLM，通过 D1-D6 六维评分 + 短路规则在每次工具调用前给出 allow / block / defer 判决，并决定是否升级到 L2/L3 深度审查。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">D1-D6 六维评分</span>
+<span class="cs-pill">25 条内置攻击模式</span>
+<span class="cs-pill">< 1ms 决策延迟</span>
+</div>
+</div>
+
 ## 概述 {#overview}
 
 L1 是 ClawSentry 三层递进决策模型的**第一层**，也是**唯一始终在线**的决策层。每一个进入 Gateway 的 `CanonicalEvent` 都会经过 L1 评估，无一例外。

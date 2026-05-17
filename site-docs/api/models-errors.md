@@ -3,9 +3,18 @@ title: 模型与错误码
 description: ClawSentry API 常见数据模型、判决枚举、错误响应和排障提示
 ---
 
-# 模型与错误码
+<section class=”cs-doc-hero cs-doc-hero--api” markdown>
+<div class=”cs-eyebrow”>ClawSentry 模型与错误码</div>
+## 模型与错误码
+API Reference 中最常见的数据结构、判决枚举和错误响应快速参考，方便集成时判断字段含义。
+<div class=”cs-actions” markdown>
+[API 概览](overview.md){ .md-button .md-button--primary }
+[决策端点](decisions.md){ .md-button }
+[Metric Dictionary](metric-dictionary.md){ .md-button }
+</div>
+</section>
 
-本页把 API Reference 中最常见的数据结构抽出来解释，方便你在写集成代码时快速判断“字段代表什么”。
+本页把 API Reference 中最常见的数据结构抽出来解释，方便你在写集成代码时快速判断”字段代表什么”。
 
 ## CanonicalDecision
 

@@ -5,6 +5,20 @@ description: Latch 移动监控与推送审批集成指南
 
 # Latch 集成
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Integration · Latch · 移动端可选增强</div>
+
+## Latch 移动端监控与审批
+
+Latch 是 ClawSentry 的可选增强组件，通过 Hub 将安全事件推送到移动端，支持远程 DEFER 审批。核心 Gateway 无需 Latch 即可正常工作；仅在需要移动端/远程审批时安装。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">可选增强</span>
+<span class="cs-pill">移动端推送</span>
+<span class="cs-pill">远程 DEFER 审批</span>
+</div>
+</div>
+
 !!! tip "本页怎么读"
     Latch 是可选增强，适合移动端查看告警和远程审批。先确认核心 Gateway 已跑通，再接入 Latch。
 

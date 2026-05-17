@@ -1,5 +1,19 @@
 # a3s-code 集成
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Integration · a3s-code · AHP Reference Path</div>
+
+## a3s-code 安全集成
+
+a3s-code 是 ClawSentry AHP Transport 的参考接入路径。通过显式 SDK `SessionOptions().ahp_transport`，选择 `StdioTransport`（本地主路径）或 `HttpTransport`（HTTP/跨进程），将工具调用事件接入三层决策引擎。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">StdioTransport 推荐</span>
+<span class="cs-pill">HttpTransport 已验证</span>
+<span class="cs-pill">DEFER 人工审批</span>
+</div>
+</div>
+
 !!! tip "本页怎么读"
     这页面向需要在 Agent 代码里显式接入 AHP Transport 的开发者。优先看 Stdio / HTTP 两种方式怎么选，然后按验证步骤确认事件进入 Gateway。
 

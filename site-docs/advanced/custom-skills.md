@@ -3,6 +3,21 @@ title: 自定义 L3 Skills
 description: 为 L3 审查 Agent 编写和加载自定义 YAML 领域审查技能
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Advanced · L3 Review Agent</div>
+
+## 自定义 L3 Skills
+
+为 L3 审查 Agent 编写和加载自定义 YAML 领域审查技能，扩展 ClawSentry 的深度安全审查能力。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">Manifest v1 (v0.7.0)</span>
+<span class="cs-pill">v0.7.3 新增 skill 类型</span>
+<span class="cs-pill">AHP_SKILLS_DIR</span>
+<span class="cs-pill">rules lint 校验</span>
+</div>
+</div>
+
 # 自定义 L3 Skills
 
 L3 审查 Agent 是 ClawSentry 三层决策模型的最深层。它通过多轮 LLM 工具调用对高风险事件进行深度安全审查。**Skill** 是 L3 Agent 的领域知识载体——每个 Skill 定义了一个特定安全领域的审查专长，包括触发条件、审查提示词和评估标准。
@@ -133,6 +148,20 @@ ClawSentry 内置多组安全审查 Skill，覆盖主要安全领域。它们位
 
 !!! warning "`general-review` 是必需的"
     `SkillRegistry` 初始化时会验证 `general-review` Skill 必须存在。如果缺失，将抛出 `ValueError` 异常。
+
+### v0.7.3 新增内置 Skills {#v073-skills}
+
+v0.7.3 将内置 review skills 扩展为可校验 manifest（`schema_version: clawsentry.l3_skill.v1`），并新增以下专项审查技能：
+
+| Skill 名称 | 审查领域 | 典型触发场景 |
+|---|---|---|
+| `prompt-injection-transcript` | 提示词注入 transcript 审查 | 对话历史中疑似注入的指令片段 |
+| `data-staging-exfil-chain` | 数据暂存到外传链路 | 先 read/write 暂存、再 curl/wget 外传的组合操作 |
+| `dependency-supply-chain` | 依赖供应链风险 | pip/npm/cargo 安装非标来源包、私有源劫持 |
+| `persistence` | 持久化驻留审查 | crontab、systemd service 安装、LD_PRELOAD 注入等 |
+| `skill-trust-audit` | Skill Trust 供应链审计 | first-use / local-unreviewed skill 触发 `force_l3` 时自动选用 |
+
+这些 skills 的 manifest 包含完整的 `allowed_tools`、`required_evidence`、`severity_rubric`、`output_tags` 和 `example_cases`（均为 synthetic），可通过 `rules lint --json` 校验。`skill-trust-audit` 专用于 Skill Trust first-use `force_l3` 路径，L3 prompt 会把 skill 文档内容和 provenance labels 以 `trust_level=untrusted_evidence` 方式注入，模型不会将其当作指令。
 
 ---
 

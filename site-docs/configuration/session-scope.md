@@ -3,6 +3,20 @@ title: Session scope 配置
 description: 使用 SessionScopeProfile 为单次任务设置最小权限范围，并在启用前预览 allow/defer/deny 结果
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Configuration</div>
+
+## Session Scope 配置
+
+使用 `SessionScopeProfile` 为单次任务设置最小权限范围，在启用前通过 `scope preview` 验证 allow / defer / deny 结果。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">scope validate</span>
+<span class="cs-pill">scope preview</span>
+<span class="cs-pill">CS_SESSION_SCOPE_PROFILE_FILE</span>
+</div>
+</div>
+
 # Session scope 配置
 
 Session scope 用来回答一个更贴近用户的问题：**这次任务里，Agent 到底应该能碰哪些工具、路径、域名和命令前缀？**

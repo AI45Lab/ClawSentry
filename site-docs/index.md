@@ -4,57 +4,6 @@ hide:
   - toc
 ---
 
-<style>
-  .md-typeset h1 { display: none; }
-
-  .hero {
-    text-align: center;
-    padding: 2rem 1rem 1rem;
-  }
-  .hero h2 {
-    font-size: 2.8rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-  }
-  .hero .tagline {
-    font-size: 1.25rem;
-    opacity: 0.85;
-    margin-bottom: 2rem;
-  }
-
-  .grid-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    margin: 2rem 0;
-  }
-  .grid-cards .card {
-    border: 1px solid var(--md-default-fg-color--lightest);
-    border-radius: 8px;
-    padding: 1.2rem;
-    text-align: center;
-  }
-  .grid-cards .card h3 { margin-top: 0.5rem; }
-  .framework-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1rem;
-    margin: 1.5rem 0;
-  }
-  .framework-card {
-    border: 1px solid var(--md-default-fg-color--lightest);
-    border-radius: 8px;
-    padding: 1.2rem;
-  }
-  .framework-card h3 { margin-top: 0.5rem; }
-  .latch-banner {
-    background: var(--md-code-bg-color);
-    border-left: 4px solid var(--md-accent-fg-color);
-    border-radius: 4px;
-    padding: 1rem 1.4rem;
-    margin: 1rem 0 2rem;
-  }
-</style>
 
 <div class="hero" markdown>
 
@@ -67,8 +16,15 @@ hide:
 三层递进决策（规则 → 语义 → Agent 审查）帮助你在安全性、延迟和可解释性之间取得平衡。
 { .tagline }
 
+<div class="cs-pill-row" markdown>
+<span class="cs-version-badge">v0.7.5</span>
+<span class="cs-pill">3456 tests passing</span>
+<span class="cs-pill">6 frameworks</span>
+<span class="cs-pill">sync_decision.1.0</span>
+</div>
+
 [:octicons-rocket-16: 5 分钟快速开始](getting-started/quickstart.md){ .md-button .md-button--primary }
-[:octicons-book-16: 查看文档](getting-started/quickstart.md){ .md-button }
+[:octicons-book-16: 核心概念](getting-started/concepts.md){ .md-button }
 [:octicons-code-square-16: API Reference](api/reference.md){ .md-button }
 [:octicons-mark-github-16: GitHub](https://github.com/Elroyper/ClawSentry){ .md-button }
 
@@ -128,7 +84,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 - `PreToolUse` 阻塞式安全审查
 - 一键初始化 + 一键卸载
 
-[:octicons-arrow-right-24: Claude Code 快速开始](getting-started/quickstart.md)
+[:octicons-arrow-right-24: Claude Code 快速开始](integration/claude-code.md)
 </div>
 
 <div class="card framework-card" markdown>
@@ -139,7 +95,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 - `HttpTransport` 直连 `/ahp/a3s`
 - 只通过显式 SDK 传输接入
 
-[:octicons-arrow-right-24: a3s-code 快速开始](getting-started/quickstart.md)
+[:octicons-arrow-right-24: a3s-code 快速开始](integration/a3s-code.md)
 </div>
 
 <div class="card framework-card" markdown>
@@ -150,7 +106,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 - 自动检测 OpenClaw 配置
 - 支持交互式 DEFER 审批
 
-[:octicons-arrow-right-24: OpenClaw 快速开始](getting-started/quickstart.md)
+[:octicons-arrow-right-24: OpenClaw 快速开始](integration/openclaw.md)
 </div>
 
 <div class="card framework-card" markdown>
@@ -162,7 +118,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 - 同步 host-deny / approval gate 范围：`PreToolUse(Bash)`、`PermissionRequest(Bash)`；其他 native events 默认仍为异步观察
 - 建议继续配合 `--approval-policy untrusted`
 
-[:octicons-arrow-right-24: Codex 快速开始](getting-started/quickstart.md)
+[:octicons-arrow-right-24: Codex 快速开始](integration/codex.md)
 </div>
 
 
@@ -225,7 +181,7 @@ L1 规则引擎 &lt;0.3ms 完成大多数决策；L2/L3 语义分析仅在必要
 ### :satellite: 多端实时可见
 **CLI 终端** + **Web 仪表板** + **移动端（Latch）**
 
-决策/告警/会话三端同步，全链路可观测。v0.5.10 起 Web UI 优先显示 token usage / token limit、稳定的 Unbound workspace 分组、最新优先的 session timeline，以及 L3 advisory 自然语言分析。
+决策/告警/会话三端同步，全链路可观测。当前 UI 优先显示 token usage / token limit 与 LLM 用量概览、稳定的 Unbound workspace 分组、最新优先的 session timeline，以及 L3 advisory 自然语言分析。
 </div>
 
 <div class="card" markdown>
@@ -294,9 +250,9 @@ flowchart LR
 ??? info "三层决策模型详解"
     | 层级 | 名称 | 延迟 | 机制 | 适用场景 |
     |:---:|:---|:---:|:---|:---|
-    | **L1** | 规则引擎 | <0.3ms | D1-D6 六维评分（命令危险度/参数敏感度/命令模式/历史行为/作用域权限/注入检测） | 明确的黑白名单、已知危险模式、注入尝试 |
+    | **L1** (~95% 事件直接返回) | 规则引擎 | <0.3ms | D1-D6 六维评分（命令危险度/参数敏感度/命令模式/历史行为/作用域权限/注入检测） | 明确的黑白名单、已知危险模式、注入尝试 |
     | **L2** | 语义分析 | <3s | RuleBased / LLM / Composite 三种实现，SemanticAnalyzer 协议 | 需要上下文理解的灰度命令 |
-    | **L3** | 审查 Agent | <30s | AgentAnalyzer + ReadOnlyToolkit + SkillRegistry，多轮工具调用推理 | 复杂意图判断、需要取证分析 |
+    | **L3** (~5% 高风险事件) | 审查 Agent | <30s | AgentAnalyzer + ReadOnlyToolkit + SkillRegistry，多轮工具调用推理 | 复杂意图判断、需要取证分析 |
 
     ```
                       ┌─ ALLOW/DENY ──→ 直接返回

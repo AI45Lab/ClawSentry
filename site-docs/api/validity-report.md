@@ -3,7 +3,15 @@ title: API 有效性报告
 description: ClawSentry API 文档、源码 route、OpenAPI 与示例的可溯源核验结果
 ---
 
-# API 有效性报告
+<section class="cs-doc-hero cs-doc-hero--api" markdown>
+<div class="cs-eyebrow">ClawSentry API 有效性报告</div>
+## API 有效性报告
+从源码 route、Markdown anchor、OpenAPI operation 和端点提及四个维度交叉核验，确保文档与实现同步。
+<div class="cs-actions" markdown>
+[API 概览](overview.md){ .md-button .md-button--primary }
+[查看 OpenAPI Reference](reference.md){ .md-button }
+</div>
+</section>
 
 生成时间：`2026-05-15T21:45:29+00:00`
 核验状态：**通过**

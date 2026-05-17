@@ -145,26 +145,6 @@
   margin: 1.25rem 0 2rem;
 }
 
-.md-typeset .cs-pill-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0.85rem 0 0;
-}
-
-.md-typeset .cs-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.55rem;
-  border: 1px solid color-mix(in srgb, var(--cs-accent) 30%, var(--cs-line));
-  border-radius: 999px;
-  padding: 0.16rem 0.6rem;
-  background: var(--cs-panel);
-  color: var(--cs-ink);
-  font-size: 0.76rem;
-  font-weight: 700;
-}
-
 .md-typeset .card,
 .md-typeset .cs-card,
 .md-typeset .cs-metric,
@@ -382,31 +362,6 @@
   }
 }
 
-/* Reusable docs component contract
- * Use .cs-doc-hero for page introductions, .cs-card-grid/.cs-card for scannable choices,
- * .cs-metric-grid/.cs-metric for numeric summaries, .cs-flow for ordered operator flows,
- * .cs-operator-path/.cs-path-option for quickstart path comparisons, and .cs-pill for compact state tags.
- * Avoid page-local <style> islands unless the component is truly one-off; prefer accessible text,
- * copyable code blocks, dark-mode-safe borders, responsive grids, and reduced-motion behavior.
- */
-.md-typeset .cs-pill-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0.8rem 0 0;
-}
-
-.md-typeset .cs-pill {
-  display: inline-block;
-  border: 1px solid color-mix(in srgb, var(--cs-accent) 35%, var(--cs-line));
-  border-radius: 999px;
-  padding: 0.16rem 0.58rem;
-  background: var(--md-code-bg-color);
-  color: var(--md-default-fg-color);
-  font-size: 0.78rem;
-  font-weight: 650;
-}
-
 .md-typeset .cs-flow,
 .md-typeset .cs-api-example {
   border: 1px solid var(--cs-line);
@@ -417,7 +372,6 @@
   background: linear-gradient(90deg, var(--cs-panel), transparent 78%);
 }
 
-.md-typeset .cs-operator-path,
 .md-typeset .cs-before-after {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
@@ -511,4 +465,18 @@
 
 .md-typeset .cs-scenario strong {
   color: var(--cs-accent);
+}
+
+.md-typeset .cs-version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--cs-accent) 40%, var(--cs-line));
+  border-radius: 999px;
+  padding: 0.22rem 0.75rem;
+  background: var(--cs-panel);
+  color: var(--cs-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }

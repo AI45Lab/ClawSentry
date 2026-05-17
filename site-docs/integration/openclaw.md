@@ -1,5 +1,19 @@
 # OpenClaw 集成
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Integration · OpenClaw · WebSocket 审批</div>
+
+## OpenClaw 安全集成
+
+ClawSentry 通过 WebSocket 实时连接 OpenClaw Gateway，监听 `exec.approval.requested` 事件，经三层决策引擎评估后调用 `exec.approval.resolve` 返回 allow / deny 判决。支持 CLI 交互审批、Web UI DEFER 面板和 REST API 代理。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">WebSocket 实时审批</span>
+<span class="cs-pill">Webhook 补充通道</span>
+<span class="cs-pill">DEFER 人工审批</span>
+</div>
+</div>
+
 !!! tip "本页怎么读"
     这页面向 OpenClaw 用户和二次开发者。先确认你使用 WebSocket、Webhook 还是审批回写，再查看 [Webhook API](../api/webhooks.md) 的 token/HMAC/idempotency 细节。
 

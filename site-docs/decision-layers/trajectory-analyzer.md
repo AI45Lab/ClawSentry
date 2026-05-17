@@ -5,6 +5,20 @@ description: 跨事件多步攻击序列检测 — 5 种内置攻击链、滑动
 
 # 轨迹分析器（Trajectory Analyzer）
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Decision Engine · Trajectory Analysis</div>
+
+## 跨事件序列检测，识别单步看似无害的多步攻击链
+
+TrajectoryAnalyzer 为每个会话维护滑动窗口事件缓冲区，在 L1/L2/L3 判决后异步检测跨操作的有序攻击链——凭证读取后接网络外传、侦察后接权限升级等。命中时通过 SSE 广播 `trajectory_alert`，不阻塞当前判决，不产生副作用。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">异步非阻塞</span>
+<span class="cs-pill">5 种内置攻击序列</span>
+<span class="cs-pill">SSE 实时告警</span>
+</div>
+</div>
+
 !!! abstract "本页快速导航"
     [概述](#overview) · [工作原理](#how-it-works) · [5 种内置攻击序列](#builtin-sequences) · [SSE 事件格式](#sse-event) · [配置](#configuration) · [代码位置](#source-code)
 

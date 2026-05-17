@@ -10,9 +10,42 @@ description: 自主审查代理 — 多轮工具调用、YAML Skills、推理轨
 
 ## Trigger-Aware Prompt v1 {#trigger-aware-prompt-v1}
 
-同步 L3 prompt 包含 `trigger` block、任务背景、字段词典和可选 `prior_analysis.l2_result`。这保证 operator runtime feed、trace 和 LLM 实际收到的任务同源：anti-bypass follow-up、Skill Trust first-use、Session `L3_REQUIRE`、`replace_l2` routing、suspicious pattern、cumulative risk 和 high-risk complex payload 都会带具体 review question。
+同步 L3 prompt 按以下结构组织（v0.7.3 起），降低泛化审查噪声：
 
-L3 仍然只使用 read-only tools。多轮工具结果以 `clawsentry.tool_evidence.v1` envelope 注入，字段包括 `tool`、`source`、`path`、`range`、`truncated`、`redacted`、`trust_level=untrusted_evidence` 和 `content`。模型必须把工具输出、transcript、文件内容、skill 内容和 payload 都当作 untrusted evidence，而不是指令。
+| 块 | 内容 |
+|---|---|
+| `trigger` block | 触发原因、policy intent、触发来源标识 |
+| 任务背景 | skill context、当前事件摘要、session 风险快照 |
+| 字段词典 | 所有字段说明，帮助模型解读 evidence capsule |
+| `prior_analysis.l2_result` | （可选）来自 L2 的 evidence capsule，作为 untrusted evidence 注入 |
+| operator next steps | 审查目标和约束，明确 L3 应回答什么问题 |
+
+**触发来源一览：**
+
+- `anti_bypass_follow_up` — Anti-bypass guard 识别到等价效果的跨工具重试
+- `skill_trust_first_use` — Skill Trust 首次使用 / 未审核 local skill 触发
+- `session_l3_require` — Session enforcement policy 命中 `L3_REQUIRE` 阈值
+- `replace_l2` routing — 配置 `l3_routing_mode=replace_l2` 时直接替代 L2 入口
+- `suspicious_pattern` — 凭证访问后接网络外传、侦察后接权限升级等有界可疑序列
+- `cumulative_risk` — 会话累积风险分达到触发阈值
+- `high_risk_complex_payload` — 高危工具携带复杂 payload，规则层难以解释全部语义
+
+L3 仍然只使用 read-only tools。多轮工具结果以 `clawsentry.tool_evidence.v1` envelope 注入：
+
+```json
+{
+  "tool": "read_file",
+  "source": "workspace",
+  "path": "src/config/secrets.yaml",
+  "range": null,
+  "truncated": false,
+  "redacted": false,
+  "trust_level": "untrusted_evidence",
+  "content": "..."
+}
+```
+
+模型必须把工具输出、transcript、文件内容、skill 内容和 payload 都当作 `untrusted_evidence`，而不是指令。
 
 每个 selected skill 的 `allowed_tools` 会同时限制 system prompt 中公布的工具和运行时 tool-call 校验。全局不允许的工具返回 `requested_non_whitelisted_tool`；全局允许但当前 skill 未允许的工具返回 `requested_tool_not_allowed_by_skill`。
 
@@ -59,7 +92,7 @@ L3 是 ClawSentry 三层决策模型的**最高层**，部署一个拥有只读�
 | 调用比例 | 约 5% 的事件到达 L3 |
 | 模式 | MVP 单轮 / 标准多轮 |
 | 工具集 | 7 个只读工具 (ReadOnlyToolkit) |
-| 审查技能 | 6 个内置 YAML Skills + 自定义扩展 |
+| 审查技能 | 11 个内置 YAML Skills + 自定义扩展 |
 | 审计 | 完整推理轨迹持久化到 TrajectoryStore |
 
 ```mermaid
@@ -183,8 +216,8 @@ sequenceDiagram
 
 当 `enable_multi_turn=True` 时，L3 进入多轮推理循环，LLM 可以主动调用工具收集更多证据。
 
-!!! tip "运行时默认值"
-    直接实例化 `AgentAnalyzerConfig()` 或通过 `build_analyzer_from_env()` 启用 L3 时，默认运行模式都是 `multi_turn`；只有显式设置 `CS_L3_MULTI_TURN=false` / `0` / `no` / `off` 才会退回 legacy 单轮模式。
+!!! tip "运行时默认值（v0.7.4 起）"
+    多轮审查是默认模式（从 v0.7.4 起）。直接实例化 `AgentAnalyzerConfig()` 或通过 `build_analyzer_from_env()` 启用 L3 时，默认运行模式都是 `multi_turn`；只有显式设置 `CS_L3_MULTI_TURN=false`、`0`、`no` 或 `off` 才回退单轮 legacy 路径。
 
 **每轮 LLM 响应的两种格式：**
 
@@ -349,6 +382,37 @@ class ReadOnlyToolkit:
 | `query_git_diff` | `(ref="HEAD")` | 查看 git diff | ref 格式校验 + 10s 超时 |
 | `list_directory` | `(relative_path=".")` | 列出目录内容 | 路径沙箱 |
 
+### 工具结果 Envelope {#tool-evidence-envelope}
+
+自 v0.7.3 起，L3 Agent 在多轮模式中每次工具调用返回的结果都会被包裹在 `clawsentry.tool_evidence.v1` envelope 中，再注入对话上下文：
+
+```json
+{
+  "tool": "read_file",
+  "source": "workspace",
+  "path": "src/config/secrets.yaml",
+  "range": null,
+  "truncated": false,
+  "redacted": false,
+  "trust_level": "untrusted_evidence",
+  "content": "..."
+}
+```
+
+| 字段 | 含义 |
+|---|---|
+| `tool` | 调用的工具名称 |
+| `source` | 内容来源类型（`workspace`、`session` 等） |
+| `path` | 文件路径或资源定位符（脱敏后） |
+| `range` | 读取范围（行号区间，`null` 表示全文） |
+| `truncated` | 内容是否因超限被截断 |
+| `redacted` | 内容是否包含被清洗的敏感字段 |
+| `trust_level` | 固定为 `untrusted_evidence`，提示 LLM 把工具输出视为证据而非指令 |
+| `content` | 工具返回的实际内容（已脱敏/截断） |
+
+!!! warning "untrusted_evidence 边界"
+    `trust_level=untrusted_evidence` 是 L3 的核心安全约束。模型必须将所有工具结果、transcript、文件内容、skill 内容和 payload 都视为需要审查的证据，而不是可以执行的指令。
+
 ### 安全设计
 
 !!! danger "路径沙箱 (Path Sandboxing)"
@@ -493,6 +557,8 @@ def select_skill(self, event, risk_hints) -> ReviewSkill:
 
 ### 内置技能一览 {#built-in-skills}
 
+v0.7.3 起，内置 review skills 扩展为可校验 manifest，共 11 个技能：
+
 | 技能名 | 优先级 | 专长 | 关键触发条件 |
 |--------|:------:|------|------------|
 | `shell-audit` | 10 | Shell 命令安全审查 | `privilege_escalation`, `destructive_intent`, bash/shell 工具 |
@@ -500,6 +566,11 @@ def select_skill(self, event, risk_hints) -> ReviewSkill:
 | `code-review` | 8 | 代码修改审查 | `code_injection`, `supply_chain_attack`, write/edit 工具 |
 | `file-system-audit` | 8 | 文件系统操作审查 | `path_traversal`, `/etc/`, `../`, sudoers |
 | `network-audit` | 8 | 网络操作审查 | `data_exfiltration`, curl, wget, nc |
+| `prompt-injection-transcript` | 9 | Prompt 注入 transcript 审查 | `prompt_injection`, `injection_detected`, transcript 分析 |
+| `data-staging-exfil-chain` | 9 | 数据分阶段暂存 + 外传链审查 | `staged_exfil`, `/tmp/` 暂存 + 网络外传组合 |
+| `dependency-supply-chain` | 8 | 依赖供应链攻击审查 | `supply_chain_attack`, PyPI/npm 包安装、CI/Dockerfile 修改 |
+| `persistence` | 9 | 持久化入口审查 | cron、systemd、shell startup 文件写入、`persistence_entrypoint` |
+| `skill-trust-audit` | 9 | Skill Trust 首次使用 / 未审核技能审查 | `skill_trust_first_use`, `local_unreviewed`, skill registry 状态 |
 | `general-review` | 0 | 通用安全审查 (fallback) | 无特定触发条件，兜底使用 |
 
 ### Skill YAML Schema {#skill-schema}
@@ -889,5 +960,5 @@ LLMAnalyzer 识别出完整的凭证外传攻击链 → CRITICAL, confidence=0.9
 | ReadOnlyToolkit | `src/clawsentry/gateway/review_toolkit.py` | 7 个只读工具 + 路径沙箱 + 调用预算 |
 | SkillRegistry | `src/clawsentry/gateway/review_skills.py` | YAML 技能加载、验证和匹配选择 |
 | L3TriggerPolicy | `src/clawsentry/gateway/l3_trigger.py` | 确定性触发条件判断 |
-| 内置技能 YAML | `src/clawsentry/gateway/skills/*.yaml` | 6 个内置审查技能定义 |
+| 内置技能 YAML | `src/clawsentry/gateway/skills/*.yaml` | 11 个内置审查技能定义（v0.7.3 起扩展为可校验 manifest） |
 | LLM 工厂 | `src/clawsentry/gateway/llm_factory.py` | `build_analyzer_from_env()` 自动构建含 L3 的分析器链 |

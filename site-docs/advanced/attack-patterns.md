@@ -3,6 +3,21 @@ title: 攻击模式定制（Attack Patterns）
 description: 自定义 L2 检测规则库 — YAML 模式结构、OWASP ASI01-04、AND/OR 逻辑、误报过滤、热更新
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Advanced · L2 Detection Rules</div>
+
+## 攻击模式定制
+
+自定义 L2 检测规则库：YAML 模式结构、OWASP ASI01-04 覆盖、AND/OR 复合触发逻辑、误报过滤白名单与规则面热更新。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">25 条内置模式</span>
+<span class="cs-pill">ASI01-04</span>
+<span class="cs-pill">CS_L2_ATTACK_PATTERNS_PATH</span>
+<span class="cs-pill">合并不替换</span>
+</div>
+</div>
+
 # 攻击模式定制（Attack Patterns）
 
 !!! abstract "本页快速导航"

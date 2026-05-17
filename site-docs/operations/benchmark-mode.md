@@ -3,7 +3,16 @@ title: Benchmark 模式
 description: 以非交互、可复现、不会污染用户 CODEX_HOME 的方式运行 ClawSentry 安全评测
 ---
 
-# Benchmark 模式
+<section class="cs-doc-hero cs-doc-hero--ops" markdown>
+<div class="cs-eyebrow">ClawSentry 评测运维</div>
+## Benchmark 模式
+以非交互、可复现、不会污染用户 CODEX_HOME 的方式运行 ClawSentry 安全评测。
+<div class="cs-actions" markdown>
+[快速开始](#quick-run){ .md-button .md-button--primary }
+[框架支持矩阵](#framework-matrix){ .md-button }
+[Codex 集成](../integration/codex.md){ .md-button }
+</div>
+</section>
 
 Benchmark 模式面向 CI、安全评测和可复现实验。它和日常 `normal` 模式最大的区别是：**不会等待人工审批**。
 
@@ -103,6 +112,40 @@ clawsentry benchmark run --dir . --framework codex --codex-home "$CS_CODEX_HOME"
 ```bash
 clawsentry benchmark disable --dir . --framework codex --codex-home "$CS_CODEX_HOME"
 ```
+
+---
+
+## SkillsSafety / SKILL-INJECT 框架支持矩阵 {#framework-matrix}
+
+当前 live matrix 明确覆盖以下 4 个框架。
+
+| 框架 | 支持状态 | 说明 |
+|---|---|---|
+| Codex | 支持 | 原生 hook 隔离；使用临时 `CODEX_HOME` |
+| Claude Code | 支持 | `UserPromptSubmit` prompt hook 阻断语义 |
+| Kimi CLI | 支持 | Skill Trust runtime metadata 接线统一 |
+| Gemini CLI | 支持 | Skill Trust runtime metadata 接线统一 |
+| a3s-code | 不支持 | a3s-code 在这两组 benchmark runner 中保持 unsupported rationale |
+
+---
+
+## L3 Multi-turn 配置说明 {#l3-multi-turn}
+
+从 v0.7.4 起，L3 AgentAnalyzer **默认**启用多轮审查模式。Protected SkillsSafetyBench Docker sweep 固定环境设置 `CS_L3_MULTI_TURN=true`，与公开默认模式一致。
+
+```bash
+# benchmark sweep 环境中通常已由 Docker env 显式设置：
+CS_L3_MULTI_TURN=true
+```
+
+如果需要回退到 legacy 单轮模式（仅用于对比测试），可显式设置：
+
+```bash
+CS_L3_MULTI_TURN=false  # 或 0 / no / off
+```
+
+!!! note "默认行为"
+    生产环境和 benchmark 环境都应使用默认多轮模式。只有在需要复现 v0.7.3 及更早行为时才关闭。
 
 ---
 

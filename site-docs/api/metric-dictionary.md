@@ -3,7 +3,16 @@ title: 指标字典
 description: ClawSentry 报表、Dashboard、SSE 与 Enterprise OS 风险指标的 canonical 合同
 ---
 
-# Metric Dictionary（报表 / Dashboard / Enterprise OS）
+<section class="cs-doc-hero cs-doc-hero--api" markdown>
+<div class="cs-eyebrow">ClawSentry Metric Dictionary</div>
+## Metric Dictionary（报表 / Dashboard / Enterprise OS）
+ClawSentry 风险指标的 canonical 合同。本文是所有报表、Dashboard、SSE 和 Enterprise OS 展示字段的唯一公开字典。
+<div class="cs-actions" markdown>
+[API 概览](overview.md){ .md-button .md-button--primary }
+[报表端点](reporting.md){ .md-button }
+[决策端点](decisions.md){ .md-button }
+</div>
+</section>
 
 本文是 ClawSentry 风险展示指标的唯一公开字典。它回答三个问题：字段是什么意思、公式是什么、能不能影响 `allow / block / defer`。
 
@@ -33,6 +42,9 @@ description: ClawSentry 报表、Dashboard、SSE 与 Enterprise OS 风险指标�
 | `window_risk_summary` | object | 同一窗口内的权威聚合容器，包含本表窗口字段 | 正常返回对象；无事件时计数为 0 | 否 | `/report/session/{id}/risk`、`/report/sessions`、Dashboard cards |
 | `score_range` / `score_semantics` | tuple/object | 对应分数字段的范围和空数据语义 | `event_count/post_action_event_count == 0` 时 `0.0` 表示“无数据”，不是“确认低风险” | 否 | Reporting API、Enterprise OS contract |
 | `system_security_posture` | object | Enterprise/Dashboard 对多个 session 的窗口聚合态势 | 数据源不可用时返回 degraded 对象 | 否 | Enterprise overview、Dashboard 顶层态势、SSE overview refresh |
+| `composite_score` | float，`0.0..100.0`（展示） | 内部 `0.0..3.0` 评分线性映射到 0-100 的展示分；`score_0_100 = round(raw / 3.0 * 100, 1)` | 无事件时为 `0.0` 或缺失 | 否 | Dashboard 顶层展示分、`system_security_posture.score_0_100`、Enterprise OS 概览 |
+| `risk_level` | enum | `low / medium / high / critical`；由 `composite_score`（内部 0-3 scale）阈值映射：`0..0.5→low`、`0.5..1.5→medium`、`1.5..2.5→high`、`>2.5→critical` | 无事件时为 `null` 或缺失 | 否 | 全部 report 端点、SSE event payload、Dashboard risk badge、`window_risk_summary` |
+| `decision_latency_ms` | int，`>=0` | 单次 L1→L2→L3 决策链完整耗时，毫秒 | 决策链超时或异常中断时为 `null` | 否 | `/report/session/{id}`、audit log、Enterprise OS session detail |
 | `trinityguard_classification` | object | Enterprise OS 的单条 event/session 最新 20 类风险分类 | 未匹配时 `mapped=false`、`subtype=unmapped` | 否 | `/enterprise/report/sessions`、`/enterprise/report/session/{id}`、`/enterprise/report/session/{id}/risk`、Enterprise SSE |
 | `by_trinityguard_subtype` / `by_trinityguard_tier` | object | 当前活跃 session 最新分类的 20 类风险 / RT1-RT3 计数 | 无映射时为空对象；同时读 `mapped_active_sessions` | 否 | `/enterprise/report/live`、`live_risk_overview` |
 | `trinityguard.by_subtype` / `trinityguard.by_tier` | object | 指定窗口内 trajectory records 的 20 类风险 / RT1-RT3 计数 | 无映射时为空对象；同时读 `unmapped_records` | 否 | `/enterprise/report/summary` |

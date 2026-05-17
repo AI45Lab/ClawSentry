@@ -3,6 +3,21 @@ title: 自进化模式库（Pattern Evolution）
 description: E-5 功能 — 从生产 Agent 事件中自动提取攻击模式，通过人工反馈实现 CANDIDATE→EXPERIMENTAL→STABLE 生命周期管理
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Advanced · Adaptive Detection</div>
+
+## 自进化模式库
+
+从生产 Agent 事件中自动提取候选攻击模式，通过运维人员人工反馈驱动 CANDIDATE → EXPERIMENTAL → STABLE 生命周期演进，构建随时间增长的动态防御体系。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">E-5 功能</span>
+<span class="cs-pill">默认关闭</span>
+<span class="cs-pill">CS_EVOLVING_ENABLED</span>
+<span class="cs-pill">EV- 前缀 ID</span>
+</div>
+</div>
+
 # 自进化模式库（Pattern Evolution）
 
 ## 概述 {#overview}

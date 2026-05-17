@@ -3,6 +3,21 @@ title: 自定义 Adapter
 description: 为新的 AI Agent 框架编写适配器，将框架事件归一化为 AHP 标准事件
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Advanced · Framework Integration</div>
+
+## 自定义 Adapter
+
+为新的 AI Agent 框架编写适配器，将框架原生事件归一化为 AHP 标准 `CanonicalEvent`，接入 ClawSentry Gateway 的统一安全决策链。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">6 个已支持框架</span>
+<span class="cs-pill">鸭子类型接口</span>
+<span class="cs-pill">UDS / HTTP / WebSocket</span>
+<span class="cs-pill">fail-closed fallback</span>
+</div>
+</div>
+
 # 自定义 Adapter
 
 Adapter（适配器）是 ClawSentry 连接不同 AI Agent 框架的桥梁。每个 Adapter 负责将特定框架的原生事件**归一化**为 AHP 协议定义的 `CanonicalEvent`，然后交给 Gateway 的 PolicyEngine 进行统一的安全评估。
@@ -53,6 +68,19 @@ AI Agent 框架                ClawSentry
 ---
 
 ## 现有 Adapter 参考
+
+ClawSentry 目前为 **6 个框架**提供官方 Adapter 和 native hook/transport 支持：
+
+| 框架 | Adapter / 接入方式 | Hook 类型 |
+|---|---|---|
+| a3s-code | `A3SCodeAdapter`，stdio harness + `POST /ahp/a3s` | StdioTransport / HttpTransport |
+| OpenClaw | `OpenClawAdapter`，WebSocket 实时事件 + Webhook | WebSocket + HMAC webhook |
+| Claude Code | `ClaudeCodeAdapter`，native hook harness | `PreToolUse`（阻塞）+ `PostToolUse`/`UserPromptSubmit`（异步）|
+| Codex | `CodexAdapter`，managed hook + `POST /ahp/codex` | `PreToolUse`（阻塞）+ `PermissionRequest`/`PostToolUse`（异步）|
+| Gemini CLI | `GeminiAdapter`，`BeforeTool` native hook | `BeforeTool`（阻塞）|
+| Kimi CLI | `KimiAdapter`，native `PreToolUse`/`UserPromptSubmit` hook | `PreToolUse`（阻塞）+ `UserPromptSubmit`/`PostToolUse`（异步）|
+
+如果你使用的 AI Agent 框架不在以上列表中，可以通过编写自定义 Adapter 来完成接入。
 
 ### A3SCodeAdapter
 

@@ -8,6 +8,20 @@ description: 基于 LLM 的语义理解层 — 可插拔分析器协议、Prompt
 
 # L2 语义分析
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Decision Engine · Semantic Analysis</div>
+
+## 单轮语义理解，补充规则引擎看不到的意图组合
+
+L2 语义分析是 ClawSentry 三层决策模型的第二层，在 L1 规则引擎发现中等及以上风险后按需介入，用 LLM 或增强规则分析器理解"读取敏感文件后外发""看似普通脚本实际绕过策略"这类语义组合，并输出结构化 evidence capsule 供 L3 和审计链复用。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">只升不降</span>
+<span class="cs-pill">按需调用 ~20% 事件</span>
+<span class="cs-pill">LLM 故障自动回退 L1</span>
+</div>
+</div>
+
 ## 概述 {#overview}
 
 L2 是 ClawSentry 三层决策模型的**第二层**，在 L1 规则引擎的基础上引入 LLM（大语言模型）进行**语义级风险分析**。L2 不处理所有事件 —— 仅当 L1 识别到中等及以上风险时才被触发，实现"按需调用、精准分析"。
@@ -340,6 +354,47 @@ graph TD
 4. 过滤掉异常和 confidence=0.0 的降级结果
 5. 取风险等级最高的结果；同等风险等级时取置信度最高者
 6. 若所有 analyzers 均降级 → 回退为 L1 原始结果
+
+**配置示例：手动链式构建（RuleBased + LLM）**
+
+```python
+from clawsentry.gateway.semantic_analyzer import RuleBasedAnalyzer, LLMAnalyzer, CompositeAnalyzer
+from clawsentry.gateway.llm_provider import AnthropicProvider
+
+# 构建 CompositeAnalyzer: 先 RuleBased（快速），再 LLM（精准）
+composite = CompositeAnalyzer([
+    RuleBasedAnalyzer(),
+    LLMAnalyzer(provider=AnthropicProvider()),
+])
+
+# 或通过环境变量工厂自动构建（推荐生产使用）
+# export CS_LLM_PROVIDER=anthropic
+# export CS_L2_USE_COMPOSITE=true
+# analyzer = build_analyzer_from_env()
+```
+
+!!! tip "工厂构建 vs 手动构建"
+    生产环境推荐使用 `build_analyzer_from_env()` 自动构建。设置 `CS_L2_USE_COMPOSITE=true` 加上 `CS_LLM_PROVIDER` 时，工厂会自动返回 `CompositeAnalyzer([RuleBasedAnalyzer, LLMAnalyzer])`；需要接入 L3 时再设置 `CS_L3_ENABLED=true`，工厂会嵌套 `AgentAnalyzer` 作为最外层。
+
+---
+
+## L2 Evidence Capsule v1 {#evidence-capsule}
+
+自 v0.7.3 起，L2 现在输出结构化、脱敏的 evidence capsule，供 L3 审查和审计链复用：
+
+| 字段 | 含义 |
+|---|---|
+| `action_category` | 命令动作分类（shell、file-write、network、privilege 等） |
+| `path_indicators` | 路径、网络地址、凭据访问线索 |
+| `persistence_indicators` | cron、systemd、startup 注册等持久化特征 |
+| `l1_taint_evidence` | 来自 L1 compound/taint 分析的触发证据（`rule_hits`、`taint_flow_summary`） |
+| `semantic_confidence` | 语义分析的置信度（0.0–1.0） |
+| `redaction_notes` | 脱敏说明，记录被清洗的敏感字段 |
+
+当 L3 被触发时，这份 capsule 会注入 L3 prompt 的 `prior_analysis.l2_result` 字段，L3 agent 把它当作 `untrusted_evidence` 解读。大 payload 使用摘要模式（`payload_length` + `truncated=true`），provider 仍会收到安全摘要证据，不会因 payload 过大而被跳过。
+
+!!! note "脱敏边界"
+    L2 evidence capsule 不包含原始命令、私有路径、secret、API key 或环境变量值。`evidence_refs` 只能引用 `event.*`、`local_evidence.*`、`trigger.*`、`prior_analysis.*`、`tool_result*` 和 `untrusted_payload.*` 等当前案例前缀；引用 `examples.*` 的条目会被自动剥离。
 
 ---
 

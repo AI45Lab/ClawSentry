@@ -3,6 +3,21 @@ title: 配置概览
 description: ClawSentry env-first 配置来源、页面导览、优先级和诊断入口
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Configuration</div>
+
+## 配置概览
+
+ClawSentry 使用 **env-first** 配置模型：所有运行时行为由环境变量、显式 env file、CLI 参数和内置默认值驱动，不读取 section 配置文件。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">CLI 参数</span>
+<span class="cs-pill">进程环境变量</span>
+<span class="cs-pill">显式 env file</span>
+<span class="cs-pill">内置默认值</span>
+</div>
+</div>
+
 # 配置概览
 
 ClawSentry 当前配置模型是 **env-first**：运行时只消费 `KEY=VALUE` 形式的环境变量、显式 env file、CLI 参数和内置默认值。ClawSentry 不再读取或生成项目级 section 配置。`.clawsentry.env.example` 是可提交的 dotenv 模板，正常启动不会读取它；本机运行时通常先复制成 `.clawsentry.env.local`，再把本机 token / API key / 端口覆盖写进去，并通过 `--env-file` 或 `CLAWSENTRY_ENV_FILE` 显式加载。

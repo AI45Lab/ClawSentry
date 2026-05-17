@@ -3,7 +3,16 @@ title: 故障排查
 description: ClawSentry 常见问题诊断与解决方案
 ---
 
-# 故障排查
+<section class="cs-doc-hero cs-doc-hero--ops" markdown>
+<div class="cs-eyebrow">ClawSentry 运维</div>
+## 故障排查
+常见问题诊断与解决方案，覆盖启动错误、连接失败和 hook 集成问题。
+<div class="cs-actions" markdown>
+[生产部署](deployment.md){ .md-button .md-button--primary }
+[Benchmark 模式](benchmark-mode.md){ .md-button }
+[CLI 命令](../cli/index.md){ .md-button }
+</div>
+</section>
 
 本页列出 ClawSentry 运行中常见的问题、诊断步骤和解决方案。每个问题以可折叠卡片呈现，点击展开查看详情。
 

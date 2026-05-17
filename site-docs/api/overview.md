@@ -21,10 +21,10 @@ ClawSentry 的公开 API 分为决策入口、报表监控、实时 SSE、L3 adv
 </section>
 
 <div class="cs-metric-grid" markdown>
-<div class="cs-metric" markdown><span>Coverage entries</span><strong>47</strong><small>public / enterprise / excluded 全量纳入</small></div>
-<div class="cs-metric" markdown><span>OpenAPI operations</span><strong>44</strong><small>排除静态 UI 与重复 service-local health</small></div>
-<div class="cs-metric" markdown><span>Public routes</span><strong>35</strong><small>可供默认 API Reference 浏览</small></div>
-<div class="cs-metric" markdown><span>Enterprise conditional</span><strong>9</strong><small>启用企业模式后注册</small></div>
+<div class="cs-metric" markdown><span>Coverage entries</span><strong>51</strong><small>public / enterprise / excluded 全量纳入</small></div>
+<div class="cs-metric" markdown><span>OpenAPI operations</span><strong>48</strong><small>排除静态 UI 与重复 service-local health</small></div>
+<div class="cs-metric" markdown><span>Public routes</span><strong>38</strong><small>可供默认 API Reference 浏览</small></div>
+<div class="cs-metric" markdown><span>Enterprise conditional</span><strong>10</strong><small>启用企业模式后注册</small></div>
 </div>
 
 ## Web 前端应该先看什么

@@ -3,7 +3,13 @@ title: 核心概念
 description: 用最少术语理解 ClawSentry 如何处理事件、判决和审计
 ---
 
+<div class="cs-doc-hero" markdown>
+
 # 核心概念
+
+用最少术语理解 ClawSentry 如何处理事件、判决和审计。AHP 协议版本：`sync_decision.1.0`。
+
+</div>
 
 如果你只想先理解 ClawSentry 怎么工作，记住这句话：**事件进入系统，经过分层判断，最后返回或记录 `allow / block / defer / modify`。**
 
@@ -61,6 +67,9 @@ flowchart LR
 !!! tip "第一次该开哪一层？"
     只想确认接入时先用 L1 observe-first；团队仓库通常从 L2 + token budget 开始；安全敏感任务再打开同步 L3 或在 Session Detail 触发 L3 advisory full-review。
 
+!!! note "L3 多轮审查（v0.7.4+ 默认）"
+    从 v0.7.4 开始，同步 L3 AgentAnalyzer 默认使用**多轮审查**模式（`CS_L3_MULTI_TURN=true`）。多轮模式允许 L3 agent 多次调用只读工具（读文件、查 git 历史、搜索代码）收集证据，再给出最终判决，通常准确性更高但延迟增加。只有显式设置 `CS_L3_MULTI_TURN=false`、`0`、`no` 或 `off` 才会回退到旧版单轮模式。
+
 ## 事件、判决、审计的区别
 
 - **事件（Event）**：Agent 发生了什么，例如一次 shell 命令、一次 session start、一次 post-action finding。
@@ -76,6 +85,7 @@ flowchart LR
 
 | 术语 | 说明 |
 | --- | --- |
+| `sync_decision.1.0` | 当前 AHP 协议版本号，标识事件与判决的序列化格式及传输规范。 |
 | `DEFER` | 延后/审批结果：系统暂停自动放行，等待 operator allow/deny；不是最终 block。 |
 | `L3 advisory` | 深度证据审查，生成 snapshot/job/review 供 operator 判断。 |
 | `advisory-only` | L3 结论只提供建议和证据，不改写既有 canonical decision。 |
@@ -92,7 +102,18 @@ flowchart LR
 
 ## 风险维度 {#risk-dimensions}
 
-ClawSentry 的规则层会综合工具类型、目标资源、命令模式、上下文累积和信任等级等信号。你不需要在第一次接入时调参；当误报或漏报出现时，再阅读 [策略调优](../configuration/policy-tuning.md)。
+ClawSentry 的 L1 规则层综合六个维度（D1-D6）对每条事件进行评分：
+
+| 维度 | 含义 |
+| --- | --- |
+| **D1** 命令危险度 | 工具类型及命令本身的内在危险等级（例如 `rm`、`chmod`、`curl` 的差异） |
+| **D2** 参数敏感度 | 参数中是否涉及敏感路径、秘密文件或受保护资源 |
+| **D3** 命令模式 | 命令组合或调用序列与已知攻击模式的相似度 |
+| **D4** 历史行为 | 同一 session 或 workspace 的历史风险累积 |
+| **D5** 作用域权限 | 操作范围是否超出 Agent 声明的工作区或权限边界 |
+| **D6** 注入检测 | 命令或参数中是否存在 prompt/shell 注入特征 |
+
+你不需要在第一次接入时调参；当误报或漏报出现时，再阅读 [策略调优](../configuration/policy-tuning.md)。
 
 ## EventBus 与 SSE {#eventbus-sse}
 

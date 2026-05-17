@@ -1,3 +1,18 @@
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Configuration</div>
+
+## 策略调优
+
+调整 L1/L2/L3 决策层行为、D1-D6 风险维度、会话执法策略和 DEFER 桥接，在安全性与可用性之间找到最优平衡。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">D1-D6 评分</span>
+<span class="cs-pill">会话执法</span>
+<span class="cs-pill">Skill Trust</span>
+<span class="cs-pill">DEFER 桥接</span>
+</div>
+</div>
+
 # 策略调优
 
 ClawSentry 的三层决策模型提供了丰富的调优维度。本页详细介绍各层策略的工作原理和调优方法，帮助您在安全性和可用性之间找到最优平衡。

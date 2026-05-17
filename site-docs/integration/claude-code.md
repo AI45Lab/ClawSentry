@@ -1,5 +1,19 @@
 # Claude Code 集成
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Integration · Claude Code</div>
+
+## Claude Code 安全集成
+
+ClawSentry 通过 `~/.claude/settings.json` 注入 managed hooks，拦截 Claude Code 的工具调用和 prompt 提交事件，经三层决策引擎实时评估风险并返回 allow / block / defer 判决。v0.7.5 起 `UserPromptSubmit` 归一化为 `pre_prompt` 事件，block/defer 时返回 prompt hook 支持的 top-level block shape。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">PreToolUse 同步阻断</span>
+<span class="cs-pill">UserPromptSubmit 阻断</span>
+<span class="cs-pill">DEFER 人工审批</span>
+</div>
+</div>
+
 !!! tip "本页怎么读"
     这页面向已经使用 Claude Code 的用户。你会看到：适用场景、最短接入路径、如何验证 Hook 生效、以及如何安全卸载。
 
@@ -191,7 +205,22 @@ ClawSentry 在 `~/.claude/settings.json` 中注入以下 hook 配置：
     - **阻塞事件**（`PreToolUse`、`UserPromptSubmit`）：Claude Code 等待 ClawSentry 返回判决后才继续。工具事件判决为 `block` 时工具调用被拒绝；prompt 事件判决为 `block` 时 prompt 不会继续进入模型。
     - **异步事件**（`PostToolUse`、`SessionStart`、`SessionEnd`）：harness 使用 `--async` 标志立即返回，后台异步发送审计数据，不影响 Claude Code 执行流程。
 
+!!! info "v0.7.5 Prompt Hook Parity"
+    `UserPromptSubmit` 现在归一化为 `pre_prompt` 事件类型，block/defer 时返回 prompt hook 支持的 top-level block shape：
+
+    ```json
+    {
+      "action": "block",
+      "reason": "ClawSentry: high-risk prompt detected"
+    }
+    ```
+
+    而不是旧的 tool preflight 专用 `permissionDecision` 格式。如果你在 hook 脚本或外部工具中解析 ClawSentry 响应，请确认使用新的 top-level block shape。
+
 Skill Trust metadata 会按当前项目 `cwd` 向上查找 `.clawsentry/skill-trust-runtime.json`，并和 env 指定的 `CS_SKILL_TRUST_METADATA_PATH` 共同作为 runtime metadata 来源。Gateway 使用真实 skill root path 做 first-use scan，但 replay 只保留 presented/canonical labels、framework/scope、metadata source 和 hash。
+
+!!! note "Skill Trust runtime metadata binding（v0.7.5）"
+    运行 `clawsentry init claude-code --setup` 时，生成的 managed hook command 包含 `CS_SKILL_TRUST_REGISTRY_PATH` 和 `CS_SKILL_TRUST_METADATA_PATH` 环境变量默认值。如果 metadata 文件不存在，harness 会自动回退，按当前项目 `cwd` 向上查找 `.clawsentry/skill-trust-runtime.json`。
 
 ### 通信链路
 

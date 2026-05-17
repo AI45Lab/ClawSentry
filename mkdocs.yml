@@ -37,6 +37,13 @@ theme:
     - content.code.copy
     - content.tabs.link
     - toc.follow
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.tracking
+    - navigation.indexes
+    - content.tooltips
+    - search.share
   icon:
     repo: fontawesome/brands/github
 

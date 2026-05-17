@@ -285,6 +285,7 @@ TLS 加密、Webhook 安全和 L3 Skills 扩展相关配置。
 | `AHP_WEBHOOK_TOKEN_TTL_SECONDS` | `86400` (24h) | Webhook Token 有效期（秒）。设为 `0` 禁用过期检查 |
 | `AHP_SKILLS_DIR` | - | 自定义 L3 Skills YAML 目录路径。加载后与内置 Skills 合并 |
 | `AHP_HTTP_URL` | (自动计算) | a3s-code HTTP Transport 目标 URL。默认基于 `CS_HTTP_HOST`/`CS_HTTP_PORT` 自动生成 |
+| `CS_KIMI_SKILLS_DIR` | (空) | Kimi CLI skills 目录路径；`clawsentry init kimi-cli --setup` 写入 managed hook command 时引用此路径 |
 
 !!! note "TLS 配置"
     同时设置 `AHP_SSL_CERTFILE` 和 `AHP_SSL_KEYFILE` 后，Gateway 将以 HTTPS 模式启动。

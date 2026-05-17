@@ -5,6 +5,20 @@ description: 工具调用后的非阻塞安全分析 — 间接注入检测、�
 
 # Post-action 安全围栏
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Decision Engine · Post-action Analysis</div>
+
+## 工具执行后的非阻塞安全围栏
+
+L1/L2/L3 在工具调用前介入；Post-action 安全围栏补充"事后威胁"检测。工具返回结果后，四层检测器（间接注入、数据外传、凭据暴露、混淆代码）并行异步运行，根据风险分级通过 SSE 广播告警或触发会话执法，不延迟主判决流。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">异步非阻塞</span>
+<span class="cs-pill">间接注入 / 外传 / 凭据 / 混淆</span>
+<span class="cs-pill">SSE 分级响应</span>
+</div>
+</div>
+
 ## 概述 {#overview}
 
 ClawSentry 的 L1/L2/L3 三层决策模型均在 Agent 工具调用**执行之前**或**执行过程中**介入，负责对调用意图进行评估和拦截。然而，某些威胁并不体现在调用意图上，而是**隐藏在工具执行后返回的内容**中——最典型的场景是间接提示词注入：攻击者在网页、文档或 API 响应中预埋指令，当 Agent 读取这些内容后，恶意指令可能被 Agent 当作合法任务执行。

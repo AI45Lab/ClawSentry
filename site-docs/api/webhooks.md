@@ -3,7 +3,16 @@ title: Webhook API
 description: OpenClaw Webhook receiver 的认证、签名、幂等性和错误处理
 ---
 
-# Webhook API
+<section class="cs-doc-hero cs-doc-hero--api" markdown>
+<div class="cs-eyebrow">ClawSentry Webhook API</div>
+## Webhook API
+OpenClaw Webhook receiver 接收外部事件并归一化到 ClawSentry Gateway，完成安全校验、签名验证和幂等去重。
+<div class="cs-actions" markdown>
+[API 概览](overview.md){ .md-button .md-button--primary }
+[认证与安全](authentication.md){ .md-button }
+[模型与错误码](models-errors.md){ .md-button }
+</div>
+</section>
 
 OpenClaw Webhook receiver 是独立的 FastAPI 服务面，和 Gateway HTTP API 分开部署/监听。文档与覆盖矩阵使用 `service: openclaw-webhook` 区分它和 Gateway 端点。
 

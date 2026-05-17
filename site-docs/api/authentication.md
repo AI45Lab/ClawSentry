@@ -3,9 +3,16 @@ title: 认证与安全
 description: ClawSentry 的认证机制、传输安全和安全最佳实践
 ---
 
-# 认证与安全
-
+<section class="cs-doc-hero cs-doc-hero--api" markdown>
+<div class="cs-eyebrow">ClawSentry 认证与安全</div>
+## 认证与安全
 ClawSentry 提供多层安全机制保护 API 端点和传输通道。本页详细介绍所有认证方式及其配置方法。
+<div class="cs-actions" markdown>
+[API 概览](overview.md){ .md-button .md-button--primary }
+[Webhook API](webhooks.md){ .md-button }
+[配置参考](../configuration/configuration-overview.md){ .md-button }
+</div>
+</section>
 
 ---
 

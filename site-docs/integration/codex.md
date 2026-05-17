@@ -442,6 +442,38 @@ clawsentry audit --format csv > audit.csv
 
 如果你需要在 CI/CD 流水线或自定义工具链中集成 ClawSentry 评估，可以直接调用 HTTP 端点：
 
+### HTTP API 格式 {#http-contract}
+
+若通过 HTTP 直连 `/ahp/codex` 而非 managed hooks，请使用以下格式：
+
+**请求格式（top-level event_type）：**
+
+```json
+{
+  "event_type": "pre_action",
+  "session_id": "...",
+  "tool_name": "bash",
+  "payload": { "command": "..." }
+}
+```
+
+**响应格式（result wrapper）：**
+
+```json
+{
+  "result": {
+    "decision": "allow",
+    "reason": "...",
+    "risk_level": "low"
+  }
+}
+```
+
+`event_type` 字段必须在请求的顶层（不能嵌套在 `payload` 或其他字段内）。响应统一包裹在 `{"result": ...}` 中。
+
+!!! note "PreToolUse(Bash) 同步 vs 异步边界"
+    `PreToolUse(Bash)` 提供同步阻断（host-deny / approval gate）；`PostToolUse`、`UserPromptSubmit`、`Stop`、`SessionStart` 默认保持异步观察，不承诺前置阻断。直接使用 `/ahp/codex` HTTP API 时，只有 `event_type` 为 `pre_action` 的请求会触发同步 block/allow 决策链路。
+
 ### `POST /ahp/codex`
 
 Codex 专用的工具调用评估端点。接收简单 JSON 格式请求（非 JSON-RPC），返回安全决策。

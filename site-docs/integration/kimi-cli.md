@@ -25,6 +25,9 @@ clawsentry init kimi-cli --setup --kimi-home "$KIMI_SHARE_DIR"
 
 Setup 生成的 managed hook command 会带上 Skill Trust 运行时默认路径：`CS_KIMI_SKILLS_DIR`、`CS_SKILL_TRUST_REGISTRY_PATH` 和 `CS_SKILL_TRUST_METADATA_PATH`。如果该 env 指向的 metadata 文件还不存在，harness 会继续按当前项目 `cwd` 向上查找 `.clawsentry/skill-trust-runtime.json`，因此隔离 benchmark、项目级注册和用户级 Kimi home 可以共用同一套 Gateway 风险上下文。
 
+!!! note "KIMI_SHARE_DIR 与 metadata 路径回退"
+    若 `KIMI_SHARE_DIR` 未设置，harness 会读取 `~/.kimi/config.toml`；若 metadata 路径不存在，Gateway 会从当前项目 `cwd` 向上查找 `.clawsentry/skill-trust-runtime.json`。
+
 ## Hook 覆盖范围
 
 | Kimi hook | ClawSentry 命令 | 支持语义 | 适合用途 |
@@ -62,6 +65,16 @@ Kimi 集成面向用户时可以这样理解：
 - **不能提供真正 native defer**：需要人工审批语义时，应使用支持 defer 的接入路径，或把 Kimi 结果作为 deny / observation 处理。
 
 发布前的验证证据保留在 release evidence / validation 文档中；本用户页只描述可依赖的运行时能力和边界。
+
+## 框架能力对比
+
+| 能力 | Claude Code | a3s-code | Kimi CLI | Gemini CLI |
+|---|---|---|---|---|
+| PreToolUse 同步阻断 | ✅ | ✅ | ✅ | ✅ |
+| UserPromptSubmit 阻断 | ✅ | ✅ | ✅ | ✅ |
+| Modify tool input | ✅ | ✅ | ❌ | ❌ |
+| Native DEFER（人工审批）| ✅ | ✅ | ❌ | ❌ |
+| Post-action 观察 | ✅ | ✅ | ✅ | ✅ |
 
 ## 诊断
 

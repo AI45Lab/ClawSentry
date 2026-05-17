@@ -1,5 +1,19 @@
 # Gemini CLI 集成
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Integration · Gemini CLI</div>
+
+## Gemini CLI 安全集成
+
+ClawSentry 通过 native command hooks 接入 Gemini CLI，写入项目级 `.gemini/settings.json`，覆盖 session、prompt/model、tool preflight 和 tool result review 等阶段。v0.7.5 起 managed hook command 包含 Skill Trust runtime metadata 路径默认值。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">BeforeTool 同步阻断</span>
+<span class="cs-pill">项目级 settings.json</span>
+<span class="cs-pill">Skill Trust v0.7.5</span>
+</div>
+</div>
+
 !!! tip "支持范围"
     Gemini CLI 通过 native command hooks 接入 ClawSentry。默认 setup 写入项目级 `.gemini/settings.json`，覆盖 session、prompt/model、tool preflight 和 tool result review 等阶段。自定义 provider 或代理前，请先确认它兼容 Gemini CLI 所需接口。
 
@@ -21,6 +35,35 @@ gemini --prompt "say hello"
 ```bash
 clawsentry init gemini-cli --setup --gemini-home /tmp/safe-gemini-home
 ```
+
+### `.gemini/settings.json` hook 格式
+
+`clawsentry init gemini-cli --setup` 生成的 managed hook 条目格式如下：
+
+```json
+{
+  "hooks": {
+    "BeforeTool": [
+      {
+        "command": "clawsentry harness --framework gemini-cli CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json CS_SKILL_TRUST_METADATA_PATH=.clawsentry/skill-trust-runtime.json"
+      }
+    ],
+    "AfterTool": [
+      {
+        "command": "clawsentry harness --framework gemini-cli"
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "command": "clawsentry harness --framework gemini-cli"
+      }
+    ]
+  }
+}
+```
+
+!!! note "Skill Trust runtime metadata binding（v0.7.5）"
+    `clawsentry init gemini-cli --setup` 生成的 managed hook command 现在包含 `CS_SKILL_TRUST_REGISTRY_PATH` 和 `CS_SKILL_TRUST_METADATA_PATH` 环境变量默认值。若 metadata 文件不存在，harness 会自动回退，按 Gemini hook payload 的 `cwd` 向上查找 `.clawsentry/skill-trust-runtime.json`。
 
 ## Hook 覆盖范围
 
@@ -48,6 +91,9 @@ Skill Trust metadata 会优先读取 `CS_SKILL_TRUST_METADATA_PATH`，同时按 
 - `payload._clawsentry_meta.raw_tool_name`: `run_shell_command`
 
 这样既不会丢失 Gemini 原始审计信息，又能复用已有的 shell 风险评分、`rm -rf`/`sudo` 等阻断规则。
+
+!!! note "自定义 provider 兼容性"
+    使用自定义 provider 或代理时，请确认它兼容 Gemini CLI 所需接口；ClawSentry 的 hook 集成与具体 LLM provider 无关，但 Gemini CLI 本身的 provider 配置需要单独验证。
 
 ## 诊断
 

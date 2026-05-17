@@ -3,6 +3,21 @@ title: 向量相似度接入（D6 Layer 3）
 description: 为 D6 注入检测添加语义向量分析层 — EmbeddingBackend Protocol、VectorLayer 配置、sentence-transformers 示例
 ---
 
+<div class="cs-doc-hero" markdown>
+<div class="cs-eyebrow">Advanced · D6 Injection Detection</div>
+
+## 向量相似度接入
+
+为 D6 注入检测的 Layer 3 接入自定义语义向量分析后端，通过余弦相似度发现正则无法覆盖的语义变体注入攻击。
+
+<div class="cs-pill-row" markdown>
+<span class="cs-pill">EmbeddingBackend Protocol</span>
+<span class="cs-pill">VectorLayer</span>
+<span class="cs-pill">sentence-transformers</span>
+<span class="cs-pill">代码注入，非 env 配置</span>
+</div>
+</div>
+
 # 向量相似度接入（D6 Layer 3）
 
 !!! abstract "本页快速导航"
