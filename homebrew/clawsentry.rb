@@ -6,8 +6,8 @@ class Clawsentry < Formula
 
   desc "AHP safety supervision framework for AI coding agents"
   homepage "https://elroyper.github.io/ClawSentry/"
-  url "https://files.pythonhosted.org/packages/source/c/clawsentry/clawsentry-0.6.3.tar.gz"
-  sha256 "896bca4df3a96703fb3d16b087d3576da930dfb3d67de71579f5fa38f2e4e70e"
+  url "https://files.pythonhosted.org/packages/source/c/clawsentry/clawsentry-0.7.5.tar.gz"
+  sha256 "9d246bdcb07e7439399369fc9ede15913827c1148f448f90eb82ae621f34226c"
   license "MIT"
   head "https://github.com/Elroyper/ClawSentry.git", branch: "main"
 

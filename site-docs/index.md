@@ -77,6 +77,9 @@ hide:
 ---
 
 
+!!! tip "v0.7.5: Cross-CLI Skill Trust runtime binding"
+    Kimi CLI、Claude Code、Gemini CLI、Codex 与 a3s-code 现在把真实 skill 路径和运行时上下文接入 Skill Trust metadata；Claude prompt hook 阻断、replay 安全字段和 benchmark matrix 口径同步修正。
+
 !!! tip "v0.7.4: L3 multi-turn default"
     L3 AgentAnalyzer 现在默认使用 multi-turn review；只有显式 `CS_L3_MULTI_TURN=false`、`0`、`no` 或 `off` 才回退 legacy single-turn。公开 release surface 验证为 `3446 passed, 16 skipped`，Web UI `56 passed`。
 
@@ -411,7 +414,7 @@ Gateway 在 `/ui` 路径自动挂载静态文件，无需额外配置。
 
 | 指标 | 数据 |
 |:---:|:---:|
-| 测试用例 | **3446 passed / 16 skipped**（v0.7.4 public Python release validation；Web UI 56 passed） |
+| 测试用例 | **3456 passed / 16 skipped**（v0.7.5 public Python release validation；Web UI 56 passed） |
 | 测试耗时 | 随可选依赖与 smoke 范围变化 |
 | 协议版本 | `sync_decision.1.0` |
 | Python 版本 | >= 3.11 |

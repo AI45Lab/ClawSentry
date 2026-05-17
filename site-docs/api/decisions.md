@@ -362,10 +362,12 @@ curl -X POST http://127.0.0.1:8080/ahp/a3s \
 
 ```json
 {
-  "hook_type": "function_call",
+  "event_type": "function_call",
   "payload": {
-    "tool_name": "shell",
-    "arguments": "{\"cmd\": \"rm -rf /tmp/data\"}"
+    "name": "bash",
+    "arguments": {
+      "command": "rm -rf /tmp/data"
+    }
   },
   "session_id": "codex-session-001",
   "agent_id": "codex-agent-001"
@@ -374,14 +376,14 @@ curl -X POST http://127.0.0.1:8080/ahp/a3s \
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `hook_type` | string | :material-check: | 事件类型：`function_call` / `function_call_output` / `session_meta` / `session_end` |
+| `event_type` | string | :material-check: | 事件类型：`function_call` / `function_call_output` / `session_meta` / `session_end` |
 | `payload` | object | :material-check: | 工具调用负载 |
 | `session_id` | string | :material-close: | 会话 ID（缺省自动生成） |
 | `agent_id` | string | :material-close: | Agent ID（缺省自动生成） |
 
 ### 事件类型映射
 
-| `hook_type` | 归一化 EventType | 说明 |
+| `event_type` | 归一化 EventType | 说明 |
 |-------------|-----------------|------|
 | `function_call` | `pre_action` | 工具调用前（阻塞决策） |
 | `function_call_output` | `post_action` | 工具调用后（异步审计） |
@@ -392,11 +394,11 @@ curl -X POST http://127.0.0.1:8080/ahp/a3s \
 
 ```json
 {
-  "action": "block",
-  "reason": "D1: destructive tool pattern detected (rm -rf)",
-  "risk_level": "high",
-  "event_id": "a1b2c3d4e5f6a7b8c9d0e1f2",
-  "source_framework": "codex"
+  "result": {
+    "action": "block",
+    "reason": "Critical risk: action blocked",
+    "risk_level": "critical"
+  }
 }
 ```
 
@@ -406,8 +408,10 @@ curl -X POST http://127.0.0.1:8080/ahp/a3s \
 
 ```json
 {
-  "action": "block",
-  "reason": "internal error (fail-closed)"
+  "result": {
+    "action": "block",
+    "reason": "evaluation error (fail-closed)"
+  }
 }
 ```
 
@@ -418,10 +422,10 @@ curl -X POST http://127.0.0.1:8080/ahp/codex \
   -H "Authorization: Bearer $CS_AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "hook_type": "function_call",
+    "event_type": "function_call",
     "payload": {
-      "tool_name": "shell",
-      "arguments": "{\"cmd\": \"ls -la\"}"
+      "name": "bash",
+      "arguments": {"command": "ls -la"}
     },
     "session_id": "test-session"
   }'

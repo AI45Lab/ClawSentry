@@ -17,6 +17,26 @@ def test_claude_generate_config_reports_env_and_uses_temp_home(tmp_path):
     assert "CS_AUTH_TOKEN" not in json.dumps(result.env_vars)
 
 
+def test_claude_generate_config_installs_prompt_submit_hook(tmp_path):
+    claude_home = tmp_path / "claude-home"
+    ClaudeCodeInitializer().generate_config(tmp_path, claude_home=claude_home)
+
+    settings = json.loads((claude_home / "settings.json").read_text(encoding="utf-8"))
+    prompt_hooks = settings["hooks"]["UserPromptSubmit"]
+
+    assert prompt_hooks == [
+        {
+            "matcher": "",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": "clawsentry-harness --framework claude-code",
+                }
+            ],
+        }
+    ]
+
+
 def test_claude_uninstall_removes_managed_hooks_from_temp_home(tmp_path):
     claude_home = tmp_path / "claude-home"
     init = ClaudeCodeInitializer()

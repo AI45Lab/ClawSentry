@@ -7,6 +7,14 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
+## v0.7.5
+
+- Kimi CLI、Claude Code、Gemini CLI、Codex 与 a3s-code 的 Skill Trust runtime metadata 接线统一到真实 skill 路径和运行时上下文；metadata env 路径缺失时会继续回退到项目 `.clawsentry/skill-trust-runtime.json`。
+- Claude Code `UserPromptSubmit` 现在按 prompt hook 语义阻断，避免把 prompt block 错写成 tool preflight 专用响应。
+- Session replay 只保留 replay-safe Skill Trust labels/hash，过滤 path-like canonical identity、framework/scope 注入值和原始 skill root path。
+- SkillsSafety/SKILL-INJECT 当前 live matrix 明确覆盖 Codex、Claude Code、Kimi CLI、Gemini CLI；`a3s-code` 在这两组 benchmark runner 中保持 unsupported rationale。
+- `/ahp/codex` 在线 API 文档、OpenAPI 和 coverage inventory 对齐 top-level `event_type` public contract。
+
 ## v0.7.4
 
 - L3 AgentAnalyzer 现在默认使用 multi-turn review；只有显式设置 `CS_L3_MULTI_TURN=false`、`0`、`no` 或 `off` 才会进入 legacy single-turn。

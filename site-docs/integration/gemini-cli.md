@@ -37,6 +37,8 @@ clawsentry init gemini-cli --setup --gemini-home /tmp/safe-gemini-home
 
 Gateway 不可达、fallback policy 生效，或 `clawsentry harness` 进程本身启动失败时，Gemini native hook 默认 fail-open，避免把开发工作流整体卡死。安装器生成的 managed command 会把 hook 诊断写入 `CS_HARNESS_DIAG_LOG`（未设置时丢弃），避免 Gemini CLI 把普通 stderr 文本误解析成 hook 输出。
 
+Skill Trust metadata 会优先读取 `CS_SKILL_TRUST_METADATA_PATH`，同时按 Gemini hook payload 的 `cwd` 向上查找项目 `.clawsentry/skill-trust-runtime.json` 作为 fallback。匹配到注册 skill 时，Gateway 可以使用真实 skill root path 执行 first-use scan；session replay 只保留 presented/canonical labels、framework/scope、metadata source 和 skill root hash。
+
 ## Gemini shell tool 规范化
 
 真实 Gemini CLI 在 shell 执行前会把工具名上报为 `run_shell_command`。ClawSentry 在 Gemini adapter 中将已知 shell aliases 规范化为 policy-facing `bash`，并在 payload 中保留原始字段：

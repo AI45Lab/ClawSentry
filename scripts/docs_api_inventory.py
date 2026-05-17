@@ -42,7 +42,7 @@ def package_version() -> str:
 ROUTES: list[dict[str, Any]] = [
     {"service":"gateway","method":"POST","path":"/ahp","source":"src/clawsentry/gateway/server.py:2413","group":"AHP 决策","audience":"developer","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.","markdown_ref":"api/decisions.md#post-ahp","summary":"OpenClaw/AHP JSON-RPC 同步决策入口"},
     {"service":"gateway","method":"POST","path":"/ahp/a3s","source":"src/clawsentry/gateway/server.py:2441","group":"AHP 决策","audience":"developer","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.","markdown_ref":"api/decisions.md#post-ahp-a3s","summary":"a3s-code HTTP Transport 入口"},
-    {"service":"gateway","method":"POST","path":"/ahp/codex","source":"src/clawsentry/gateway/server.py:2475","group":"AHP 决策","audience":"developer","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.","markdown_ref":"api/decisions.md#post-ahp-codex","summary":"Codex native hook / HTTP transport 入口"},
+    {"service":"gateway","method":"POST","path":"/ahp/codex","source":"src/clawsentry/gateway/server.py:2475","group":"AHP 决策","audience":"developer","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.","markdown_ref":"api/decisions.md#post-ahp-codex","summary":"Codex HTTP transport 入口"},
 
     {"service":"gateway","method":"POST","path":"/ahp/adapter-effect-result","source":"src/clawsentry/gateway/server.py:2691","group":"AHP 决策","audience":"developer|operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth; native hook subprocesses should authenticate when token is configured.","markdown_ref":"api/decisions.md#post-ahp-adapter-effect-result","summary":"记录 adapter-observed effect outcome，不修改 canonical decision"},
     {"service":"gateway","method":"POST","path":"/ahp/scope/preview","source":"src/clawsentry/gateway/server.py:3526","group":"AHP 决策","audience":"developer|operator","public_status":"public","auth":"bearer-disabled-when-empty-token","auth_note":"CS_AUTH_TOKEN empty disables Gateway bearer auth. Scope preview is capability-honest: dry-run profiles explain what would happen but do not enforce until confirmed.","markdown_ref":"api/decisions.md#post-ahp-scope-preview","summary":"预览 deterministic SessionScopeProfile 对单个 canonical event 的 allow/defer/deny reason codes"},
@@ -174,14 +174,19 @@ def _apply_curated_examples(entry: dict[str, Any]) -> None:
         }
     elif method == "POST" and path == "/ahp/codex":
         entry["request_example"] = {
-            "hook_event_name": "PreToolUse",
-            "tool_name": "Bash",
+            "event_type": "function_call",
             "session_id": "sess-codex",
-            "tool_input": {"command": "rm -rf /"},
+            "payload": {
+                "name": "bash",
+                "arguments": {"command": "rm -rf /"},
+            },
         }
         entry["response_example"] = {
-            "permissionDecision": "deny",
-            "permissionDecisionReason": "destructive command blocked by ClawSentry",
+            "result": {
+                "action": "block",
+                "reason": "Critical risk: action blocked",
+                "risk_level": "critical",
+            },
         }
     elif method == "POST" and path == "/ahp/resolve":
         entry["request_example"] = {

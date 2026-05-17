@@ -1331,6 +1331,74 @@ class TestSessionEnforcementIntegration:
         assert raw["registry_records"][0]["canonical_name"] == "search-accommodations"
         assert "source" not in raw["registry_records"][0]
 
+    async def test_gateway_redacts_pathlike_skill_trust_identity_fields_from_replay(self):
+        gw = SupervisionGateway(
+            trajectory_db_path=":memory:",
+            detection_config=DetectionConfig(mode="strict"),
+        )
+
+        await gw.handle_jsonrpc(
+            _build_jsonrpc_with_payload(
+                "s-skill-redact-pathlike-identity",
+                "read_file",
+                {
+                    "path": "/workspace/travel/itinerary_context.json",
+                    "_clawsentry_meta": {
+                        "skill_trust_raw": {
+                            "presented_name": "local-shadow-skill",
+                            "canonical_skill_id": "/home/user/private/skill",
+                            "canonical_name": "C:\\Users\\user\\skill",
+                            "framework": "/etc/passwd",
+                            "scope": "file:///tmp/skill",
+                            "tool_label": "openclaw.skills.travel",
+                            "content_hashes": {
+                                "/home/user/private/SKILL.md": "sha256:pathlike",
+                                "SKILL.md": "sha256:safe",
+                            },
+                            "registry_records": [
+                                {
+                                    "canonical_skill_id": "/home/user/private/skill",
+                                    "canonical_name": "C:\\Users\\user\\skill",
+                                    "aliases": ["file:///tmp/alias", "safe-alias"],
+                                    "content_hashes": {
+                                        "/home/user/private/SKILL.md": "sha256:pathlike",
+                                        "SKILL.md": "sha256:safe",
+                                    },
+                                    "trust_level": "trusted",
+                                    "status": "trusted",
+                                    "list_state": "allowlist",
+                                    "runtime_claim_trusted": True,
+                                }
+                            ],
+                            "skill_root_path_hash": (
+                                "sha256:"
+                                "0123456789abcdef0123456789abcdef"
+                                "0123456789abcdef0123456789abcdef"
+                            ),
+                        }
+                    },
+                },
+                req_id=1,
+            )
+        )
+
+        raw = gw.replay_session("s-skill-redact-pathlike-identity")["records"][-1]["event"][
+            "payload"
+        ]["_clawsentry_meta"]["skill_trust_raw"]
+        assert raw["presented_name"] == "local-shadow-skill"
+        assert raw["tool_label"] == "openclaw.skills.travel"
+        assert raw["skill_root_path_hash"].startswith("sha256:")
+        assert raw["content_hashes"] == {"SKILL.md": "sha256:safe"}
+        assert "canonical_skill_id" not in raw
+        assert "canonical_name" not in raw
+        assert "framework" not in raw
+        assert "scope" not in raw
+        record = raw["registry_records"][0]
+        assert "canonical_skill_id" not in record
+        assert "canonical_name" not in record
+        assert record["aliases"] == ["safe-alias"]
+        assert record["content_hash_keys"] == ["SKILL.md"]
+
     async def test_gateway_uses_owned_skill_registry_for_runtime_raw_metadata(self, tmp_path, monkeypatch):
         records = [
             SkillRegistryRecord(

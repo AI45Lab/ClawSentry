@@ -23,7 +23,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3446 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
+- **3456 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,6 +34,12 @@ pip install clawsentry[all]      # everything
 ```
 
 Requires Python >= 3.11.
+
+## What's New in v0.7.5
+
+- **Cross-CLI Skill Trust runtime binding**: Kimi CLI, Claude Code, Gemini CLI, Codex, and a3s-code attach Skill Trust runtime metadata from real skill paths and project context into Gateway evaluation.
+- **Prompt-hook parity and replay hardening**: Claude Code `UserPromptSubmit` uses prompt-block response semantics, and session replay keeps Skill Trust metadata hash/label-only.
+- **Benchmark matrix cleanup**: SkillsSafety/SKILL-INJECT docs separate raw baselines from protected pairings and document current four-framework live coverage.
 
 ## What's New in v0.7.4
 

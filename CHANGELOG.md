@@ -8,6 +8,44 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.7.5] — 2026-05-17
+
+### 修复
+
+- **Cross-CLI Skill Trust runtime binding** — Kimi CLI、Claude Code、Gemini CLI、Codex 与 a3s-code 的 hook/runtime path 现在都会把 framework、scope、canonical identity、runtime metadata source 和 skill root hash 接入 Gateway；`CS_SKILL_TRUST_METADATA_PATH` 缺失或不可读时会继续回退到项目 `.clawsentry/skill-trust-runtime.json`。
+- **Claude Code prompt hook parity** — Claude `UserPromptSubmit` 现在归一化为 `PrePrompt`，block/defer 时返回 prompt hook 支持的 top-level block shape，而不是 tool preflight 专用 `permissionDecision`。
+- **Replay metadata hardening** — session replay 只保留 replay-safe Skill Trust identity labels 和 hash；path-like canonical fields、framework/scope 注入值和原始 skill root path 不会进入公开 replay payload。
+
+### 改进
+
+- **Kimi CLI setup metadata contract** — Kimi managed hooks 现在随 command 写入 `CS_KIMI_SKILLS_DIR`、`CS_SKILL_TRUST_REGISTRY_PATH` 和 `CS_SKILL_TRUST_METADATA_PATH` 默认值，确保 hook 进程能找到真实 skill 目录和 runtime metadata。
+- **Benchmark matrix compatibility** — SkillsSafety live matrix 明确为 Codex、Claude Code、Kimi CLI、Gemini CLI 四个 framework；`a3s-code` 保持 unsupported rationale，直到上游 runner 提供 native a3s-code agent command、sandbox skill layout 和 AHP transport runner。
+- **Raw baseline identity cleanup** — SkillsSafety raw baseline rows 现在使用独立 `*-raw-baseline` id，并显式声明 `baseline_for_pairing` 与 `source_defense=raw`，避免和 protected pairings 混用。
+- **Codex HTTP docs contract** — `/ahp/codex` 文档、OpenAPI 和 coverage inventory 对齐 public HTTP contract：top-level `event_type` 输入与 `{"result": ...}` 响应 wrapper。
+
+### 文档
+
+- 更新 Kimi CLI、Claude Code、Gemini CLI 集成页，说明 Skill Trust runtime metadata binding、cwd fallback 和 prompt/tool hook 支持边界。
+- 更新 benchmark 当前计划、配置说明、SKILL-INJECT runbook/user guide，明确四个 CLI framework 的支持范围与 `a3s-code` unsupported 边界。
+- 更新 README、PyPI README、在线首页、在线 changelog 和开发动态日志到 v0.7.5 发布口径。
+
+### 测试与验证
+
+- Python 完整回归：`python -m pytest src/clawsentry/tests/ -q --tb=short` → `3625 passed, 24 skipped`。
+- 公开 Python release surface：公开仓库 `python -m pytest -q --tb=short` → `3456 passed, 16 skipped`。
+- Web UI：`npm test -- --run` → `56 passed`；`npm run build` → PASS。
+- Docs API inventory：`python scripts/docs_api_inventory.py validate` → PASS。
+- SkillsSafety launcher generation：`python benchmarks/scripts/skills_safety_bench_matrix.py emit-scripts --check` → PASS。
+- SkillsSafety config sweep launcher generation：`python benchmarks/scripts/skills_safety_bench_live_config_sweep.py emit-scripts --check` → PASS。
+- SKILL-INJECT runnable pair listing：`python benchmarks/scripts/skill_inject_batch.py list-pairs --runnable-only` → PASS，覆盖 `codex`、`claude-code`、`gemini-cli`、`kimi-cli`，并输出 `a3s-code` unsupported rationale。
+- `git diff --check`、`mkdocs build --strict`、`python -m build` → PASS。
+- Subagent review：core runtime/replay/API docs final re-review → no findings；benchmark/SKILL-INJECT matrix re-review → no findings after API inventory regeneration。
+
+### 边界
+
+- 本版本修复 CLI/runtime 接线、文档合同和 benchmark matrix 口径，不新增完整 ASR/TSR/TFR leaderboard 或 raw-vs-protected 评测结论。
+- `a3s-code` 仍是 ClawSentry AHP reference integration；但当前 SkillsSafety/SKILL-INJECT 上游 runner 没有可执行 a3s-code lane，因此不把它列入这两组 benchmark live matrix。
+
 ## [0.7.4] — 2026-05-16
 
 ### 改进
@@ -1596,6 +1634,7 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.7.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.5
 [0.7.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.4
 [0.7.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.3
 [0.7.2]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.2

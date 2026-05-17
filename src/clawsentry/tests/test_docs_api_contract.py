@@ -239,6 +239,36 @@ def test_openapi_artifact_matches_public_coverage_entries() -> None:
             assert operation.get("security") == [{"BearerAuth": []}]
 
 
+def test_codex_public_docs_use_http_event_type_contract() -> None:
+    spec = json.loads(OPENAPI_FILE.read_text(encoding="utf-8"))
+    operation = spec["paths"]["/ahp/codex"]["post"]
+    body = operation["requestBody"]["content"]["application/json"]["example"]
+
+    assert body["event_type"] == "function_call"
+    assert "hook_type" not in body
+    assert "hook_event_name" not in body
+    assert isinstance(body["payload"], dict)
+    response = operation["responses"]["200"]["content"]["application/json"]["example"]
+    assert response["result"]["action"] in {"allow", "block", "continue", "defer"}
+    assert "permissionDecision" not in response
+
+    coverage = {
+        (entry["service"], entry["method"], entry["path"]): entry
+        for entry in _coverage()
+    }
+    coverage_body = coverage[("gateway", "POST", "/ahp/codex")]["request_example"]
+    assert coverage_body == body
+    coverage_response = coverage[("gateway", "POST", "/ahp/codex")]["response_example"]
+    assert coverage_response == response
+
+    decisions = (REPO_ROOT / "site-docs" / "api" / "decisions.md").read_text(encoding="utf-8")
+    section = decisions.split("## POST /ahp/codex", 1)[1].split("\n---", 1)[0]
+    assert '"event_type": "function_call"' in section
+    assert '"result": {' in section
+    assert '"hook_type": "function_call"' not in section
+    assert '"hook_event_name": "PreToolUse"' not in section
+
+
 def test_openapi_info_version_matches_package_version() -> None:
     spec = json.loads(OPENAPI_FILE.read_text(encoding="utf-8"))
     pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")

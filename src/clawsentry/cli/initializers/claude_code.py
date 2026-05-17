@@ -14,6 +14,7 @@ _CLAWSENTRY_HOOK_MARKER = "clawsentry-harness"
 # Hook types ClawSentry monitors
 _HOOK_TYPES: dict[str, bool] = {
     "PreToolUse": True,     # blocking
+    "UserPromptSubmit": True,  # blocking
     "PostToolUse": False,   # async
     "SessionStart": False,
     "SessionEnd": False,

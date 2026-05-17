@@ -48,13 +48,22 @@ class KimiCLIInitializer:
             force=force,
         )
         kimi_config_path = _kimi_config_path(kimi_home=kimi_home)
+        runtime_context = _kimi_runtime_context(kimi_config_path)
         env_vars["CS_KIMI_CONFIG_PATH"] = str(kimi_config_path)
         env_vars["CS_KIMI_HOOKS_ENABLED"] = "true"
+        env_vars["CS_KIMI_SKILLS_DIR"] = runtime_context["CS_KIMI_SKILLS_DIR"]
+        env_vars["CS_SKILL_TRUST_REGISTRY_PATH"] = runtime_context["CS_SKILL_TRUST_REGISTRY_PATH"]
+        env_vars["CS_SKILL_TRUST_METADATA_PATH"] = runtime_context["CS_SKILL_TRUST_METADATA_PATH"]
         if os.environ.get("KIMI_SHARE_DIR"):
             env_vars["KIMI_SHARE_DIR"] = str(kimi_config_path.parent)
 
         next_steps = [
             f"Optional local secrets: clawsentry start --env-file {LOCAL_ENV_FILE_EXAMPLE}",
+            (
+                'Optional skill trust: clawsentry skill-trust register-dir --skills-dir "$CS_KIMI_SKILLS_DIR" '
+                '--registry "$CS_SKILL_TRUST_REGISTRY_PATH" --metadata "$CS_SKILL_TRUST_METADATA_PATH" '
+                "--framework kimi-cli --scope workspace"
+            ),
             "clawsentry gateway    # start Gateway for Kimi hook decisions",
             "clawsentry init kimi-cli --setup --dry-run    # preview Kimi config.toml hook changes",
             "clawsentry init kimi-cli --setup              # install ClawSentry-managed Kimi hooks",
@@ -82,8 +91,10 @@ class KimiCLIInitializer:
         marker command are replaced.
         """
         config_path = _kimi_config_path(kimi_home=kimi_home)
+        runtime_context = _kimi_runtime_context(config_path)
         changes = [
             f"Install ClawSentry managed Kimi hook entries in {config_path}",
+            f"Bind Kimi skill-trust runtime context to {runtime_context['CS_KIMI_SKILLS_DIR']}",
             "Preserve non-ClawSentry Kimi hooks and TOML content",
         ]
         files_modified = [config_path]
@@ -100,7 +111,7 @@ class KimiCLIInitializer:
 
         config_path.parent.mkdir(parents=True, exist_ok=True)
         existing = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
-        merged = _merge_kimi_hooks(existing)
+        merged = _merge_kimi_hooks(existing, runtime_context=runtime_context)
         config_path.write_text(merged, encoding="utf-8")
         return SetupResult(
             changes_applied=changes,
@@ -152,10 +163,38 @@ def _kimi_config_path(*, kimi_home: Path | None = None) -> Path:
     return Path.home() / ".kimi" / "config.toml"
 
 
-def _merge_kimi_hooks(existing: str) -> str:
+def _kimi_runtime_context(kimi_config_path: Path) -> dict[str, str]:
+    runtime_dir = kimi_config_path.parent / "clawsentry"
+    return {
+        "CS_KIMI_CONFIG_PATH": str(kimi_config_path),
+        "KIMI_SHARE_DIR": str(kimi_config_path.parent),
+        "CS_KIMI_SKILLS_DIR": os.environ.get(
+            "CS_KIMI_SKILLS_DIR",
+            str(Path.home() / ".claude" / "skills"),
+        ),
+        "CS_SKILL_TRUST_REGISTRY_PATH": os.environ.get(
+            "CS_SKILL_TRUST_REGISTRY_PATH",
+            str(runtime_dir / "skill-registry.json"),
+        ),
+        "CS_SKILL_TRUST_METADATA_PATH": os.environ.get(
+            "CS_SKILL_TRUST_METADATA_PATH",
+            str(runtime_dir / "skill-trust-raw.json"),
+        ),
+    }
+
+
+def _merge_kimi_hooks(existing: str, *, runtime_context: dict[str, str] | None = None) -> str:
     cleaned, _removed = _remove_clawsentry_kimi_hook_blocks(existing)
     cleaned = cleaned.rstrip()
-    blocks = "\n\n".join(_build_kimi_hook_block(event, matcher, description) for event, matcher, description in _KIMI_HOOK_EVENTS)
+    blocks = "\n\n".join(
+        _build_kimi_hook_block(
+            event,
+            matcher,
+            description,
+            runtime_context=runtime_context or {},
+        )
+        for event, matcher, description in _KIMI_HOOK_EVENTS
+    )
     if cleaned:
         return f"{cleaned}\n\n{blocks}\n"
     return f"{blocks}\n"
@@ -188,17 +227,51 @@ def _remove_clawsentry_kimi_hook_blocks(text: str) -> tuple[str, int]:
     return output, removed
 
 
-def _build_kimi_hook_block(event: str, matcher: str, description: str) -> str:
-    command = _KIMI_HOOK_COMMAND_SYNC if event in _KIMI_SYNC_EVENTS else _KIMI_HOOK_COMMAND_ASYNC
+def _build_kimi_hook_block(
+    event: str,
+    matcher: str,
+    description: str,
+    *,
+    runtime_context: dict[str, str],
+) -> str:
+    command = _kimi_hook_command(event, runtime_context=runtime_context)
     fields = [
         "[[hooks]]",
         f'event = "{_toml_escape(event)}"',
         f'matcher = "{_toml_escape(matcher)}"',
-        f"command = '{command}'",
+        f'command = "{_toml_escape(command)}"',
         "timeout = 30",
         f'# {description}',
     ]
     return "\n".join(fields)
+
+
+def _kimi_hook_command(event: str, *, runtime_context: dict[str, str]) -> str:
+    command = _KIMI_HOOK_COMMAND_SYNC if event in _KIMI_SYNC_EVENTS else _KIMI_HOOK_COMMAND_ASYNC
+    assignments = [
+        _shell_default_env_assignment(name, runtime_context[name])
+        for name in (
+            "CS_KIMI_CONFIG_PATH",
+            "KIMI_SHARE_DIR",
+            "CS_KIMI_SKILLS_DIR",
+            "CS_SKILL_TRUST_REGISTRY_PATH",
+            "CS_SKILL_TRUST_METADATA_PATH",
+        )
+        if runtime_context.get(name)
+    ]
+    if not assignments:
+        return command
+    return f"{' '.join(assignments)} {command}"
+
+
+def _shell_default_env_assignment(name: str, value: str) -> str:
+    escaped = (
+        value.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("$", "\\$")
+        .replace("`", "\\`")
+    )
+    return f'{name}="${{{name}:-{escaped}}}"'
 
 
 def _toml_escape(value: str) -> str:

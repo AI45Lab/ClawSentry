@@ -393,6 +393,12 @@ def test_skill_trust_register_dir_writes_registry_and_runtime_metadata(
     assert stdout["registry"] == str(registry)
     assert len(registry_payload["records"]) == 2
     assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["provenance_label_conflict"] is True
+    assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["canonical_skill_id"]
+    assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["canonical_name"] == "search-accommodation"
+    assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["framework"] == "codex"
+    assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["scope"] == "workspace"
+    assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["skill_root_path"] == str(alias)
+    assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["skill_root_path_hash"].startswith("sha256:")
     assert metadata_payload["preflight_actions"][0]["blocked_skills"] == ["search-accommodation"]
 
 

@@ -1,12 +1,12 @@
 # ClawSentry — AHP Supervision Gateway
 
-> **Python 3.11+** | **3446 public Python regression tests + 56 Web UI tests** | Protocol `ahp.1.0`
+> **Python 3.11+** | **3456 public Python regression tests + 56 Web UI tests** | Protocol `ahp.1.0`
 
 **ClawSentry** is the Python reference implementation of AHP (Agent Harness Protocol) — a unified security supervision gateway for multi-agent frameworks. Deployed as a sidecar, it normalizes runtime events from different frameworks (a3s-code, Claude Code, Codex, Gemini CLI, Kimi CLI, OpenClaw) into a unified protocol, passes them through a three-layer progressive risk evaluation pipeline, and produces real-time decisions (allow / block / modify / defer) with complete audit trails.
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.7.4)**: L3 now defaults to multi-turn Agent review. Set `CS_L3_MULTI_TURN=false`, `0`, `no`, or `off` only when you intentionally need the legacy single-turn path.
+**Current release highlight (v0.7.5)**: Cross-CLI Skill Trust runtime metadata is now bound to real skill paths and runtime context across Kimi CLI, Claude Code, Gemini CLI, Codex, and a3s-code, while replay output remains hash/label-only.
 
 ---
 
@@ -479,7 +479,7 @@ src/clawsentry/
 |-- ui/                                # Web security dashboard (React SPA)
 |   |-- src/                           # TypeScript source
 |   +-- dist/                          # Pre-built artifacts (shipped with pip)
-+-- tests/                             # Public test suite (3446 Python regression tests)
++-- tests/                             # Public Python regression suite (3456 passed / 16 skipped)
 ```
 
 ---
@@ -620,7 +620,7 @@ pip install -e ".[dev]"
 
 # Full suite
 python -m pytest src/clawsentry/tests/ -v --tb=short
-# Expected: current public release validation 3446 passed, 16 skipped
+# Expected: current public release validation 3456 passed, 16 skipped
 
 # E2E (requires LLM API key)
 A3S_SDK_E2E=1 python -m pytest src/clawsentry/tests/ -v --tb=short

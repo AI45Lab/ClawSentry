@@ -23,6 +23,8 @@ clawsentry init kimi-cli --setup --dry-run --kimi-home "$KIMI_SHARE_DIR"
 clawsentry init kimi-cli --setup --kimi-home "$KIMI_SHARE_DIR"
 ```
 
+Setup 生成的 managed hook command 会带上 Skill Trust 运行时默认路径：`CS_KIMI_SKILLS_DIR`、`CS_SKILL_TRUST_REGISTRY_PATH` 和 `CS_SKILL_TRUST_METADATA_PATH`。如果该 env 指向的 metadata 文件还不存在，harness 会继续按当前项目 `cwd` 向上查找 `.clawsentry/skill-trust-runtime.json`，因此隔离 benchmark、项目级注册和用户级 Kimi home 可以共用同一套 Gateway 风险上下文。
+
 ## Hook 覆盖范围
 
 | Kimi hook | ClawSentry 命令 | 支持语义 | 适合用途 |
@@ -46,6 +48,8 @@ Kimi 的工具名会保留在 payload 中，同时对已知 shell aliases 规范
 - `payload.kimi_tool_name`: 原始 Kimi 工具名，例如 `Shell`
 - `payload._clawsentry_meta.raw_tool_name`: 原始工具名
 - `payload._clawsentry_meta.kimi_effect_capability`: `native_allow_block_only`
+
+当 tool command 或 prompt 文本能匹配已注册 skill 时，payload 还会包含 replay-safe 的 Skill Trust 摘要，例如 presented name、canonical identity、framework、scope、metadata source 和 skill root hash。原始 skill root path 只用于 Gateway 内部 first-use scan，不写入公开 replay。
 
 ## 能力边界
 

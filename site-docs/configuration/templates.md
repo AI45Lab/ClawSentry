@@ -220,6 +220,12 @@ CS_ANTI_BYPASS_SIMILARITY_THRESHOLD=0.92
 
 适合 benchmark、敏感仓库和团队共享 skill registry。先生成 registry/runtime metadata，再通过 env 启用 Gateway 解析。完整说明见 [Skill Trust / Registry](../advanced/skill-trust.md)。
 
+!!! warning "SkillsSafetyBench balanced default"
+    下面的策略块是严格 supply-chain 模板。SkillsSafetyBench 平衡主跑应使用
+    `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION=force_l3`，并把
+    `CS_CAPABILITY_NARROWING_ENABLED` / `CS_AGENT_SAFETY_FEEDBACK_ENABLED`
+    留给单独消融，除非该批实验明确在测试这些反馈/收紧机制。
+
 ```bash
 clawsentry skill-trust register-dir \
   --skills-dir ~/.codex/skills \

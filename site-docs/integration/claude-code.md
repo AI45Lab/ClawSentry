@@ -127,6 +127,16 @@ ClawSentry 在 `~/.claude/settings.json` 中注入以下 hook 配置：
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "clawsentry-harness --framework claude-code"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "",
@@ -172,13 +182,16 @@ ClawSentry 在 `~/.claude/settings.json` 中注入以下 hook 配置：
 | Hook 类型 | 阻塞？ | `--async` | 说明 |
 |-----------|:------:|:---------:|------|
 | `PreToolUse` | :material-check: | 否 | **核心** — 工具执行前拦截，等待决策 |
+| `UserPromptSubmit` | :material-check: | 否 | prompt 进入模型前拦截，返回 prompt hook 支持的 block shape |
 | `PostToolUse` | :material-close: | 是 | 工具执行后异步审计，不阻塞执行 |
 | `SessionStart` | :material-close: | 是 | 会话启动，异步记录 |
 | `SessionEnd` | :material-close: | 是 | 会话结束，异步记录 |
 
 !!! info "阻塞 vs 异步"
-    - **阻塞事件**（`PreToolUse`）：Claude Code 等待 ClawSentry 返回判决后才执行工具。判决为 `block` 时工具调用被拒绝。
+    - **阻塞事件**（`PreToolUse`、`UserPromptSubmit`）：Claude Code 等待 ClawSentry 返回判决后才继续。工具事件判决为 `block` 时工具调用被拒绝；prompt 事件判决为 `block` 时 prompt 不会继续进入模型。
     - **异步事件**（`PostToolUse`、`SessionStart`、`SessionEnd`）：harness 使用 `--async` 标志立即返回，后台异步发送审计数据，不影响 Claude Code 执行流程。
+
+Skill Trust metadata 会按当前项目 `cwd` 向上查找 `.clawsentry/skill-trust-runtime.json`，并和 env 指定的 `CS_SKILL_TRUST_METADATA_PATH` 共同作为 runtime metadata 来源。Gateway 使用真实 skill root path 做 first-use scan，但 replay 只保留 presented/canonical labels、framework/scope、metadata source 和 hash。
 
 ### 通信链路
 

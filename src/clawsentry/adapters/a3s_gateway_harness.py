@@ -61,6 +61,7 @@ _EVENT_TO_HOOK: dict[str, str] = {
     "post_action": "PostToolUse",
     "post_tool_use": "PostToolUse",
     "pre_prompt": "PrePrompt",
+    "user_prompt_submit": "PrePrompt",
     "post_response": "PostResponse",
     "idle": "Idle",
     "heartbeat": "Heartbeat",
@@ -335,33 +336,76 @@ def _codex_skill_names_from_payload_texts(
 
 
 def _load_codex_skill_runtime_metadata(skill_name: str) -> dict[str, Any] | None:
-    raw_by_skill = _load_codex_skill_runtime_metadata_bundle()
+    raw_by_skill, _metadata_source = _load_codex_skill_runtime_metadata_bundle()
     raw = raw_by_skill.get(skill_name)
     if not isinstance(raw, dict):
         return None
     return copy.deepcopy(raw)
 
 
-def _load_codex_skill_runtime_metadata_bundle() -> dict[str, Any]:
+def _runtime_metadata_paths_from_context(
+    payload: dict[str, Any] | None = None,
+    *,
+    framework: str = "codex",
+) -> list[tuple[Path, str]]:
+    paths: list[tuple[Path, str]] = []
     metadata_path = os.environ.get("CS_SKILL_TRUST_METADATA_PATH")
-    if not metadata_path:
+    if metadata_path:
+        paths.append((Path(metadata_path).expanduser(), "env_runtime_metadata"))
+
+    payload = payload or {}
+    cwd = payload.get("cwd")
+    if isinstance(cwd, str) and cwd.strip():
+        start = Path(cwd).expanduser()
+        for root in (start, *start.parents):
+            paths.append((root / ".clawsentry" / "skill-trust-runtime.json", "cwd_runtime_metadata"))
+
+    if framework == "codex":
         codex_home = os.environ.get("CODEX_HOME")
         if codex_home:
-            metadata_path = str(Path(codex_home) / "clawsentry" / "skill-trust-raw.json")
-    if not metadata_path:
-        return {}
-    try:
-        payload = json.loads(Path(metadata_path).read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    raw_by_skill = payload.get("raw_metadata_by_skill") if isinstance(payload, dict) else None
-    if not isinstance(raw_by_skill, dict):
-        return {}
-    return raw_by_skill
+            paths.append((
+                Path(codex_home).expanduser() / "clawsentry" / "skill-trust-raw.json",
+                "codex_home_runtime_metadata",
+            ))
+    return paths
 
 
-def _enrich_codex_skill_trust_from_runtime_bundle(payload: dict[str, Any]) -> None:
-    raw_by_skill = _load_codex_skill_runtime_metadata_bundle()
+def _load_skill_runtime_metadata_bundle(
+    payload: dict[str, Any] | None = None,
+    *,
+    framework: str = "codex",
+) -> tuple[dict[str, Any], str | None]:
+    for metadata_path, metadata_source in _runtime_metadata_paths_from_context(
+        payload,
+        framework=framework,
+    ):
+        if not metadata_path.is_file():
+            continue
+        try:
+            bundle = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        raw_by_skill = bundle.get("raw_metadata_by_skill") if isinstance(bundle, dict) else None
+        if isinstance(raw_by_skill, dict):
+            return raw_by_skill, metadata_source
+    return {}, None
+
+
+def _load_codex_skill_runtime_metadata_bundle() -> tuple[dict[str, Any], str | None]:
+    return _load_skill_runtime_metadata_bundle(framework="codex")
+
+
+def _enrich_skill_trust_from_runtime_bundle(
+    payload: dict[str, Any],
+    *,
+    framework: str,
+) -> None:
+    raw_by_skill, metadata_source = _load_skill_runtime_metadata_bundle(
+        payload,
+        framework=framework,
+    )
+    if not raw_by_skill:
+        return
     skill_names = _codex_skill_names_from_payload_texts(
         payload,
         known_skill_names={str(name) for name in raw_by_skill},
@@ -376,21 +420,35 @@ def _enrich_codex_skill_trust_from_runtime_bundle(payload: dict[str, Any]) -> No
     if not candidates:
         return
     _index, skill_name, raw = min(candidates, key=lambda item: item[0])
-    if raw is None:
-        return
     raw = copy.deepcopy(raw)
+    lineage_raw = {
+        "presented_name": raw.get("presented_name") or skill_name,
+        "provenance_claim": raw.get("provenance_claim"),
+        "admission_scan_id": raw.get("admission_scan_id"),
+        "policy_fingerprint": raw.get("policy_fingerprint"),
+        "metadata_source": metadata_source or "runtime_metadata",
+    }
+    if raw.get("skill_root_path"):
+        lineage_raw["skill_root_path"] = raw.get("skill_root_path")
     _merge_clawsentry_meta(
         payload,
         {
             "skill_trust_raw": raw,
-            "skill_lineage_raw": {
-                "presented_name": raw.get("presented_name") or skill_name,
-                "provenance_claim": raw.get("provenance_claim"),
-                "admission_scan_id": raw.get("admission_scan_id"),
-                "policy_fingerprint": raw.get("policy_fingerprint"),
-            },
+            "skill_lineage_raw": lineage_raw,
         },
     )
+
+
+def _enrich_codex_skill_trust_from_runtime_bundle(payload: dict[str, Any]) -> None:
+    _enrich_skill_trust_from_runtime_bundle(payload, framework="codex")
+
+
+def _enrich_host_skill_trust_from_runtime_bundle(
+    payload: dict[str, Any],
+    *,
+    framework: str,
+) -> None:
+    _enrich_skill_trust_from_runtime_bundle(payload, framework=framework)
 
 
 def _build_ahp_compat_meta(
@@ -816,6 +874,10 @@ class A3SGatewayHarness:
                     preserved_meta["project_overrides"] = project_overrides
                 if preserved_meta:
                     _merge_clawsentry_meta(evt.payload, preserved_meta)
+                _enrich_host_skill_trust_from_runtime_bundle(
+                    evt.payload,
+                    framework=self.adapter.source_framework,
+                )
 
             decision = await self.adapter.request_decision(evt)
             result = _decision_to_ahp_result(decision)
@@ -884,6 +946,8 @@ class A3SGatewayHarness:
                     content = _extract_tool_input_content(tool_input)
                     if content:
                         payload["content"] = content
+            if isinstance(msg.get("prompt"), str):
+                payload["prompt"] = msg["prompt"]
             # Carry over other context fields
             for key in ("cwd", "working_directory", "permission_mode", "transcript_path"):
                 if key in msg:
@@ -970,6 +1034,8 @@ class A3SGatewayHarness:
 
         if project_meta and evt.payload is not None:
             _merge_clawsentry_meta(evt.payload, project_meta)
+        if evt.payload is not None:
+            _enrich_host_skill_trust_from_runtime_bundle(evt.payload, framework="kimi-cli")
 
         decision = await self.adapter.request_decision(evt)
         result = _decision_to_ahp_result(decision)
@@ -1017,6 +1083,8 @@ class A3SGatewayHarness:
 
         if project_meta and evt.payload is not None:
             _merge_clawsentry_meta(evt.payload, project_meta)
+        if evt.payload is not None:
+            _enrich_host_skill_trust_from_runtime_bundle(evt.payload, framework="gemini-cli")
 
         decision = await self.adapter.request_decision(evt)
         result = _decision_to_ahp_result(decision)
@@ -1297,13 +1365,17 @@ class A3SGatewayHarness:
         if action in ("block", "defer"):
             reason = result.get("reason", "Blocked by ClawSentry security policy")
             risk_level = metadata.get("risk_level", "unknown")
+            message = f"[ClawSentry] {reason} (risk: {risk_level})"
+            if hook_event_name == "UserPromptSubmit":
+                return {
+                    "decision": "block",
+                    "reason": message,
+                }
             return {
                 "hookSpecificOutput": {
                     "hookEventName": hook_event_name,
                     "permissionDecision": "deny",
-                    "permissionDecisionReason": (
-                        f"[ClawSentry] {reason} (risk: {risk_level})"
-                    ),
+                    "permissionDecisionReason": message,
                 },
             }
 

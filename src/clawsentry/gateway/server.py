@@ -327,17 +327,62 @@ def _is_sha256_digest(value: str) -> bool:
     return re.fullmatch(r"sha256:[0-9a-fA-F]{64}", value.strip()) is not None
 
 
+def _is_pathlike_label(value: str) -> bool:
+    return (
+        "/" in value
+        or "\\" in value
+        or value.startswith("~")
+        or "://" in value
+        or re.search(r"\b[A-Za-z]:\\", value) is not None
+    )
+
+
+def _safe_identity_label(value: Any, *, max_len: int = 256) -> str | None:
+    if not isinstance(value, str):
+        return None
+    label = value.strip()
+    if not label or len(label) > max_len or _is_pathlike_label(label):
+        return None
+    return label[:max_len]
+
+
 def _safe_skill_trust_raw_value(key: str, value: Any) -> Any | None:
-    if key in {"presented_name", "provenance_claim", "tool_label"} and isinstance(value, str):
+    if key in {
+        "presented_name",
+        "canonical_skill_id",
+        "canonical_name",
+        "provenance_claim",
+        "tool_label",
+    }:
+        return _safe_identity_label(value)
+    if key == "framework":
+        framework = _safe_identity_label(value, max_len=64)
+        if framework in {
+            "a3s-code",
+            "claude-code",
+            "codex",
+            "gemini-cli",
+            "kimi-cli",
+            "openclaw",
+        }:
+            return framework
+        return None
+    if key == "scope":
+        scope = _safe_identity_label(value, max_len=64)
+        if scope in {"benchmark", "global", "project", "user", "workspace"}:
+            return scope
+        return None
+    if key == "skill_root_path_hash" and isinstance(value, str) and _is_sha256_digest(value):
         return value[:256]
     if key == "gateway_owned_metadata" and isinstance(value, bool):
         return value
     if key == "content_hashes" and isinstance(value, dict):
-        return {
-            str(name)[:120]: str(digest)[:256]
-            for name, digest in value.items()
-            if isinstance(name, str) and isinstance(digest, str)
-        }
+        safe_hashes: dict[str, str] = {}
+        for name, digest in value.items():
+            safe_name = _safe_identity_label(name, max_len=120)
+            if safe_name and isinstance(digest, str):
+                safe_hashes[safe_name] = digest[:256]
+        return safe_hashes
     if key == "control_language_findings" and isinstance(value, list):
         return [str(item)[:120] for item in value[:20] if isinstance(item, str)]
     if key == "provenance_label_conflict" and isinstance(value, bool):
@@ -366,11 +411,14 @@ def _redact_skill_trust_raw_from_event(event: dict[str, Any]) -> dict[str, Any] 
         for item in records_payload[:20]:
             if not isinstance(item, dict):
                 continue
-            record_summary = {
-                key: str(item[key])[:256]
-                for key in ("canonical_skill_id", "canonical_name", "policy_fingerprint")
-                if isinstance(item.get(key), str)
-            }
+            record_summary: dict[str, Any] = {}
+            for key in ("canonical_skill_id", "canonical_name"):
+                safe_value = _safe_identity_label(item.get(key))
+                if safe_value is not None:
+                    record_summary[key] = safe_value
+            policy_fingerprint = item.get("policy_fingerprint")
+            if isinstance(policy_fingerprint, str):
+                record_summary["policy_fingerprint"] = policy_fingerprint[:256]
             record_summary.update({
                 "trust_level": "local_unreviewed",
                 "status": "local_unreviewed",
@@ -379,17 +427,24 @@ def _redact_skill_trust_raw_from_event(event: dict[str, Any]) -> dict[str, Any] 
             })
             aliases = item.get("aliases")
             if isinstance(aliases, list):
-                record_summary["aliases"] = [
-                    str(alias)[:120] for alias in aliases[:20] if isinstance(alias, str)
+                safe_aliases = [
+                    safe_alias
+                    for alias in aliases[:20]
+                    if (safe_alias := _safe_identity_label(alias, max_len=120)) is not None
                 ]
+                if safe_aliases:
+                    record_summary["aliases"] = safe_aliases
             content_hashes = item.get("content_hashes")
             if isinstance(content_hashes, dict):
-                record_summary["content_hash_keys"] = [
-                    name[:120]
+                safe_hash_keys = [
+                    safe_name
                     for name in sorted(
                         key for key in content_hashes if isinstance(key, str)
                     )[:20]
+                    if (safe_name := _safe_identity_label(name, max_len=120)) is not None
                 ]
+                if safe_hash_keys:
+                    record_summary["content_hash_keys"] = safe_hash_keys
             if record_summary:
                 record_summaries.append(record_summary)
         if record_summaries:
@@ -630,12 +685,17 @@ def _gateway_owned_skill_trust_metadata(presented_name: Any) -> dict[str, Any]:
             owned = {
                 field: value[field]
                 for field in (
+                    "canonical_skill_id",
+                    "canonical_name",
+                    "framework",
+                    "scope",
                     "control_language_findings",
                     "provenance_label_conflict",
                     "admission_scan_id",
                     "admission_risk",
                     "policy_fingerprint",
                     "skill_root_path",
+                    "skill_root_path_hash",
                 )
                 if field in value
             }

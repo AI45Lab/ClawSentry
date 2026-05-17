@@ -321,12 +321,18 @@ def build_skill_trust_bundle(
         )
         raw_by_skill[root.name] = {
             "presented_name": root.name,
+            "canonical_skill_id": record.canonical_skill_id,
+            "canonical_name": record.canonical_name,
+            "framework": framework,
+            "scope": scope,
             "content_hashes": report.content_hashes,
             "control_language_findings": _control_language_findings_for_report(report),
             "provenance_claim": _first_script_label(root),
             "provenance_label_conflict": False,
             "admission_scan_id": report.scan_id,
             "admission_risk": report.admission_risk.value,
+            "skill_root_path": str(root.resolve()),
+            "skill_root_path_hash": record.source["path_hash"],
         }
 
     preflight_actions: list[dict[str, Any]] = []

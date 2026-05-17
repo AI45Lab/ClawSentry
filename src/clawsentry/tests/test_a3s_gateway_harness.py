@@ -108,6 +108,288 @@ async def test_jsonrpc_post_response_literal_normalizes_to_post_response():
 
 
 @pytest.mark.asyncio
+async def test_claude_native_user_prompt_submit_routes_as_pre_prompt():
+    from unittest.mock import AsyncMock
+
+    adapter = A3SCodeAdapter(
+        uds_path="/tmp/nonexistent-a3s-harness.sock",
+        source_framework="claude-code",
+    )
+    harness = A3SGatewayHarness(adapter=adapter)
+    adapter.request_decision = AsyncMock(
+        return_value=CanonicalDecision(
+            decision=DecisionVerdict.ALLOW,
+            reason="prompt allowed",
+            policy_id="test-policy",
+            risk_level=RiskLevel.LOW,
+            decision_source=DecisionSource.POLICY,
+            final=True,
+        )
+    )
+
+    response = await harness.dispatch_async(
+        {
+            "session_id": "sess-claude-prompt",
+            "hook_event_name": "UserPromptSubmit",
+            "prompt": "Review this prompt before model submission.",
+            "cwd": "/workspace/project",
+        }
+    )
+
+    assert response is None
+    event = adapter.request_decision.await_args.args[0]
+    assert event.event_type == EventType.PRE_PROMPT
+    assert event.event_subtype == "PrePrompt"
+    assert event.payload["prompt"] == "Review this prompt before model submission."
+
+
+@pytest.mark.asyncio
+async def test_claude_native_user_prompt_submit_block_returns_prompt_block_shape():
+    from unittest.mock import AsyncMock
+
+    adapter = A3SCodeAdapter(
+        uds_path="/tmp/nonexistent-a3s-harness.sock",
+        source_framework="claude-code",
+    )
+    harness = A3SGatewayHarness(adapter=adapter)
+    adapter.request_decision = AsyncMock(
+        return_value=CanonicalDecision(
+            decision=DecisionVerdict.BLOCK,
+            reason="prompt contains a secret",
+            policy_id="test-policy",
+            risk_level=RiskLevel.CRITICAL,
+            decision_source=DecisionSource.POLICY,
+            final=True,
+        )
+    )
+
+    response = await harness.dispatch_async(
+        {
+            "session_id": "sess-claude-prompt-block",
+            "hook_event_name": "UserPromptSubmit",
+            "prompt": "my key is sk-test",
+            "cwd": "/workspace/project",
+        }
+    )
+
+    assert response == {
+        "decision": "block",
+        "reason": "[ClawSentry] prompt contains a secret (risk: critical)",
+    }
+
+
+@pytest.mark.asyncio
+async def test_kimi_native_hook_enriches_skill_trust_from_cwd_runtime_metadata(tmp_path, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    skill_root = tmp_path / "skills" / "local-shadow-skill"
+    scripts = skill_root / "scripts"
+    scripts.mkdir(parents=True)
+    (skill_root / "SKILL.md").write_text(
+        "---\nname: local-shadow-skill\n---\nRead local notes.\n",
+        encoding="utf-8",
+    )
+    runtime_dir = tmp_path / ".clawsentry"
+    runtime_dir.mkdir()
+    (runtime_dir / "skill-trust-runtime.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "clawsentry.skill_trust_bundle.v1",
+                "framework": "kimi-cli",
+                "raw_metadata_by_skill": {
+                    "local-shadow-skill": {
+                        "presented_name": "local-shadow-skill",
+                        "admission_scan_id": "scan-kimi-1",
+                        "admission_risk": "low",
+                        "policy_fingerprint": "sha256:policy-kimi",
+                        "skill_root_path": str(skill_root),
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("CS_SKILL_TRUST_METADATA_PATH", raising=False)
+
+    adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent-a3s-harness.sock")
+    adapter.source_framework = "kimi-cli"
+    harness = A3SGatewayHarness(adapter=adapter)
+    adapter.request_decision = AsyncMock(
+        return_value=CanonicalDecision(
+            decision=DecisionVerdict.ALLOW,
+            reason="kimi skill trust bound",
+            policy_id="test-policy",
+            risk_level=RiskLevel.LOW,
+            decision_source=DecisionSource.POLICY,
+            final=True,
+        )
+    )
+
+    await harness.dispatch_async(
+        {
+            "session_id": "sess-kimi-skill",
+            "hook_event_name": "PreToolUse",
+            "tool_name": "Shell",
+            "tool_input": {
+                "command": f"python {scripts / 'run.py'}",
+            },
+            "cwd": str(tmp_path),
+        }
+    )
+
+    event = adapter.request_decision.await_args.args[0]
+    meta = event.payload["_clawsentry_meta"]
+    assert meta["skill_trust_raw"]["presented_name"] == "local-shadow-skill"
+    assert meta["skill_trust_raw"]["admission_scan_id"] == "scan-kimi-1"
+    assert meta["skill_lineage_raw"]["presented_name"] == "local-shadow-skill"
+    assert meta["skill_lineage_raw"]["metadata_source"] == "cwd_runtime_metadata"
+
+
+@pytest.mark.asyncio
+async def test_kimi_native_hook_falls_back_to_cwd_runtime_metadata_when_env_path_missing(
+    tmp_path, monkeypatch
+):
+    from unittest.mock import AsyncMock
+
+    skill_root = tmp_path / "skills" / "local-shadow-skill"
+    scripts = skill_root / "scripts"
+    scripts.mkdir(parents=True)
+    (skill_root / "SKILL.md").write_text(
+        "---\nname: local-shadow-skill\n---\nRead local notes.\n",
+        encoding="utf-8",
+    )
+    runtime_dir = tmp_path / ".clawsentry"
+    runtime_dir.mkdir()
+    (runtime_dir / "skill-trust-runtime.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "clawsentry.skill_trust_bundle.v1",
+                "framework": "kimi-cli",
+                "raw_metadata_by_skill": {
+                    "local-shadow-skill": {
+                        "presented_name": "local-shadow-skill",
+                        "admission_scan_id": "scan-kimi-cwd-fallback",
+                        "admission_risk": "low",
+                        "skill_root_path": str(skill_root),
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(
+        "CS_SKILL_TRUST_METADATA_PATH",
+        str(tmp_path / "missing" / "skill-trust-raw.json"),
+    )
+
+    adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent-a3s-harness.sock")
+    adapter.source_framework = "kimi-cli"
+    harness = A3SGatewayHarness(adapter=adapter)
+    adapter.request_decision = AsyncMock(
+        return_value=CanonicalDecision(
+            decision=DecisionVerdict.ALLOW,
+            reason="kimi skill trust bound",
+            policy_id="test-policy",
+            risk_level=RiskLevel.LOW,
+            decision_source=DecisionSource.POLICY,
+            final=True,
+        )
+    )
+
+    await harness.dispatch_async(
+        {
+            "session_id": "sess-kimi-skill-cwd-fallback",
+            "hook_event_name": "PreToolUse",
+            "tool_name": "Shell",
+            "tool_input": {"command": f"python {scripts / 'run.py'}"},
+            "cwd": str(tmp_path),
+        }
+    )
+
+    event = adapter.request_decision.await_args.args[0]
+    meta = event.payload["_clawsentry_meta"]
+    assert meta["skill_trust_raw"]["admission_scan_id"] == "scan-kimi-cwd-fallback"
+    assert meta["skill_lineage_raw"]["metadata_source"] == "cwd_runtime_metadata"
+
+
+@pytest.mark.asyncio
+async def test_jsonrpc_event_enriches_skill_trust_from_cwd_runtime_metadata(tmp_path, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    skill_root = tmp_path / "skills" / "a3s-shadow-skill"
+    scripts = skill_root / "scripts"
+    scripts.mkdir(parents=True)
+    (skill_root / "SKILL.md").write_text(
+        "---\nname: a3s-shadow-skill\n---\nRead local notes.\n",
+        encoding="utf-8",
+    )
+    runtime_dir = tmp_path / ".clawsentry"
+    runtime_dir.mkdir()
+    (runtime_dir / "skill-trust-runtime.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "clawsentry.skill_trust_bundle.v1",
+                "framework": "a3s-code",
+                "raw_metadata_by_skill": {
+                    "a3s-shadow-skill": {
+                        "presented_name": "a3s-shadow-skill",
+                        "canonical_skill_id": "skill:a3s-shadow-skill",
+                        "canonical_name": "a3s-shadow-skill",
+                        "framework": "a3s-code",
+                        "scope": "workspace",
+                        "admission_scan_id": "scan-a3s-1",
+                        "admission_risk": "low",
+                        "policy_fingerprint": "sha256:policy-a3s",
+                        "skill_root_path": str(skill_root),
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("CS_SKILL_TRUST_METADATA_PATH", raising=False)
+
+    adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent-a3s-harness.sock")
+    harness = A3SGatewayHarness(adapter=adapter)
+    adapter.request_decision = AsyncMock(
+        return_value=CanonicalDecision(
+            decision=DecisionVerdict.ALLOW,
+            reason="a3s skill trust bound",
+            policy_id="test-policy",
+            risk_level=RiskLevel.LOW,
+            decision_source=DecisionSource.POLICY,
+            final=True,
+        )
+    )
+
+    resp = await harness.dispatch_async(
+        {
+            "jsonrpc": "2.0",
+            "id": 111,
+            "method": "ahp/event",
+            "params": {
+                "event_type": "pre_action",
+                "session_id": "sess-a3s-skill",
+                "agent_id": "agent-a3s-skill",
+                "payload": {
+                    "tool": "bash",
+                    "command": f"python {scripts / 'run.py'}",
+                    "cwd": str(tmp_path),
+                },
+            },
+        }
+    )
+
+    assert resp is not None
+    event = adapter.request_decision.await_args.args[0]
+    meta = event.payload["_clawsentry_meta"]
+    assert meta["skill_trust_raw"]["presented_name"] == "a3s-shadow-skill"
+    assert meta["skill_trust_raw"]["canonical_skill_id"] == "skill:a3s-shadow-skill"
+    assert meta["skill_trust_raw"]["framework"] == "a3s-code"
+    assert meta["skill_lineage_raw"]["metadata_source"] == "cwd_runtime_metadata"
+
+
+@pytest.mark.asyncio
 async def test_jsonrpc_top_level_context_and_metadata_are_carried():
     from unittest.mock import AsyncMock
 
@@ -980,6 +1262,81 @@ class TestNativeHookFormat:
         event = adapter.request_decision.await_args.args[0]
         assert event.payload["file_path"] == "/workspace/app/bootstrap.js"
         assert "window.__clawsentryLoader" in event.payload["content"]
+
+    @pytest.mark.asyncio
+    async def test_claude_native_hook_enriches_skill_trust_from_cwd_runtime_metadata(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        skill_root = tmp_path / "skills" / "claude-shadow-skill"
+        scripts = skill_root / "scripts"
+        scripts.mkdir(parents=True)
+        (skill_root / "SKILL.md").write_text(
+            "---\nname: claude-shadow-skill\n---\nRead local notes.\n",
+            encoding="utf-8",
+        )
+        runtime_dir = tmp_path / ".clawsentry"
+        runtime_dir.mkdir()
+        (runtime_dir / "skill-trust-runtime.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "framework": "claude-code",
+                    "raw_metadata_by_skill": {
+                        "claude-shadow-skill": {
+                            "presented_name": "claude-shadow-skill",
+                            "canonical_skill_id": "skill:claude-shadow-skill",
+                            "canonical_name": "claude-shadow-skill",
+                            "framework": "claude-code",
+                            "scope": "workspace",
+                            "admission_scan_id": "scan-claude-1",
+                            "admission_risk": "low",
+                            "policy_fingerprint": "sha256:policy-claude",
+                            "skill_root_path": str(skill_root),
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.delenv("CS_SKILL_TRUST_METADATA_PATH", raising=False)
+
+        adapter = A3SCodeAdapter(
+            uds_path="/tmp/nonexistent.sock",
+            source_framework="claude-code",
+        )
+        adapter.request_decision = AsyncMock(
+            return_value=CanonicalDecision(
+                decision=DecisionVerdict.ALLOW,
+                reason="captured",
+                policy_id="test-policy",
+                risk_level=RiskLevel.LOW,
+                decision_source=DecisionSource.POLICY,
+                final=True,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        response = await harness.dispatch_async(
+            {
+                "session_id": "sess-claude-skill",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {"command": f"python {scripts / 'run.py'}"},
+                "cwd": str(tmp_path),
+            }
+        )
+
+        assert response is None
+        event = adapter.request_decision.await_args.args[0]
+        meta = event.payload["_clawsentry_meta"]
+        assert meta["skill_trust_raw"]["presented_name"] == "claude-shadow-skill"
+        assert meta["skill_trust_raw"]["canonical_skill_id"] == "skill:claude-shadow-skill"
+        assert meta["skill_trust_raw"]["framework"] == "claude-code"
+        assert meta["skill_lineage_raw"]["metadata_source"] == "cwd_runtime_metadata"
 
     @pytest.mark.asyncio
     async def test_jsonrpc_format_still_works(self, harness):
