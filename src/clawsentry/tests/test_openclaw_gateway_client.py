@@ -202,6 +202,48 @@ class TestRetryBehavior:
 
 class TestDecisionTier:
     @pytest.mark.asyncio
+    async def test_agent_safety_feedback_openclaw_response_metadata(self, client):
+        async def fake_send_uds(_req):
+            return {
+                "result": {
+                    "rpc_status": "ok",
+                    "decision": {
+                        "decision": "block",
+                        "reason": "critical block",
+                        "policy_id": "test-policy",
+                        "risk_level": "critical",
+                        "decision_source": "policy",
+                        "policy_version": "1.0",
+                        "failure_class": "none",
+                        "final": True,
+                    },
+                    "agent_safety_feedback": {
+                        "schema": "clawsentry.agent_safety_feedback.v1",
+                        "delivery": "response",
+                        "risk_level": "critical",
+                        "decision_id": "evt-001",
+                        "blocked_surface": "command",
+                        "reason_summary": "redacted",
+                        "safe_next_step": "Ask the operator to review.",
+                        "redaction_policy_version": "cs.agent_safety_feedback.v1",
+                        "evidence_refs": ["policy:test-policy"],
+                    },
+                }
+            }
+
+        client._send_uds_request = fake_send_uds
+        evt = _make_event(
+            tool_name="bash",
+            payload={"tool": "bash", "command": "rm -rf /tmp/openclaw-feedback"},
+        )
+
+        decision = await client.request_decision(evt)
+
+        assert decision.decision == DecisionVerdict.BLOCK
+        assert client.last_decision_response_metadata["agent_safety_feedback"]["delivery"] == "response"
+        assert client.last_decision_response_metadata["agent_safety_feedback"]["blocked_surface"] == "command"
+
+    @pytest.mark.asyncio
     async def test_request_decision_defaults_to_l1_tier(self, client):
         captured = {}
 

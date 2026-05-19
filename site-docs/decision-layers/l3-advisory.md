@@ -13,6 +13,9 @@ description: 基于冻结证据快照的只读复盘报告，帮助 operator 处
 
 L3 咨询审查是一个**拉取式（pull-based）**后处理系统，消费固定 evidence snapshot 生成只读复盘报告。它不在实时决策链中运行，不启动后台 scheduler，也不修改任何 canonical 决策。
 
+!!! note "FSPR 与 L3 Advisory"
+    FSPR 可以复用 provider/role orchestration 思路，但它是 Skill Trust package review evidence，不是人工审批式 L3 Advisory。FSPR findings 和 recommendations 需要通过 Gateway policy 或 lifecycle API 才能影响后续 trust-list 状态。
+
 <div class="cs-pill-row" markdown>
 <span class="cs-pill">只读复盘</span>
 <span class="cs-pill">不改写判决结果</span>

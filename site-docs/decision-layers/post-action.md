@@ -28,6 +28,17 @@ L1/L2/L3 在工具调用之前或期间进行拦截。后置动作层填补了�
 
 每当被监控的工具调用返回输出时，Gateway 就会调用 `PostActionAnalyzer.analyze()`。
 
+### Skill Trust provenance validation {#skill-trust-provenance-validation}
+
+v0.8.0 起，post-action 阶段还可以运行 Skill Trust provenance validator。它读取配置允许的 JSON artifacts / field paths，把产物中声明的 skill labels 与当前 session 的 `skill_use_ledger` 比对。
+
+该 validator 的边界是刻意收窄的：
+
+- artifact claim 不是 runtime invocation；它不能让一个未观测到的 skill use 变成已执行事实。
+- finding 只追加到 post-action / replay evidence，不改写已经完成的 canonical pre-action decision。
+- unsafe path、oversize、parse error、空 ledger、非字符串 label、blocked/deferred claim、canonical conflict 和 ambiguous claim 都会以 bounded finding 记录。
+- 公开 replay 使用 artifact path summary/hash 和 metadata record id，不写入原始本地 runtime path。
+
 **前置条件（须全部满足）：**
 
 1. `tool_output` 非空。

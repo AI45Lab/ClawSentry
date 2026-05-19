@@ -82,6 +82,21 @@ description: 最小权限任务边界 — ClawSentry 如何评估并执行 Sessi
 !!! info "allow 和 neutral 不会绕过 L1/L2/L3"
     `scope_allow` 裁决仅表示该动作在任务作用域内。完整的风险引擎仍会运行，并可独立地进行阻断。
 
+### 自动收窄中的 MCP 边界
+
+启用 `CS_CAPABILITY_NARROWING_ENABLED` 后，Gateway 在高会话风险后生成
+SessionScopeProfile，而不是让 adapter 本地隐藏工具。MCP 自动收窄使用
+`CS_CAPABILITY_NARROWING_ALLOWED_MCP_*` 与
+`CS_CAPABILITY_NARROWING_DENIED_MCP_*` 映射到同名 `allowed_mcp_*` /
+`denied_mcp_*` 字段。MCP status 允许值为 `allowlist`、`greylist`、
+`blacklist`、`unlisted`、`revoked`、`disabled`；trust level 允许值为
+`trusted`、`local_unreviewed`、`unknown`、`untrusted`。
+Capability 自动收窄也可通过 `CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES`、
+`CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES` 与
+`CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES` 映射到 `allowed_capabilities`、
+`denied_capabilities` 与 `queued_capabilities`。常见 capability 包括
+`filesystem.write`、`network.fetch`、`future_execution.entrypoint`。
+
 ### 强制执行模式与试运行模式
 
 仅当 `confirmed=true` 且 `dry_run=false` 时，配置文件才处于**强制执行**状态。当配置文件未强制执行时：

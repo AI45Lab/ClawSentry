@@ -54,20 +54,44 @@ L1 是纯规则引擎，零延迟（<1ms），零成本，处理所有事件的�
 
 ## Skill Trust, capability narrowing, and feedback {#skill-trust-capability-narrowing-and-feedback}
 
-v0.7.0 增加三类 profile-aware 调优面：
+v0.8.0 将 Skill Trust runtime binding、capability narrowing 和 feedback 收口为 profile-aware 调优面：
 
 | 能力 | 默认值 | 调优入口 | 行为边界 |
 |---|---:|---|---|
 | Skill Trust first-use action | `audit` | `CS_SKILL_TRUST_FIRST_USE_*_ACTION` | 可设 `audit`、`force_l2`、`force_l3`、`defer`、`block`；依赖 registry/runtime metadata |
+| Runtime path disallowed action | normal `force_l3` / strict `block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_*_ACTION` | observed runtime root 不在 Gateway-owned source/mirror roots 时执行 |
+| Runtime source ambiguous action | normal `force_l3` / strict `defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_*_ACTION` | 同名或多来源候选无法唯一绑定时执行 |
+| Runtime path/name unverified action | `audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_*_ACTION` | 只有 name/path fragment 弱证据时不提升 trust，可按 profile 审计或升级 |
+| Runtime content mismatch/unverified | strict `block` / `defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_*_ACTION` | mirror 内容 hash 或 runner contract 不能证明时执行 |
+| Post-action provenance validator | `false` | `CS_SKILL_TRUST_PROVENANCE_VALIDATOR_ENABLED` | 事后把 artifact claims 与 `skill_use_ledger` 比对；不改写已完成 decision |
+| FSPR package review | `false` | `CS_SKILL_TRUST_FSPR_*` | 首次使用包级审查；默认 evidence-only，可按 verdict/profile 产生 policy evidence 或 transition recommendation |
 | Capability narrowing | `false` | `CS_CAPABILITY_NARROWING_ENABLED` | 高会话风险时收紧后续 SessionScopeProfile，不改写历史 decision |
-| Agent safety feedback | `false` | `CS_AGENT_SAFETY_FEEDBACK_ENABLED` | critical block 后生成红线化提示；unsupported host 仅 audit-only |
+| Capability narrowing threshold | `high` | `CS_CAPABILITY_NARROWING_TRIGGER_RISK` | 设置为 `critical` 时，只有 critical 历史风险会触发自动收窄 |
+| Capability narrowing group policy | read-only allow / write+network+admin deny | `CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS`, `CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS` | 用权限组调整自动收窄后的工具边界 |
+| Capability narrowing skill policy | allowlist allow / blacklist+revoked deny | `CS_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES`, `CS_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES` | 用 Skill Trust 状态调整自动收窄后的 skill 边界 |
+| Capability narrowing MCP policy | filesystem read allow / fetch and untrusted deny | `CS_CAPABILITY_NARROWING_ALLOWED_MCP_*`, `CS_CAPABILITY_NARROWING_DENIED_MCP_*` | 用 MCP server/tool/status/trust-level 调整自动收窄后的 MCP 边界 |
+| Capability narrowing capabilities | empty | `CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES`, `CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES`, `CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES` | 用 action-effect capability 调整自动收窄后的能力边界 |
+| Capability narrowing audit | `summary` | `CS_CAPABILITY_NARROWING_AUDIT_VERBOSITY` | 可设 `minimal`、`summary`、`verbose`；`verbose` 会在审计 metadata 中记录触发阈值和策略摘要 |
+| Capability narrowing greylist policy | `defer` | `CS_CAPABILITY_NARROWING_GREYLIST_ACTION` | 调整自动收窄中 greylist skill 的处理：`allow`、`defer`、`block` |
+| Tool permission overrides | empty | `CS_TOOL_PERMISSION_GROUP_OVERRIDES` | 用 `tool=group[,group]` 为自定义宿主工具补充权限组；多组时按最严格组执行 |
+| Agent safety feedback | `false` | `CS_AGENT_SAFETY_FEEDBACK_ENABLED` | critical block 后生成红线化提示；宿主 delivery 显式记录为 `response`、`audit_only` 或 `unsupported`，未验证前不声明 `prompt_injection` |
+
+Agent feedback 有两个分开的 envelope：critical block 使用
+`clawsentry.agent_safety_feedback.v1`；greylist Skill Trust 的 defer/block
+warning 使用 `clawsentry.agent_advisory_feedback.v1`，不会标记为 critical
+block。若 greylist policy 配成 `allow`，不会生成 advisory feedback。对支持
+response delivery 的宿主，同一 session 的同一 blocked surface 只返回一次
+agent-facing safety feedback；后续 retry 仍保留审计 metadata，并以
+`agent_safety_feedback_delivery_suppressed.reason=already_delivered_for_surface`
+说明未重复投递。
 
 推荐 rollout：
 
-1. 用 `clawsentry skill-trust register-dir` 生成 registry 和 runtime metadata。
-2. normal 模式先保持 `audit`，观察 `skill_trust` / `skill_trust_raw` metadata。
-3. 无人值守测试或 strict profile 再提升为 `defer` / `block`。
-4. 启用 capability narrowing 前先验证 session scope profile 不会误伤常用只读工具。
+1. 用 `clawsentry skill-trust register-dir` 生成 registry 和 Gateway-owned runtime metadata。
+2. normal 模式先保持 runtime unverified / provenance / FSPR 为 `audit`，观察 `skill_trust`、`skill_use_ledger` 和 post-action findings。
+3. 对无人值守测试或 strict profile，将 disallowed / ambiguous / content mismatch 提升为 `defer` / `block`。
+4. 启用 lifecycle mutation 前先要求 operator reason、expected snapshot id 和 idempotency key。
+5. 启用 capability narrowing 前先验证 session scope profile 不会误伤常用只读工具。
 
 该路径用于通用 skill supply-chain / metadata trust 风险，不依赖固定场景字符串。
 

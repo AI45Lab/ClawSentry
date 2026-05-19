@@ -11,8 +11,8 @@ description: 管理 agent skill 供应链风险：admission scan、registry 生�
 Skill Trust 把本地 skill 包的身份、来源、hash、别名和 admission scan 结果接入 Gateway，变成可审计的运行时上下文。低信任 skill 不能仅凭文档声称自己是 canonical，也不能通过近名、改名或 provenance label 绕过策略。
 
 <div class="cs-pill-row" markdown>
-<span class="cs-pill">v0.7.0+</span>
-<span class="cs-pill">v0.7.5 跨 CLI</span>
+<span class="cs-pill">v0.8.0 runtime binding</span>
+<span class="cs-pill">六框架 surface acceptance</span>
 <span class="cs-pill">trust-mvp-v1 指纹</span>
 <span class="cs-pill">默认 audit-only</span>
 </div>
@@ -34,14 +34,22 @@ Skill Trust 把本地 skill 包的身份、来源、hash、别名和 admission s
 <div markdown>
 <span>3</span>
 **运行时绑定**
-框架 `init --setup` 把 registry 和 metadata 文件路径写入 hook env；harness 在每次 `pre_action` 执行时自动加载。
+Adapter / harness 只收集 native skill name、shell skill path、runtime root、runner contract 等 raw evidence；Gateway 用 Gateway-owned registry/runtime metadata 绑定为 `RuntimeSkillRef` 和显式 runtime status。
 </div>
 <div markdown>
 <span>4</span>
 **策略决策**
-Gateway 解析请求携带的 skill raw metadata，调用 `resolve_skill_trust()` 做 identity / provenance / hash 匹配，产出 `SkillTrustContext`，供 policy rule 按 trust state 执行配置的动作。
+Gateway 调用 `resolve_skill_trust()` 做 identity / provenance / hash / mirror / content 匹配，产出 `SkillTrustContext`；policy 按 runtime binding、trust-list state、FSPR/P2 evidence 和 profile action 生成 canonical decision。
+</div>
+<div markdown>
+<span>5</span>
+**Ledger 与事后证据**
+每次 observed skill use 写入 replay-safe `skill_use_ledger`；post-action provenance validator 只把 artifact claims 与 ledger 比对，不反向创造 runtime invocation，也不改写已完成 decision。
 </div>
 </div>
+
+!!! note "v0.8.0 验收边界"
+    六框架 surface acceptance 覆盖 Gateway UDS + adapter/harness 决策路径上的 `runtime_path_disallowed`、blocked ledger entry 和 agent-facing feedback。它不是外部 CLI binary harbor smoke，也不是 benchmark leaderboard 或 ASR/TSR/TFR 结论。
 
 ## Trust-list 状态 {#trust-list-states}
 
@@ -149,6 +157,22 @@ stateDiagram-v2
 !!! warning "Hash mismatch 与 revoked 行为"
     `skill_hash_mismatch` 将 `admission_risk` 提升至 `high`；`revoked_skill_identity` 提升至 `critical`。两者均不会因缺少 hash 证据而单独触发（见下方脱敏边界）。
 
+## Runtime Binding 字段 {#runtime-binding-fields}
+
+Gateway 只用 Gateway-owned registry/runtime metadata 强化 Skill Trust。Adapter 观察到的 skill path/name 会先绑定成显式 `runtime_path_status`，再进入 risk snapshot、policy、ledger 和 replay。Replay-safe 字段包括：
+
+| 字段 | 含义 |
+|---|---|
+| `runtime_path_status` | 运行时路径或名称绑定状态，例如 `verified_source`、`verified_mirror`、`verified_name`、`name_only_unverified`、`path_fragment_unverified`、`disallowed`、`ambiguous_runtime_source`、`absent` |
+| `runtime_root_path_hash` | 规范化 runtime root path 的 SHA-256 路径哈希；这是路径身份，不是内容完整性哈希 |
+| `runtime_content_status` | mirror 内容或 runner 合同状态，例如 `content_verified`、`trusted_runner_immutable`、`content_unverified`、`content_mismatch`、`not_applicable` |
+| `metadata_record_id` | Gateway-owned metadata record 主键，用于 same-name multi-source disambiguation、ledger 和 provenance validation |
+| `runtime_evidence_kind` | 观测来源类别，例如 native skill call、shell skill path 或 path fragment |
+
+`verified_source` 表示 runtime root 与登记的 source root 一致；`verified_mirror` 还要求该 mirror root 在 Gateway-owned metadata 中显式列出，并通过内容验证或受信 runner contract。`ambiguous_runtime_source` 和 `disallowed` 是 decision-affecting evidence；`path_fragment_unverified` 和 `name_only_unverified` 只能提供不确定性证据，不能让请求侧 metadata 升级为 trusted。
+
+Controlled benchmark runners add explicit mirror parents while generating metadata. For Codex benchmark containers this includes `/workspace/.codex/skills/<name>`, `$CODEX_HOME/skills/<name>`, and `$HOME/.agents/skills/<name>`. The runner may mirror files into those roots, but Gateway still re-binds the observed runtime path and verifies content before treating a mirror as trusted.
+
 ## 首次使用动作配置 {#first-use-actions}
 
 当 skill 处于 `unlisted`、`disabled` 或 `unknown`/`unbound` 时，Gateway 按以下 profile 配置决定动作：
@@ -157,8 +181,29 @@ stateDiagram-v2
 |---|---|---|
 | normal | `CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION` | `audit` |
 | permissive | `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION` | `audit` |
-| strict | `CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION` | `defer` |
-| benchmark | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION` | `block` |
+| strict | `CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION` | `audit` |
+| benchmark | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION` | `audit` |
+
+Runtime binding violations use the same action vocabulary through a separate profile matrix. The legacy profile-level knobs below still work as compatibility overrides:
+
+| Profile | 环境变量 | 默认值 |
+|---|---|---|
+| normal | `CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION` | `force_l3` |
+| permissive | `CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION` | `audit` |
+| strict | `CS_SKILL_TRUST_RUNTIME_STRICT_ACTION` | `block` |
+| benchmark | `CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION` | `block` |
+
+For new deployments, prefer the per-condition runtime binding action fields:
+
+| Runtime condition | normal | strict | benchmark | permissive |
+|---|---|---|---|---|
+| disallowed runtime path | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION=force_l3` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_STRICT_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_PERMISSIVE_ACTION=audit` |
+| ambiguous runtime source | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION=force_l3` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_PERMISSIVE_ACTION=audit` |
+| unverified runtime path/name | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_NORMAL_ACTION=audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_STRICT_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_BENCHMARK_ACTION=audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_PERMISSIVE_ACTION=audit` |
+| unverified mirror content | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_NORMAL_ACTION=force_l3` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_STRICT_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_PERMISSIVE_ACTION=audit` |
+| mirror content mismatch | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_STRICT_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_PERMISSIVE_ACTION=audit` |
+
+Mirror content verification is Gateway-owned and bounded. Use `CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES`, `CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES`, and `CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS` to cap files, per-file bytes, and elapsed hashing time. If the budget is exhausted, the mirror becomes `content_unverified`; path membership alone never upgrades it to trusted.
 
 可配置动作：
 
@@ -263,8 +308,40 @@ CS_SKILL_TRUST_METADATA_PATH=.clawsentry/skill-trust-runtime.json
 # First-use 动作（可选值：audit | force_l2 | force_l3 | defer | block）
 CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION=audit
 CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION=audit
-CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=defer
-CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION=block
+CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=audit
+CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION=audit
+
+# Runtime binding 动作（可选值：audit | force_l2 | force_l3 | defer | block）
+CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION=force_l3
+CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION=audit
+CS_SKILL_TRUST_RUNTIME_STRICT_ACTION=block
+CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION=block
+CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION=force_l3
+CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION=defer
+CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION=defer
+CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES=200
+CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES=1048576
+CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS=1000
+
+# Post-action provenance validation
+CS_SKILL_TRUST_PROVENANCE_ENABLED=false
+CS_SKILL_TRUST_PROVENANCE_POLICY_PATH=
+CS_SKILL_TRUST_PROVENANCE_POLICY_JSON=
+CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT=
+CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES=1048576
+
+# First-Use Skill Package Review（FSPR）
+CS_SKILL_TRUST_FSPR_ENABLED=false
+CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED=false
+CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED=false
+CS_SKILL_TRUST_FSPR_ROLE_SET=default
+CS_SKILL_TRUST_FSPR_TIMEOUT_MS=120000
+CS_SKILL_TRUST_FSPR_CACHE_ENABLED=true
+CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED=false
+CS_SKILL_TRUST_FSPR_NORMAL_ACTION=audit
+CS_SKILL_TRUST_FSPR_PERMISSIVE_ACTION=audit
+CS_SKILL_TRUST_FSPR_STRICT_ACTION=audit
+CS_SKILL_TRUST_FSPR_BENCHMARK_ACTION=audit
 ```
 
 ## CLI 参考 {#cli-reference}
@@ -323,6 +400,7 @@ clawsentry skill-trust register-dir \
   --skills-dir PATH \
   --registry PATH \
   --metadata PATH \
+  [--allowed-runtime-parent PATH ...] \
   [--framework {codex|claude-code|kimi-cli|gemini-cli}] \
   [--scope {workspace|user_home|project|global}] \
   [--json]
@@ -333,6 +411,7 @@ clawsentry skill-trust register-dir \
 | `--skills-dir` | 是 | — | 包含多个 skill 子目录的父目录 |
 | `--registry` | 是 | — | registry JSON 文件路径 |
 | `--metadata` | 是 | — | runtime metadata JSON 文件路径（供 harness 运行时加载） |
+| `--allowed-runtime-parent` | 否 | — | 额外允许的 runtime mirror 父目录；metadata 会为每个 skill 写入 `<parent>/<skill-dir>` |
 | `--framework` | 否 | `codex` | 框架标识 |
 | `--scope` | 否 | `workspace` | 注册范围 |
 | `--json` | 否 | — | 以 JSON 格式打印汇总结果 |
@@ -343,3 +422,171 @@ clawsentry skill-trust register-dir \
 2. 新扫描结果更新 content hash、scan_id、skill_root_hash
 3. 现有记录的 `previous_skill_root_hash` 写入 `source` 以供审计
 4. 检测跨 skill 的 ambiguous alias（相同身份键的多个目录），写入 `preflight_actions`
+
+Lifecycle shortcuts wrap the same audited transition helper as `skill-trust transition` while exposing the operator actions by name:
+
+```bash
+clawsentry skill-trust allowlist --registry PATH --canonical-skill-id ID --expected-registry-snapshot-id SNAP --idempotency-key KEY
+clawsentry skill-trust greylist --registry PATH --canonical-skill-id ID --expected-registry-snapshot-id SNAP --idempotency-key KEY
+clawsentry skill-trust blacklist --registry PATH --canonical-skill-id ID --expected-registry-snapshot-id SNAP --idempotency-key KEY
+clawsentry skill-trust revoke --registry PATH --canonical-skill-id ID --expected-registry-snapshot-id SNAP --idempotency-key KEY
+clawsentry skill-trust disable --registry PATH --canonical-skill-id ID --expected-registry-snapshot-id SNAP --idempotency-key KEY
+clawsentry skill-trust restore --registry PATH --canonical-skill-id ID --expected-registry-snapshot-id SNAP --idempotency-key KEY [--restore-target-state allowlist]
+clawsentry skill-trust override --registry PATH --canonical-skill-id ID --expected-registry-snapshot-id SNAP --idempotency-key KEY --override-id REVIEW-ID
+```
+
+All shortcut commands accept `--operator-id-hash` and `--json`. `restore` uses the disabled record's previous active state unless `--restore-target-state` is supplied.
+
+### Operator-visible grade
+
+Registry records in CLI JSON output and `GET /skill-trust/registry` include `skill_trust_grade`. The grade is derived for operators; policy still consumes raw fields such as `list_state`, admission risk, runtime binding status, FSPR verdicts, and P2/provenance evidence.
+
+| `skill_trust_grade` | Derived from |
+|---|---|
+| `trusted` | `allowlist` without high-risk admission, runtime mismatch, FSPR inconsistency, or unresolved provenance findings |
+| `review` | `greylist`/`unlisted`, medium or unknown admission, unverified runtime binding/content, or insufficient FSPR evidence |
+| `restricted` | high/critical admission, disallowed or ambiguous runtime source, content mismatch, FSPR inconsistency, or unresolved P2/provenance findings |
+| `blocked` | `blacklist` or `revoked` |
+| `disabled` | `disabled` |
+
+## Operator examples and boundaries {#operator-examples}
+
+These examples use the same field names as Gateway metadata, replay rows, CLI output, and API payloads.
+
+### Runtime binding examples
+
+**verified mirror example**
+
+```json
+{
+  "runtime_path_status": "verified_mirror",
+  "runtime_content_status": "content_verified",
+  "metadata_record_id": "skillmeta:calendar-lookup:workspace",
+  "decision": "allow"
+}
+```
+
+Use this when the observed runtime root is under an explicitly configured `allowed_runtime_roots` entry and Gateway verifies content or a trusted runner contract. The mirror path itself remains internal; replay keeps `runtime_root_path_hash`.
+
+**disallowed same-name path example**
+
+```json
+{
+  "presented_name": "calendar-lookup",
+  "runtime_path_status": "disallowed",
+  "runtime_binding_reason": "runtime_root_outside_allowed_roots",
+  "decision": "block"
+}
+```
+
+The same skill name under an unapproved root cannot inherit trusted source metadata. Strict and benchmark profiles block this before the action.
+
+**ambiguous name-only example**
+
+```json
+{
+  "presented_name": "calendar_lookup",
+  "runtime_path_status": "ambiguous_runtime_source",
+  "runtime_evidence_kind": "native_skill_name",
+  "decision": "defer"
+}
+```
+
+Name-only evidence can identify ambiguity, but it cannot verify path, content, or mirror integrity.
+
+### Provenance and FSPR examples
+
+**final provenance mismatch example**
+
+```json
+{
+  "event_type": "post_action",
+  "finding": "unobserved_claim",
+  "declared_label": "document-summary",
+  "matched_ledger_entry_ids": [],
+  "handling": "coverage_gap"
+}
+```
+
+artifact provenance validation is generic and post-action. A handwritten output label is compared with the Skill Use Ledger; it does not create a fake runtime invocation and does not rewrite the completed pre-action decision.
+
+Registry-approved aliases from Gateway-owned Skill Trust metadata are accepted during provenance comparison. Missing fields, non-string labels, parse failures, oversized artifacts, and unsafe artifact paths are recorded as bounded provenance findings with safe artifact path summaries/hashes rather than raw private paths.
+
+**FSPR evidence-only**
+
+First-Use Skill Package Review can inspect `SKILL.md`, scripts, references, data summaries, admission findings, ledger entries, and provenance claims. It is distinct from L3 runtime review and is optional by profile. FSPR cannot mutate allowlist, greylist, blacklist, revoked, disabled, or restore state; it emits bounded evidence and transition recommendations for Gateway/operator review.
+
+### Lifecycle examples
+
+**blacklist-to-greylist override example**
+
+```bash
+clawsentry skill-trust transition \
+  --registry .clawsentry/skill-trust-registry.json \
+  --canonical-skill-id skill:calendar-lookup \
+  --target-state greylist \
+  --reason-code operator_override \
+  --override-id review-2026-05-18 \
+  --operator-id-hash sha256:...
+```
+
+Blacklisted skills require an operator override or trusted migration evidence before downgrade. The transition event keeps prior state, reason, actor, evidence refs, expiry, and policy fingerprint.
+
+**revoked-to-allowlist trusted migration example**
+
+```json
+{
+  "target_state": "allowlist",
+  "reason_code": "trusted_migration",
+  "evidence_refs": ["admission:clean-v2", "migration:approved-v2"],
+  "operator_id_hash": "sha256:..."
+}
+```
+
+Revoked skills cannot silently return to allowlist. A trusted migration plus operator metadata must be recorded.
+
+**disabled/restore example**
+
+```json
+{
+  "from_state": "disabled",
+  "to_state": "greylist",
+  "restore_target_state": "previous_active_state",
+  "previous_active_state": "greylist"
+}
+```
+
+Restore creates a new transition event. Expiry or restore never mutates visible state without an audit record.
+
+### Capability narrowing and feedback examples
+
+**critical capability narrowing example**
+
+```json
+{
+  "capability_narrowing": {
+    "applied": true,
+    "trigger_risk": "critical",
+    "profile_id": "clawsentry-critical-readonly",
+    "reason_code": "applied",
+    "allowed_tool_permission_groups": ["read_only"],
+    "denied_tool_permission_groups": ["write", "network", "credentialed", "destructive"]
+  }
+}
+```
+
+Capability narrowing is controlled by `CS_CAPABILITY_NARROWING_ENABLED`, trigger threshold, tool permission groups, Skill Trust state rules, MCP server/tool/status/trust rules, disabled capability equivalents, greylist action, and audit verbosity. If a host cannot enforce a UI change, Gateway still records the scope decision and reason in metadata.
+
+**unsupported-host feedback fallback example**
+
+```json
+{
+  "agent_safety_feedback": {
+    "delivery": "audit_only",
+    "reason_summary": "Critical action blocked by Gateway policy.",
+    "redaction_policy_version": "clawsentry.redaction.v1"
+  }
+}
+```
+
+Agent-facing safety feedback is emitted only for capability-gated supported hosts. Unsupported hosts keep audit-only metadata and must not claim prompt injection. Response delivery is redacted, omits raw commands/secrets/thresholds, and is sent once per session surface to avoid retry loops.

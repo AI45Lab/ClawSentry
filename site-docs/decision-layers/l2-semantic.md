@@ -15,6 +15,9 @@ description: 基于 LLM 的语义理解层 — 可插拔分析器协议、LLM �
 
 L2 语义分析是 ClawSentry 三层决策模型的第二层，在 L1 规则引擎发现中等及以上风险后按需介入，用 LLM 或增强规则分析器理解"读取敏感文件后外发""看似普通脚本实际绕过策略"这类语义组合，并输出结构化 evidence capsule 供 L3 和审计链复用。
 
+!!! note "FSPR 边界"
+    First-Use Skill Package Review (FSPR) 不是普通 L2 runtime semantic review。FSPR 面向 skill package 本身，输出 bounded evidence 和 transition recommendation；默认 evidence-only，不直接修改 registry/list-state，也不改写已完成 decision。
+
 <div class="cs-pill-row" markdown>
 <span class="cs-pill">只升不降</span>
 <span class="cs-pill">按需调用 ~20% 事件</span>

@@ -11,6 +11,7 @@ from pydantic import ValidationError
 
 from ..gateway.models import CanonicalEvent, DecisionContext, SessionScopeProfile
 from ..gateway.session_scope import evaluate_session_scope, scope_protection_statement
+from ..gateway.tool_permissions import resolve_tool_permission
 
 
 def run_scope_validate(*, profile_path: Path, json_mode: bool = False) -> int:
@@ -65,6 +66,10 @@ def run_scope_preview(
         "mode": "enforced" if enforced else "dry_run_only",
         "profile": _profile_summary(profile),
         "scope_evaluation": summary,
+        "tool_permission": resolve_tool_permission(
+            event.tool_name,
+            session_state="critical" if profile.confirmed and not profile.dry_run else "baseline",
+        ).to_dict(),
         "protection_statement": scope_protection_statement(enforced=enforced),
     }
     if json_mode:
@@ -77,6 +82,8 @@ def run_scope_preview(
         print(f"  enforced: {summary['enforced']}")
         for reason in summary.get("reason_codes") or []:
             print(f"  - {reason}")
+    permission = payload["tool_permission"]
+    print(f"  tool group: {permission['group']} ({permission['action']})")
     print(f"  {payload['protection_statement']}")
     return 0
 

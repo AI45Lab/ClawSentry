@@ -13,9 +13,23 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from clawsentry.cli.dotenv_loader import ParsedEnvFile
+from clawsentry.gateway.tool_permissions import TOOL_PERMISSION_GROUPS, parse_tool_permission_group_overrides
 
 _VALID_MODES = {"normal", "strict", "permissive", "benchmark"}
 _VALID_PRESETS = {"low", "medium", "high", "strict"}
+_VALID_RISK_LEVELS = {"low", "medium", "high", "critical"}
+_VALID_CAPABILITY_NARROWING_GREYLIST_ACTIONS = {"allow", "defer", "block"}
+_VALID_SKILL_TRUST_STATES = {
+    "allowlist",
+    "greylist",
+    "blacklist",
+    "unlisted",
+    "revoked",
+    "disabled",
+}
+_VALID_MCP_STATUSES = _VALID_SKILL_TRUST_STATES
+_VALID_MCP_TRUST_LEVELS = {"trusted", "local_unreviewed", "unknown", "untrusted"}
+_VALID_CAPABILITY_NARROWING_AUDIT_VERBOSITY = {"minimal", "summary", "verbose"}
 _SUPPORTED_FRAMEWORKS = frozenset({
     "openclaw",
     "a3s-code",
@@ -90,6 +104,25 @@ CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("features.l3", "CS_L3_ENABLED", False, bool, "features", "L3 request flag"),
     ConfigField("features.enterprise", "CS_ENTERPRISE_ENABLED", False, bool, "features", "Enterprise analysis flag"),
     ConfigField("features.capability_narrowing", "CS_CAPABILITY_NARROWING_ENABLED", False, bool, "features", "Enable capability narrowing after elevated session risk"),
+    ConfigField("capability_narrowing.trigger_risk", "CS_CAPABILITY_NARROWING_TRIGGER_RISK", "high", str, "capability_narrowing", "Minimum previous session risk that triggers automatic narrowing"),
+    ConfigField("capability_narrowing.allowed_tool_permission_groups", "CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS", "read_only", str, "capability_narrowing", "Comma-separated tool permission groups allowed by automatic narrowing"),
+    ConfigField("capability_narrowing.denied_tool_permission_groups", "CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS", "write,network,credentialed,destructive,mcp_admin,unknown", str, "capability_narrowing", "Comma-separated tool permission groups denied by automatic narrowing"),
+    ConfigField("capability_narrowing.allowed_skill_trust_states", "CS_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES", "allowlist", str, "capability_narrowing", "Comma-separated Skill Trust states allowed by automatic narrowing"),
+    ConfigField("capability_narrowing.denied_skill_trust_states", "CS_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES", "blacklist,revoked", str, "capability_narrowing", "Comma-separated Skill Trust states denied by automatic narrowing"),
+    ConfigField("capability_narrowing.allowed_mcp_servers", "CS_CAPABILITY_NARROWING_ALLOWED_MCP_SERVERS", "", str, "capability_narrowing", "Comma-separated MCP servers allowed by automatic narrowing"),
+    ConfigField("capability_narrowing.denied_mcp_servers", "CS_CAPABILITY_NARROWING_DENIED_MCP_SERVERS", "", str, "capability_narrowing", "Comma-separated MCP servers denied by automatic narrowing"),
+    ConfigField("capability_narrowing.allowed_mcp_tools", "CS_CAPABILITY_NARROWING_ALLOWED_MCP_TOOLS", "filesystem.read_file", str, "capability_narrowing", "Comma-separated MCP tools allowed by automatic narrowing"),
+    ConfigField("capability_narrowing.denied_mcp_tools", "CS_CAPABILITY_NARROWING_DENIED_MCP_TOOLS", "fetch.fetch", str, "capability_narrowing", "Comma-separated MCP tools denied by automatic narrowing"),
+    ConfigField("capability_narrowing.allowed_mcp_statuses", "CS_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES", "", str, "capability_narrowing", "Comma-separated MCP statuses allowed by automatic narrowing"),
+    ConfigField("capability_narrowing.denied_mcp_statuses", "CS_CAPABILITY_NARROWING_DENIED_MCP_STATUSES", "blacklist,revoked,disabled", str, "capability_narrowing", "Comma-separated MCP statuses denied by automatic narrowing"),
+    ConfigField("capability_narrowing.allowed_mcp_trust_levels", "CS_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS", "", str, "capability_narrowing", "Comma-separated MCP trust levels allowed by automatic narrowing"),
+    ConfigField("capability_narrowing.denied_mcp_trust_levels", "CS_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS", "untrusted,unknown,local_unreviewed", str, "capability_narrowing", "Comma-separated MCP trust levels denied by automatic narrowing"),
+    ConfigField("capability_narrowing.allowed_capabilities", "CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES", "", str, "capability_narrowing", "Comma-separated action capabilities allowed by automatic narrowing"),
+    ConfigField("capability_narrowing.denied_capabilities", "CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES", "", str, "capability_narrowing", "Comma-separated action capabilities denied by automatic narrowing"),
+    ConfigField("capability_narrowing.queued_capabilities", "CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES", "", str, "capability_narrowing", "Comma-separated action capabilities deferred by automatic narrowing"),
+    ConfigField("capability_narrowing.audit_verbosity", "CS_CAPABILITY_NARROWING_AUDIT_VERBOSITY", "summary", str, "capability_narrowing", "Capability narrowing audit metadata verbosity"),
+    ConfigField("capability_narrowing.greylist_action", "CS_CAPABILITY_NARROWING_GREYLIST_ACTION", "defer", str, "capability_narrowing", "Greylisted skill action under automatic narrowing"),
+    ConfigField("tool_permissions.group_overrides", "CS_TOOL_PERMISSION_GROUP_OVERRIDES", "", str, "tool_permissions", "Semicolon-separated tool=group[,group] permission overrides"),
     ConfigField("features.agent_safety_feedback", "CS_AGENT_SAFETY_FEEDBACK_ENABLED", False, bool, "features", "Enable redacted agent safety feedback in decision audit metadata"),
     ConfigField("skill_trust.registry_path", "CS_SKILL_TRUST_REGISTRY_PATH", "", str, "skill_trust", "Skill Trust registry JSON path"),
     ConfigField("skill_trust.metadata_path", "CS_SKILL_TRUST_METADATA_PATH", "", str, "skill_trust", "Gateway-owned Skill Trust runtime metadata JSON path"),
@@ -97,6 +130,61 @@ CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("skill_trust.first_use_benchmark_action", "CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION", "audit", str, "skill_trust", "First-use Skill Trust action in benchmark mode"),
     ConfigField("skill_trust.first_use_strict_action", "CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION", "audit", str, "skill_trust", "First-use Skill Trust action in strict mode"),
     ConfigField("skill_trust.first_use_permissive_action", "CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION", "audit", str, "skill_trust", "First-use Skill Trust action in permissive mode"),
+    ConfigField("skill_trust.runtime_normal_action", "CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION", "force_l3", str, "skill_trust", "Runtime binding Skill Trust action in normal mode"),
+    ConfigField("skill_trust.runtime_benchmark_action", "CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION", "block", str, "skill_trust", "Runtime binding Skill Trust action in benchmark mode"),
+    ConfigField("skill_trust.runtime_strict_action", "CS_SKILL_TRUST_RUNTIME_STRICT_ACTION", "block", str, "skill_trust", "Runtime binding Skill Trust action in strict mode"),
+    ConfigField("skill_trust.runtime_permissive_action", "CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION", "audit", str, "skill_trust", "Runtime binding Skill Trust action in permissive mode"),
+    ConfigField("skill_trust.runtime_path_disallowed_normal_action", "CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION", "force_l3", str, "skill_trust", "Runtime disallowed path action in normal mode"),
+    ConfigField("skill_trust.runtime_path_disallowed_benchmark_action", "CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_BENCHMARK_ACTION", "block", str, "skill_trust", "Runtime disallowed path action in benchmark mode"),
+    ConfigField("skill_trust.runtime_path_disallowed_strict_action", "CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_STRICT_ACTION", "block", str, "skill_trust", "Runtime disallowed path action in strict mode"),
+    ConfigField("skill_trust.runtime_path_disallowed_permissive_action", "CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_PERMISSIVE_ACTION", "audit", str, "skill_trust", "Runtime disallowed path action in permissive mode"),
+    ConfigField("skill_trust.runtime_source_ambiguous_normal_action", "CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION", "force_l3", str, "skill_trust", "Runtime ambiguous source action in normal mode"),
+    ConfigField("skill_trust.runtime_source_ambiguous_benchmark_action", "CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_BENCHMARK_ACTION", "block", str, "skill_trust", "Runtime ambiguous source action in benchmark mode"),
+    ConfigField("skill_trust.runtime_source_ambiguous_strict_action", "CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION", "defer", str, "skill_trust", "Runtime ambiguous source action in strict mode"),
+    ConfigField("skill_trust.runtime_source_ambiguous_permissive_action", "CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_PERMISSIVE_ACTION", "audit", str, "skill_trust", "Runtime ambiguous source action in permissive mode"),
+    ConfigField("skill_trust.runtime_path_unverified_normal_action", "CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_NORMAL_ACTION", "audit", str, "skill_trust", "Runtime unverified path action in normal mode"),
+    ConfigField("skill_trust.runtime_path_unverified_benchmark_action", "CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_BENCHMARK_ACTION", "audit", str, "skill_trust", "Runtime unverified path action in benchmark mode"),
+    ConfigField("skill_trust.runtime_path_unverified_strict_action", "CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_STRICT_ACTION", "defer", str, "skill_trust", "Runtime unverified path action in strict mode"),
+    ConfigField("skill_trust.runtime_path_unverified_permissive_action", "CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_PERMISSIVE_ACTION", "audit", str, "skill_trust", "Runtime unverified path action in permissive mode"),
+    ConfigField("skill_trust.runtime_content_unverified_normal_action", "CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_NORMAL_ACTION", "force_l3", str, "skill_trust", "Runtime unverified content action in normal mode"),
+    ConfigField("skill_trust.runtime_content_unverified_benchmark_action", "CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION", "block", str, "skill_trust", "Runtime unverified content action in benchmark mode"),
+    ConfigField("skill_trust.runtime_content_unverified_strict_action", "CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_STRICT_ACTION", "defer", str, "skill_trust", "Runtime unverified content action in strict mode"),
+    ConfigField("skill_trust.runtime_content_unverified_permissive_action", "CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_PERMISSIVE_ACTION", "audit", str, "skill_trust", "Runtime unverified content action in permissive mode"),
+    ConfigField("skill_trust.runtime_content_mismatch_normal_action", "CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION", "defer", str, "skill_trust", "Runtime content mismatch action in normal mode"),
+    ConfigField("skill_trust.runtime_content_mismatch_benchmark_action", "CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_BENCHMARK_ACTION", "block", str, "skill_trust", "Runtime content mismatch action in benchmark mode"),
+    ConfigField("skill_trust.runtime_content_mismatch_strict_action", "CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_STRICT_ACTION", "block", str, "skill_trust", "Runtime content mismatch action in strict mode"),
+    ConfigField("skill_trust.runtime_content_mismatch_permissive_action", "CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_PERMISSIVE_ACTION", "audit", str, "skill_trust", "Runtime content mismatch action in permissive mode"),
+    ConfigField("skill_trust.mirror_hash_max_files", "CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES", 200, int, "skill_trust", "Maximum files Gateway hashes when verifying runtime mirrors"),
+    ConfigField("skill_trust.mirror_hash_max_file_bytes", "CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES", 1_048_576, int, "skill_trust", "Maximum bytes per file Gateway reads when verifying runtime mirrors"),
+    ConfigField("skill_trust.mirror_hash_max_total_ms", "CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS", 1_000, int, "skill_trust", "Maximum milliseconds Gateway spends hashing one runtime mirror"),
+    ConfigField("skill_trust.fspr_enabled", "CS_SKILL_TRUST_FSPR_ENABLED", False, bool, "skill_trust", "Enable First-Use Skill Package Review"),
+    ConfigField("skill_trust.fspr_pre_use_enabled", "CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED", False, bool, "skill_trust", "Enable FSPR pre-use gate evidence"),
+    ConfigField("skill_trust.fspr_post_action_enabled", "CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED", False, bool, "skill_trust", "Enable FSPR post-action incremental evidence"),
+    ConfigField("skill_trust.fspr_role_set", "CS_SKILL_TRUST_FSPR_ROLE_SET", "default", str, "skill_trust", "FSPR role set identifier"),
+    ConfigField("skill_trust.fspr_timeout_ms", "CS_SKILL_TRUST_FSPR_TIMEOUT_MS", 120_000, int, "skill_trust", "FSPR timeout budget in milliseconds"),
+    ConfigField("skill_trust.fspr_cache_enabled", "CS_SKILL_TRUST_FSPR_CACHE_ENABLED", True, bool, "skill_trust", "Enable FSPR result cache"),
+    ConfigField("skill_trust.fspr_provider_enabled", "CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED", False, bool, "skill_trust", "Allow configured provider-backed FSPR roles"),
+    ConfigField("skill_trust.fspr_normal_action", "CS_SKILL_TRUST_FSPR_NORMAL_ACTION", "audit", str, "skill_trust", "FSPR verdict action in normal mode"),
+    ConfigField("skill_trust.fspr_benchmark_action", "CS_SKILL_TRUST_FSPR_BENCHMARK_ACTION", "audit", str, "skill_trust", "FSPR verdict action in benchmark mode"),
+    ConfigField("skill_trust.fspr_strict_action", "CS_SKILL_TRUST_FSPR_STRICT_ACTION", "audit", str, "skill_trust", "FSPR verdict action in strict mode"),
+    ConfigField("skill_trust.fspr_permissive_action", "CS_SKILL_TRUST_FSPR_PERMISSIVE_ACTION", "audit", str, "skill_trust", "FSPR verdict action in permissive mode"),
+    ConfigField("skill_trust.fspr_inconsistent_normal_action", "CS_SKILL_TRUST_FSPR_INCONSISTENT_NORMAL_ACTION", "audit", str, "skill_trust", "FSPR inconsistent verdict action in normal mode"),
+    ConfigField("skill_trust.fspr_inconsistent_benchmark_action", "CS_SKILL_TRUST_FSPR_INCONSISTENT_BENCHMARK_ACTION", "audit", str, "skill_trust", "FSPR inconsistent verdict action in benchmark mode"),
+    ConfigField("skill_trust.fspr_inconsistent_strict_action", "CS_SKILL_TRUST_FSPR_INCONSISTENT_STRICT_ACTION", "audit", str, "skill_trust", "FSPR inconsistent verdict action in strict mode"),
+    ConfigField("skill_trust.fspr_inconsistent_permissive_action", "CS_SKILL_TRUST_FSPR_INCONSISTENT_PERMISSIVE_ACTION", "audit", str, "skill_trust", "FSPR inconsistent verdict action in permissive mode"),
+    ConfigField("skill_trust.fspr_suspicious_normal_action", "CS_SKILL_TRUST_FSPR_SUSPICIOUS_NORMAL_ACTION", "audit", str, "skill_trust", "FSPR suspicious verdict action in normal mode"),
+    ConfigField("skill_trust.fspr_suspicious_benchmark_action", "CS_SKILL_TRUST_FSPR_SUSPICIOUS_BENCHMARK_ACTION", "audit", str, "skill_trust", "FSPR suspicious verdict action in benchmark mode"),
+    ConfigField("skill_trust.fspr_suspicious_strict_action", "CS_SKILL_TRUST_FSPR_SUSPICIOUS_STRICT_ACTION", "audit", str, "skill_trust", "FSPR suspicious verdict action in strict mode"),
+    ConfigField("skill_trust.fspr_suspicious_permissive_action", "CS_SKILL_TRUST_FSPR_SUSPICIOUS_PERMISSIVE_ACTION", "audit", str, "skill_trust", "FSPR suspicious verdict action in permissive mode"),
+    ConfigField("skill_trust.fspr_insufficient_evidence_normal_action", "CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_NORMAL_ACTION", "audit", str, "skill_trust", "FSPR insufficient-evidence verdict action in normal mode"),
+    ConfigField("skill_trust.fspr_insufficient_evidence_benchmark_action", "CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_BENCHMARK_ACTION", "audit", str, "skill_trust", "FSPR insufficient-evidence verdict action in benchmark mode"),
+    ConfigField("skill_trust.fspr_insufficient_evidence_strict_action", "CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_STRICT_ACTION", "audit", str, "skill_trust", "FSPR insufficient-evidence verdict action in strict mode"),
+    ConfigField("skill_trust.fspr_insufficient_evidence_permissive_action", "CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_PERMISSIVE_ACTION", "audit", str, "skill_trust", "FSPR insufficient-evidence verdict action in permissive mode"),
+    ConfigField("skill_trust.provenance_enabled", "CS_SKILL_TRUST_PROVENANCE_ENABLED", False, bool, "skill_trust", "Enable post-action artifact provenance validation"),
+    ConfigField("skill_trust.provenance_policy_path", "CS_SKILL_TRUST_PROVENANCE_POLICY_PATH", "", str, "skill_trust", "JSON provenance validation policy path"),
+    ConfigField("skill_trust.provenance_policy_json", "CS_SKILL_TRUST_PROVENANCE_POLICY_JSON", "", str, "skill_trust", "Inline JSON provenance validation policy"),
+    ConfigField("skill_trust.provenance_workspace_root", "CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT", "", str, "skill_trust", "Workspace root used for configured provenance artifact globs"),
+    ConfigField("skill_trust.provenance_max_artifact_bytes", "CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES", 1_048_576, int, "skill_trust", "Maximum artifact bytes read by provenance validation"),
     ConfigField("scope.profile_file", "CS_SESSION_SCOPE_PROFILE_FILE", "", str, "scope", "Default session scope profile file", deprecated_aliases=("CS_SESSION_SCOPE_PROFILE",)),
     ConfigField("budgets.llm_token_budget_enabled", "CS_LLM_TOKEN_BUDGET_ENABLED", False, bool, "budgets", "Enable LLM token budget"),
     ConfigField("budgets.llm_daily_token_budget", "CS_LLM_DAILY_TOKEN_BUDGET", 0, int, "budgets", "Daily LLM token budget"),
@@ -184,6 +272,115 @@ def parse_enabled_frameworks(values: Mapping[str, str]) -> tuple[list[str], str]
     if default and default not in enabled:
         enabled.append(default)
     return enabled, default
+
+
+def _validate_capability_narrowing_config(values: dict[str, Any], warnings: list[str]) -> None:
+    trigger_risk = str(values.get("capability_narrowing.trigger_risk") or "").strip().lower()
+    if trigger_risk not in _VALID_RISK_LEVELS:
+        warnings.append(
+            "capability_narrowing.trigger_risk invalid "
+            f"{trigger_risk!r}; using high"
+        )
+        values["capability_narrowing.trigger_risk"] = "high"
+    else:
+        values["capability_narrowing.trigger_risk"] = trigger_risk
+
+    for key in (
+        "capability_narrowing.allowed_tool_permission_groups",
+        "capability_narrowing.denied_tool_permission_groups",
+    ):
+        field = _FIELDS_BY_KEY[key]
+        groups = [
+            group.strip().lower()
+            for group in str(values.get(key) or "").split(",")
+            if group.strip()
+        ]
+        invalid_groups = [group for group in groups if group not in TOOL_PERMISSION_GROUPS]
+        valid_groups = [group for group in groups if group in TOOL_PERMISSION_GROUPS]
+        if invalid_groups or not valid_groups:
+            warnings.append(
+                f"{key} invalid "
+                f"{','.join(invalid_groups or ['<empty>'])}; "
+                f"using {','.join(valid_groups) if valid_groups else field.default}"
+            )
+        values[key] = ",".join(valid_groups) if valid_groups else field.default
+
+    for key in (
+        "capability_narrowing.allowed_skill_trust_states",
+        "capability_narrowing.denied_skill_trust_states",
+    ):
+        field = _FIELDS_BY_KEY[key]
+        states = [
+            state.strip().lower()
+            for state in str(values.get(key) or "").split(",")
+            if state.strip()
+        ]
+        invalid_states = [state for state in states if state not in _VALID_SKILL_TRUST_STATES]
+        valid_states = [state for state in states if state in _VALID_SKILL_TRUST_STATES]
+        if invalid_states or not valid_states:
+            warnings.append(
+                f"{key} invalid "
+                f"{','.join(invalid_states or ['<empty>'])}; "
+                f"using {','.join(valid_states) if valid_states else field.default}"
+            )
+        values[key] = ",".join(valid_states) if valid_states else field.default
+
+    for key in (
+        "capability_narrowing.allowed_mcp_servers",
+        "capability_narrowing.denied_mcp_servers",
+        "capability_narrowing.allowed_mcp_tools",
+        "capability_narrowing.denied_mcp_tools",
+        "capability_narrowing.allowed_capabilities",
+        "capability_narrowing.denied_capabilities",
+        "capability_narrowing.queued_capabilities",
+    ):
+        values[key] = ",".join(
+            item.strip().lower()
+            for item in str(values.get(key) or "").split(",")
+            if item.strip()
+        )
+
+    for key, valid_values in (
+        ("capability_narrowing.allowed_mcp_statuses", _VALID_MCP_STATUSES),
+        ("capability_narrowing.denied_mcp_statuses", _VALID_MCP_STATUSES),
+        ("capability_narrowing.allowed_mcp_trust_levels", _VALID_MCP_TRUST_LEVELS),
+        ("capability_narrowing.denied_mcp_trust_levels", _VALID_MCP_TRUST_LEVELS),
+    ):
+        field = _FIELDS_BY_KEY[key]
+        items = [
+            item.strip().lower()
+            for item in str(values.get(key) or "").split(",")
+            if item.strip()
+        ]
+        invalid_items = [item for item in items if item not in valid_values]
+        valid_items = [item for item in items if item in valid_values]
+        if invalid_items:
+            warnings.append(
+                f"{key} invalid "
+                f"{','.join(invalid_items)}; "
+                f"using {','.join(valid_items) if valid_items else field.default}"
+            )
+        values[key] = ",".join(valid_items) if valid_items else field.default
+
+    greylist_action = str(values.get("capability_narrowing.greylist_action") or "").strip().lower()
+    if greylist_action not in _VALID_CAPABILITY_NARROWING_GREYLIST_ACTIONS:
+        warnings.append(
+            "capability_narrowing.greylist_action invalid "
+            f"{greylist_action!r}; using defer"
+        )
+        values["capability_narrowing.greylist_action"] = "defer"
+    else:
+        values["capability_narrowing.greylist_action"] = greylist_action
+
+    audit_verbosity = str(values.get("capability_narrowing.audit_verbosity") or "").strip().lower()
+    if audit_verbosity not in _VALID_CAPABILITY_NARROWING_AUDIT_VERBOSITY:
+        warnings.append(
+            "capability_narrowing.audit_verbosity invalid "
+            f"{audit_verbosity!r}; using summary"
+        )
+        values["capability_narrowing.audit_verbosity"] = "summary"
+    else:
+        values["capability_narrowing.audit_verbosity"] = audit_verbosity
 
 
 def resolve_effective_config(
@@ -289,6 +486,15 @@ def resolve_effective_config(
     if values.get("project.preset") not in _VALID_PRESETS:
         warnings.append(f"Invalid project.preset={values.get('project.preset')!r}; using medium")
         values["project.preset"] = "medium"
+    _validate_capability_narrowing_config(values, warnings)
+    tool_permission_override_findings = parse_tool_permission_group_overrides(
+        str(values.get("tool_permissions.group_overrides") or "")
+    ).findings
+    for finding in tool_permission_override_findings:
+        warnings.append(
+            "tool_permissions.group_overrides "
+            f"{finding.get('code')}: {finding.get('entry')}"
+        )
 
     api_key_env = str(values.get("llm.api_key_env") or "CS_LLM_API_KEY")
     api_key = ""
@@ -389,6 +595,26 @@ def write_env_template(
         f"CS_L3_ENABLED={'true' if l3 else 'false'}",
         "CS_ENTERPRISE_ENABLED=false",
         "CS_CAPABILITY_NARROWING_ENABLED=false",
+        "CS_CAPABILITY_NARROWING_TRIGGER_RISK=high",
+        "CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS=read_only",
+        "CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS=write,network,credentialed,destructive,mcp_admin,unknown",
+        "CS_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES=allowlist",
+        "CS_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES=blacklist,revoked",
+        "CS_CAPABILITY_NARROWING_ALLOWED_MCP_SERVERS=",
+        "CS_CAPABILITY_NARROWING_DENIED_MCP_SERVERS=",
+        "CS_CAPABILITY_NARROWING_ALLOWED_MCP_TOOLS=filesystem.read_file",
+        "CS_CAPABILITY_NARROWING_DENIED_MCP_TOOLS=fetch.fetch",
+        "CS_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES=",
+        "CS_CAPABILITY_NARROWING_DENIED_MCP_STATUSES=blacklist,revoked,disabled",
+        "CS_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS=",
+        "CS_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS=untrusted,unknown,local_unreviewed",
+        "CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES=",
+        "CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES=",
+        "CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES=",
+        "CS_CAPABILITY_NARROWING_AUDIT_VERBOSITY=summary",
+        "CS_CAPABILITY_NARROWING_GREYLIST_ACTION=defer",
+        "# Optional: semicolon-separated tool=group[,group] overrides.",
+        "# CS_TOOL_PERMISSION_GROUP_OVERRIDES=custom_read=read_only",
         "CS_AGENT_SAFETY_FEEDBACK_ENABLED=false",
         "# Optional: default task-boundary profile applied to every pre_action.",
         "# CS_SESSION_SCOPE_PROFILE_FILE=scope.json",

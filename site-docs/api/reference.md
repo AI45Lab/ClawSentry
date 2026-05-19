@@ -79,3 +79,17 @@ description: 使用 Scalar 风格界面浏览 ClawSentry OpenAPI 端点、schema
 | Enterprise 条件端点 | 企业部署运维 | `/enterprise/*` 的条件注册状态，不代表默认环境开启 |
 | Excluded | 文档维护者 | `GET /ui`、`GET /ui/{path:path}` 和 webhook-local `GET /health` 不进入共享 OpenAPI 的原因 |
 | Webhook | OpenClaw 集成方 | token、HMAC、timestamp、IP allowlist、idempotency 行为 |
+
+## Skill Trust Operator API
+
+OpenAPI 中的 Skill Trust 端点是 operator surface，不是 adapter 决策路径。它们使用与其他本地 HTTP operator 端点相同的 Bearer token 规则。
+
+| Endpoint | 用途 | 关键字段 |
+| --- | --- | --- |
+| `GET /skill-trust/registry` | 查看 Gateway-owned registry/runtime metadata、grade、snapshot id 和 transition history | `registry_snapshot_id`、`metadata_records`、`transition_events` |
+| `GET /skill-trust/transition/recommendations` | 查看 FSPR/P2 等 evidence-only 推荐 | recommendation source、target state、evidence refs |
+| `POST /skill-trust/transition` | 写入 allowlist/greylist/blacklist/revoke/disable/restore/override transition | `idempotency_key`、`expected_registry_snapshot_id`、`target_state`、`reason_code`、`evidence_refs`、`operator_id_hash`、`override_id` |
+
+Runtime binding evidence remains in AHP decisions and replay metadata: `runtime_path_status`、`runtime_root_path_hash`、`runtime_content_status`、`metadata_record_id`、`skill_use_ledger` and `provenance_findings`. Artifact provenance validation is post-action and generic; it compares declared labels with the skill-use ledger and does not rewrite the completed canonical decision.
+
+Agent-facing safety feedback appears in decision responses only for supported critical-block delivery modes. Unsupported hosts record audit metadata instead of claiming prompt injection delivery.

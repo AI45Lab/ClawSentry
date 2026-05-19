@@ -1419,7 +1419,7 @@ clawsentry rules dry-run --events my-events.json --skills-dir /etc/clawsentry/sk
 ```bash
 clawsentry skill-trust scan --skill-root PATH [--output FILE] [--json]
 clawsentry skill-trust register --skill-root PATH --registry FILE [--framework codex] [--scope workspace] [--list-state auto|allowlist|greylist|blacklist] [--operator-override ID] [--json]
-clawsentry skill-trust register-dir --skills-dir DIR --registry FILE --metadata FILE [--framework codex] [--scope workspace] [--json]
+clawsentry skill-trust register-dir --skills-dir DIR --registry FILE --metadata FILE [--allowed-runtime-parent DIR ...] [--framework codex] [--scope workspace] [--json]
 ```
 
 ### 子命令
@@ -1430,6 +1430,8 @@ clawsentry skill-trust register-dir --skills-dir DIR --registry FILE --metadata 
 | `register` | 扫描单个 skill root，并写入 registry transition event |
 | `register-dir` | 扫描目录下的 skill 包，生成 registry 与 runtime metadata |
 
+`register`、`register-dir` 和 lifecycle JSON 输出中的 registry record 会包含派生字段 `skill_trust_grade`（`trusted` / `review` / `restricted` / `blocked` / `disabled`）。该字段仅用于 operator 展示；策略仍读取 trust-list state、admission、runtime binding、FSPR 和 provenance/P2 原始证据。
+
 ### 示例
 
 ```bash
@@ -1437,6 +1439,9 @@ clawsentry skill-trust register-dir \
   --skills-dir ~/.codex/skills \
   --registry .clawsentry/skill-trust-registry.json \
   --metadata .clawsentry/skill-trust-runtime.json \
+  --allowed-runtime-parent /workspace/.codex/skills \
+  --allowed-runtime-parent "$CODEX_HOME/skills" \
+  --allowed-runtime-parent "$HOME/.agents/skills" \
   --framework codex \
   --scope workspace \
   --json

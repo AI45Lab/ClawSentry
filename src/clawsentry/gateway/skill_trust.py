@@ -8,15 +8,17 @@ import json
 import re
 import time
 import tokenize
+from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 
 from .models import (
     AdmissionFinding,
     AdmissionReport,
     FirstUseScanState,
     RiskLevel,
+    RuntimeSkillRef,
     SkillRegistryRecord,
     SkillTrustContext,
     SkillTrustTransitionEvent,
@@ -25,6 +27,56 @@ from .models import (
 POLICY_FINGERPRINT = "sha256:skill-trust-mvp-v1"
 _MAX_HASH_FILE_BYTES = 1024 * 1024
 _FRAMEWORKS = ("codex", "claude-code", "kimi-cli", "gemini-cli")
+RUNTIME_PATH_STATUSES = frozenset({
+    "verified_source",
+    "verified_mirror",
+    "verified_name",
+    "name_only_unverified",
+    "path_fragment_unverified",
+    "disallowed",
+    "ambiguous_runtime_source",
+    "absent",
+})
+RUNTIME_CONTENT_STATUSES = frozenset({
+    "content_verified",
+    "trusted_runner_immutable",
+    "content_unverified",
+    "content_mismatch",
+    "not_applicable",
+})
+SKILL_TRUST_GRADES = frozenset({
+    "trusted",
+    "review",
+    "restricted",
+    "blocked",
+    "disabled",
+})
+
+
+@dataclass(frozen=True)
+class SkillTrustMetadataRecord:
+    metadata_record_id: str
+    presented_name: str
+    canonical_skill_id: str | None = None
+    canonical_name: str | None = None
+    source_root_path: str | None = None
+    source_root_path_hash: str | None = None
+    allowed_runtime_roots: tuple[str, ...] = ()
+    allowed_runtime_root_hashes: tuple[str, ...] = ()
+    mirror_integrity_mode: str = "unverified"
+    trusted_runner_contract_id: str | None = None
+    runner_contract_attestation_required: bool = False
+    runtime_binding_profile: str = "source_or_mirror"
+    content_hashes: dict[str, str] = field(default_factory=dict)
+    metadata_record_id_compat: bool = False
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class SkillTrustMetadataBundle:
+    metadata_records: tuple[SkillTrustMetadataRecord, ...]
+    metadata_by_normalized_name: dict[str, list[str]]
+    raw_metadata_by_skill: dict[str, dict[str, Any]]
 
 _METADATA_AVAILABILITY_MATRIX: tuple[dict[str, Any], ...] = (
     {
@@ -83,6 +135,107 @@ _METADATA_AVAILABILITY_MATRIX: tuple[dict[str, Any], ...] = (
         "decision_impact": "missing framework ids reduce attribution only; no block from missing alone",
     },
 )
+
+
+def _record_dict(record: SkillRegistryRecord | dict[str, Any]) -> dict[str, Any]:
+    if isinstance(record, SkillRegistryRecord):
+        return record.model_dump(mode="json")
+    return dict(record)
+
+
+def _record_source(record: dict[str, Any]) -> dict[str, Any]:
+    source = record.get("source")
+    return source if isinstance(source, dict) else {}
+
+
+def _advisory_evidence(record: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence = record.get("advisory_evidence")
+    if not isinstance(evidence, list):
+        return []
+    return [item for item in evidence if isinstance(item, dict)]
+
+
+def _first_present(values: Iterable[Any]) -> str:
+    for value in values:
+        if value is not None and str(value).strip():
+            return str(value).strip()
+    return ""
+
+
+def derive_skill_trust_grade(record: SkillRegistryRecord | dict[str, Any]) -> str:
+    """Derive operator-facing Skill Trust grade from record evidence.
+
+    The grade is display-only. Policy continues to consume the underlying
+    trust-list state, admission, runtime binding, FSPR, and P2 evidence fields.
+    """
+
+    data = _record_dict(record)
+    source = _record_source(data)
+    list_state = str(data.get("list_state") or data.get("trust_list_state") or "unlisted")
+    if list_state == "disabled":
+        return "disabled"
+    if list_state in {"blacklist", "revoked"}:
+        return "blocked"
+
+    admission_risk = _first_present((
+        data.get("admission_risk"),
+        source.get("admission_risk"),
+        source.get("first_use_scan_admission_risk"),
+    ))
+    runtime_path_status = _first_present((
+        data.get("runtime_path_status"),
+        source.get("runtime_path_status"),
+    ))
+    runtime_content_status = _first_present((
+        data.get("runtime_content_status"),
+        source.get("runtime_content_status"),
+    ))
+    fspr_verdict = _first_present((
+        data.get("fspr_verdict"),
+        source.get("fspr_verdict"),
+        source.get("first_use_package_review_verdict"),
+    ))
+    advisory = _advisory_evidence(data)
+    advisory_verdicts = {
+        str(item.get("verdict") or item.get("finding_type") or item.get("reason_code") or "")
+        for item in advisory
+    }
+    unresolved_p2 = any(
+        str(item.get("source") or item.get("finding_family") or "").lower()
+        in {"p2", "provenance", "provenance_validator"}
+        and item.get("resolved") is not True
+        for item in advisory
+    )
+
+    if (
+        admission_risk in {"high", "critical"}
+        or runtime_path_status in {"disallowed", "ambiguous_runtime_source"}
+        or runtime_content_status == "content_mismatch"
+        or fspr_verdict == "inconsistent"
+        or "inconsistent" in advisory_verdicts
+        or unresolved_p2
+    ):
+        return "restricted"
+    if (
+        list_state in {"greylist", "unlisted"}
+        or admission_risk in {"medium", "unknown"}
+        or runtime_path_status in {"name_only_unverified", "path_fragment_unverified"}
+        or runtime_content_status == "content_unverified"
+        or fspr_verdict == "insufficient_evidence"
+        or "insufficient_evidence" in advisory_verdicts
+    ):
+        return "review"
+    if list_state == "allowlist":
+        return "trusted"
+    return "review"
+
+
+def record_with_skill_trust_grade(
+    record: SkillRegistryRecord | dict[str, Any],
+) -> dict[str, Any]:
+    data = _record_dict(record)
+    data["skill_trust_grade"] = derive_skill_trust_grade(data)
+    return data
 
 _ALLOWED_TRANSITIONS: set[tuple[str, str]] = {
     ("unlisted", "greylist"),
@@ -161,12 +314,22 @@ def _sha256(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
-def _hash_file(path: Path) -> str:
+def _runtime_root_path_hash(path: str | None) -> str | None:
+    if not path:
+        return None
+    return _sha256(str(path).encode("utf-8"))
+
+
+def _hash_file(path: Path, *, max_file_bytes: int | None = None) -> str:
     if path.is_symlink():
         return _sha256(f"symlink-skipped:{path.name}".encode("utf-8"))
     try:
-        if path.stat().st_size > _MAX_HASH_FILE_BYTES:
-            return _sha256(f"large-file-skipped:{path.name}:{path.stat().st_size}".encode("utf-8"))
+        size = path.stat().st_size
+        effective_max_file_bytes = max_file_bytes or _MAX_HASH_FILE_BYTES
+        if size > effective_max_file_bytes:
+            if max_file_bytes is not None:
+                raise TimeoutError("admission scan file byte budget exceeded")
+            return _sha256(f"large-file-skipped:{path.name}:{size}".encode("utf-8"))
     except OSError:
         return _sha256(f"file-unreadable:{path.name}".encode("utf-8"))
     return _sha256(path.read_bytes())
@@ -193,12 +356,23 @@ def _read_in_tree_text(path: Path, root: Path, *, deadline_at: float | None = No
     return path.read_text(encoding="utf-8", errors="replace")
 
 
-def _hash_directory(path: Path, *, deadline_at: float | None = None) -> str:
+def _hash_directory(
+    path: Path,
+    *,
+    deadline_at: float | None = None,
+    max_files: int | None = None,
+    max_file_bytes: int | None = None,
+) -> str:
     hasher = hashlib.sha256()
+    files_seen = 0
     if path.exists():
         root = path.resolve(strict=False)
         for file in sorted(p for p in path.rglob("*") if p.is_file() or p.is_symlink()):
             _raise_if_scan_deadline_expired(deadline_at)
+            if max_files is not None:
+                files_seen += 1
+                if files_seen > max_files:
+                    raise TimeoutError("admission scan file count budget exceeded")
             if file.is_symlink():
                 hasher.update(file.relative_to(path).as_posix().encode("utf-8"))
                 hasher.update(b"\0symlink-skipped\0")
@@ -213,7 +387,10 @@ def _hash_directory(path: Path, *, deadline_at: float | None = None) -> str:
             rel = file.relative_to(path).as_posix().encode("utf-8")
             hasher.update(rel)
             hasher.update(b"\0")
-            if size > _MAX_HASH_FILE_BYTES:
+            effective_max_file_bytes = max_file_bytes or _MAX_HASH_FILE_BYTES
+            if size > effective_max_file_bytes:
+                if max_file_bytes is not None:
+                    raise TimeoutError("admission scan file byte budget exceeded")
                 hasher.update(f"large-file-skipped:{size}".encode("utf-8"))
                 hasher.update(b"\0")
                 continue
@@ -266,11 +443,473 @@ def load_skill_registry_records(path: str | Path | None) -> list[SkillRegistryRe
     ]
 
 
+def _metadata_record_id_from_material(
+    *,
+    framework: str,
+    scope: str,
+    presented_name: str | None,
+    canonical_name: str | None,
+    source_root_path_hash: str | None,
+    skill_root_hash: str | None,
+    content_hashes: dict[str, Any] | None,
+    registry_snapshot_id: str | None = None,
+) -> str:
+    material = {
+        "schema_version": "clawsentry.skill_trust_metadata_record.v1",
+        "framework": framework,
+        "scope": scope,
+        "normalized_presented_name": _identity_normalize(presented_name),
+        "canonical_name": canonical_name or "",
+        "source_root_path_hash": source_root_path_hash or "",
+        "skill_root_hash": skill_root_hash or "",
+        "content_hashes": content_hashes or {},
+        "registry_snapshot_id": registry_snapshot_id or "",
+    }
+    return _sha256(json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+
+
+def _metadata_record_from_raw(
+    raw: dict[str, Any],
+    *,
+    framework: str,
+    scope: str,
+    registry_snapshot_id: str | None = None,
+    compat: bool = False,
+) -> SkillTrustMetadataRecord:
+    presented_name = str(raw.get("presented_name") or raw.get("canonical_name") or "")
+    canonical_name = raw.get("canonical_name")
+    if canonical_name is not None:
+        canonical_name = str(canonical_name)
+    source_root_path = raw.get("source_root_path") or raw.get("skill_root_path")
+    source_root_path = str(source_root_path) if source_root_path else None
+    source_root_path_hash = (
+        raw.get("source_root_path_hash")
+        or raw.get("skill_root_path_hash")
+        or _runtime_root_path_hash(source_root_path)
+    )
+    source_root_path_hash = str(source_root_path_hash) if source_root_path_hash else None
+    allowed_runtime_roots = tuple(
+        str(root)
+        for root in (raw.get("allowed_runtime_roots") or ([source_root_path] if source_root_path else []))
+        if root
+    )
+    allowed_runtime_root_hashes = tuple(
+        str(value)
+        for value in (
+            raw.get("allowed_runtime_root_hashes")
+            or [_runtime_root_path_hash(root) for root in allowed_runtime_roots]
+        )
+        if value
+    )
+    content_hashes = {
+        str(key): str(value)
+        for key, value in (raw.get("content_hashes") or {}).items()
+    }
+    metadata_record_id = raw.get("metadata_record_id")
+    if metadata_record_id:
+        metadata_record_id = str(metadata_record_id)
+        metadata_record_id_compat = bool(raw.get("metadata_record_id_compat"))
+    else:
+        metadata_record_id = _metadata_record_id_from_material(
+            framework=str(raw.get("framework") or framework),
+            scope=str(raw.get("scope") or scope),
+            presented_name=presented_name,
+            canonical_name=canonical_name,
+            source_root_path_hash=source_root_path_hash,
+            skill_root_hash=str(raw.get("skill_root_hash") or raw.get("skill_root_path_hash") or ""),
+            content_hashes=content_hashes,
+            registry_snapshot_id=registry_snapshot_id,
+        )
+        metadata_record_id_compat = True if compat else bool(raw.get("metadata_record_id_compat"))
+    return SkillTrustMetadataRecord(
+        metadata_record_id=metadata_record_id,
+        presented_name=presented_name,
+        canonical_skill_id=str(raw.get("canonical_skill_id")) if raw.get("canonical_skill_id") else None,
+        canonical_name=canonical_name,
+        source_root_path=source_root_path,
+        source_root_path_hash=source_root_path_hash,
+        allowed_runtime_roots=allowed_runtime_roots,
+        allowed_runtime_root_hashes=allowed_runtime_root_hashes,
+        mirror_integrity_mode=str(raw.get("mirror_integrity_mode") or "unverified"),
+        trusted_runner_contract_id=(
+            str(raw.get("trusted_runner_contract_id"))
+            if raw.get("trusted_runner_contract_id")
+            else None
+        ),
+        runner_contract_attestation_required=bool(raw.get("runner_contract_attestation_required")),
+        runtime_binding_profile=str(raw.get("runtime_binding_profile") or "source_or_mirror"),
+        content_hashes=content_hashes,
+        metadata_record_id_compat=metadata_record_id_compat,
+        raw=dict(raw),
+    )
+
+
+def _metadata_record_to_raw(record: SkillTrustMetadataRecord) -> dict[str, Any]:
+    raw = dict(record.raw)
+    raw.update({
+        "metadata_record_id": record.metadata_record_id,
+        "metadata_record_id_compat": record.metadata_record_id_compat,
+        "presented_name": record.presented_name,
+        "canonical_skill_id": record.canonical_skill_id,
+        "canonical_name": record.canonical_name,
+        "source_root_path": record.source_root_path,
+        "source_root_path_hash": record.source_root_path_hash,
+        "allowed_runtime_roots": list(record.allowed_runtime_roots),
+        "allowed_runtime_root_hashes": list(record.allowed_runtime_root_hashes),
+        "mirror_integrity_mode": record.mirror_integrity_mode,
+        "trusted_runner_contract_id": record.trusted_runner_contract_id,
+        "runner_contract_attestation_required": record.runner_contract_attestation_required,
+        "runtime_binding_profile": record.runtime_binding_profile,
+    })
+    return {key: value for key, value in raw.items() if value is not None}
+
+
+def load_skill_trust_runtime_metadata_bundle(bundle: dict[str, Any] | None) -> SkillTrustMetadataBundle:
+    """Normalize old and new runtime metadata bundles into record-indexed metadata."""
+
+    payload = bundle or {}
+    framework = str(payload.get("framework") or "codex")
+    scope = str(payload.get("scope") or "workspace")
+    registry_snapshot_id = (
+        str(payload.get("registry_snapshot_id"))
+        if payload.get("registry_snapshot_id")
+        else None
+    )
+    raw_by_skill = {
+        str(key): dict(value)
+        for key, value in (payload.get("raw_metadata_by_skill") or {}).items()
+        if isinstance(value, dict)
+    }
+
+    records: list[SkillTrustMetadataRecord] = []
+    for row in payload.get("metadata_records") or []:
+        if isinstance(row, dict):
+            records.append(
+                _metadata_record_from_raw(
+                    row,
+                    framework=framework,
+                    scope=scope,
+                    registry_snapshot_id=registry_snapshot_id,
+                )
+            )
+
+    if not records:
+        for key, raw in raw_by_skill.items():
+            row = dict(raw)
+            row.setdefault("presented_name", key)
+            records.append(
+                _metadata_record_from_raw(
+                    row,
+                    framework=framework,
+                    scope=scope,
+                    registry_snapshot_id=registry_snapshot_id,
+                    compat=True,
+                )
+            )
+
+    metadata_by_name: dict[str, list[str]] = {}
+    for record in records:
+        normalized = _display_normalize(record.presented_name or record.canonical_name)
+        metadata_by_name.setdefault(normalized, []).append(record.metadata_record_id)
+
+    normalized_raw = {
+        key: dict(value)
+        for key, value in raw_by_skill.items()
+    }
+    for record in records:
+        key = record.presented_name or record.canonical_name or record.metadata_record_id
+        raw = normalized_raw.setdefault(key, {})
+        raw.update(_metadata_record_to_raw(record))
+
+    for name, ids in metadata_by_name.items():
+        matching = [
+            record
+            for record in records
+            if _display_normalize(record.presented_name or record.canonical_name) == name
+        ]
+        if len(matching) == 1:
+            normalized_raw.setdefault(matching[0].presented_name, {}).update({
+                "metadata_record_id": matching[0].metadata_record_id,
+            })
+        else:
+            for record in matching:
+                normalized_raw.setdefault(record.presented_name, {}).update({
+                    "metadata_record_ids": ids,
+                })
+
+    return SkillTrustMetadataBundle(
+        metadata_records=tuple(records),
+        metadata_by_normalized_name=metadata_by_name,
+        raw_metadata_by_skill=normalized_raw,
+    )
+
+
+def _records_for_ref(
+    bundle: SkillTrustMetadataBundle,
+    ref: RuntimeSkillRef,
+) -> list[SkillTrustMetadataRecord]:
+    if not ref.name:
+        return []
+    ids = bundle.metadata_by_normalized_name.get(_display_normalize(ref.name), [])
+    by_id = {record.metadata_record_id: record for record in bundle.metadata_records}
+    return [by_id[record_id] for record_id in ids if record_id in by_id]
+
+
+def _runtime_root_matches(record: SkillTrustMetadataRecord, runtime_root: str) -> tuple[str | None, str | None]:
+    if record.source_root_path and runtime_root == str(Path(record.source_root_path).expanduser().resolve(strict=False)):
+        return "verified_source", "source root matched"
+    for allowed in record.allowed_runtime_roots:
+        if runtime_root == str(Path(allowed).expanduser().resolve(strict=False)):
+            return "verified_mirror", "allowed runtime mirror root matched"
+    return None, None
+
+
+def _runtime_path_within_root(runtime_path: str | None, runtime_root: str) -> bool:
+    if not runtime_path:
+        return True
+    root = Path(runtime_root).expanduser().resolve(strict=False)
+    path = Path(runtime_path).expanduser().resolve(strict=False)
+    return path == root or root in path.parents
+
+
+def _content_status_for_match(
+    record: SkillTrustMetadataRecord,
+    *,
+    status: str,
+    runtime_root: str | None,
+    current_runner_contract_id: str | None,
+    mirror_hash_max_files: int | None = None,
+    mirror_hash_max_file_bytes: int | None = None,
+    mirror_hash_deadline_at: float | None = None,
+) -> tuple[str, list[str]]:
+    if status == "verified_source":
+        return "not_applicable", []
+    if record.mirror_integrity_mode == "trusted_runner_immutable":
+        if (
+            record.runner_contract_attestation_required
+            and record.trusted_runner_contract_id
+            and current_runner_contract_id == record.trusted_runner_contract_id
+        ):
+            return "trusted_runner_immutable", []
+        return "content_unverified", ["runtime_content_unverified"]
+    if record.mirror_integrity_mode == "content_hash":
+        if not runtime_root or not record.content_hashes:
+            return "content_unverified", ["runtime_content_unverified"]
+        try:
+            mirror_hashes = AdmissionScanner().scan(
+                Path(runtime_root),
+                deadline_at=mirror_hash_deadline_at,
+                max_files=mirror_hash_max_files,
+                max_file_bytes=mirror_hash_max_file_bytes,
+            ).content_hashes
+        except Exception:
+            return "content_unverified", ["runtime_content_unverified"]
+        expected_hashes = {
+            key: value
+            for key, value in record.content_hashes.items()
+            if key in {"SKILL.md", "scripts", "references", "data"}
+        }
+        comparable_hashes = {
+            key: mirror_hashes.get(key)
+            for key in expected_hashes
+            if mirror_hashes.get(key)
+        }
+        if comparable_hashes != expected_hashes:
+            if comparable_hashes:
+                return "content_mismatch", ["runtime_content_mismatch"]
+            return "content_unverified", ["runtime_content_unverified"]
+        return "content_verified", []
+    if record.mirror_integrity_mode == "unverified":
+        return "content_unverified", ["runtime_content_unverified"]
+    return "content_unverified", ["runtime_content_unverified"]
+
+
+def bind_runtime_skill_refs(
+    metadata_bundle: SkillTrustMetadataBundle | dict[str, Any],
+    runtime_refs: Iterable[RuntimeSkillRef],
+    *,
+    framework_contract_allows_name_only: bool = False,
+    current_runner_contract_id: str | None = None,
+    mirror_hash_max_files: int | None = None,
+    mirror_hash_max_file_bytes: int | None = None,
+    mirror_hash_max_total_ms: int | None = None,
+) -> list[SkillTrustContext]:
+    """Bind adapter-observed runtime refs to Gateway-owned metadata records."""
+
+    bundle = (
+        load_skill_trust_runtime_metadata_bundle(metadata_bundle)
+        if isinstance(metadata_bundle, dict)
+        else metadata_bundle
+    )
+    mirror_hash_deadline_at = (
+        time.monotonic() + (mirror_hash_max_total_ms / 1000.0)
+        if mirror_hash_max_total_ms is not None
+        else None
+    )
+    bound: list[SkillTrustContext] = []
+    for ref in runtime_refs:
+        candidates = _records_for_ref(bundle, ref)
+        runtime_root = (
+            str(Path(ref.runtime_root).expanduser().resolve(strict=False))
+            if ref.runtime_root
+            else None
+        )
+        if runtime_root:
+            matches: list[tuple[SkillTrustMetadataRecord, str, str]] = []
+            for record in candidates:
+                status, reason = _runtime_root_matches(record, runtime_root)
+                if status and reason:
+                    matches.append((record, status, reason))
+            if len(matches) == 1:
+                record, status, reason = matches[0]
+                if not _runtime_path_within_root(ref.runtime_path, runtime_root):
+                    bound.append(
+                        SkillTrustContext(
+                            registry_status="unknown",
+                            presented_name=ref.name,
+                            runtime_path_status="disallowed",
+                            runtime_root_path_hash=ref.observed_runtime_root_path_hash
+                            or _runtime_root_path_hash(runtime_root),
+                            runtime_binding_reason="runtime path resolves outside runtime root",
+                            runtime_evidence_kind=ref.evidence_kind,
+                            ref_ordinal=ref.ref_ordinal,
+                            invariant_violations=["runtime_path_disallowed"],
+                            policy_fingerprint=POLICY_FINGERPRINT,
+                        )
+                    )
+                    continue
+                effective_runner_contract_id = current_runner_contract_id
+                content_status, violations = _content_status_for_match(
+                    record,
+                        status=status,
+                        runtime_root=runtime_root,
+                        current_runner_contract_id=effective_runner_contract_id,
+                        mirror_hash_max_files=mirror_hash_max_files,
+                        mirror_hash_max_file_bytes=mirror_hash_max_file_bytes,
+                        mirror_hash_deadline_at=mirror_hash_deadline_at,
+                    )
+                bound.append(
+                    SkillTrustContext(
+                        registry_status="matched",
+                        canonical_skill_id=record.canonical_skill_id,
+                        presented_name=ref.name,
+                        runtime_path_status=status,  # type: ignore[arg-type]
+                        runtime_root_path_hash=ref.observed_runtime_root_path_hash
+                        or _runtime_root_path_hash(runtime_root),
+                        runtime_binding_reason=reason,
+                        runtime_content_status=content_status,  # type: ignore[arg-type]
+                        metadata_source="gateway_owned_metadata",
+                        metadata_record_id=record.metadata_record_id,
+                        runtime_evidence_kind=ref.evidence_kind,
+                        current_runner_contract_id=effective_runner_contract_id,
+                        ref_ordinal=ref.ref_ordinal,
+                        trust_list_state="unlisted",
+                        invariant_violations=violations,
+                        policy_fingerprint=POLICY_FINGERPRINT,
+                    )
+                )
+                continue
+            if len(matches) > 1:
+                bound.append(
+                    SkillTrustContext(
+                        registry_status="ambiguous",
+                        presented_name=ref.name,
+                        runtime_path_status="ambiguous_runtime_source",
+                        runtime_root_path_hash=ref.observed_runtime_root_path_hash
+                        or _runtime_root_path_hash(runtime_root),
+                        runtime_binding_reason="multiple metadata records matched runtime root",
+                        runtime_evidence_kind=ref.evidence_kind,
+                        ref_ordinal=ref.ref_ordinal,
+                        invariant_violations=["runtime_source_ambiguous"],
+                        policy_fingerprint=POLICY_FINGERPRINT,
+                    )
+                )
+                continue
+            bound.append(
+                SkillTrustContext(
+                    registry_status="unknown",
+                    presented_name=ref.name,
+                    runtime_path_status="disallowed",
+                    runtime_root_path_hash=ref.observed_runtime_root_path_hash
+                    or _runtime_root_path_hash(runtime_root),
+                    runtime_binding_reason="runtime root is outside source and allowed mirrors",
+                    runtime_evidence_kind=ref.evidence_kind,
+                    ref_ordinal=ref.ref_ordinal,
+                    invariant_violations=["runtime_path_disallowed"],
+                    policy_fingerprint=POLICY_FINGERPRINT,
+                )
+            )
+            continue
+
+        if ref.evidence_kind == "path_fragment":
+            bound.append(
+                SkillTrustContext(
+                    registry_status="unbound",
+                    presented_name=ref.name,
+                    runtime_path_status="path_fragment_unverified",
+                    runtime_binding_reason="skill-like path fragment lacks trusted root",
+                    runtime_evidence_kind=ref.evidence_kind,
+                    ref_ordinal=ref.ref_ordinal,
+                    invariant_violations=["runtime_path_fragment_unverified"],
+                    policy_fingerprint=POLICY_FINGERPRINT,
+                )
+            )
+            continue
+
+        if len(candidates) > 1:
+            bound.append(
+                SkillTrustContext(
+                    registry_status="ambiguous",
+                    presented_name=ref.name,
+                    runtime_path_status="ambiguous_runtime_source",
+                    runtime_binding_reason="name-only runtime ref matches multiple metadata records",
+                    runtime_evidence_kind=ref.evidence_kind,
+                    ref_ordinal=ref.ref_ordinal,
+                    invariant_violations=["runtime_source_ambiguous"],
+                    policy_fingerprint=POLICY_FINGERPRINT,
+                )
+            )
+            continue
+        if len(candidates) == 1 and ref.evidence_kind == "native_skill_call" and framework_contract_allows_name_only:
+            record = candidates[0]
+            bound.append(
+                SkillTrustContext(
+                    registry_status="matched",
+                    canonical_skill_id=record.canonical_skill_id,
+                    presented_name=ref.name,
+                    runtime_path_status="verified_name",
+                    runtime_content_status="not_applicable",
+                    runtime_binding_reason="controlled native skill contract exposed a unique name",
+                    metadata_source="gateway_owned_metadata",
+                    metadata_record_id=record.metadata_record_id,
+                    runtime_evidence_kind=ref.evidence_kind,
+                    ref_ordinal=ref.ref_ordinal,
+                    trust_list_state="unlisted",
+                    policy_fingerprint=POLICY_FINGERPRINT,
+                )
+            )
+            continue
+        bound.append(
+            SkillTrustContext(
+                registry_status="unbound",
+                presented_name=ref.name,
+                runtime_path_status="name_only_unverified",
+                runtime_binding_reason="name-only runtime ref lacks controlled unique binding",
+                runtime_evidence_kind=ref.evidence_kind,
+                ref_ordinal=ref.ref_ordinal,
+                invariant_violations=["runtime_binding_claim_untrusted"],
+                policy_fingerprint=POLICY_FINGERPRINT,
+            )
+        )
+    return bound
+
+
 def build_skill_trust_bundle(
     skill_parent: str | Path,
     *,
     framework: str = "codex",
     scope: str = "workspace",
+    allowed_runtime_parents: Sequence[str | Path] = (),
 ) -> dict[str, Any]:
     """Build non-mutating Skill Trust registry and raw metadata for a skill directory."""
 
@@ -287,9 +926,22 @@ def build_skill_trust_bundle(
     reports = scanner.scan_many(skill_roots)
     records: list[SkillRegistryRecord] = []
     raw_by_skill: dict[str, dict[str, Any]] = {}
+    metadata_records: list[dict[str, Any]] = []
+    metadata_by_normalized_name: dict[str, list[str]] = {}
     for root in skill_roots:
         report = reports[root]
         canonical_name, aliases = _skill_identity_from_manifest(root)
+        source_root_path = str(root.resolve())
+        source_root_path_hash = _runtime_root_path_hash(source_root_path) or ""
+        metadata_record_id = _metadata_record_id_from_material(
+            framework=framework,
+            scope=scope,
+            presented_name=root.name,
+            canonical_name=canonical_name,
+            source_root_path_hash=source_root_path_hash,
+            skill_root_hash=report.skill_root_hash,
+            content_hashes=report.content_hashes,
+        )
         record = SkillRegistryRecord(
             canonical_skill_id=_sha256(f"{framework}:{canonical_name}".encode("utf-8")),
             canonical_name=canonical_name,
@@ -297,9 +949,10 @@ def build_skill_trust_bundle(
             content_hashes=report.content_hashes,
             source={
                 "framework": framework,
-                "path_hash": _sha256(str(root.resolve()).encode("utf-8")),
+                "path_hash": source_root_path_hash,
                 "skill_root_hash": report.skill_root_hash,
                 "scope": scope,
+                "admission_risk": report.admission_risk.value,
             },
             trust_level="unknown",
             admission_scan_id=report.scan_id,
@@ -319,6 +972,36 @@ def build_skill_trust_bundle(
                 ),
             )
         )
+        allowed_runtime_roots = _allowed_runtime_roots_for_skill(
+            source_root_path=source_root_path,
+            skill_dir_name=root.name,
+            allowed_runtime_parents=allowed_runtime_parents,
+        )
+        allowed_runtime_root_hashes = [
+            root_hash
+            for root_hash in (_runtime_root_path_hash(runtime_root) for runtime_root in allowed_runtime_roots)
+            if root_hash
+        ]
+        metadata_record = {
+            "metadata_record_id": metadata_record_id,
+            "presented_name": root.name,
+            "canonical_skill_id": record.canonical_skill_id,
+            "canonical_name": record.canonical_name,
+            "framework": framework,
+            "scope": scope,
+            "source_root_path": source_root_path,
+            "source_root_path_hash": source_root_path_hash,
+            "allowed_runtime_roots": allowed_runtime_roots,
+            "allowed_runtime_root_hashes": allowed_runtime_root_hashes,
+            "mirror_integrity_mode": "content_hash",
+            "trusted_runner_contract_id": None,
+            "runner_contract_attestation_required": False,
+            "runtime_binding_profile": "source_or_mirror",
+            "skill_root_hash": report.skill_root_hash,
+            "content_hashes": report.content_hashes,
+        }
+        metadata_records.append(metadata_record)
+        metadata_by_normalized_name.setdefault(_display_normalize(root.name), []).append(metadata_record_id)
         raw_by_skill[root.name] = {
             "presented_name": root.name,
             "canonical_skill_id": record.canonical_skill_id,
@@ -331,7 +1014,13 @@ def build_skill_trust_bundle(
             "provenance_label_conflict": False,
             "admission_scan_id": report.scan_id,
             "admission_risk": report.admission_risk.value,
-            "skill_root_path": str(root.resolve()),
+            "metadata_record_id": metadata_record_id,
+            "source_root_path": source_root_path,
+            "source_root_path_hash": source_root_path_hash,
+            "allowed_runtime_roots": allowed_runtime_roots,
+            "allowed_runtime_root_hashes": allowed_runtime_root_hashes,
+            "mirror_integrity_mode": "content_hash",
+            "skill_root_path": source_root_path,
             "skill_root_path_hash": record.source["path_hash"],
         }
 
@@ -370,6 +1059,8 @@ def build_skill_trust_bundle(
         "framework": framework,
         "skill_parent": str(parent),
         "records": [record.model_dump(mode="json") for record in records],
+        "metadata_records": metadata_records,
+        "metadata_by_normalized_name": metadata_by_normalized_name,
         "raw_metadata_by_skill": raw_by_skill,
         "preflight_actions": preflight_actions,
         "admission_reports": {
@@ -377,6 +1068,21 @@ def build_skill_trust_bundle(
             for root in skill_roots
         },
     }
+
+
+def _allowed_runtime_roots_for_skill(
+    *,
+    source_root_path: str,
+    skill_dir_name: str,
+    allowed_runtime_parents: Sequence[str | Path],
+) -> list[str]:
+    roots = [source_root_path]
+    for parent in allowed_runtime_parents:
+        parent_text = str(parent).strip()
+        if not parent_text:
+            continue
+        roots.append(str((Path(parent_text).expanduser() / skill_dir_name).resolve(strict=False)))
+    return list(dict.fromkeys(roots))
 
 
 def _skill_identity_from_manifest(skill_root: Path) -> tuple[str, list[str]]:
@@ -590,6 +1296,7 @@ def transition_trust_list_state(
     previous_policy_fingerprint: str | None = None,
     operator_id_hash: str | None = None,
     override_id: str | None = None,
+    override_indefinite_reason: str | None = None,
     expires_at: str | None = None,
     disabled_until: str | None = None,
 ) -> SkillTrustTransitionEvent:
@@ -598,21 +1305,34 @@ def transition_trust_list_state(
     if (from_state, to_state) not in _ALLOWED_TRANSITIONS:
         raise ValueError(f"invalid trust-list transition: {from_state} -> {to_state}")
     if to_state == "allowlist":
-        if reason_code not in {"clean_admission_report", "trusted_migration", "operator_override"}:
-            raise ValueError("allowlist promotion requires clean admission, trusted migration, or operator override")
-        if reason_code == "operator_override" and actor_type not in {"operator", "manual_migration"}:
+        if reason_code not in {
+            "clean_admission_report",
+            "trusted_migration",
+            "operator_override",
+            "operator_restore",
+            "disabled_window_expired",
+        }:
+            raise ValueError("allowlist promotion requires clean admission, trusted migration, operator override, restore, or disabled expiry")
+        if reason_code in {"operator_override", "operator_restore"} and actor_type not in {"operator", "manual_migration"}:
             raise ValueError("allowlist operator promotion requires operator actor")
+        if reason_code == "disabled_window_expired" and (
+            from_state != "disabled" or actor_type != "system"
+        ):
+            raise ValueError("disabled expiry restore requires disabled source and system actor")
         if reason_code in {"clean_admission_report", "trusted_migration"} and not evidence_hashes:
             raise ValueError("allowlist promotion requires evidence hashes")
-    if from_state == "blacklist" and to_state == "greylist" and actor_type not in {"operator", "manual_migration"}:
-        raise ValueError("blacklist -> greylist requires operator or manual migration")
-    if from_state == "revoked" and (
-        reason_code != "trusted_migration"
-        or actor_type not in {"operator", "manual_migration"}
-    ):
-        raise ValueError("revoked skills require trusted migration and cannot transition automatically")
-    if to_state == "disabled" and not disabled_until and reason_code != "policy_disable":
-        raise ValueError("disabled transition requires policy_disable reason or disabled_until")
+    if from_state == "blacklist" and to_state == "greylist":
+        if reason_code != "trusted_migration" and not override_id:
+            raise ValueError("blacklist -> greylist requires trusted migration or operator override")
+        if actor_type not in {"operator", "manual_migration"}:
+            raise ValueError("blacklist -> greylist requires operator or manual migration")
+    if from_state == "revoked":
+        if reason_code != "trusted_migration" and not override_id:
+            raise ValueError("revoked skills require trusted migration or operator override")
+        if actor_type not in {"operator", "manual_migration"}:
+            raise ValueError("revoked skills require operator or manual migration")
+    if to_state == "disabled" and not disabled_until and reason_code not in {"policy_disable", "operator_disable"}:
+        raise ValueError("disabled transition requires policy/operator disable reason or disabled_until")
 
     payload = "|".join([
         canonical_skill_id,
@@ -640,6 +1360,7 @@ def transition_trust_list_state(
         actor_type=actor_type,  # type: ignore[arg-type]
         operator_id_hash=operator_id_hash,
         override_id=override_id,
+        override_indefinite_reason=override_indefinite_reason,
         policy_fingerprint=policy_fingerprint,
         previous_policy_fingerprint=previous_policy_fingerprint,
         expires_at=expires_at,
@@ -743,18 +1464,48 @@ class AdmissionScanner:
 
         return reports
 
-    def scan(self, skill_root: str | Path, *, deadline_at: float | None = None) -> AdmissionReport:
+    def scan(
+        self,
+        skill_root: str | Path,
+        *,
+        deadline_at: float | None = None,
+        max_files: int | None = None,
+        max_file_bytes: int | None = None,
+    ) -> AdmissionReport:
         root = Path(skill_root)
         _raise_if_scan_deadline_expired(deadline_at)
         skill_md = root / "SKILL.md"
         content_hashes: dict[str, str] = {}
+        files_seen = 0
         if skill_md.exists():
-            content_hashes["SKILL.md"] = _hash_file(skill_md)
+            files_seen += 1
+            if max_files is not None and files_seen > max_files:
+                raise TimeoutError("admission scan file count budget exceeded")
+            content_hashes["SKILL.md"] = _hash_file(
+                skill_md,
+                max_file_bytes=max_file_bytes,
+            )
         _raise_if_scan_deadline_expired(deadline_at)
         for child in ("scripts", "references", "data"):
             child_path = root / child
             if child_path.exists():
-                content_hashes[child] = _hash_directory(child_path, deadline_at=deadline_at)
+                child_file_count = sum(
+                    1 for _ in child_path.rglob("*")
+                    if _.is_file() or _.is_symlink()
+                )
+                if max_files is not None and files_seen + child_file_count > max_files:
+                    raise TimeoutError("admission scan file count budget exceeded")
+                content_hashes[child] = _hash_directory(
+                    child_path,
+                    deadline_at=deadline_at,
+                    max_files=(
+                        max_files - files_seen
+                        if max_files is not None
+                        else None
+                    ),
+                    max_file_bytes=max_file_bytes,
+                )
+                files_seen += child_file_count
             _raise_if_scan_deadline_expired(deadline_at)
 
         text = _read_in_tree_text(skill_md, root, deadline_at=deadline_at) if skill_md.exists() else ""
@@ -1144,6 +1895,9 @@ def resolve_skill_trust(
     scan_budget_exhausted = bool(raw.get("admission_scan_budget_exhausted"))
     scan_failure_class = raw.get("admission_scan_failure_class")
     raw_scan_policy_fingerprint = raw.get("policy_fingerprint")
+    first_use_package_review = raw.get("first_use_package_review")
+    if not isinstance(first_use_package_review, dict):
+        first_use_package_review = None
     resolved_first_use_scan = (
         FirstUseScanState(
             state="scan_completed",
@@ -1172,6 +1926,7 @@ def resolve_skill_trust(
             admission_risk="unknown",
             trust_list_state="unlisted",
             first_use_scan=resolved_first_use_scan,
+            first_use_package_review=first_use_package_review,
         )
 
     registry = list(records)
@@ -1203,6 +1958,7 @@ def resolve_skill_trust(
             trust_list_state="unlisted",
             invariant_violations=sorted(set(violations)),
             first_use_scan=resolved_first_use_scan,
+            first_use_package_review=first_use_package_review,
             policy_fingerprint=POLICY_FINGERPRINT,
         )
 
@@ -1265,6 +2021,7 @@ def resolve_skill_trust(
             admission_risk=admission_risk,  # type: ignore[arg-type]
             trust_list_state=trust_list_state,  # type: ignore[arg-type]
             invariant_violations=sorted(set(violations)),
+            first_use_package_review=first_use_package_review,
             policy_fingerprint=POLICY_FINGERPRINT,
         )
 
@@ -1343,6 +2100,7 @@ def resolve_skill_trust(
         admission_risk=admission_risk,  # type: ignore[arg-type]
         trust_list_state=trust_list_state,  # type: ignore[arg-type]
         first_use_scan=first_use_scan,
+        first_use_package_review=first_use_package_review,
         invariant_violations=sorted(set(violations)),
         policy_fingerprint=record.policy_fingerprint or POLICY_FINGERPRINT,
     )

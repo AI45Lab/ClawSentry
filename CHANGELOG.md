@@ -8,6 +8,46 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.8.0] — 2026-05-19
+
+### 新增
+
+- **Skill Trust runtime binding control plane** — Gateway 现在把 native skill call、shell skill path、runtime root、allowed mirror root、runner contract 和 Gateway-owned metadata 绑定为显式 runtime status，覆盖 `verified_source`、`verified_mirror`、`verified_name`、`name_only_unverified`、`path_fragment_unverified`、`disallowed`、`ambiguous_runtime_source` 和 `absent`。
+- **Session Skill-Use Ledger** — 新增 replay-safe `skill_use_ledger`，记录 allow / block / defer skill use、runtime binding status、metadata record id、hash、ref ordinal 和 dedupe key；公开 replay 不保留原始 runtime path。
+- **Post-action provenance validator** — 新增通用产物 provenance 校验器，按配置读取 JSON artifact 字段，将声明的 skill labels 与会话 ledger 比对，输出 `unobserved_claim`、blocked/deferred claim、canonical conflict、ambiguous、parse/coverage findings；它只追加事后证据，不改写已完成 canonical decision。
+- **First-Use Skill Package Review (FSPR)** — 新增首次使用包级审查流程、deterministic package inventory、role provider 编排、cache/budget/degradation 处理和 transition recommendation；默认 evidence-only，不直接修改 allowlist / greylist / blacklist / revoked / disabled 状态。
+- **Trust-list lifecycle API/CLI** — 新增 allowlist、greylist、blacklist、revoke、disable、restore、operator override 等生命周期操作，带 transition event、idempotency key、expected snapshot id、actor/reason/evidence/scope/expiry/policy fingerprint 审计字段。
+- **Capability narrowing and tool permission groups** — 高风险会话后可收窄工具、skill trust state、MCP scope 和 capability 权限组；critical 模式可切到 read-only 边界。
+- **Agent-facing safety feedback** — critical pre-action block 可返回脱敏反馈 envelope，支持 `response`、`audit_only`、`unsupported` delivery 和 per-surface retry suppression。
+
+### 改进
+
+- **Gateway-owned metadata boundary** — 请求侧 `_clawsentry_meta`、artifact labels 和 runtime registry claims 只作为观测输入，不能自证可信；只有 Gateway-owned registry/runtime metadata 能提升 trust。
+- **Benchmark and non-benchmark validation** — 新增 Skill Trust 非 benchmark fixture manifest、authoring/holdout/canary/false-positive 分组、AHP replay phase evidence contract 和 surface acceptance runner。
+- **Cross-framework surface acceptance** — A3S、Codex、Claude Code、Kimi CLI、Gemini、OpenClaw 六个 adapter/harness surface 通过 Gateway UDS 决策路径验证 block / critical / runtime-path-disallowed / ledger / feedback 证据，并确保 artifact 不泄漏 raw runtime path。
+
+### 文档
+
+- 新增中文总结材料：`docs/materials/2026-05-19-skilltrust-runtime-binding-release-summary.md`。
+- 新增/更新验证材料：`docs/validation/skilltrust-completion-audit-2026-05-19.md`、`docs/validation/skilltrust-subagent-review-2026-05-19.md`、`docs/validation/skilltrust-surface-acceptance-2026-05-19.md`。
+- 在线文档刷新 Skill Trust、configuration、policy tuning、API reference/reporting、post-action、L1/L2/L3 边界、CLI 和 session scope 说明。
+
+### 测试与验证
+
+- Public-surface Python regression：公开仓库 `python3 -m pytest -q --tb=short` → `3645 passed, 16 skipped`。
+- Workspace full regression：`python3 -m pytest -q` → `3869 passed, 24 skipped`。
+- Skill Trust surface acceptance：`python3 scripts/run_skilltrust_surface_acceptance.py --output-dir artifacts/skilltrust-surface-acceptance-2026-05-19` → PASS。
+- Docs API inventory：`python3 scripts/docs_api_inventory.py validate` → PASS。
+- Benchmark/private slices：`benchmarks/tests` → `20 passed`；benchmark-private Skill Inject / wrapper / matrix slices → `125 passed, 9 skipped`。
+- Web UI：`npm test -- --run` → `56 passed`；`npm run build` → PASS。
+- `git diff --check`、`mkdocs build --strict`、`python3 -m build` → PASS。
+
+### 边界
+
+- Surface acceptance 是真实 Gateway UDS + adapter/harness surface 验收，不等同于启动外部 CLI binary 的 harbor smoke。
+- FSPR、post-action provenance validator、L2/L3 和 transition recommendations 都是 evidence appenders；registry/list-state mutation 仍必须通过 Gateway lifecycle API/CLI 或 operator workflow。
+- 本版本不发布完整 benchmark leaderboard、ASR/TSR/TFR 排名或 raw-vs-protected 评测结论。
+
 ## [0.7.5] — 2026-05-17
 
 ### 修复
@@ -1634,6 +1674,7 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.8.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.0
 [0.7.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.5
 [0.7.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.4
 [0.7.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.3

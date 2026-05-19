@@ -29,6 +29,21 @@ API Reference 中最常见的数据结构、判决枚举和错误响应快速参
 | `decision_latency_ms` | number | 决策耗时 |
 | `final` | boolean | 是否为最终判决；`defer` 可能需要后续审批 |
 
+### Skill Trust and feedback metadata
+
+v0.8.0 以后，决策响应和 replay metadata 可能携带以下 Skill Trust / feedback 字段。字段都遵循 replay-safe 边界：保留 id、hash、状态和摘要，不保留原始私有 runtime path 或 secret。
+
+| 字段 | 说明 |
+| --- | --- |
+| `skill_trust_refs` | Adapter/harness 观测到的 runtime skill references，Gateway 会重新绑定到 Gateway-owned metadata |
+| `runtime_path_status` | `verified_source`、`verified_mirror`、`verified_name`、`name_only_unverified`、`path_fragment_unverified`、`disallowed`、`ambiguous_runtime_source` 或 `absent` |
+| `runtime_content_status` | `content_verified`、`trusted_runner_immutable`、`content_unverified`、`content_mismatch` 或 `not_applicable` |
+| `metadata_record_id` | Gateway-owned Skill Trust metadata record 标识，用于 same-name disambiguation、ledger 和 provenance validation |
+| `skill_use_ledger` | session 级 observed skill use ledger，记录 allow/block/defer、hash、status、dedupe key 和 ref ordinal |
+| `provenance_findings` | post-action artifact provenance validator 追加的 findings；不改写已完成 decision |
+| `first_use_package_review` | FSPR evidence capsule，包括 verdict、role summaries、degradation 和 transition recommendation |
+| `agent_safety_feedback` | critical block 的脱敏 agent-facing feedback envelope，delivery 为 `response`、`audit_only` 或 `unsupported` |
+
 ## CanonicalEvent
 
 `CanonicalEvent` 是不同 Agent 框架进入 ClawSentry 后的统一事件形态。二次开发者接入新框架时，应尽量把原始事件映射为这些语义。
@@ -51,6 +66,7 @@ API Reference 中最常见的数据结构、判决枚举和错误响应快速参
 | `403` | 功能未启用，例如 pattern evolution disabled | 检查对应环境变量 |
 | `404` | snapshot、job、review、alert 不存在 | 检查 ID 是否来自当前 Gateway |
 | `409` | Webhook idempotency key 被不同 payload 重用 | 保证同一 key 对应同一请求体 |
+| `409` | Skill Trust transition 的 `expected_registry_snapshot_id` 已过期或 idempotency key 冲突 | 重新读取 `/skill-trust/registry`，用最新 snapshot 重试 |
 | `429` | Gateway 速率限制 | 等待 `retry_after_ms` 后重试 |
 | `500` | 运行时内部错误 | 查看 Gateway 日志和 watch/UI 告警 |
 

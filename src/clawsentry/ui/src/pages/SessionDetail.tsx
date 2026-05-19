@@ -238,7 +238,7 @@ function lineageDrilldownLines(record: TrajectoryRecord): string[] {
   }
   const trustRaw = record.meta.skill_trust_raw
   if (trustRaw && typeof trustRaw === 'object') {
-    const trustSummary = ['presented_name', 'provenance_claim', 'trust_level', 'status', 'list_state', 'registry_record_count']
+    const trustSummary = ['presented_name', 'provenance_claim', 'skill_trust_grade', 'trust_level', 'status', 'list_state', 'registry_record_count']
       .map(key => {
         const value = trustRaw[key]
         return value !== undefined && value !== null && value !== '' ? `${key}=${compactRecordValue(value)}` : ''

@@ -79,6 +79,15 @@ DANGEROUS_TOOLS = frozenset({
     "cron", "crontab", "systemctl",
 })
 
+FSPR_SCHEMA_VERSION = "clawsentry.first_use_skill_package_review.v1"
+_FSPR_ALLOWED_VERDICTS = frozenset({
+    "consistent",
+    "suspicious",
+    "inconsistent",
+    "insufficient_evidence",
+})
+_FSPR_ALLOWED_TIMING_MODES = frozenset({"pre_use_gate", "post_action_incremental_evidence"})
+
 # System paths that elevate bash from D1=2 to D1=3
 _SYSTEM_PATHS = re.compile(
     r"(/etc/|/usr/|/var/|/sys/|/proc/|/boot/|/dev/(?!null\b))"
@@ -932,6 +941,102 @@ def skill_trust_first_use_action(skill_trust, config: DetectionConfig) -> str | 
     return str(getattr(config, f"skill_trust_first_use_{mode}_action", "audit"))
 
 
+def skill_trust_runtime_binding_action(skill_trust, config: DetectionConfig) -> str | None:
+    """Resolve the configured runtime-binding action for the active profile."""
+
+    if skill_trust is None:
+        return None
+    runtime_status = getattr(skill_trust, "runtime_path_status", None)
+    runtime_content_status = getattr(skill_trust, "runtime_content_status", None)
+    if runtime_status not in {
+        "disallowed",
+        "ambiguous_runtime_source",
+        "name_only_unverified",
+        "path_fragment_unverified",
+    } and runtime_content_status not in {"content_unverified", "content_mismatch"}:
+        return None
+    mode = str(config.mode or "normal").strip().lower()
+    if mode not in {"normal", "benchmark", "strict", "permissive"}:
+        mode = "normal"
+    condition = None
+    if runtime_status == "disallowed":
+        condition = "path_disallowed"
+    elif runtime_status == "ambiguous_runtime_source":
+        condition = "source_ambiguous"
+    elif runtime_status in {"name_only_unverified", "path_fragment_unverified"}:
+        condition = "path_unverified"
+    if runtime_content_status == "content_unverified":
+        condition = "content_unverified"
+    elif runtime_content_status == "content_mismatch":
+        condition = "content_mismatch"
+    if condition is None:
+        return None
+    condition_attr = f"skill_trust_runtime_{condition}_{mode}_action"
+    condition_action = str(getattr(config, condition_attr, "audit"))
+    legacy_defaults = {
+        "normal": "force_l3",
+        "benchmark": "block",
+        "strict": "block",
+        "permissive": "audit",
+    }
+    legacy_action = str(getattr(config, f"skill_trust_runtime_{mode}_action", "audit"))
+    if legacy_action != legacy_defaults.get(mode, "audit"):
+        return legacy_action
+    return condition_action
+
+
+def _validated_fspr_review(fspr_review: object) -> dict | None:
+    if hasattr(fspr_review, "model_dump"):
+        fspr_review = fspr_review.model_dump(mode="json")  # type: ignore[union-attr]
+    if not isinstance(fspr_review, dict):
+        return None
+    review = dict(fspr_review)
+    schema = str(review.get("schema") or "")
+    verdict = str(review.get("verdict") or "")
+    timing_mode = str(review.get("timing_mode") or "")
+    if schema != FSPR_SCHEMA_VERSION:
+        review["verdict"] = "insufficient_evidence"
+        if timing_mode not in _FSPR_ALLOWED_TIMING_MODES:
+            review["timing_mode"] = "post_action_incremental_evidence"
+        review["degraded"] = True
+        review["degradation_reason"] = "invalid_schema"
+        return review
+    if timing_mode not in _FSPR_ALLOWED_TIMING_MODES:
+        review["verdict"] = "insufficient_evidence"
+        review["timing_mode"] = "post_action_incremental_evidence"
+        review["degraded"] = True
+        review["degradation_reason"] = "invalid_timing_mode"
+        return review
+    if verdict not in _FSPR_ALLOWED_VERDICTS:
+        review["verdict"] = "insufficient_evidence"
+        review["degraded"] = True
+        review["degradation_reason"] = "invalid_verdict"
+    return review
+
+
+def skill_trust_fspr_action(skill_trust, config: DetectionConfig) -> str | None:
+    """Resolve configured First-Use Skill Package Review action for active profile/verdict."""
+
+    if skill_trust is None:
+        return None
+    fspr_review = _validated_fspr_review(getattr(skill_trust, "first_use_package_review", None))
+    if fspr_review is None:
+        return None
+    if str(fspr_review.get("timing_mode") or "") != "pre_use_gate":
+        return None
+    verdict = str(fspr_review.get("verdict") or "")
+    if verdict not in {"suspicious", "inconsistent", "insufficient_evidence"}:
+        return None
+    mode = str(config.mode or "normal").strip().lower()
+    if mode not in {"normal", "benchmark", "strict", "permissive"}:
+        mode = "normal"
+    legacy_action = str(getattr(config, f"skill_trust_fspr_{mode}_action", "audit"))
+    specific_action = str(getattr(config, f"skill_trust_fspr_{verdict}_{mode}_action", "audit"))
+    if legacy_action != "audit" and specific_action == "audit":
+        return legacy_action
+    return specific_action
+
+
 def _skill_trust_evidence(
     event: CanonicalEvent,
     context: Optional[DecisionContext],
@@ -939,6 +1044,27 @@ def _skill_trust_evidence(
     current_score: float,
     config: DetectionConfig,
 ) -> tuple[RiskLevel, float, list[str], list[dict]]:
+    if context is not None and context.skill_trust_refs:
+        aggregate_level = current_level
+        aggregate_score = current_score
+        aggregate_hits: list[str] = []
+        aggregate_findings: list[dict] = []
+        for ref_context in context.skill_trust_refs:
+            level, score, hits, findings = _skill_trust_evidence(
+                event,
+                DecisionContext(skill_trust=ref_context),
+                aggregate_level,
+                aggregate_score,
+                config,
+            )
+            aggregate_level = level
+            aggregate_score = score
+            for hit in hits:
+                if hit not in aggregate_hits:
+                    aggregate_hits.append(hit)
+            aggregate_findings.extend(findings)
+        return aggregate_level, aggregate_score, aggregate_hits, aggregate_findings
+
     skill_trust = context.skill_trust if context is not None else None
     if skill_trust is None:
         return current_level, current_score, [], []
@@ -959,6 +1085,21 @@ def _skill_trust_evidence(
         if violation not in rule_hits:
             rule_hits.append(violation)
 
+    runtime_status = getattr(skill_trust, "runtime_path_status", None)
+    runtime_content_status = getattr(skill_trust, "runtime_content_status", None)
+    runtime_rule = {
+        "disallowed": "runtime_path_disallowed",
+        "ambiguous_runtime_source": "runtime_source_ambiguous",
+        "name_only_unverified": "runtime_path_unverified",
+        "path_fragment_unverified": "runtime_path_fragment_unverified",
+    }.get(runtime_status)
+    if runtime_rule and runtime_rule not in rule_hits:
+        rule_hits.append(runtime_rule)
+    if runtime_content_status == "content_unverified" and "runtime_content_unverified" not in rule_hits:
+        rule_hits.append("runtime_content_unverified")
+    elif runtime_content_status == "content_mismatch" and "runtime_content_mismatch" not in rule_hits:
+        rule_hits.append("runtime_content_mismatch")
+
     if (
         skill_trust.provenance_claim
         and skill_trust.presented_name
@@ -970,6 +1111,26 @@ def _skill_trust_evidence(
 
     first_use_rule = skill_trust_first_use_state_rule(skill_trust)
     first_use_action = skill_trust_first_use_action(skill_trust, config)
+    runtime_binding_action = skill_trust_runtime_binding_action(skill_trust, config)
+    fspr_review = _validated_fspr_review(getattr(skill_trust, "first_use_package_review", None))
+    fspr_rule: str | None = None
+    fspr_action = skill_trust_fspr_action(skill_trust, config)
+    fspr_decision_affecting = False
+    if isinstance(fspr_review, dict):
+        fspr_verdict = str(fspr_review.get("verdict") or "")
+        fspr_timing_mode = str(fspr_review.get("timing_mode") or "")
+        if fspr_verdict == "inconsistent":
+            fspr_rule = "first_use_skill_package_inconsistent"
+        elif fspr_verdict == "suspicious":
+            fspr_rule = "first_use_skill_package_suspicious"
+        elif fspr_verdict == "insufficient_evidence":
+            fspr_rule = "first_use_skill_package_insufficient_evidence"
+        fspr_decision_affecting = (
+            fspr_timing_mode == "pre_use_gate"
+            and fspr_action in {"force_l2", "force_l3", "defer", "block"}
+        )
+        if fspr_rule and fspr_rule not in rule_hits:
+            rule_hits.append(fspr_rule)
     if first_use_rule and first_use_rule not in rule_hits:
         rule_hits.append(first_use_rule)
 
@@ -984,6 +1145,13 @@ def _skill_trust_evidence(
             "admission_scan_id": skill_trust.admission_scan_id,
             "admission_risk": skill_trust.admission_risk,
             "trust_list_state": skill_trust.trust_list_state,
+            "runtime_path_status": getattr(skill_trust, "runtime_path_status", None),
+            "runtime_root_path_hash": getattr(skill_trust, "runtime_root_path_hash", None),
+            "runtime_content_status": getattr(skill_trust, "runtime_content_status", None),
+            "runtime_binding_reason": getattr(skill_trust, "runtime_binding_reason", None),
+            "metadata_record_id": getattr(skill_trust, "metadata_record_id", None),
+            "runtime_evidence_kind": getattr(skill_trust, "runtime_evidence_kind", None),
+            "ref_ordinal": getattr(skill_trust, "ref_ordinal", None),
             "policy_fingerprint": skill_trust.policy_fingerprint,
             "decision_affecting": False,
         }
@@ -994,6 +1162,28 @@ def _skill_trust_evidence(
                 "first_use_scan_failure_class": skill_trust.first_use_scan.failure_class,
                 "first_use_scan_admission_risk": skill_trust.first_use_scan.admission_risk,
             })
+        if rule_id in {
+            "runtime_path_disallowed",
+            "runtime_source_ambiguous",
+            "runtime_path_unverified",
+            "runtime_path_fragment_unverified",
+            "runtime_content_unverified",
+            "runtime_content_mismatch",
+        }:
+            finding["runtime_binding_action"] = runtime_binding_action or "audit"
+        if rule_id == fspr_rule and isinstance(fspr_review, dict):
+            finding.update({
+                "fspr_verdict": fspr_review.get("verdict"),
+                "fspr_timing_mode": fspr_review.get("timing_mode"),
+                "fspr_severity": fspr_review.get("severity"),
+                "fspr_confidence": fspr_review.get("confidence"),
+                "fspr_recommended_action": fspr_review.get("recommended_action"),
+                "deterministic_findings_preserved": fspr_review.get("deterministic_findings_preserved"),
+                "fspr_action": fspr_action or "audit",
+                "fspr_degraded": bool(fspr_review.get("degraded", False)),
+                "fspr_degradation_reason": fspr_review.get("degradation_reason"),
+                "decision_affecting": fspr_decision_affecting,
+            })
         findings.append(finding)
 
     if event.event_type != EventType.PRE_ACTION:
@@ -1001,10 +1191,23 @@ def _skill_trust_evidence(
 
     upgrade_level: RiskLevel | None = None
     rule_set = set(rule_hits)
+    runtime_hard_confidence = bool(
+        rule_set.intersection({"runtime_path_disallowed", "runtime_source_ambiguous", "runtime_content_mismatch"})
+    )
+    runtime_soft_confidence = bool(
+        rule_set.intersection({"runtime_path_unverified", "runtime_path_fragment_unverified", "runtime_content_unverified"})
+    )
+    fspr_inconsistent_pre_use = (
+        fspr_decision_affecting
+        and "first_use_skill_package_inconsistent" in rule_set
+        and fspr_action == "block"
+    )
     hard_confidence = (
         "skill_hash_mismatch" in rule_set
         or "blacklisted_skill_identity" in rule_set
         or "revoked_skill_identity" in rule_set
+        or runtime_hard_confidence
+        or fspr_inconsistent_pre_use
     )
     soft_confidence = (
         {"ambiguous_skill_alias", "provenance_label_conflict"}.issubset(rule_set)
@@ -1012,7 +1215,10 @@ def _skill_trust_evidence(
         or "low_trust_redefined_canonical_tool" in rule_set
     )
     if hard_confidence:
-        upgrade_level = RiskLevel.HIGH
+        if runtime_hard_confidence and config.mode not in {"strict", "benchmark"}:
+            upgrade_level = RiskLevel.MEDIUM
+        else:
+            upgrade_level = RiskLevel.HIGH
     elif soft_confidence:
         mode = str(config.mode or "normal").strip().lower()
         upgrade_level = (
@@ -1020,7 +1226,19 @@ def _skill_trust_evidence(
             if mode in {"benchmark", "strict"}
             else RiskLevel.MEDIUM
         )
+    elif runtime_soft_confidence and config.mode in {"strict", "benchmark"}:
+        upgrade_level = RiskLevel.MEDIUM
+    if (
+        fspr_decision_affecting
+        and "first_use_skill_package_insufficient_evidence" in rule_set
+        and config.mode in {"strict", "benchmark"}
+    ):
+        upgrade_level = _max_risk_level(upgrade_level or current_level, RiskLevel.MEDIUM)
+    if fspr_action == "block":
+        upgrade_level = RiskLevel.HIGH
     if first_use_action == "block":
+        upgrade_level = RiskLevel.HIGH
+    if runtime_binding_action == "block":
         upgrade_level = RiskLevel.HIGH
     if skill_trust.admission_risk == "critical":
         upgrade_level = RiskLevel.CRITICAL
@@ -1029,6 +1247,10 @@ def _skill_trust_evidence(
         if first_use_action in {"force_l2", "force_l3", "defer"}:
             for finding in findings:
                 if finding.get("rule_id") == first_use_rule:
+                    finding["decision_affecting"] = True
+        if runtime_binding_action in {"force_l2", "force_l3", "defer"}:
+            for finding in findings:
+                if finding.get("runtime_binding_action") == runtime_binding_action:
                     finding["decision_affecting"] = True
         return current_level, current_score, rule_hits, findings
 

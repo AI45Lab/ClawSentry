@@ -190,15 +190,44 @@ def _first_use_action_from_snapshot(snapshot: RiskSnapshot) -> str | None:
     return None
 
 
+def _runtime_binding_action_from_snapshot(snapshot: RiskSnapshot) -> str | None:
+    for finding in snapshot.skill_trust_findings:
+        action = finding.get("runtime_binding_action")
+        if action in {"force_l2", "force_l3", "defer", "block"}:
+            return str(action)
+    return None
+
+
+def _fspr_action_from_snapshot(snapshot: RiskSnapshot) -> str | None:
+    for finding in snapshot.skill_trust_findings:
+        action = finding.get("fspr_action")
+        if action in {"force_l2", "force_l3", "defer", "block"}:
+            return str(action)
+    return None
+
+
 def _automatic_l2_trigger_reason(
     event: CanonicalEvent,
     context: Optional[DecisionContext],
     l1_snapshot: RiskSnapshot,
 ) -> str | None:
+    first_use_action = _first_use_action_from_snapshot(l1_snapshot)
+    runtime_binding_action = _runtime_binding_action_from_snapshot(l1_snapshot)
+    fspr_action = _fspr_action_from_snapshot(l1_snapshot)
+    if first_use_action in {"force_l2", "force_l3"}:
+        return "first_use_skill_trust_action"
+    if runtime_binding_action in {"force_l2", "force_l3"}:
+        return "runtime_binding_skill_trust_action"
+    if fspr_action in {"force_l2", "force_l3"}:
+        return "first_use_skill_package_review_action"
+    if (
+        first_use_action in {"defer", "block"}
+        or runtime_binding_action in {"defer", "block"}
+        or fspr_action in {"defer", "block"}
+    ):
+        return None
     if event.event_type == EventType.PRE_ACTION and l1_snapshot.risk_level == RiskLevel.MEDIUM:
         return "medium_pre_action"
-    if _first_use_action_from_snapshot(l1_snapshot) in {"force_l2", "force_l3"}:
-        return "first_use_skill_trust_action"
     if bool(KEY_DOMAIN_PATTERN.search(event_text(event))):
         return "key_domain_event"
     if has_manual_l2_escalation_flag(context):
@@ -468,6 +497,48 @@ class L1PolicyEngine:
                         event,
                         snapshot,
                         "First-use skill trust scan requires operator review",
+                    ),
+                    policy_id=self.POLICY_ID,
+                    risk_level=risk,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=False,
+                ),
+                event,
+                context,
+            )
+
+        runtime_binding_action = _runtime_binding_action_from_snapshot(snapshot)
+        if event.event_type == EventType.PRE_ACTION and runtime_binding_action == "defer":
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.DEFER,
+                    reason=self._build_reason(
+                        event,
+                        snapshot,
+                        "Runtime skill binding requires operator review",
+                    ),
+                    policy_id=self.POLICY_ID,
+                    risk_level=risk,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=False,
+                ),
+                event,
+                context,
+            )
+
+        fspr_action = _fspr_action_from_snapshot(snapshot)
+        if event.event_type == EventType.PRE_ACTION and fspr_action == "defer":
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.DEFER,
+                    reason=self._build_reason(
+                        event,
+                        snapshot,
+                        "First-use skill package review requires operator review",
                     ),
                     policy_id=self.POLICY_ID,
                     risk_level=risk,

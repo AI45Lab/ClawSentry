@@ -189,6 +189,7 @@ class A3SCodeAdapter:
         self.max_rpc_retries = max_rpc_retries
         self.retry_backoff_ms = retry_backoff_ms
         self.source_framework = source_framework or self._DEFAULT_SOURCE_FRAMEWORK
+        self.last_decision_response_metadata: dict[str, Any] = {}
 
     def normalize_hook_event(
         self,
@@ -328,6 +329,7 @@ class A3SCodeAdapter:
 
         Implements retry logic per 04 section 11.2 and local fallback per 11.3.
         """
+        self.last_decision_response_metadata = {}
         effective_deadline = deadline_ms or self.default_deadline_ms
         request_id = f"a3s-{event.event_id}-{int(time.monotonic() * 1000)}"
         deadline_start = time.monotonic()
@@ -367,6 +369,14 @@ class A3SCodeAdapter:
                 if "result" in response:
                     result = response["result"]
                     if result.get("rpc_status") == "ok":
+                        self.last_decision_response_metadata = {
+                            key: result[key]
+                            for key in (
+                                "agent_safety_feedback",
+                                "agent_advisory_feedback",
+                            )
+                            if result.get(key) is not None
+                        }
                         return CanonicalDecision(**result["decision"])
                     # RPC returned error
                     error_data = result
@@ -450,6 +460,7 @@ class InProcessA3SAdapter(A3SCodeAdapter):
         decision_tier: DecisionTier = DecisionTier.L1,
     ) -> CanonicalDecision:
         effective_deadline = deadline_ms or self.default_deadline_ms
+        self.last_decision_response_metadata = {}
         request_id = f"a3s-http-{event.event_id}-{int(time.monotonic() * 1000)}"
         effective_context = context
         if effective_context is None:
@@ -480,6 +491,14 @@ class InProcessA3SAdapter(A3SCodeAdapter):
             if "result" in response:
                 result = response["result"]
                 if result.get("rpc_status") == "ok":
+                    self.last_decision_response_metadata = {
+                        key: result[key]
+                        for key in (
+                            "agent_safety_feedback",
+                            "agent_advisory_feedback",
+                        )
+                        if result.get(key) is not None
+                    }
                     return CanonicalDecision(**result["decision"])
             elif "error" in response:
                 error_data = response["error"].get("data", {})

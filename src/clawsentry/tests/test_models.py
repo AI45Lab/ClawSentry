@@ -42,6 +42,11 @@ from clawsentry.gateway.models import (
     RPC_VERSION,
     utc_now_iso,
 )
+from clawsentry.gateway.server import (
+    _lineage_event_from_summary,
+    _lineage_events_from_summary,
+    _lineage_summary_from_event,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -73,6 +78,157 @@ def _minimal_decision(**overrides) -> dict:
     }
     base.update(overrides)
     return base
+
+
+def test_skill_use_ledger_preserves_safe_runtime_fields():
+    lineage = LineageEvent(
+        event_id="evt-runtime",
+        session_id="sess-runtime",
+        occurred_at="2026-05-19T00:00:00+00:00",
+        sequence=7,
+        ref_ordinal=1,
+        dedupe_key="sess-runtime:evt-runtime:1:sha256:record:sha256:runtime:shell_skill_path",
+        canonical_skill_id="skill:search-accommodation",
+        tool_name="bash",
+        observed_name="search-accommodation",
+        runtime_path_status="verified_mirror",
+        runtime_root_path_hash="sha256:" + "a" * 64,
+        runtime_content_status="trusted_runner_immutable",
+        metadata_record_id="sha256:" + "b" * 64,
+        decision="block",
+        risk_level="high",
+        invariant_violations=["runtime_content_unverified"],
+        output_provenance_label="search-accommodation",
+        policy_version="policy-v1",
+    )
+
+    dumped = lineage.model_dump(mode="json")
+
+    assert dumped["ref_ordinal"] == 1
+    assert dumped["dedupe_key"].startswith("sess-runtime:evt-runtime:1")
+    assert dumped["runtime_path_status"] == "verified_mirror"
+    assert dumped["runtime_root_path_hash"] == "sha256:" + "a" * 64
+    assert dumped["metadata_record_id"] == "sha256:" + "b" * 64
+    assert dumped["decision"] == "block"
+
+
+def test_lineage_redaction_drops_raw_runtime_paths():
+    event = {
+        "payload": {
+            "_clawsentry_meta": {
+                "skill_lineage_raw": {
+                    "runtime_path_status": "disallowed",
+                    "runtime_root_path_hash": "sha256:" + "a" * 64,
+                    "metadata_record_id": "sha256:" + "b" * 64,
+                    "runtime_evidence_kind": "shell_skill_path",
+                    "ref_ordinal": 0,
+                    "runtime_root_raw": "/home/user/.codex/skills/private",
+                    "runtime_path_raw": "/home/user/.codex/skills/private/scripts/run.py",
+                    "raw_command": "python /home/user/.codex/skills/private/scripts/run.py",
+                }
+            }
+        }
+    }
+
+    summary = _lineage_summary_from_event(event)
+
+    assert summary is not None
+    assert summary["runtime_path_status"] == "disallowed"
+    assert summary["runtime_root_path_hash"] == "sha256:" + "a" * 64
+    assert summary["metadata_record_id"] == "sha256:" + "b" * 64
+    assert "runtime_root_raw" not in summary
+    assert "runtime_path_raw" not in summary
+    assert "raw_command" not in summary
+
+
+@pytest.mark.parametrize(
+    ("raw_decision", "expected_ledger_decision"),
+    [
+        ("allow", "allow"),
+        ("allow-once", "allow"),
+        ("allow-always", "allow"),
+        ("block", "block"),
+        ("deny", "block"),
+        ("defer", "defer"),
+        ("error", "error"),
+        ("unexpected-host-value", "unknown"),
+    ],
+)
+def test_lineage_event_normalizes_gateway_decisions_to_ledger_enum(
+    raw_decision: str,
+    expected_ledger_decision: str,
+):
+    entry = _lineage_event_from_summary(
+        event={
+            "event_id": "evt-runtime",
+            "session_id": "sess-runtime",
+            "tool_name": "bash",
+        },
+        decision={
+            "decision": raw_decision,
+            "risk_level": "low",
+            "policy_version": "policy-v1",
+        },
+        context=None,
+        summary={
+            "native_tool_label": "bash",
+            "runtime_path_status": "absent",
+        },
+    )
+
+    assert entry is not None
+    assert entry["decision"] == expected_ledger_decision
+
+
+def test_lineage_events_are_derived_from_all_resolved_runtime_refs():
+    safe_ref = SkillTrustContext(
+        registry_status="matched",
+        canonical_skill_id="skill:safe",
+        presented_name="safe",
+        runtime_path_status="verified_source",
+        runtime_content_status="not_applicable",
+        metadata_record_id="sha256:" + "1" * 64,
+        runtime_root_path_hash="sha256:" + "2" * 64,
+        runtime_evidence_kind="shell_skill_path",
+        ref_ordinal=0,
+    )
+    blocked_ref = SkillTrustContext(
+        registry_status="unknown",
+        presented_name="blocked",
+        runtime_path_status="disallowed",
+        metadata_record_id=None,
+        runtime_root_path_hash="sha256:" + "3" * 64,
+        runtime_evidence_kind="shell_skill_path",
+        ref_ordinal=1,
+        invariant_violations=["runtime_path_disallowed"],
+    )
+
+    entries = _lineage_events_from_summary(
+        event={
+            "event_id": "evt-runtime",
+            "session_id": "sess-runtime",
+            "tool_name": "bash",
+        },
+        decision={
+            "decision": "block",
+            "risk_level": "high",
+            "policy_version": "policy-v1",
+        },
+        context=DecisionContext(
+            skill_trust=safe_ref,
+            skill_trust_refs=[safe_ref, blocked_ref],
+        ),
+        summary={"native_tool_label": "bash"},
+    )
+
+    assert len(entries) == 2
+    assert [entry["ref_ordinal"] for entry in entries] == [0, 1]
+    assert [entry["observed_name"] for entry in entries] == ["safe", "blocked"]
+    assert [entry["runtime_path_status"] for entry in entries] == [
+        "verified_source",
+        "disallowed",
+    ]
+    assert entries[1]["invariant_violations"] == ["runtime_path_disallowed"]
 
 
 def _minimal_risk_snapshot(**overrides) -> dict:

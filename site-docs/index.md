@@ -18,8 +18,8 @@ hide:
 { .tagline-sub }
 
 <div class="cs-pill-row" markdown>
-<span class="cs-version-badge">v0.7.5</span>
-<span class="cs-pill">3456 tests passing</span>
+<span class="cs-version-badge">v0.8.0</span>
+<span class="cs-pill">3645 tests passing</span>
 <span class="cs-pill">6 frameworks</span>
 <span class="cs-pill">sync_decision.1.0</span>
 </div>
@@ -31,8 +31,8 @@ hide:
 
 </div>
 
-!!! tip "v0.7.5 — Cross-CLI Skill Trust runtime binding"
-    Kimi CLI、Claude Code、Gemini CLI、Codex 与 a3s-code 现已把真实 skill 路径和运行时上下文接入 Skill Trust metadata；Claude prompt hook 阻断、replay 安全字段和 benchmark matrix 口径同步修正。[查看完整更新日志 →](changelog.md)
+!!! tip "v0.8.0 — Skill Trust runtime binding control plane"
+    Skill Trust 现已把真实运行时 skill path/native skill name、Gateway-owned metadata、session skill-use ledger、post-action provenance validation、FSPR evidence 和 trust-list lifecycle 串成闭环；六框架 surface acceptance 已覆盖 Gateway UDS + adapter/harness 决策路径。[查看完整更新日志 →](changelog.md)
 
 ---
 

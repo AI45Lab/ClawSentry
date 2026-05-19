@@ -1838,3 +1838,39 @@ curl -X POST -H "Authorization: Bearer $CS_AUTH_TOKEN" \
   "quarantine": null
 }
 ```
+
+## Skill Trust lifecycle {#skill-trust-lifecycle}
+
+`GET /skill-trust/registry` returns the configured Gateway-owned Skill Trust records, transition history, and `registry_snapshot_id` for operator review.
+
+Each returned record includes derived `skill_trust_grade`: `trusted`, `review`, `restricted`, `blocked`, or `disabled`. The grade is display metadata only; decisions continue to use the underlying registry state and evidence fields.
+
+`GET /skill-trust/transition/recommendations` lists evidence-only FSPR/P2 transition recommendations. It supports `canonical_skill_id`, `metadata_record_id`, `session_id`, `severity`, `limit`, and `cursor` query filters and does not mutate registry state.
+
+`POST /skill-trust/transition` applies one auditable lifecycle transition to a registry record. Mutating requests must include `expected_registry_snapshot_id` and `idempotency_key`; stale snapshots return a conflict instead of silently overwriting another operator or policy change.
+
+The lifecycle API is an operator surface, not the runtime decision path. Runtime binding evidence such as `runtime_path_status`, `runtime_content_status`, `metadata_record_id`, `skill_use_ledger`, FSPR verdicts, and post-action provenance findings appears in AHP decision/replay metadata. FSPR/P2 recommendations remain evidence-only until an operator or explicit policy workflow submits a transition.
+
+```bash
+curl -H "Authorization: Bearer $CS_AUTH_TOKEN" \
+  http://127.0.0.1:8080/skill-trust/registry
+
+curl -H "Authorization: Bearer $CS_AUTH_TOKEN" \
+  "http://127.0.0.1:8080/skill-trust/transition/recommendations?canonical_skill_id=skill:docs-reader&limit=20"
+
+curl -X POST -H "Authorization: Bearer $CS_AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:8080/skill-trust/transition \
+  -d '{
+    "canonical_skill_id": "skill:docs-reader",
+    "target_state": "revoked",
+    "reason_code": "operator_revoke",
+    "expected_registry_snapshot_id": "sha256:...",
+    "idempotency_key": "revoke-docs-reader-1",
+    "actor": "sha256:operator-id",
+    "evidence": {
+      "source": "fspr",
+      "finding_ids": ["fspr-hidden-output-label-rewrite"]
+    }
+  }'
+```

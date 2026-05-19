@@ -12,9 +12,50 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 
+from .tool_permissions import TOOL_PERMISSION_GROUPS
 from .llm_settings import resolve_llm_settings
 
 logger = logging.getLogger(__name__)
+
+_VALID_RISK_LEVELS = {"low", "medium", "high", "critical"}
+_VALID_CAPABILITY_NARROWING_GREYLIST_ACTIONS = {"allow", "defer", "block"}
+_VALID_SKILL_TRUST_STATES = {
+    "allowlist",
+    "greylist",
+    "blacklist",
+    "unlisted",
+    "revoked",
+    "disabled",
+}
+_VALID_MCP_STATUSES = _VALID_SKILL_TRUST_STATES
+_VALID_MCP_TRUST_LEVELS = {"trusted", "local_unreviewed", "unknown", "untrusted"}
+_VALID_CAPABILITY_NARROWING_AUDIT_VERBOSITY = {"minimal", "summary", "verbose"}
+_DEFAULT_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS = ("read_only",)
+_DEFAULT_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS = (
+    "write",
+    "network",
+    "credentialed",
+    "destructive",
+    "mcp_admin",
+    "unknown",
+)
+_DEFAULT_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES = ("allowlist",)
+_DEFAULT_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES = ("blacklist", "revoked")
+_DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_SERVERS: tuple[str, ...] = ()
+_DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_SERVERS: tuple[str, ...] = ()
+_DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_TOOLS = ("filesystem.read_file",)
+_DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_TOOLS = ("fetch.fetch",)
+_DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES: tuple[str, ...] = ()
+_DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_STATUSES = ("blacklist", "revoked", "disabled")
+_DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS: tuple[str, ...] = ()
+_DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS = (
+    "untrusted",
+    "unknown",
+    "local_unreviewed",
+)
+_DEFAULT_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES: tuple[str, ...] = ()
+_DEFAULT_CAPABILITY_NARROWING_DENIED_CAPABILITIES: tuple[str, ...] = ()
+_DEFAULT_CAPABILITY_NARROWING_QUEUED_CAPABILITIES: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -117,12 +158,116 @@ class DetectionConfig:
 
     # --- Session-risk capability narrowing and feedback surfaces ---
     capability_narrowing_enabled: bool = False
+    capability_narrowing_trigger_risk: str = "high"
+    capability_narrowing_allowed_tool_permission_groups: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS
+    )
+    capability_narrowing_denied_tool_permission_groups: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS
+    )
+    capability_narrowing_allowed_skill_trust_states: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES
+    )
+    capability_narrowing_denied_skill_trust_states: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES
+    )
+    capability_narrowing_allowed_mcp_servers: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_SERVERS
+    )
+    capability_narrowing_denied_mcp_servers: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_SERVERS
+    )
+    capability_narrowing_allowed_mcp_tools: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_TOOLS
+    )
+    capability_narrowing_denied_mcp_tools: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_TOOLS
+    )
+    capability_narrowing_allowed_mcp_statuses: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES
+    )
+    capability_narrowing_denied_mcp_statuses: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_STATUSES
+    )
+    capability_narrowing_allowed_mcp_trust_levels: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS
+    )
+    capability_narrowing_denied_mcp_trust_levels: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS
+    )
+    capability_narrowing_allowed_capabilities: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES
+    )
+    capability_narrowing_denied_capabilities: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_DENIED_CAPABILITIES
+    )
+    capability_narrowing_queued_capabilities: tuple[str, ...] = (
+        _DEFAULT_CAPABILITY_NARROWING_QUEUED_CAPABILITIES
+    )
+    capability_narrowing_audit_verbosity: str = "summary"
+    capability_narrowing_greylist_action: str = "defer"
+    tool_permission_group_overrides: str = ""
     agent_safety_feedback_enabled: bool = False
     skill_trust_registry_path: Optional[str] = None
     skill_trust_first_use_normal_action: str = "audit"
     skill_trust_first_use_benchmark_action: str = "audit"
     skill_trust_first_use_strict_action: str = "audit"
     skill_trust_first_use_permissive_action: str = "audit"
+    skill_trust_runtime_normal_action: str = "force_l3"
+    skill_trust_runtime_benchmark_action: str = "block"
+    skill_trust_runtime_strict_action: str = "block"
+    skill_trust_runtime_permissive_action: str = "audit"
+    skill_trust_runtime_path_disallowed_normal_action: str = "force_l3"
+    skill_trust_runtime_path_disallowed_benchmark_action: str = "block"
+    skill_trust_runtime_path_disallowed_strict_action: str = "block"
+    skill_trust_runtime_path_disallowed_permissive_action: str = "audit"
+    skill_trust_runtime_source_ambiguous_normal_action: str = "force_l3"
+    skill_trust_runtime_source_ambiguous_benchmark_action: str = "block"
+    skill_trust_runtime_source_ambiguous_strict_action: str = "defer"
+    skill_trust_runtime_source_ambiguous_permissive_action: str = "audit"
+    skill_trust_runtime_path_unverified_normal_action: str = "audit"
+    skill_trust_runtime_path_unverified_benchmark_action: str = "audit"
+    skill_trust_runtime_path_unverified_strict_action: str = "defer"
+    skill_trust_runtime_path_unverified_permissive_action: str = "audit"
+    skill_trust_runtime_content_unverified_normal_action: str = "force_l3"
+    skill_trust_runtime_content_unverified_benchmark_action: str = "block"
+    skill_trust_runtime_content_unverified_strict_action: str = "defer"
+    skill_trust_runtime_content_unverified_permissive_action: str = "audit"
+    skill_trust_runtime_content_mismatch_normal_action: str = "defer"
+    skill_trust_runtime_content_mismatch_benchmark_action: str = "block"
+    skill_trust_runtime_content_mismatch_strict_action: str = "block"
+    skill_trust_runtime_content_mismatch_permissive_action: str = "audit"
+    skill_trust_mirror_hash_max_files: int = 200
+    skill_trust_mirror_hash_max_file_bytes: int = 1_048_576
+    skill_trust_mirror_hash_max_total_ms: int = 1_000
+    skill_trust_fspr_enabled: bool = False
+    skill_trust_fspr_pre_use_enabled: bool = False
+    skill_trust_fspr_post_action_enabled: bool = False
+    skill_trust_fspr_role_set: str = "default"
+    skill_trust_fspr_timeout_ms: int = 120_000
+    skill_trust_fspr_cache_enabled: bool = True
+    skill_trust_fspr_provider_enabled: bool = False
+    skill_trust_fspr_normal_action: str = "audit"
+    skill_trust_fspr_benchmark_action: str = "audit"
+    skill_trust_fspr_strict_action: str = "audit"
+    skill_trust_fspr_permissive_action: str = "audit"
+    skill_trust_fspr_inconsistent_normal_action: str = "audit"
+    skill_trust_fspr_inconsistent_benchmark_action: str = "audit"
+    skill_trust_fspr_inconsistent_strict_action: str = "audit"
+    skill_trust_fspr_inconsistent_permissive_action: str = "audit"
+    skill_trust_fspr_suspicious_normal_action: str = "audit"
+    skill_trust_fspr_suspicious_benchmark_action: str = "audit"
+    skill_trust_fspr_suspicious_strict_action: str = "audit"
+    skill_trust_fspr_suspicious_permissive_action: str = "audit"
+    skill_trust_fspr_insufficient_evidence_normal_action: str = "audit"
+    skill_trust_fspr_insufficient_evidence_benchmark_action: str = "audit"
+    skill_trust_fspr_insufficient_evidence_strict_action: str = "audit"
+    skill_trust_fspr_insufficient_evidence_permissive_action: str = "audit"
+    skill_trust_provenance_enabled: bool = False
+    skill_trust_provenance_policy_path: Optional[str] = None
+    skill_trust_provenance_policy_json: Optional[str] = None
+    skill_trust_provenance_workspace_root: Optional[str] = None
+    skill_trust_provenance_max_artifact_bytes: int = 1_048_576
 
     # --- E-5: Self-evolving pattern repository ---
     evolving_enabled: bool = False
@@ -138,6 +283,173 @@ class DetectionConfig:
                 "anti_bypass_prior_verdicts",
                 tuple(self.anti_bypass_prior_verdicts),
             )
+        if isinstance(self.capability_narrowing_allowed_tool_permission_groups, list):
+            object.__setattr__(
+                self,
+                "capability_narrowing_allowed_tool_permission_groups",
+                tuple(self.capability_narrowing_allowed_tool_permission_groups),
+            )
+        if isinstance(self.capability_narrowing_denied_tool_permission_groups, list):
+            object.__setattr__(
+                self,
+                "capability_narrowing_denied_tool_permission_groups",
+                tuple(self.capability_narrowing_denied_tool_permission_groups),
+            )
+        if isinstance(self.capability_narrowing_allowed_skill_trust_states, list):
+            object.__setattr__(
+                self,
+                "capability_narrowing_allowed_skill_trust_states",
+                tuple(self.capability_narrowing_allowed_skill_trust_states),
+            )
+        if isinstance(self.capability_narrowing_denied_skill_trust_states, list):
+            object.__setattr__(
+                self,
+                "capability_narrowing_denied_skill_trust_states",
+                tuple(self.capability_narrowing_denied_skill_trust_states),
+            )
+        for field_name in (
+            "capability_narrowing_allowed_mcp_servers",
+            "capability_narrowing_denied_mcp_servers",
+            "capability_narrowing_allowed_mcp_tools",
+            "capability_narrowing_denied_mcp_tools",
+            "capability_narrowing_allowed_mcp_statuses",
+            "capability_narrowing_denied_mcp_statuses",
+            "capability_narrowing_allowed_mcp_trust_levels",
+            "capability_narrowing_denied_mcp_trust_levels",
+            "capability_narrowing_allowed_capabilities",
+            "capability_narrowing_denied_capabilities",
+            "capability_narrowing_queued_capabilities",
+        ):
+            if isinstance(getattr(self, field_name), list):
+                object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
+        capability_trigger_risk = str(self.capability_narrowing_trigger_risk or "").strip().lower()
+        if capability_trigger_risk not in _VALID_RISK_LEVELS:
+            logger.warning(
+                "Invalid capability_narrowing_trigger_risk=%r, falling back to 'high'",
+                self.capability_narrowing_trigger_risk,
+            )
+            capability_trigger_risk = "high"
+        object.__setattr__(self, "capability_narrowing_trigger_risk", capability_trigger_risk)
+        for field_name, fallback in (
+            (
+                "capability_narrowing_allowed_tool_permission_groups",
+                _DEFAULT_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS,
+            ),
+            (
+                "capability_narrowing_denied_tool_permission_groups",
+                _DEFAULT_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS,
+            ),
+        ):
+            raw_groups = tuple(
+                str(group).strip().lower()
+                for group in getattr(self, field_name)
+                if str(group).strip()
+            )
+            valid_groups = tuple(group for group in raw_groups if group in TOOL_PERMISSION_GROUPS)
+            invalid_groups = tuple(group for group in raw_groups if group not in TOOL_PERMISSION_GROUPS)
+            if invalid_groups or not valid_groups:
+                logger.warning(
+                    "Invalid %s=%r, falling back to %r",
+                    field_name,
+                    getattr(self, field_name),
+                    valid_groups or fallback,
+                )
+            object.__setattr__(self, field_name, valid_groups or fallback)
+        for field_name, fallback in (
+            (
+                "capability_narrowing_allowed_skill_trust_states",
+                _DEFAULT_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES,
+            ),
+            (
+                "capability_narrowing_denied_skill_trust_states",
+                _DEFAULT_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES,
+            ),
+        ):
+            raw_states = tuple(
+                str(state).strip().lower()
+                for state in getattr(self, field_name)
+                if str(state).strip()
+            )
+            valid_states = tuple(state for state in raw_states if state in _VALID_SKILL_TRUST_STATES)
+            invalid_states = tuple(state for state in raw_states if state not in _VALID_SKILL_TRUST_STATES)
+            if invalid_states or not valid_states:
+                logger.warning(
+                    "Invalid %s=%r, falling back to %r",
+                    field_name,
+                    getattr(self, field_name),
+                    valid_states or fallback,
+                )
+            object.__setattr__(self, field_name, valid_states or fallback)
+        for field_name in (
+            "capability_narrowing_allowed_mcp_servers",
+            "capability_narrowing_denied_mcp_servers",
+            "capability_narrowing_allowed_mcp_tools",
+            "capability_narrowing_denied_mcp_tools",
+            "capability_narrowing_allowed_capabilities",
+            "capability_narrowing_denied_capabilities",
+            "capability_narrowing_queued_capabilities",
+        ):
+            normalized_items = tuple(
+                str(item).strip().lower()
+                for item in getattr(self, field_name)
+                if str(item).strip()
+            )
+            object.__setattr__(self, field_name, normalized_items)
+        for field_name, valid_values, fallback in (
+            (
+                "capability_narrowing_allowed_mcp_statuses",
+                _VALID_MCP_STATUSES,
+                _DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES,
+            ),
+            (
+                "capability_narrowing_denied_mcp_statuses",
+                _VALID_MCP_STATUSES,
+                _DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_STATUSES,
+            ),
+            (
+                "capability_narrowing_allowed_mcp_trust_levels",
+                _VALID_MCP_TRUST_LEVELS,
+                _DEFAULT_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS,
+            ),
+            (
+                "capability_narrowing_denied_mcp_trust_levels",
+                _VALID_MCP_TRUST_LEVELS,
+                _DEFAULT_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS,
+            ),
+        ):
+            raw_items = tuple(
+                str(item).strip().lower()
+                for item in getattr(self, field_name)
+                if str(item).strip()
+            )
+            valid_items = tuple(item for item in raw_items if item in valid_values)
+            invalid_items = tuple(item for item in raw_items if item not in valid_values)
+            if invalid_items:
+                logger.warning(
+                    "Invalid %s=%r, falling back to %r",
+                    field_name,
+                    getattr(self, field_name),
+                    valid_items or fallback,
+                )
+                object.__setattr__(self, field_name, valid_items or fallback)
+            else:
+                object.__setattr__(self, field_name, valid_items)
+        greylist_action = str(self.capability_narrowing_greylist_action or "").strip().lower()
+        if greylist_action not in _VALID_CAPABILITY_NARROWING_GREYLIST_ACTIONS:
+            logger.warning(
+                "Invalid capability_narrowing_greylist_action=%r, falling back to 'defer'",
+                self.capability_narrowing_greylist_action,
+            )
+            greylist_action = "defer"
+        object.__setattr__(self, "capability_narrowing_greylist_action", greylist_action)
+        audit_verbosity = str(self.capability_narrowing_audit_verbosity or "").strip().lower()
+        if audit_verbosity not in _VALID_CAPABILITY_NARROWING_AUDIT_VERBOSITY:
+            logger.warning(
+                "Invalid capability_narrowing_audit_verbosity=%r, falling back to 'summary'",
+                self.capability_narrowing_audit_verbosity,
+            )
+            audit_verbosity = "summary"
+        object.__setattr__(self, "capability_narrowing_audit_verbosity", audit_verbosity)
         # Validate threshold ordering
         if not (self.threshold_medium <= self.threshold_high <= self.threshold_critical):
             raise ValueError(
@@ -327,6 +639,46 @@ class DetectionConfig:
             "skill_trust_first_use_benchmark_action",
             "skill_trust_first_use_strict_action",
             "skill_trust_first_use_permissive_action",
+            "skill_trust_runtime_normal_action",
+            "skill_trust_runtime_benchmark_action",
+            "skill_trust_runtime_strict_action",
+            "skill_trust_runtime_permissive_action",
+            "skill_trust_runtime_path_disallowed_normal_action",
+            "skill_trust_runtime_path_disallowed_benchmark_action",
+            "skill_trust_runtime_path_disallowed_strict_action",
+            "skill_trust_runtime_path_disallowed_permissive_action",
+            "skill_trust_runtime_source_ambiguous_normal_action",
+            "skill_trust_runtime_source_ambiguous_benchmark_action",
+            "skill_trust_runtime_source_ambiguous_strict_action",
+            "skill_trust_runtime_source_ambiguous_permissive_action",
+            "skill_trust_runtime_path_unverified_normal_action",
+            "skill_trust_runtime_path_unverified_benchmark_action",
+            "skill_trust_runtime_path_unverified_strict_action",
+            "skill_trust_runtime_path_unverified_permissive_action",
+            "skill_trust_runtime_content_unverified_normal_action",
+            "skill_trust_runtime_content_unverified_benchmark_action",
+            "skill_trust_runtime_content_unverified_strict_action",
+            "skill_trust_runtime_content_unverified_permissive_action",
+            "skill_trust_runtime_content_mismatch_normal_action",
+            "skill_trust_runtime_content_mismatch_benchmark_action",
+            "skill_trust_runtime_content_mismatch_strict_action",
+            "skill_trust_runtime_content_mismatch_permissive_action",
+            "skill_trust_fspr_normal_action",
+            "skill_trust_fspr_benchmark_action",
+            "skill_trust_fspr_strict_action",
+            "skill_trust_fspr_permissive_action",
+            "skill_trust_fspr_inconsistent_normal_action",
+            "skill_trust_fspr_inconsistent_benchmark_action",
+            "skill_trust_fspr_inconsistent_strict_action",
+            "skill_trust_fspr_inconsistent_permissive_action",
+            "skill_trust_fspr_suspicious_normal_action",
+            "skill_trust_fspr_suspicious_benchmark_action",
+            "skill_trust_fspr_suspicious_strict_action",
+            "skill_trust_fspr_suspicious_permissive_action",
+            "skill_trust_fspr_insufficient_evidence_normal_action",
+            "skill_trust_fspr_insufficient_evidence_benchmark_action",
+            "skill_trust_fspr_insufficient_evidence_strict_action",
+            "skill_trust_fspr_insufficient_evidence_permissive_action",
         ):
             value = str(getattr(self, field_name) or "").strip().lower()
             if value not in first_use_actions:
@@ -337,6 +689,31 @@ class DetectionConfig:
                 )
                 value = "audit"
             object.__setattr__(self, field_name, value)
+        if self.skill_trust_provenance_max_artifact_bytes <= 0:
+            raise ValueError(
+                "skill_trust_provenance_max_artifact_bytes must be > 0, got "
+                f"{self.skill_trust_provenance_max_artifact_bytes}"
+            )
+        if self.skill_trust_mirror_hash_max_files <= 0:
+            raise ValueError(
+                "skill_trust_mirror_hash_max_files must be > 0, got "
+                f"{self.skill_trust_mirror_hash_max_files}"
+            )
+        if self.skill_trust_mirror_hash_max_file_bytes <= 0:
+            raise ValueError(
+                "skill_trust_mirror_hash_max_file_bytes must be > 0, got "
+                f"{self.skill_trust_mirror_hash_max_file_bytes}"
+            )
+        if self.skill_trust_mirror_hash_max_total_ms <= 0:
+            raise ValueError(
+                "skill_trust_mirror_hash_max_total_ms must be > 0, got "
+                f"{self.skill_trust_mirror_hash_max_total_ms}"
+            )
+        if self.skill_trust_fspr_timeout_ms <= 0:
+            raise ValueError(
+                "skill_trust_fspr_timeout_ms must be > 0, got "
+                f"{self.skill_trust_fspr_timeout_ms}"
+            )
         if self.threshold_critical > 3.0:
             logger.warning(
                 "threshold_critical=%.2f exceeds max achievable score (3.0) with default weights; "
@@ -412,11 +789,64 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_ANTI_BYPASS_LLM_TIMEOUT_MS", "anti_bypass_llm_timeout_ms", float),
     ("CS_ANTI_BYPASS_LLM_MAX_PRIORS", "anti_bypass_llm_max_priors", int),
     ("CS_ANTI_BYPASS_LLM_ACTION", "anti_bypass_llm_action", str),
+    ("CS_CAPABILITY_NARROWING_TRIGGER_RISK", "capability_narrowing_trigger_risk", str),
+    ("CS_CAPABILITY_NARROWING_AUDIT_VERBOSITY", "capability_narrowing_audit_verbosity", str),
+    ("CS_CAPABILITY_NARROWING_GREYLIST_ACTION", "capability_narrowing_greylist_action", str),
+    ("CS_TOOL_PERMISSION_GROUP_OVERRIDES", "tool_permission_group_overrides", str),
     ("CS_SKILL_TRUST_REGISTRY_PATH", "skill_trust_registry_path", str),
     ("CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION", "skill_trust_first_use_normal_action", str),
     ("CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION", "skill_trust_first_use_benchmark_action", str),
     ("CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION", "skill_trust_first_use_strict_action", str),
     ("CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION", "skill_trust_first_use_permissive_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION", "skill_trust_runtime_normal_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION", "skill_trust_runtime_benchmark_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_STRICT_ACTION", "skill_trust_runtime_strict_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION", "skill_trust_runtime_permissive_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION", "skill_trust_runtime_path_disallowed_normal_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_BENCHMARK_ACTION", "skill_trust_runtime_path_disallowed_benchmark_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_STRICT_ACTION", "skill_trust_runtime_path_disallowed_strict_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_PERMISSIVE_ACTION", "skill_trust_runtime_path_disallowed_permissive_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION", "skill_trust_runtime_source_ambiguous_normal_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_BENCHMARK_ACTION", "skill_trust_runtime_source_ambiguous_benchmark_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION", "skill_trust_runtime_source_ambiguous_strict_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_PERMISSIVE_ACTION", "skill_trust_runtime_source_ambiguous_permissive_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_NORMAL_ACTION", "skill_trust_runtime_path_unverified_normal_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_BENCHMARK_ACTION", "skill_trust_runtime_path_unverified_benchmark_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_STRICT_ACTION", "skill_trust_runtime_path_unverified_strict_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_PERMISSIVE_ACTION", "skill_trust_runtime_path_unverified_permissive_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_NORMAL_ACTION", "skill_trust_runtime_content_unverified_normal_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION", "skill_trust_runtime_content_unverified_benchmark_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_STRICT_ACTION", "skill_trust_runtime_content_unverified_strict_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_PERMISSIVE_ACTION", "skill_trust_runtime_content_unverified_permissive_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION", "skill_trust_runtime_content_mismatch_normal_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_BENCHMARK_ACTION", "skill_trust_runtime_content_mismatch_benchmark_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_STRICT_ACTION", "skill_trust_runtime_content_mismatch_strict_action", str),
+    ("CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_PERMISSIVE_ACTION", "skill_trust_runtime_content_mismatch_permissive_action", str),
+    ("CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES", "skill_trust_mirror_hash_max_files", int),
+    ("CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES", "skill_trust_mirror_hash_max_file_bytes", int),
+    ("CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS", "skill_trust_mirror_hash_max_total_ms", int),
+    ("CS_SKILL_TRUST_FSPR_ROLE_SET", "skill_trust_fspr_role_set", str),
+    ("CS_SKILL_TRUST_FSPR_TIMEOUT_MS", "skill_trust_fspr_timeout_ms", int),
+    ("CS_SKILL_TRUST_FSPR_NORMAL_ACTION", "skill_trust_fspr_normal_action", str),
+    ("CS_SKILL_TRUST_FSPR_BENCHMARK_ACTION", "skill_trust_fspr_benchmark_action", str),
+    ("CS_SKILL_TRUST_FSPR_STRICT_ACTION", "skill_trust_fspr_strict_action", str),
+    ("CS_SKILL_TRUST_FSPR_PERMISSIVE_ACTION", "skill_trust_fspr_permissive_action", str),
+    ("CS_SKILL_TRUST_FSPR_INCONSISTENT_NORMAL_ACTION", "skill_trust_fspr_inconsistent_normal_action", str),
+    ("CS_SKILL_TRUST_FSPR_INCONSISTENT_BENCHMARK_ACTION", "skill_trust_fspr_inconsistent_benchmark_action", str),
+    ("CS_SKILL_TRUST_FSPR_INCONSISTENT_STRICT_ACTION", "skill_trust_fspr_inconsistent_strict_action", str),
+    ("CS_SKILL_TRUST_FSPR_INCONSISTENT_PERMISSIVE_ACTION", "skill_trust_fspr_inconsistent_permissive_action", str),
+    ("CS_SKILL_TRUST_FSPR_SUSPICIOUS_NORMAL_ACTION", "skill_trust_fspr_suspicious_normal_action", str),
+    ("CS_SKILL_TRUST_FSPR_SUSPICIOUS_BENCHMARK_ACTION", "skill_trust_fspr_suspicious_benchmark_action", str),
+    ("CS_SKILL_TRUST_FSPR_SUSPICIOUS_STRICT_ACTION", "skill_trust_fspr_suspicious_strict_action", str),
+    ("CS_SKILL_TRUST_FSPR_SUSPICIOUS_PERMISSIVE_ACTION", "skill_trust_fspr_suspicious_permissive_action", str),
+    ("CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_NORMAL_ACTION", "skill_trust_fspr_insufficient_evidence_normal_action", str),
+    ("CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_BENCHMARK_ACTION", "skill_trust_fspr_insufficient_evidence_benchmark_action", str),
+    ("CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_STRICT_ACTION", "skill_trust_fspr_insufficient_evidence_strict_action", str),
+    ("CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_PERMISSIVE_ACTION", "skill_trust_fspr_insufficient_evidence_permissive_action", str),
+    ("CS_SKILL_TRUST_PROVENANCE_POLICY_PATH", "skill_trust_provenance_policy_path", str),
+    ("CS_SKILL_TRUST_PROVENANCE_POLICY_JSON", "skill_trust_provenance_policy_json", str),
+    ("CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT", "skill_trust_provenance_workspace_root", str),
+    ("CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES", "skill_trust_provenance_max_artifact_bytes", int),
 ]
 
 _ENV_ALIAS_MAP: list[tuple[str, str, type, str]] = [
@@ -428,6 +858,21 @@ _ENV_ALIAS_MAP: list[tuple[str, str, type, str]] = [
 _ENV_LIST_MAP: list[tuple[str, str]] = [
     ("CS_POST_ACTION_WHITELIST", "post_action_whitelist"),
     ("CS_ANTI_BYPASS_PRIOR_VERDICTS", "anti_bypass_prior_verdicts"),
+    ("CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS", "capability_narrowing_allowed_tool_permission_groups"),
+    ("CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS", "capability_narrowing_denied_tool_permission_groups"),
+    ("CS_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES", "capability_narrowing_allowed_skill_trust_states"),
+    ("CS_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES", "capability_narrowing_denied_skill_trust_states"),
+    ("CS_CAPABILITY_NARROWING_ALLOWED_MCP_SERVERS", "capability_narrowing_allowed_mcp_servers"),
+    ("CS_CAPABILITY_NARROWING_DENIED_MCP_SERVERS", "capability_narrowing_denied_mcp_servers"),
+    ("CS_CAPABILITY_NARROWING_ALLOWED_MCP_TOOLS", "capability_narrowing_allowed_mcp_tools"),
+    ("CS_CAPABILITY_NARROWING_DENIED_MCP_TOOLS", "capability_narrowing_denied_mcp_tools"),
+    ("CS_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES", "capability_narrowing_allowed_mcp_statuses"),
+    ("CS_CAPABILITY_NARROWING_DENIED_MCP_STATUSES", "capability_narrowing_denied_mcp_statuses"),
+    ("CS_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS", "capability_narrowing_allowed_mcp_trust_levels"),
+    ("CS_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS", "capability_narrowing_denied_mcp_trust_levels"),
+    ("CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES", "capability_narrowing_allowed_capabilities"),
+    ("CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES", "capability_narrowing_denied_capabilities"),
+    ("CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES", "capability_narrowing_queued_capabilities"),
 ]
 
 
@@ -516,6 +961,12 @@ def build_detection_config_from_env() -> DetectionConfig:
     _parse_bool_env("CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS", "anti_bypass_record_allow_decisions")
     _parse_bool_env("CS_CAPABILITY_NARROWING_ENABLED", "capability_narrowing_enabled")
     _parse_bool_env("CS_AGENT_SAFETY_FEEDBACK_ENABLED", "agent_safety_feedback_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_PROVENANCE_ENABLED", "skill_trust_provenance_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_ENABLED", "skill_trust_fspr_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED", "skill_trust_fspr_pre_use_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED", "skill_trust_fspr_post_action_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_CACHE_ENABLED", "skill_trust_fspr_cache_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED", "skill_trust_fspr_provider_enabled")
     explicit_anti_bypass_llm = _parse_bool_env(
         "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED",
         "anti_bypass_llm_recognition_enabled",
@@ -688,6 +1139,12 @@ def build_detection_config_with_preset(
     _parse_bool_env("CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS", "anti_bypass_record_allow_decisions")
     _parse_bool_env("CS_CAPABILITY_NARROWING_ENABLED", "capability_narrowing_enabled")
     _parse_bool_env("CS_AGENT_SAFETY_FEEDBACK_ENABLED", "agent_safety_feedback_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_PROVENANCE_ENABLED", "skill_trust_provenance_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_ENABLED", "skill_trust_fspr_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED", "skill_trust_fspr_pre_use_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED", "skill_trust_fspr_post_action_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_CACHE_ENABLED", "skill_trust_fspr_cache_enabled")
+    _parse_bool_env("CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED", "skill_trust_fspr_provider_enabled")
     explicit_anti_bypass_llm = _parse_bool_env(
         "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED",
         "anti_bypass_llm_recognition_enabled",

@@ -175,6 +175,8 @@ ADAPTER_EFFECT_RESULT_VERSION = "cs.adapter_effect_result.v1"
 SESSION_SCOPE_VERSION = "cs.session_scope.v1"
 ACTION_EFFECT_VERSION = "cs.action_effect.v1"
 DENIED_EFFECT_VERSION = "cs.denied_effect.v1"
+AGENT_SAFETY_FEEDBACK_VERSION = "clawsentry.agent_safety_feedback.v1"
+AGENT_ADVISORY_FEEDBACK_VERSION = "clawsentry.agent_advisory_feedback.v1"
 
 
 # ---------------------------------------------------------------------------
@@ -200,6 +202,39 @@ class FrameworkMeta(BaseModel):
     model_config = {"extra": "allow"}
 
 
+class AgentSafetyFeedback(BaseModel):
+    """Redacted feedback envelope surfaced after critical pre-action blocks."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    schema_: str = Field(default=AGENT_SAFETY_FEEDBACK_VERSION, alias="schema")
+    delivery: Literal["prompt_injection", "response", "audit_only", "unsupported"]
+    risk_level: Literal["critical"]
+    decision_id: str
+    blocked_surface: Literal["tool", "skill", "mcp", "command", "artifact"]
+    reason_summary: str
+    safe_next_step: str
+    redaction_policy_version: str = "cs.agent_safety_feedback.v1"
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
+class AgentAdvisoryFeedback(BaseModel):
+    """Redacted advisory envelope for non-critical warnings."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    schema_: str = Field(default=AGENT_ADVISORY_FEEDBACK_VERSION, alias="schema")
+    delivery: Literal["prompt_injection", "response", "audit_only", "unsupported"]
+    advisory_type: Literal["greylist_skill"]
+    severity: Literal["warning"]
+    decision_id: str
+    affected_surface: Literal["skill", "tool", "mcp"]
+    reason_summary: str
+    safe_next_step: str
+    redaction_policy_version: str = "cs.agent_advisory_feedback.v1"
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
 class SessionScopeBaseRules(BaseModel):
     """Non-overridable base restrictions for a session scope profile."""
 
@@ -216,6 +251,7 @@ class SessionScopeBaseRules(BaseModel):
     denied_mcp_trust_levels: list[str] = Field(default_factory=list)
     denied_skill_trust_states: list[str] = Field(default_factory=list)
     denied_capabilities: list[str] = Field(default_factory=list)
+    denied_tool_permission_groups: list[str] = Field(default_factory=list)
 
 
 class SessionScopeTaskRules(BaseModel):
@@ -236,6 +272,8 @@ class SessionScopeTaskRules(BaseModel):
     queued_categories: list[str] = Field(default_factory=list)
     allowed_capabilities: list[str] = Field(default_factory=list)
     queued_capabilities: list[str] = Field(default_factory=list)
+    allowed_tool_permission_groups: list[str] = Field(default_factory=list)
+    queued_tool_permission_groups: list[str] = Field(default_factory=list)
 
 
 class ActionEffectTarget(BaseModel):
@@ -835,6 +873,9 @@ class SkillRegistryRecord(BaseModel):
         "revoked",
         "disabled",
     ] = "unlisted"
+    skill_trust_grade: Optional[
+        Literal["trusted", "review", "restricted", "blocked", "disabled"]
+    ] = None
     status: Literal[
         "trusted",
         "ambiguous_alias",
@@ -877,18 +918,23 @@ class SkillTrustTransitionEvent(BaseModel):
     transition_id: str = Field(..., min_length=1)
     registry_snapshot_id: str = Field(..., min_length=1)
     canonical_skill_id: str = Field(..., min_length=1)
+    metadata_record_id: Optional[str] = None
     from_state: Literal["unlisted", "allowlist", "greylist", "blacklist", "revoked", "disabled"]
     to_state: Literal["allowlist", "greylist", "blacklist", "revoked", "disabled"]
     reason_code: str = Field(..., min_length=1)
     evidence_hashes: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
     scope: Literal["workspace", "user_home", "project", "global"] = "workspace"
     actor_type: Literal["policy", "operator", "manual_migration", "system"] = "policy"
     operator_id_hash: Optional[str] = None
     override_id: Optional[str] = None
+    override_indefinite_reason: Optional[str] = None
     policy_fingerprint: str = Field(..., min_length=1)
     previous_policy_fingerprint: Optional[str] = None
     expires_at: Optional[str] = None
     disabled_until: Optional[str] = None
+    restore_target_state: Optional[str] = None
+    idempotency_key: Optional[str] = None
     review_required: bool = True
 
 
@@ -949,10 +995,97 @@ class FirstUseScanState(BaseModel):
     policy_fingerprint: Optional[str] = None
 
 
+class FirstUseSkillPackageReview(BaseModel):
+    """Validated First-Use Skill Package Review evidence shared by Gateway policy."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+        serialize_by_alias=True,
+    )
+
+    schema_: Literal["clawsentry.first_use_skill_package_review.v1"] = Field(
+        "clawsentry.first_use_skill_package_review.v1",
+        alias="schema",
+    )
+    timing_mode: Literal[
+        "pre_use_gate",
+        "post_action_incremental_evidence",
+    ] = "post_action_incremental_evidence"
+    verdict: Literal[
+        "consistent",
+        "suspicious",
+        "inconsistent",
+        "insufficient_evidence",
+    ] = "insufficient_evidence"
+    severity: Literal["low", "medium", "high", "critical"] = "low"
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    recommended_action: Literal[
+        "audit",
+        "force_l2",
+        "force_l3",
+        "defer",
+        "block",
+    ] = "audit"
+    transition_recommendation: Optional[dict[str, Any]] = None
+    deterministic_findings_preserved: bool = True
+    role_results: list[dict[str, Any]] = Field(default_factory=list)
+    final_findings: list[dict[str, Any]] = Field(default_factory=list)
+    evidence_capsule: dict[str, Any] = Field(default_factory=dict)
+    degraded: bool = False
+    degradation_reason: Optional[str] = None
+    cache_key: Optional[str] = None
+    cache_hit: bool = False
+    cache: dict[str, Any] = Field(default_factory=dict)
+
+    @property
+    def schema(self) -> str:
+        return self.schema_
+
+
+class RuntimeSkillRef(BaseModel):
+    """Raw adapter-observed runtime skill reference before Gateway binding."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ref_ordinal: int = Field(..., ge=0)
+    name: Optional[str] = None
+    runtime_root_raw: Optional[str] = None
+    runtime_root: Optional[str] = None
+    runtime_path_raw: Optional[str] = None
+    runtime_path: Optional[str] = None
+    observed_runtime_root_path_hash: Optional[str] = None
+    observed_runner_contract_id: Optional[str] = None
+    evidence_kind: Literal[
+        "native_skill_call",
+        "shell_skill_path",
+        "path_fragment",
+        "dynamic_execution",
+        "coverage_gap",
+        "unknown",
+    ] = "unknown"
+    text_source: Optional[str] = None
+    adapter_observed: bool = False
+    adapter_origin: Optional[str] = None
+    confidence: Literal["high", "medium", "low"] = "low"
+
+
 class SkillTrustContext(BaseModel):
     """Runtime skill identity and trust evidence resolved before policy evaluation."""
 
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_runtime_root_path_hash(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "runtime_root_path_hash" not in data:
+            if data.get("runtime_root_hash") is not None:
+                data = dict(data)
+                data["runtime_root_path_hash"] = data.pop("runtime_root_hash")
+            elif data.get("runtime_path_hash") is not None:
+                data = dict(data)
+                data["runtime_root_path_hash"] = data.pop("runtime_path_hash")
+        return data
 
     registry_status: Literal["matched", "unknown", "ambiguous", "hash_mismatch", "unbound"] = "unbound"
     canonical_skill_id: Optional[str] = None
@@ -976,6 +1109,31 @@ class SkillTrustContext(BaseModel):
         "disabled",
     ]] = None
     first_use_scan: Optional[FirstUseScanState] = None
+    runtime_path_status: Optional[Literal[
+        "verified_source",
+        "verified_mirror",
+        "verified_name",
+        "name_only_unverified",
+        "path_fragment_unverified",
+        "disallowed",
+        "ambiguous_runtime_source",
+        "absent",
+    ]] = None
+    runtime_root_path_hash: Optional[str] = None
+    runtime_binding_reason: Optional[str] = None
+    runtime_content_status: Optional[Literal[
+        "content_verified",
+        "trusted_runner_immutable",
+        "content_unverified",
+        "content_mismatch",
+        "not_applicable",
+    ]] = None
+    metadata_source: Optional[str] = None
+    metadata_record_id: Optional[str] = None
+    runtime_evidence_kind: Optional[str] = None
+    current_runner_contract_id: Optional[str] = None
+    ref_ordinal: Optional[int] = Field(default=None, ge=0)
+    first_use_package_review: Optional[FirstUseSkillPackageReview | dict[str, Any]] = None
     invariant_violations: list[str] = Field(default_factory=list)
     policy_fingerprint: Optional[str] = None
 
@@ -987,8 +1145,44 @@ class LineageEvent(BaseModel):
 
     event_id: str = Field(..., min_length=1)
     session_id: str = Field(..., min_length=1)
+    occurred_at: Optional[str] = None
+    sequence: Optional[int] = Field(default=None, ge=0)
+    ref_ordinal: Optional[int] = Field(default=None, ge=0)
+    dedupe_key: Optional[str] = None
     canonical_skill_id: Optional[str] = None
     tool_name: str = Field(..., min_length=1)
+    observed_name: Optional[str] = None
+    runtime_path_status: Optional[Literal[
+        "verified_source",
+        "verified_mirror",
+        "verified_name",
+        "name_only_unverified",
+        "path_fragment_unverified",
+        "disallowed",
+        "ambiguous_runtime_source",
+        "absent",
+    ]] = None
+    runtime_root_path_hash: Optional[str] = None
+    runtime_content_status: Optional[Literal[
+        "content_verified",
+        "trusted_runner_immutable",
+        "content_unverified",
+        "content_mismatch",
+        "not_applicable",
+    ]] = None
+    runtime_evidence_kind: Optional[Literal[
+        "native_skill_call",
+        "shell_skill_path",
+        "path_fragment",
+        "dynamic_execution",
+        "coverage_gap",
+        "unknown",
+    ]] = None
+    current_runner_contract_id: Optional[str] = None
+    metadata_record_id: Optional[str] = None
+    decision: Optional[Literal["allow", "block", "defer", "error", "unknown"]] = None
+    risk_level: Optional[Literal["low", "medium", "high", "critical", "unknown"]] = None
+    invariant_violations: list[str] = Field(default_factory=list)
     output_provenance_label: Optional[str] = None
     parent_event_id: Optional[str] = None
     content_hash: Optional[str] = None
@@ -1136,7 +1330,9 @@ class DecisionContext(BaseModel):
     cognition_hints: Optional[list[str]] = None
     session_scope_profile_id: Optional[str] = None
     session_scope_profile: Optional[SessionScopeProfile] = None
+    tool_permission_group_overrides: dict[str, list[str]] = Field(default_factory=dict)
     skill_trust: Optional[SkillTrustContext] = None
+    skill_trust_refs: list[SkillTrustContext] = Field(default_factory=list)
     mcp_context: Optional[McpContext] = None
 
 
@@ -1176,6 +1372,7 @@ class SyncDecisionResponse(BaseModel):
     l3_reason: Optional[str] = None
     l3_reason_code: Optional[str] = None
     agent_safety_feedback: Optional[dict[str, Any]] = None
+    agent_advisory_feedback: Optional[dict[str, Any]] = None
     served_at: str  # UTC ISO8601
 
     @field_validator("served_at")

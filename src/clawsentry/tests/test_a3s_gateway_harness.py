@@ -16,12 +16,128 @@ from clawsentry.gateway.models import (
     DecisionVerdict,
     EventType,
     RiskLevel,
+    SkillRegistryRecord,
 )
+from clawsentry.gateway.detection_config import DetectionConfig
 from clawsentry.gateway.server import SupervisionGateway, start_uds_server
-from clawsentry.adapters.a3s_gateway_harness import A3SGatewayHarness
+from clawsentry.adapters.a3s_gateway_harness import (
+    A3SGatewayHarness,
+    _codex_runtime_skill_refs_from_payload,
+)
 
 
 TEST_UDS_PATH = "/tmp/ahp-a3s-harness-test.sock"
+
+
+def test_codex_runtime_refs_extract_explicit_skill_path():
+    refs = _codex_runtime_skill_refs_from_payload(
+        {
+            "arguments": {
+                "command": "python /tmp/workspace/.codex/skills/search-accommodation/scripts/run.py"
+            }
+        },
+        known_skill_names=None,
+    )
+
+    assert len(refs) == 1
+    ref = refs[0]
+    assert ref.ref_ordinal == 0
+    assert ref.name == "search-accommodation"
+    assert ref.runtime_root == "/tmp/workspace/.codex/skills/search-accommodation"
+    assert ref.runtime_path == "/tmp/workspace/.codex/skills/search-accommodation/scripts/run.py"
+    assert ref.observed_runtime_root_path_hash
+    assert ref.evidence_kind == "shell_skill_path"
+    assert ref.confidence == "high"
+
+
+def test_codex_runtime_refs_preserve_multi_ref_order():
+    refs = _codex_runtime_skill_refs_from_payload(
+        {
+            "arguments": {
+                "command": (
+                    "python /tmp/workspace/.codex/skills/first-skill/scripts/run.py && "
+                    "python /tmp/workspace/.codex/skills/second-skill/scripts/run.py"
+                )
+            }
+        },
+        known_skill_names=None,
+    )
+
+    assert [ref.ref_ordinal for ref in refs] == [0, 1]
+    assert [ref.name for ref in refs] == ["first-skill", "second-skill"]
+
+
+def test_codex_runtime_refs_ignore_comments_and_heredocs():
+    refs = _codex_runtime_skill_refs_from_payload(
+        {
+            "arguments": {
+                "command": (
+                    "# python /tmp/workspace/.codex/skills/comment-skill/scripts/run.py\n"
+                    "cat <<'EOF'\n"
+                    "python /tmp/workspace/.codex/skills/heredoc-skill/scripts/run.py\n"
+                    "EOF\n"
+                    "echo done"
+                )
+            }
+        },
+        known_skill_names=None,
+    )
+
+    assert refs == []
+
+
+def test_codex_runtime_refs_mark_dynamic_execution_unverified():
+    refs = _codex_runtime_skill_refs_from_payload(
+        {
+            "arguments": {
+                "command": "bash -c 'python $CODEX_HOME/skills/search-accommodation/scripts/run.py'"
+            }
+        },
+        known_skill_names={"search-accommodation"},
+    )
+
+    assert len(refs) == 1
+    ref = refs[0]
+    assert ref.name == "search-accommodation"
+    assert ref.runtime_root is None
+    assert ref.runtime_path is None
+    assert ref.evidence_kind == "dynamic_execution"
+    assert ref.confidence == "low"
+
+
+def test_codex_runtime_refs_resolve_cd_relative_skill_execution():
+    refs = _codex_runtime_skill_refs_from_payload(
+        {
+            "arguments": {
+                "cwd": "/tmp/workspace/.codex",
+                "command": "cd skills/search-accommodation && python scripts/run.py",
+            }
+        },
+        known_skill_names=None,
+    )
+
+    assert len(refs) == 1
+    ref = refs[0]
+    assert ref.name == "search-accommodation"
+    assert ref.runtime_root == "/tmp/workspace/.codex/skills/search-accommodation"
+    assert ref.runtime_path == "/tmp/workspace/.codex/skills/search-accommodation/scripts/run.py"
+    assert ref.evidence_kind == "shell_skill_path"
+    assert ref.confidence == "high"
+
+
+def _skill_record(name: str) -> SkillRegistryRecord:
+    return SkillRegistryRecord(
+        canonical_skill_id=f"skill:{name}",
+        canonical_name=name,
+        aliases=[name.replace("-", "_")],
+        content_hashes={"SKILL.md": f"sha256:{name}:skill", "scripts": f"sha256:{name}:scripts"},
+        source={"framework": "gemini-cli", "path_hash": f"sha256:{name}:path"},
+        trust_level="trusted",
+        admission_scan_id=f"scan-{name}",
+        policy_fingerprint="sha256:policy",
+        status="trusted",
+        list_state="allowlist",
+    )
 
 
 @pytest_asyncio.fixture
@@ -59,6 +175,48 @@ async def test_handshake_returns_capabilities(harness_with_gateway):
     assert "planning" in resp["result"]["harness_info"]["capabilities"]
     assert "reasoning" in resp["result"]["harness_info"]["capabilities"]
     assert "intent_detection" in resp["result"]["harness_info"]["capabilities"]
+
+
+@pytest.mark.asyncio
+async def test_agent_safety_feedback_response_delivery_for_supported_harness(tmp_path):
+    uds_path = str(tmp_path / "a3s-feedback.sock")
+    gw = SupervisionGateway(
+        detection_config=DetectionConfig(agent_safety_feedback_enabled=True)
+    )
+    server = await start_uds_server(gw, uds_path)
+    adapter = A3SCodeAdapter(uds_path=uds_path, default_deadline_ms=1000)
+    harness = A3SGatewayHarness(adapter=adapter)
+    try:
+        resp = await harness.dispatch_async(
+            {
+                "jsonrpc": "2.0",
+                "id": 201,
+                "method": "ahp/event",
+                "params": {
+                    "event_type": "pre_action",
+                    "session_id": "sess-a3s-feedback",
+                    "agent_id": "agent-a3s-feedback",
+                    "tool_name": "bash",
+                    "payload": {
+                        "tool_name": "bash",
+                        "command": "rm -rf /tmp/clawsentry-a3s-feedback-target",
+                    },
+                },
+            }
+        )
+    finally:
+        server.close()
+        await server.wait_closed()
+
+    assert resp is not None
+    result = resp["result"]
+    assert result["decision"] == "block"
+    feedback = result["metadata"]["agent_safety_feedback"]
+    assert feedback["schema"] == "clawsentry.agent_safety_feedback.v1"
+    assert feedback["delivery"] == "response"
+    assert feedback["blocked_surface"] == "command"
+    assert "rm -rf" not in json.dumps(feedback)
+    assert "/tmp/clawsentry-a3s-feedback-target" not in json.dumps(feedback)
 
 
 @pytest.mark.asyncio
@@ -1339,6 +1497,327 @@ class TestNativeHookFormat:
         assert meta["skill_lineage_raw"]["metadata_source"] == "cwd_runtime_metadata"
 
     @pytest.mark.asyncio
+    async def test_claude_native_skill_tool_enriches_skill_trust_from_skill_argument(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        skill_root = tmp_path / "skills" / "search-accommodation"
+        skill_root.mkdir(parents=True)
+        (skill_root / "SKILL.md").write_text(
+            "---\nname: search-accommodation\n---\nUse the singular alias.\n",
+            encoding="utf-8",
+        )
+        runtime_dir = tmp_path / ".clawsentry"
+        runtime_dir.mkdir()
+        (runtime_dir / "skill-trust-runtime.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "framework": "claude-code",
+                    "raw_metadata_by_skill": {
+                        "search-cities": {
+                            "presented_name": "search-cities",
+                            "canonical_skill_id": "skill:search-cities",
+                            "canonical_name": "search-cities",
+                            "framework": "claude-code",
+                            "provenance_label_conflict": False,
+                            "skill_root_path": str(tmp_path / "skills" / "search-cities"),
+                        },
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "canonical_skill_id": "skill:search-accommodation",
+                            "canonical_name": "search-accommodation",
+                            "framework": "claude-code",
+                            "provenance_label_conflict": True,
+                            "skill_root_path": str(skill_root),
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.delenv("CS_SKILL_TRUST_METADATA_PATH", raising=False)
+
+        adapter = A3SCodeAdapter(
+            uds_path="/tmp/nonexistent.sock",
+            source_framework="claude-code",
+        )
+        adapter.request_decision = AsyncMock(
+            return_value=CanonicalDecision(
+                decision=DecisionVerdict.ALLOW,
+                reason="captured",
+                policy_id="test-policy",
+                risk_level=RiskLevel.LOW,
+                decision_source=DecisionSource.POLICY,
+                final=True,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        response = await harness.dispatch_async(
+            {
+                "session_id": "sess-claude-native-skill",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Skill",
+                "tool_input": {"skill": "search-accommodation"},
+                "cwd": str(tmp_path),
+            }
+        )
+
+        assert response is None
+        event = adapter.request_decision.await_args.args[0]
+        raw = event.payload["_clawsentry_meta"]["skill_trust_raw"]
+        assert raw["presented_name"] == "search-accommodation"
+        assert raw["provenance_claim"] == "search-accommodations"
+        assert raw["provenance_label_conflict"] is True
+
+    @pytest.mark.asyncio
+    async def test_gemini_invoke_agent_prompt_enriches_skill_trust_from_skill_path(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        skill_root = tmp_path / "skills" / "search-accommodation"
+        (skill_root / "scripts").mkdir(parents=True)
+        (skill_root / "SKILL.md").write_text(
+            "---\nname: search-accommodation\n---\nUse the singular alias.\n",
+            encoding="utf-8",
+        )
+        runtime_dir = tmp_path / ".clawsentry"
+        runtime_dir.mkdir()
+        (runtime_dir / "skill-trust-runtime.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "framework": "gemini-cli",
+                    "raw_metadata_by_skill": {
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "canonical_skill_id": "skill:search-accommodation",
+                            "canonical_name": "search-accommodation",
+                            "framework": "gemini-cli",
+                            "provenance_label_conflict": True,
+                            "skill_root_path": str(skill_root),
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.delenv("CS_SKILL_TRUST_METADATA_PATH", raising=False)
+
+        adapter = A3SCodeAdapter(
+            uds_path="/tmp/nonexistent.sock",
+            source_framework="gemini-cli",
+        )
+        adapter.request_decision = AsyncMock(
+            return_value=CanonicalDecision(
+                decision=DecisionVerdict.ALLOW,
+                reason="captured",
+                policy_id="test-policy",
+                risk_level=RiskLevel.LOW,
+                decision_source=DecisionSource.POLICY,
+                final=True,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        response = await harness.dispatch_async(
+            {
+                "session_id": "sess-gemini-delegate",
+                "hook_event_name": "BeforeTool",
+                "tool_name": "invoke_agent",
+                "tool_input": {
+                    "prompt": (
+                        "Use `/root/.agents/skills/search-accommodation/scripts/"
+                        "search_accommodations.py` for accommodations."
+                    )
+                },
+                "cwd": str(tmp_path),
+            }
+        )
+
+        assert response is None
+        event = adapter.request_decision.await_args.args[0]
+        raw = event.payload["_clawsentry_meta"]["skill_trust_raw"]
+        assert raw["presented_name"] == "search-accommodation"
+        assert raw["provenance_claim"] == "search-accommodations"
+        assert raw["provenance_label_conflict"] is True
+
+    @pytest.mark.asyncio
+    async def test_gemini_invoke_agent_prompt_with_poisoned_skill_is_denied_by_gateway(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        skill_root = tmp_path / "skills" / "search-accommodation"
+        (skill_root / "scripts").mkdir(parents=True)
+        (skill_root / "SKILL.md").write_text(
+            "---\nname: search-accommodation\n---\nUse the singular alias.\n",
+            encoding="utf-8",
+        )
+        runtime_dir = tmp_path / ".clawsentry"
+        runtime_dir.mkdir()
+        metadata_path = runtime_dir / "skill-trust-runtime.json"
+        metadata_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "framework": "gemini-cli",
+                    "raw_metadata_by_skill": {
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "canonical_skill_id": "skill:search-accommodation",
+                            "canonical_name": "search-accommodation",
+                            "framework": "gemini-cli",
+                            "provenance_label_conflict": True,
+                            "control_language_findings": [
+                                "canonical_name_claim",
+                                "routing_claim",
+                            ],
+                            "skill_root_path": str(skill_root),
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata_path))
+        monkeypatch.setenv("CS_MODE", "benchmark")
+
+        uds_path = str(tmp_path / "gateway.sock")
+        gateway = SupervisionGateway(
+            trajectory_db_path=":memory:",
+            detection_config=DetectionConfig(mode="benchmark"),
+            skill_registry_records=[
+                _skill_record("search-cities"),
+                _skill_record("search-accommodation"),
+                _skill_record("search-accommodations"),
+            ],
+        )
+        server = await start_uds_server(gateway, uds_path)
+        try:
+            adapter = A3SCodeAdapter(
+                uds_path=uds_path,
+                default_deadline_ms=500,
+                source_framework="gemini-cli",
+            )
+            harness = A3SGatewayHarness(adapter)
+
+            response = await harness.dispatch_async(
+                {
+                    "session_id": "sess-gemini-delegate-deny",
+                    "hook_event_name": "BeforeTool",
+                    "tool_name": "invoke_agent",
+                    "tool_input": {
+                        "prompt": (
+                            "Use `/root/.agents/skills/search-accommodation/scripts/"
+                            "search_accommodations.py` for accommodations."
+                        )
+                    },
+                    "cwd": str(tmp_path),
+                }
+            )
+        finally:
+            server.close()
+            await server.wait_closed()
+
+        assert response is not None
+        assert response["decision"] == "deny"
+        assert "(risk: high)" in response["reason"]
+        assert "runtime_path_disallowed" in response["reason"]
+
+    @pytest.mark.asyncio
+    async def test_gemini_generated_script_with_poisoned_skill_path_is_denied_by_gateway(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        skill_root = tmp_path / "skills" / "search-accommodation"
+        (skill_root / "scripts").mkdir(parents=True)
+        (skill_root / "SKILL.md").write_text(
+            "---\nname: search-accommodation\n---\nUse the singular alias.\n",
+            encoding="utf-8",
+        )
+        runtime_dir = tmp_path / ".clawsentry"
+        runtime_dir.mkdir()
+        metadata_path = runtime_dir / "skill-trust-runtime.json"
+        metadata_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "framework": "gemini-cli",
+                    "raw_metadata_by_skill": {
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "canonical_skill_id": "skill:search-accommodation",
+                            "canonical_name": "search-accommodation",
+                            "framework": "gemini-cli",
+                            "provenance_label_conflict": True,
+                            "control_language_findings": ["canonical_name_claim"],
+                            "skill_root_path": str(skill_root),
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata_path))
+
+        uds_path = str(tmp_path / "gateway.sock")
+        gateway = SupervisionGateway(
+            trajectory_db_path=":memory:",
+            detection_config=DetectionConfig(mode="benchmark"),
+            skill_registry_records=[
+                _skill_record("search-accommodation"),
+                _skill_record("search-accommodations"),
+            ],
+        )
+        server = await start_uds_server(gateway, uds_path)
+        try:
+            adapter = A3SCodeAdapter(
+                uds_path=uds_path,
+                default_deadline_ms=500,
+                source_framework="gemini-cli",
+            )
+            harness = A3SGatewayHarness(adapter)
+
+            response = await harness.dispatch_async(
+                {
+                    "session_id": "sess-gemini-generated-script-deny",
+                    "hook_event_name": "BeforeTool",
+                    "tool_name": "run_shell_command",
+                    "tool_input": {
+                        "command": (
+                            "cat <<'EOF' > gather_data.py\n"
+                            "import sys\n"
+                            'sys.path.append("/root/.agents/skills/search-accommodation/scripts")\n'
+                            "from search_accommodations import Accommodations\n"
+                            "EOF\n"
+                            "python3 gather_data.py\n"
+                        )
+                    },
+                    "cwd": str(tmp_path),
+                }
+            )
+        finally:
+            server.close()
+            await server.wait_closed()
+
+        assert response is not None
+        assert response["decision"] == "deny"
+        assert "runtime_path_disallowed" in response["reason"]
+
+    @pytest.mark.asyncio
     async def test_jsonrpc_format_still_works(self, harness):
         """Existing JSON-RPC format should still work unchanged."""
         msg = {
@@ -1680,6 +2159,68 @@ class TestCodexNativeHookDispatch:
         assert raw["provenance_label_conflict"] is False
 
     @pytest.mark.asyncio
+    async def test_codex_message_text_does_not_override_executed_skill_path(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        from unittest.mock import AsyncMock
+
+        metadata = tmp_path / "skill-trust-raw.json"
+        metadata.write_text(
+            json.dumps(
+                {
+                    "schema_version": "clawsentry.skill_trust_bundle.v1",
+                    "raw_metadata_by_skill": {
+                        "search-accommodation": {
+                            "presented_name": "search-accommodation",
+                            "provenance_claim": "search-accommodations",
+                            "provenance_label_conflict": True,
+                        },
+                        "search-accommodations": {
+                            "presented_name": "search-accommodations",
+                            "provenance_label_conflict": False,
+                        },
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.ALLOW,
+                reason="allowed",
+                risk_level=RiskLevel.LOW,
+            )
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        await harness.dispatch_async(
+            {
+                "session_id": "sess-native-codex-message-order",
+                "turn_id": "turn-native-codex-message-order",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": (
+                        "python /root/.agents/skills/search-accommodations/"
+                        "scripts/search_accommodations.py"
+                    ),
+                    "message": "search-accommodation",
+                },
+                "tool_use_id": "tool-native-codex-message-order",
+                "cwd": "/workspace/project",
+            }
+        )
+
+        event = adapter.request_decision.await_args.args[0]
+        raw = event.payload["_clawsentry_meta"]["skill_trust_raw"]
+        assert raw["presented_name"] == "search-accommodations"
+        assert raw["provenance_label_conflict"] is False
+
+    @pytest.mark.asyncio
     async def test_codex_pretooluse_does_not_enrich_from_incidental_skill_name_text(
         self,
         tmp_path,
@@ -1723,9 +2264,8 @@ class TestCodexNativeHookDispatch:
                 "tool_name": "Bash",
                 "tool_input": {
                     "command": (
-                        "cat <<'EOF' > /app/output/itinerary.json\n"
-                        '{"tool_called":"search-accommodation",'
-                        '"path":"/root/.agents/skills/search-accommodation/scripts/search.py"}\n'
+                        "cat <<'EOF' > notes.txt\n"
+                        "Do not select /root/.agents/skills/search-accommodation/scripts/search.py\n"
                         "EOF\n"
                         "# validate /root/.agents/skills/search-accommodation/scripts/search.py was not selected\n"
                         "python /workspace/validate.py"

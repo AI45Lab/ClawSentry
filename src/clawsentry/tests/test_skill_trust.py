@@ -1,12 +1,17 @@
 import json
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from clawsentry.gateway.models import (
     AdmissionReport,
     DecisionContext,
     DecisionTier,
     RiskLevel,
+    RuntimeSkillRef,
     SkillRegistryRecord,
+    SkillTrustContext,
     SkillTrustListEntry,
     SkillTrustTransitionEvent,
     FirstUseScanState,
@@ -16,8 +21,11 @@ from clawsentry.gateway.skill_trust import (
     AdmissionScanner,
     _skill_identity_from_manifest,
     apply_trust_list_state,
+    bind_runtime_skill_refs,
     build_skill_trust_bundle,
+    derive_skill_trust_grade,
     first_use_scan_state,
+    load_skill_trust_runtime_metadata_bundle,
     load_skill_registry_records,
     resolve_skill_trust,
     skill_trust_metadata_availability_matrix,
@@ -31,7 +39,12 @@ from clawsentry.gateway.models import (
 )
 from clawsentry.gateway.detection_config import DetectionConfig
 from clawsentry.gateway.policy_engine import L1PolicyEngine
+from clawsentry.gateway.server import _context_with_skill_trust_raw
 from clawsentry.gateway.semantic_analyzer import L2Result
+from clawsentry.gateway.skill_trust_lifecycle import (
+    apply_expired_lifecycle_windows,
+    apply_lifecycle_transition,
+)
 
 
 def _evt(event_type: EventType = EventType.PRE_ACTION) -> CanonicalEvent:
@@ -70,6 +83,1133 @@ def _record(
         status=status,
         list_state=list_state,
     )
+
+
+def test_skill_trust_grade_is_derived_from_state_and_evidence():
+    assert derive_skill_trust_grade(_record(list_state="allowlist")) == "trusted"
+    assert derive_skill_trust_grade(_record(list_state="greylist")) == "review"
+    assert derive_skill_trust_grade(_record(list_state="disabled")) == "disabled"
+    assert derive_skill_trust_grade(_record(list_state="revoked")) == "blocked"
+
+    mismatched = _record(list_state="allowlist")
+    mismatched.source["runtime_content_status"] = "content_mismatch"
+    assert derive_skill_trust_grade(mismatched) == "restricted"
+
+
+def test_runtime_skill_ref_rejects_trust_strengthening_fields():
+    ref = RuntimeSkillRef(
+        ref_ordinal=0,
+        name="search-accommodation",
+        runtime_root_raw="/workspace/.codex/skills/search-accommodation",
+        runtime_path_raw="/workspace/.codex/skills/search-accommodation/scripts/run.py",
+        observed_runtime_root_path_hash="sha256:runtime-root",
+        evidence_kind="shell_skill_path",
+        text_source="arguments.command",
+        adapter_observed=True,
+        adapter_origin="a3s_gateway_harness",
+        confidence="high",
+    )
+
+    assert ref.name == "search-accommodation"
+    assert ref.runtime_root_raw.endswith("search-accommodation")
+
+    with pytest.raises(ValidationError):
+        RuntimeSkillRef(
+            ref_ordinal=0,
+            name="search-accommodation",
+            runtime_path_status="verified_source",
+        )
+
+    with pytest.raises(ValidationError):
+        RuntimeSkillRef(
+            ref_ordinal=0,
+            name="search-accommodation",
+            metadata_record_id="sha256:record",
+        )
+
+
+def test_skill_trust_context_preserves_runtime_binding_fields():
+    context = SkillTrustContext(
+        registry_status="matched",
+        canonical_skill_id="skill:search-accommodation",
+        presented_name="search-accommodation",
+        runtime_path_status="verified_mirror",
+        runtime_root_path_hash="sha256:runtime-root",
+        runtime_binding_reason="allowed mirror matched trusted runner contract",
+        runtime_content_status="trusted_runner_immutable",
+        metadata_source="gateway_owned_metadata",
+        metadata_record_id="sha256:record",
+        runtime_evidence_kind="shell_skill_path",
+    )
+
+    dumped = context.model_dump(mode="json")
+
+    assert dumped["runtime_path_status"] == "verified_mirror"
+    assert dumped["runtime_root_path_hash"] == "sha256:runtime-root"
+    assert dumped["runtime_content_status"] == "trusted_runner_immutable"
+    assert dumped["metadata_record_id"] == "sha256:record"
+
+
+def test_runtime_metadata_old_bundle_loads_as_single_record():
+    bundle = {
+        "schema_version": "clawsentry.skill_trust_bundle.v1",
+        "framework": "codex",
+        "raw_metadata_by_skill": {
+            "search-accommodation": {
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "skill_root_path": "/workspace/.codex/skills/search-accommodation",
+                "skill_root_path_hash": "sha256:source-root",
+                "content_hashes": {"SKILL.md": "sha256:skill-md"},
+            }
+        },
+    }
+
+    normalized = load_skill_trust_runtime_metadata_bundle(bundle)
+
+    assert len(normalized.metadata_records) == 1
+    record = normalized.metadata_records[0]
+    assert record.presented_name == "search-accommodation"
+    assert record.metadata_record_id.startswith("sha256:")
+    assert record.metadata_record_id_compat is True
+    assert record.source_root_path == "/workspace/.codex/skills/search-accommodation"
+    assert normalized.metadata_by_normalized_name["search-accommodation"] == [
+        record.metadata_record_id
+    ]
+    assert normalized.raw_metadata_by_skill["search-accommodation"]["metadata_record_id"] == record.metadata_record_id
+
+
+def test_runtime_metadata_new_bundle_indexes_duplicate_names():
+    bundle = {
+        "schema_version": "clawsentry.skill_trust_bundle.v2",
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record-a",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:a",
+                "canonical_name": "search-accommodation",
+                "source_root_path": "/workspace/a/search-accommodation",
+                "source_root_path_hash": "sha256:path-a",
+                "allowed_runtime_roots": ["/runtime/a/search-accommodation"],
+                "allowed_runtime_root_hashes": ["sha256:runtime-a"],
+                "mirror_integrity_mode": "content_hash",
+            },
+            {
+                "metadata_record_id": "sha256:record-b",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:b",
+                "canonical_name": "search-accommodation",
+                "source_root_path": "/workspace/b/search-accommodation",
+                "source_root_path_hash": "sha256:path-b",
+                "allowed_runtime_roots": ["/runtime/b/search-accommodation"],
+                "allowed_runtime_root_hashes": ["sha256:runtime-b"],
+                "mirror_integrity_mode": "trusted_runner_immutable",
+                "trusted_runner_contract_id": "skills-safety-bench-container-v1",
+                "runner_contract_attestation_required": True,
+            },
+        ],
+        "raw_metadata_by_skill": {
+            "search-accommodation": {
+                "presented_name": "search-accommodation",
+            }
+        },
+    }
+
+    normalized = load_skill_trust_runtime_metadata_bundle(bundle)
+
+    assert [record.metadata_record_id for record in normalized.metadata_records] == [
+        "sha256:record-a",
+        "sha256:record-b",
+    ]
+    assert normalized.metadata_by_normalized_name["search-accommodation"] == [
+        "sha256:record-a",
+        "sha256:record-b",
+    ]
+    assert normalized.raw_metadata_by_skill["search-accommodation"]["metadata_record_ids"] == [
+        "sha256:record-a",
+        "sha256:record-b",
+    ]
+
+
+def test_build_skill_trust_bundle_emits_stable_metadata_record_id(tmp_path: Path):
+    skill_root = tmp_path / "search-accommodation"
+    skill_root.mkdir()
+    (skill_root / "SKILL.md").write_text("---\nname: search-accommodation\n---\n", encoding="utf-8")
+
+    first = build_skill_trust_bundle(tmp_path, framework="codex", scope="workspace")
+    second = build_skill_trust_bundle(tmp_path, framework="codex", scope="workspace")
+
+    first_record = first["metadata_records"][0]
+    second_record = second["metadata_records"][0]
+    assert first_record["metadata_record_id"].startswith("sha256:")
+    assert first_record["metadata_record_id"] == second_record["metadata_record_id"]
+    assert first["raw_metadata_by_skill"]["search-accommodation"]["metadata_record_id"] == first_record["metadata_record_id"]
+
+
+def test_bundle_records_allowed_runtime_roots(tmp_path: Path):
+    skill_root = tmp_path / "search-accommodation"
+    skill_root.mkdir()
+    (skill_root / "SKILL.md").write_text("---\nname: search-accommodation\n---\n", encoding="utf-8")
+
+    bundle = build_skill_trust_bundle(tmp_path, framework="codex", scope="workspace")
+
+    record = bundle["metadata_records"][0]
+    source_root = str(skill_root.resolve())
+    assert record["source_root_path"] == source_root
+    assert record["source_root_path_hash"].startswith("sha256:")
+    assert source_root in record["allowed_runtime_roots"]
+    assert record["allowed_runtime_root_hashes"]
+    assert record["mirror_integrity_mode"] == "content_hash"
+
+
+def test_runtime_path_outside_allowed_roots_is_disallowed():
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "source_root_path": "/workspace/.codex/skills/search-accommodation",
+                "source_root_path_hash": "sha256:source",
+                "allowed_runtime_roots": ["/workspace/.codex/skills/search-accommodation"],
+                "allowed_runtime_root_hashes": ["sha256:source"],
+                "mirror_integrity_mode": "content_hash",
+            }
+        ],
+    })
+    refs = [
+        RuntimeSkillRef(
+            ref_ordinal=0,
+            name="search-accommodation",
+            runtime_root="/tmp/evil/skills/search-accommodation",
+            runtime_path="/tmp/evil/skills/search-accommodation/scripts/run.py",
+            observed_runtime_root_path_hash="sha256:evil",
+            evidence_kind="shell_skill_path",
+            confidence="high",
+            adapter_observed=True,
+        )
+    ]
+
+    bound = bind_runtime_skill_refs(bundle, refs)
+
+    assert len(bound) == 1
+    assert bound[0].runtime_path_status == "disallowed"
+    assert bound[0].metadata_record_id is None
+    assert "runtime_path_disallowed" in bound[0].invariant_violations
+
+
+def test_allowed_mirror_requires_content_or_runner_integrity():
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "source_root_path": "/workspace/.codex/skills/search-accommodation",
+                "source_root_path_hash": "sha256:source",
+                "allowed_runtime_roots": [
+                    "/workspace/.codex/skills/search-accommodation",
+                    "/home/agent/.codex/skills/search-accommodation",
+                ],
+                "allowed_runtime_root_hashes": ["sha256:source", "sha256:mirror"],
+                "mirror_integrity_mode": "unverified",
+            }
+        ],
+    })
+    refs = [
+        RuntimeSkillRef(
+            ref_ordinal=0,
+            name="search-accommodation",
+            runtime_root="/home/agent/.codex/skills/search-accommodation",
+            runtime_path="/home/agent/.codex/skills/search-accommodation/scripts/run.py",
+            observed_runtime_root_path_hash="sha256:mirror",
+            evidence_kind="shell_skill_path",
+            confidence="high",
+            adapter_observed=True,
+        )
+    ]
+
+    bound = bind_runtime_skill_refs(bundle, refs)
+
+    assert bound[0].runtime_path_status == "verified_mirror"
+    assert bound[0].runtime_content_status == "content_unverified"
+    assert bound[0].metadata_record_id == "sha256:record"
+    assert "runtime_content_unverified" in bound[0].invariant_violations
+
+
+def test_allowed_mirror_uses_gateway_runner_contract_attestation():
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "source_root_path": "/workspace/.codex/skills/search-accommodation",
+                "source_root_path_hash": "sha256:source",
+                "allowed_runtime_roots": [
+                    "/workspace/.codex/skills/search-accommodation",
+                    "/home/agent/.codex/skills/search-accommodation",
+                ],
+                "allowed_runtime_root_hashes": ["sha256:source", "sha256:mirror"],
+                "mirror_integrity_mode": "trusted_runner_immutable",
+                "trusted_runner_contract_id": "skills-safety-bench-container-v1",
+                "runner_contract_attestation_required": True,
+            }
+        ],
+    })
+
+    bound = bind_runtime_skill_refs(
+        bundle,
+        [
+            RuntimeSkillRef(
+                ref_ordinal=0,
+                name="search-accommodation",
+                runtime_root="/home/agent/.codex/skills/search-accommodation",
+                runtime_path="/home/agent/.codex/skills/search-accommodation/scripts/run.py",
+                observed_runtime_root_path_hash="sha256:mirror",
+                evidence_kind="shell_skill_path",
+                confidence="high",
+                adapter_observed=True,
+            )
+        ],
+        current_runner_contract_id="skills-safety-bench-container-v1",
+    )
+
+    assert bound[0].runtime_path_status == "verified_mirror"
+    assert bound[0].runtime_content_status == "trusted_runner_immutable"
+    assert bound[0].current_runner_contract_id == "skills-safety-bench-container-v1"
+    assert bound[0].invariant_violations == []
+
+
+def test_allowed_mirror_ignores_ref_supplied_runner_contract_attestation():
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "source_root_path": "/workspace/.codex/skills/search-accommodation",
+                "source_root_path_hash": "sha256:source",
+                "allowed_runtime_roots": [
+                    "/workspace/.codex/skills/search-accommodation",
+                    "/home/agent/.codex/skills/search-accommodation",
+                ],
+                "allowed_runtime_root_hashes": ["sha256:source", "sha256:mirror"],
+                "mirror_integrity_mode": "trusted_runner_immutable",
+                "trusted_runner_contract_id": "skills-safety-bench-container-v1",
+                "runner_contract_attestation_required": True,
+            }
+        ],
+    })
+
+    bound = bind_runtime_skill_refs(
+        bundle,
+        [
+            RuntimeSkillRef(
+                ref_ordinal=0,
+                name="search-accommodation",
+                runtime_root="/home/agent/.codex/skills/search-accommodation",
+                runtime_path="/home/agent/.codex/skills/search-accommodation/scripts/run.py",
+                observed_runtime_root_path_hash="sha256:mirror",
+                observed_runner_contract_id="skills-safety-bench-container-v1",
+                evidence_kind="shell_skill_path",
+                confidence="high",
+                adapter_observed=True,
+            )
+        ],
+    )
+
+    assert bound[0].runtime_path_status == "verified_mirror"
+    assert bound[0].runtime_content_status == "content_unverified"
+    assert bound[0].current_runner_contract_id is None
+    assert "runtime_content_unverified" in bound[0].invariant_violations
+
+
+def test_runtime_path_must_resolve_under_runtime_root(tmp_path: Path):
+    source_root = tmp_path / "trusted" / "skills" / "search-accommodation"
+    source_root.mkdir(parents=True)
+    outside_script = tmp_path / "trusted" / "evil" / "run.py"
+    outside_script.parent.mkdir(parents=True)
+    outside_script.write_text("print('evil')\n", encoding="utf-8")
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "source_root_path": str(source_root),
+                "source_root_path_hash": "sha256:source",
+                "allowed_runtime_roots": [str(source_root)],
+                "allowed_runtime_root_hashes": ["sha256:source"],
+            }
+        ],
+    })
+
+    bound = bind_runtime_skill_refs(
+        bundle,
+        [
+            RuntimeSkillRef(
+                ref_ordinal=0,
+                name="search-accommodation",
+                runtime_root=str(source_root),
+                runtime_path=str(source_root / ".." / ".." / "evil" / "run.py"),
+                observed_runtime_root_path_hash="sha256:source",
+                evidence_kind="shell_skill_path",
+                confidence="high",
+                adapter_observed=True,
+            )
+        ],
+    )
+
+    assert bound[0].runtime_path_status == "disallowed"
+    assert bound[0].metadata_record_id is None
+    assert "runtime_path_disallowed" in bound[0].invariant_violations
+
+
+def test_allowed_mirror_with_matching_content_is_verified(tmp_path: Path):
+    source = tmp_path / "source" / "search-accommodation"
+    mirror = tmp_path / "mirror" / "search-accommodation"
+    for root in (source, mirror):
+        (root / "scripts").mkdir(parents=True)
+        (root / "SKILL.md").write_text("---\nname: search-accommodation\n---\n", encoding="utf-8")
+        (root / "scripts" / "run.py").write_text("print('ok')\n", encoding="utf-8")
+    content_hashes = AdmissionScanner().scan(source).content_hashes
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "source_root_path": str(source),
+                "source_root_path_hash": "sha256:source",
+                "allowed_runtime_roots": [str(source), str(mirror)],
+                "allowed_runtime_root_hashes": ["sha256:source", "sha256:mirror"],
+                "mirror_integrity_mode": "content_hash",
+                "content_hashes": content_hashes,
+            }
+        ],
+    })
+
+    bound = bind_runtime_skill_refs(
+        bundle,
+        [
+            RuntimeSkillRef(
+                ref_ordinal=0,
+                name="search-accommodation",
+                runtime_root=str(mirror),
+                runtime_path=str(mirror / "scripts" / "run.py"),
+                observed_runtime_root_path_hash="sha256:mirror",
+                evidence_kind="shell_skill_path",
+                confidence="high",
+                adapter_observed=True,
+            )
+        ],
+    )
+
+    assert bound[0].runtime_path_status == "verified_mirror"
+    assert bound[0].runtime_content_status == "content_verified"
+    assert "runtime_content_unverified" not in bound[0].invariant_violations
+
+
+def test_allowed_mirror_with_content_drift_is_mismatch(tmp_path: Path):
+    source = tmp_path / "source" / "search-accommodation"
+    mirror = tmp_path / "mirror" / "search-accommodation"
+    for root in (source, mirror):
+        (root / "scripts").mkdir(parents=True)
+        (root / "SKILL.md").write_text("---\nname: search-accommodation\n---\n", encoding="utf-8")
+    (source / "scripts" / "run.py").write_text("print('ok')\n", encoding="utf-8")
+    (mirror / "scripts" / "run.py").write_text("print('changed')\n", encoding="utf-8")
+    content_hashes = AdmissionScanner().scan(source).content_hashes
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "source_root_path": str(source),
+                "source_root_path_hash": "sha256:source",
+                "allowed_runtime_roots": [str(source), str(mirror)],
+                "allowed_runtime_root_hashes": ["sha256:source", "sha256:mirror"],
+                "mirror_integrity_mode": "content_hash",
+                "content_hashes": content_hashes,
+            }
+        ],
+    })
+
+    bound = bind_runtime_skill_refs(
+        bundle,
+        [
+            RuntimeSkillRef(
+                ref_ordinal=0,
+                name="search-accommodation",
+                runtime_root=str(mirror),
+                runtime_path=str(mirror / "scripts" / "run.py"),
+                observed_runtime_root_path_hash="sha256:mirror",
+                evidence_kind="shell_skill_path",
+                confidence="high",
+                adapter_observed=True,
+            )
+        ],
+    )
+
+    assert bound[0].runtime_path_status == "verified_mirror"
+    assert bound[0].runtime_content_status == "content_mismatch"
+    assert "runtime_content_mismatch" in bound[0].invariant_violations
+
+
+def test_allowed_mirror_hash_budget_exhaustion_is_unverified(tmp_path: Path):
+    source = tmp_path / "source" / "search-accommodation"
+    mirror = tmp_path / "mirror" / "search-accommodation"
+    for root in (source, mirror):
+        (root / "scripts").mkdir(parents=True)
+        (root / "SKILL.md").write_text("---\nname: search-accommodation\n---\n", encoding="utf-8")
+        (root / "scripts" / "run.py").write_text("print('ok')\n", encoding="utf-8")
+    content_hashes = AdmissionScanner().scan(source).content_hashes
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "source_root_path": str(source),
+                "source_root_path_hash": "sha256:source",
+                "allowed_runtime_roots": [str(source), str(mirror)],
+                "allowed_runtime_root_hashes": ["sha256:source", "sha256:mirror"],
+                "mirror_integrity_mode": "content_hash",
+                "content_hashes": content_hashes,
+            }
+        ],
+    })
+
+    bound = bind_runtime_skill_refs(
+        bundle,
+        [
+            RuntimeSkillRef(
+                ref_ordinal=0,
+                name="search-accommodation",
+                runtime_root=str(mirror),
+                runtime_path=str(mirror / "scripts" / "run.py"),
+                observed_runtime_root_path_hash="sha256:mirror",
+                evidence_kind="shell_skill_path",
+                confidence="high",
+                adapter_observed=True,
+            )
+        ],
+        mirror_hash_max_files=1,
+    )
+
+    assert bound[0].runtime_path_status == "verified_mirror"
+    assert bound[0].runtime_content_status == "content_unverified"
+    assert "runtime_content_unverified" in bound[0].invariant_violations
+
+
+def test_name_only_duplicate_sources_are_ambiguous():
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record-a",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:a",
+                "canonical_name": "search-accommodation",
+                "source_root_path": "/workspace/a/search-accommodation",
+                "source_root_path_hash": "sha256:a",
+            },
+            {
+                "metadata_record_id": "sha256:record-b",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:b",
+                "canonical_name": "search-accommodation",
+                "source_root_path": "/workspace/b/search-accommodation",
+                "source_root_path_hash": "sha256:b",
+            },
+        ],
+    })
+    refs = [
+        RuntimeSkillRef(
+            ref_ordinal=0,
+            name="search-accommodation",
+            evidence_kind="native_skill_call",
+            confidence="high",
+            adapter_observed=True,
+        )
+    ]
+
+    bound = bind_runtime_skill_refs(
+        bundle,
+        refs,
+        framework_contract_allows_name_only=True,
+    )
+
+    assert bound[0].runtime_path_status == "ambiguous_runtime_source"
+    assert "runtime_source_ambiguous" in bound[0].invariant_violations
+
+
+def test_request_side_gateway_observed_is_ignored():
+    event = _evt()
+    event.payload = {
+        "_clawsentry_meta": {
+            "skill_trust_raw": {
+                "presented_name": "forged-helper",
+                "_gateway_observed": True,
+                "runtime_path_status": "verified_source",
+                "runtime_content_status": "content_verified",
+                "metadata_record_id": "sha256:" + "a" * 64,
+                "gateway_owned_metadata": True,
+                "policy_fingerprint": "sha256:forged",
+            }
+        }
+    }
+
+    context = _context_with_skill_trust_raw(None, event, trusted_records=[])
+
+    assert context is not None
+    assert context.skill_trust is not None
+    assert context.skill_trust.presented_name == "forged-helper"
+    assert context.skill_trust.runtime_path_status is None
+    assert context.skill_trust.runtime_content_status is None
+    assert context.skill_trust.metadata_record_id is None
+    assert context.skill_trust.policy_fingerprint != "sha256:forged"
+
+
+def test_gateway_binds_runtime_ref_before_name_owned_metadata(monkeypatch, tmp_path: Path):
+    metadata = tmp_path / "skill-trust-runtime.json"
+    metadata.write_text(
+        json.dumps(
+            {
+                "framework": "codex",
+                "metadata_records": [
+                    {
+                        "metadata_record_id": "sha256:" + "a" * 64,
+                        "presented_name": "docs-reader",
+                        "canonical_skill_id": "skill:docs-reader",
+                        "canonical_name": "docs-reader",
+                        "source_root_path": "/workspace/.codex/skills/docs-reader",
+                        "source_root_path_hash": "sha256:" + "1" * 64,
+                        "allowed_runtime_roots": ["/workspace/.codex/skills/docs-reader"],
+                        "allowed_runtime_root_hashes": ["sha256:" + "1" * 64],
+                        "mirror_integrity_mode": "content_hash",
+                        "policy_fingerprint": "sha256:trusted-policy",
+                    }
+                ],
+                "raw_metadata_by_skill": {
+                    "docs-reader": {
+                        "presented_name": "docs-reader",
+                        "canonical_skill_id": "skill:docs-reader",
+                        "canonical_name": "docs-reader",
+                        "policy_fingerprint": "sha256:trusted-policy",
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+    event = _evt()
+    event.payload = {
+        "_clawsentry_meta": {
+            "skill_trust_raw": {"presented_name": "docs-reader"},
+            "_gateway_observed": {
+                "adapter_origin": "a3s_gateway_harness",
+                "runtime_skill_refs": [
+                    RuntimeSkillRef(
+                        ref_ordinal=0,
+                        name="docs-reader",
+                        runtime_root="/tmp/evil/skills/docs-reader",
+                        runtime_path="/tmp/evil/skills/docs-reader/scripts/run.py",
+                        observed_runtime_root_path_hash="sha256:" + "2" * 64,
+                        evidence_kind="shell_skill_path",
+                        adapter_observed=True,
+                        adapter_origin="a3s_gateway_harness",
+                        confidence="high",
+                    ).model_dump(mode="json", exclude_none=True)
+                ],
+            },
+        }
+    }
+    input_context = DecisionContext(caller_adapter="a3s_gateway_harness")
+
+    context = _context_with_skill_trust_raw(input_context, event, trusted_records=[])
+
+    assert context.skill_trust is not None
+    assert context.skill_trust.runtime_path_status == "disallowed"
+    assert context.skill_trust.canonical_skill_id is None
+    assert context.skill_trust.metadata_record_id is None
+    assert "runtime_path_disallowed" in context.skill_trust.invariant_violations
+    assert context.skill_trust_refs == [context.skill_trust]
+
+
+def test_external_gateway_observed_without_trusted_adapter_context_is_ignored(monkeypatch, tmp_path: Path):
+    metadata = tmp_path / "skill-trust-runtime.json"
+    source_root = tmp_path / "skills" / "docs-reader"
+    source_root.mkdir(parents=True)
+    metadata.write_text(
+        json.dumps(
+            {
+                "framework": "codex",
+                "metadata_records": [
+                    {
+                        "metadata_record_id": "sha256:" + "a" * 64,
+                        "presented_name": "docs-reader",
+                        "canonical_skill_id": "skill:docs-reader",
+                        "canonical_name": "docs-reader",
+                        "source_root_path": str(source_root),
+                        "source_root_path_hash": "sha256:" + "1" * 64,
+                        "allowed_runtime_roots": [str(source_root)],
+                        "allowed_runtime_root_hashes": ["sha256:" + "1" * 64],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+    event = _evt()
+    event.source_framework = "codex"
+    event.payload = {
+        "_clawsentry_meta": {
+            "skill_trust_raw": {"presented_name": "docs-reader"},
+            "_gateway_observed": {
+                "adapter_origin": "a3s_gateway_harness",
+                "runtime_skill_refs": [
+                    RuntimeSkillRef(
+                        ref_ordinal=0,
+                        name="docs-reader",
+                        runtime_root=str(source_root),
+                        runtime_path=str(source_root / "run.py"),
+                        observed_runtime_root_path_hash="sha256:" + "1" * 64,
+                        evidence_kind="shell_skill_path",
+                        adapter_observed=True,
+                        adapter_origin="a3s_gateway_harness",
+                        confidence="high",
+                    ).model_dump(mode="json", exclude_none=True)
+                ],
+            },
+        }
+    }
+
+    context = _context_with_skill_trust_raw(None, event, trusted_records=[])
+
+    assert context is not None
+    assert context.skill_trust is not None
+    assert context.skill_trust.runtime_path_status is None
+    assert context.skill_trust.metadata_record_id is None
+    assert context.skill_trust_refs == []
+
+
+def test_gateway_preserves_verified_runtime_refs_for_policy_and_ledger(monkeypatch, tmp_path: Path):
+    metadata = tmp_path / "skill-trust-runtime.json"
+    source_root = tmp_path / "skills" / "docs-reader"
+    (source_root / "scripts").mkdir(parents=True)
+    (source_root / "scripts" / "run.py").write_text("print('ok')\n", encoding="utf-8")
+    metadata.write_text(
+        json.dumps(
+            {
+                "framework": "codex",
+                "metadata_records": [
+                    {
+                        "metadata_record_id": "sha256:" + "a" * 64,
+                        "presented_name": "docs-reader",
+                        "canonical_skill_id": "skill:docs-reader",
+                        "canonical_name": "docs-reader",
+                        "source_root_path": str(source_root),
+                        "source_root_path_hash": "sha256:" + "1" * 64,
+                        "allowed_runtime_roots": [str(source_root)],
+                        "allowed_runtime_root_hashes": ["sha256:" + "1" * 64],
+                        "mirror_integrity_mode": "content_hash",
+                    }
+                ],
+                "raw_metadata_by_skill": {
+                    "docs-reader": {
+                        "presented_name": "docs-reader",
+                        "canonical_skill_id": "skill:docs-reader",
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CS_SKILL_TRUST_METADATA_PATH", str(metadata))
+    event = _evt()
+    event.payload = {
+        "_clawsentry_meta": {
+            "skill_trust_raw": {"presented_name": "docs-reader"},
+            "_gateway_observed": {
+                "adapter_origin": "a3s_gateway_harness",
+                "runtime_skill_refs": [
+                    RuntimeSkillRef(
+                        ref_ordinal=0,
+                        name="docs-reader",
+                        runtime_root=str(source_root),
+                        runtime_path=str(source_root / "scripts" / "run.py"),
+                        observed_runtime_root_path_hash="sha256:" + "1" * 64,
+                        evidence_kind="shell_skill_path",
+                        adapter_observed=True,
+                        adapter_origin="a3s_gateway_harness",
+                        confidence="high",
+                    ).model_dump(mode="json", exclude_none=True)
+                ],
+            },
+        }
+    }
+
+    context = _context_with_skill_trust_raw(
+        DecisionContext(caller_adapter="a3s_gateway_harness"),
+        event,
+        trusted_records=[],
+    )
+
+    assert context.skill_trust is not None
+    assert context.skill_trust.runtime_path_status == "verified_source"
+    assert context.skill_trust.metadata_record_id == "sha256:" + "a" * 64
+    assert context.skill_trust_refs == [context.skill_trust]
+
+
+def test_runtime_path_disallowed_blocks_in_benchmark():
+    skill_trust = SkillTrustContext(
+        registry_status="unknown",
+        presented_name="search-accommodation",
+        runtime_path_status="disallowed",
+        runtime_root_path_hash="sha256:evil",
+        runtime_evidence_kind="shell_skill_path",
+        invariant_violations=["runtime_path_disallowed"],
+    )
+    event = _evt()
+    event.tool_name = "read_file"
+    snapshot = compute_risk_snapshot(
+        event,
+        DecisionContext(skill_trust=skill_trust, skill_trust_refs=[skill_trust]),
+        SessionRiskTracker(),
+        config=DetectionConfig(mode="benchmark"),
+    )
+    decision, _snapshot, _tier = L1PolicyEngine(config=DetectionConfig(mode="benchmark")).evaluate(
+        event,
+        context=DecisionContext(skill_trust=skill_trust, skill_trust_refs=[skill_trust]),
+    )
+
+    assert "runtime_path_disallowed" in snapshot.rule_hits
+    assert snapshot.risk_level == RiskLevel.HIGH
+    assert decision.decision == DecisionVerdict.BLOCK
+
+
+def test_runtime_path_disallowed_normal_defer_action_returns_operator_defer():
+    skill_trust = SkillTrustContext(
+        registry_status="unknown",
+        presented_name="search-accommodation",
+        runtime_path_status="disallowed",
+        runtime_root_path_hash="sha256:evil",
+        runtime_evidence_kind="shell_skill_path",
+        invariant_violations=["runtime_path_disallowed"],
+    )
+
+    decision, snapshot, tier = L1PolicyEngine().evaluate(
+        _evt(),
+        DecisionContext(skill_trust=skill_trust, skill_trust_refs=[skill_trust]),
+        config=DetectionConfig(
+            mode="normal",
+            skill_trust_runtime_normal_action="defer",
+        ),
+    )
+
+    assert decision.decision == DecisionVerdict.DEFER
+    assert decision.final is False
+    assert tier == DecisionTier.L1
+    assert "runtime_path_disallowed" in snapshot.rule_hits
+    assert snapshot.skill_trust_findings[-1]["runtime_binding_action"] == "defer"
+    assert snapshot.skill_trust_findings[-1]["decision_affecting"] is True
+
+
+def test_runtime_content_mismatch_uses_condition_specific_normal_action():
+    skill_trust = SkillTrustContext(
+        registry_status="matched",
+        canonical_skill_id="skill:search-accommodation",
+        presented_name="search-accommodation",
+        runtime_path_status="verified_mirror",
+        runtime_root_path_hash="sha256:mirror",
+        runtime_content_status="content_mismatch",
+        runtime_evidence_kind="shell_skill_path",
+        invariant_violations=["runtime_content_mismatch"],
+    )
+
+    decision, snapshot, tier = L1PolicyEngine().evaluate(
+        _evt(),
+        DecisionContext(skill_trust=skill_trust, skill_trust_refs=[skill_trust]),
+        config=DetectionConfig(mode="normal"),
+    )
+
+    assert decision.decision == DecisionVerdict.DEFER
+    assert decision.final is False
+    assert tier == DecisionTier.L1
+    assert "runtime_content_mismatch" in snapshot.rule_hits
+    finding = next(
+        item
+        for item in snapshot.skill_trust_findings
+        if item.get("rule_id") == "runtime_content_mismatch"
+    )
+    assert finding["runtime_binding_action"] == "defer"
+
+
+def test_multi_runtime_refs_aggregate_strongest_action():
+    benign = SkillTrustContext(
+        registry_status="matched",
+        canonical_skill_id="skill:safe",
+        presented_name="safe-skill",
+        runtime_path_status="verified_source",
+        runtime_content_status="content_verified",
+        metadata_record_id="sha256:safe",
+        ref_ordinal=0,
+    )
+    disallowed = SkillTrustContext(
+        registry_status="unknown",
+        presented_name="evil-skill",
+        runtime_path_status="disallowed",
+        runtime_root_path_hash="sha256:evil",
+        invariant_violations=["runtime_path_disallowed"],
+        ref_ordinal=1,
+    )
+
+    snapshot = compute_risk_snapshot(
+        _evt(),
+        DecisionContext(skill_trust=benign, skill_trust_refs=[benign, disallowed]),
+        SessionRiskTracker(),
+        config=DetectionConfig(mode="benchmark"),
+    )
+
+    assert snapshot.risk_level == RiskLevel.HIGH
+    assert "runtime_path_disallowed" in snapshot.rule_hits
+    ordinals = {
+        finding.get("ref_ordinal")
+        for finding in snapshot.skill_trust_findings
+        if finding.get("rule_id") == "runtime_path_disallowed"
+    }
+    assert ordinals == {1}
+
+
+def test_lifecycle_transition_matrix_blocks_revoked_to_allowlist_without_override():
+    record = _record("calendar-helper", list_state="revoked", status="revoked", trust_level="untrusted")
+
+    with pytest.raises(ValueError):
+        apply_lifecycle_transition(
+            record,
+            target_state="allowlist",
+            reason_code="operator_review",
+            actor_type="operator",
+            operator_id_hash="sha256:" + "a" * 64,
+            evidence_hashes=["sha256:" + "b" * 64],
+            expected_registry_snapshot_id="sha256:snapshot",
+            idempotency_key="idem-1",
+        )
+
+
+def test_lifecycle_transition_matrix_blocks_blacklist_to_greylist_without_override():
+    record = _record("calendar-helper", list_state="blacklist", status="quarantined", trust_level="untrusted")
+
+    with pytest.raises(ValueError):
+        apply_lifecycle_transition(
+            record,
+            target_state="greylist",
+            reason_code="operator_greylist",
+            actor_type="operator",
+            operator_id_hash="sha256:" + "a" * 64,
+            evidence_hashes=["sha256:" + "b" * 64],
+            expected_registry_snapshot_id="sha256:snapshot",
+            idempotency_key="idem-blacklist-greylist-1",
+        )
+
+
+def test_lifecycle_transition_matrix_allows_blacklist_to_greylist_with_override():
+    record = _record("calendar-helper", list_state="blacklist", status="quarantined", trust_level="untrusted")
+
+    updated, event = apply_lifecycle_transition(
+        record,
+        target_state="greylist",
+        reason_code="operator_greylist",
+        actor_type="operator",
+        operator_id_hash="sha256:" + "a" * 64,
+        override_id="override-blacklist-greylist-1",
+        override_indefinite_reason="manual migration reviewed by operator",
+        evidence_hashes=["sha256:" + "b" * 64],
+        expected_registry_snapshot_id="sha256:snapshot",
+        idempotency_key="idem-blacklist-greylist-2",
+    )
+
+    assert updated.list_state == "greylist"
+    assert event.from_state == "blacklist"
+    assert event.to_state == "greylist"
+    assert event.override_id == "override-blacklist-greylist-1"
+    assert event.override_indefinite_reason == "manual migration reviewed by operator"
+
+
+def test_lifecycle_override_requires_operator_identity_and_expiry_or_indefinite_reason():
+    record = _record("calendar-helper", list_state="blacklist", status="quarantined", trust_level="untrusted")
+
+    with pytest.raises(ValueError, match="operator_id_hash"):
+        apply_lifecycle_transition(
+            record,
+            target_state="greylist",
+            reason_code="operator_greylist",
+            actor_type="operator",
+            override_id="override-blacklist-greylist-missing-operator",
+            evidence_hashes=["sha256:" + "b" * 64],
+            expected_registry_snapshot_id="sha256:snapshot",
+            idempotency_key="idem-blacklist-greylist-missing-operator",
+        )
+
+    with pytest.raises(ValueError, match="expires_at or override_indefinite_reason"):
+        apply_lifecycle_transition(
+            record,
+            target_state="greylist",
+            reason_code="operator_greylist",
+            actor_type="operator",
+            operator_id_hash="sha256:" + "a" * 64,
+            override_id="override-blacklist-greylist-missing-expiry",
+            evidence_hashes=["sha256:" + "b" * 64],
+            expected_registry_snapshot_id="sha256:snapshot",
+            idempotency_key="idem-blacklist-greylist-missing-expiry",
+        )
+
+
+def test_lifecycle_greylist_to_allowlist_rejects_weak_integrity_evidence():
+    record = _record(
+        "calendar-helper",
+        list_state="greylist",
+        status="local_unreviewed",
+        trust_level="local_unreviewed",
+        skill_md_hash="sha256:skill-md-current",
+        scripts_hash="sha256:scripts-current",
+    )
+
+    with pytest.raises(ValueError, match="matching content integrity"):
+        apply_lifecycle_transition(
+            record,
+            target_state="allowlist",
+            reason_code="clean_admission_report",
+            actor_type="policy",
+            evidence_hashes=["sha256:unrelated-review-note"],
+            expected_registry_snapshot_id="sha256:snapshot",
+            idempotency_key="idem-greylist-allowlist-weak-1",
+        )
+
+
+def test_lifecycle_greylist_to_allowlist_accepts_matching_integrity_evidence():
+    record = _record(
+        "calendar-helper",
+        list_state="greylist",
+        status="local_unreviewed",
+        trust_level="local_unreviewed",
+        skill_md_hash="sha256:skill-md-current",
+        scripts_hash="sha256:scripts-current",
+    )
+
+    updated, event = apply_lifecycle_transition(
+        record,
+        target_state="allowlist",
+        reason_code="clean_admission_report",
+        actor_type="policy",
+        evidence_hashes=["sha256:skill-md-current", "sha256:scripts-current"],
+        expected_registry_snapshot_id="sha256:snapshot",
+        idempotency_key="idem-greylist-allowlist-good-1",
+    )
+
+    assert updated.list_state == "allowlist"
+    assert updated.status == "trusted"
+    assert event.to_state == "allowlist"
+
+
+def test_lifecycle_greylist_to_allowlist_operator_override_rejects_weak_integrity_evidence():
+    record = _record(
+        "calendar-helper",
+        list_state="greylist",
+        status="local_unreviewed",
+        trust_level="local_unreviewed",
+        skill_md_hash="sha256:skill-md-current",
+        scripts_hash="sha256:scripts-current",
+    )
+
+    with pytest.raises(ValueError, match="matching content integrity"):
+        apply_lifecycle_transition(
+            record,
+            target_state="allowlist",
+            reason_code="operator_review",
+            actor_type="operator",
+            operator_id_hash="sha256:" + "a" * 64,
+            override_id="override-greylist-allowlist-1",
+            override_indefinite_reason="operator reviewed greylist promotion evidence",
+            evidence_hashes=["sha256:operator-note-only"],
+            expected_registry_snapshot_id="sha256:snapshot",
+            idempotency_key="idem-greylist-allowlist-override-weak-1",
+        )
+
+
+def test_lifecycle_greylist_to_allowlist_operator_override_accepts_matching_integrity_evidence():
+    record = _record(
+        "calendar-helper",
+        list_state="greylist",
+        status="local_unreviewed",
+        trust_level="local_unreviewed",
+        skill_md_hash="sha256:skill-md-current",
+        scripts_hash="sha256:scripts-current",
+    )
+
+    updated, event = apply_lifecycle_transition(
+        record,
+        target_state="allowlist",
+        reason_code="operator_review",
+        actor_type="operator",
+        operator_id_hash="sha256:" + "a" * 64,
+        override_id="override-greylist-allowlist-2",
+        override_indefinite_reason="operator reviewed matching integrity evidence",
+        evidence_hashes=["sha256:skill-md-current", "sha256:scripts-current"],
+        expected_registry_snapshot_id="sha256:snapshot",
+        idempotency_key="idem-greylist-allowlist-override-good-1",
+    )
+
+    assert updated.list_state == "allowlist"
+    assert event.reason_code == "operator_override"
+    assert event.override_id == "override-greylist-allowlist-2"
+    assert event.override_indefinite_reason == "operator reviewed matching integrity evidence"
+
+
+def test_lifecycle_expired_override_writes_system_transition():
+    record = _record("calendar-helper", list_state="disabled", status="local_unreviewed")
+    record = record.model_copy(update={
+        "source": {
+            **record.source,
+            "previous_active_state": "greylist",
+            "disabled_until": "2026-05-18T00:00:00+00:00",
+        }
+    })
+
+    restored, events = apply_expired_lifecycle_windows(
+        [record],
+        now="2026-05-19T00:00:00+00:00",
+        policy_fingerprint="sha256:policy",
+    )
+
+    assert restored[0].list_state == "greylist"
+    assert len(events) == 1
+    assert events[0].actor_type == "system"
+    assert events[0].from_state == "disabled"
+    assert events[0].to_state == "greylist"
+    assert events[0].reason_code == "disabled_window_expired"
 
 
 def test_admission_scanner_reports_hashes_and_evidence_only_control_language(tmp_path: Path):

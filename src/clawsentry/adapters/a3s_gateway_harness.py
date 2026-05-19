@@ -25,7 +25,9 @@ try:
         CanonicalDecision,
         DecisionContext,
         DecisionVerdict,
+        RuntimeSkillRef,
     )
+    from ..gateway.skill_trust import load_skill_trust_runtime_metadata_bundle
 except ImportError:
     # Support direct script execution:
     # python src/clawsentry/adapters/a3s_gateway_harness.py
@@ -44,11 +46,19 @@ except ImportError:
         CanonicalDecision,
         DecisionContext,
         DecisionVerdict,
+        RuntimeSkillRef,
     )
+    from clawsentry.gateway.skill_trust import load_skill_trust_runtime_metadata_bundle  # type: ignore[no-redef]
 
 import time as _time
 
 logger = logging.getLogger("a3s-gateway-harness")
+
+
+def _runtime_root_path_hash(path: str) -> str:
+    import hashlib
+
+    return "sha256:" + hashlib.sha256(path.encode("utf-8")).hexdigest()
 
 
 def _monitoring_disabled_by_env() -> bool:
@@ -92,8 +102,6 @@ _OBSERVABILITY_COMPAT_EVENT_TYPES = frozenset({
     "intent_detection",
 })
 _COMPAT_INTERVAL_LIMITED_EVENT_TYPES = frozenset({"idle", "heartbeat"})
-
-
 _CAMEL_RE1 = _re.compile(r"(?<=[a-z0-9])([A-Z])")
 _CAMEL_RE2 = _re.compile(r"(?<=[A-Z])([A-Z][a-z])")
 
@@ -234,17 +242,52 @@ def _codex_skill_name_from_payload(payload: dict[str, Any]) -> str | None:
 
 def _codex_payload_texts(payload: dict[str, Any]) -> list[str]:
     texts: list[str] = []
-    for key in ("command", "path", "file_path"):
+    text_keys = (
+        "command",
+        "path",
+        "file_path",
+        "skill",
+        "skill_name",
+        "prompt",
+        "instruction",
+        "instructions",
+        "input",
+        "message",
+        "query",
+    )
+    for key in text_keys:
         value = payload.get(key)
         if isinstance(value, str):
-            texts.append(_codex_skill_attribution_text(value) if key == "command" else value)
+            if key == "command":
+                texts.append(_codex_skill_attribution_text(value))
+                generated_script_text = _codex_generated_script_attribution_text(value)
+                if generated_script_text:
+                    texts.append(generated_script_text)
+            else:
+                texts.append(value)
     arguments = payload.get("arguments")
     if isinstance(arguments, dict):
-        for key in ("command", "path", "file_path"):
+        for key in text_keys:
             value = arguments.get(key)
             if isinstance(value, str):
-                texts.append(_codex_skill_attribution_text(value) if key == "command" else value)
+                if key == "command":
+                    texts.append(_codex_skill_attribution_text(value))
+                    generated_script_text = _codex_generated_script_attribution_text(value)
+                    if generated_script_text:
+                        texts.append(generated_script_text)
+                else:
+                    texts.append(value)
     return texts
+
+
+def _codex_payload_cwd(payload: dict[str, Any]) -> str | None:
+    for source in (payload, payload.get("arguments")):
+        if not isinstance(source, dict):
+            continue
+        value = source.get("cwd")
+        if isinstance(value, str) and value.strip() and not any(marker in value for marker in ("$", "`")):
+            return str(Path(value).expanduser().resolve(strict=False))
+    return None
 
 
 def _strip_shell_comment(line: str) -> str:
@@ -293,6 +336,43 @@ def _codex_skill_attribution_text(command: str) -> str:
     return "\n".join(lines)
 
 
+def _codex_generated_script_attribution_text(command: str) -> str | None:
+    """Return full command text when a heredoc writes a script that is executed."""
+
+    script_paths: list[str] = []
+    heredoc_write = _re.compile(
+        r"<<-?\s*['\"]?[A-Za-z_][A-Za-z0-9_]*['\"]?\s*>\s*([^\s;&|]+)",
+        _re.I,
+    )
+    for match in heredoc_write.finditer(command):
+        script_path = match.group(1).strip().strip("'\"")
+        if script_path.endswith((".py", ".js", ".sh", ".bash", ".mjs", ".cjs")):
+            script_paths.append(script_path)
+    if not script_paths:
+        return None
+    for script_path in script_paths:
+        basename = script_path.rsplit("/", 1)[-1]
+        path_pattern = _re.escape(script_path)
+        basename_pattern = _re.escape(basename)
+        if _re.search(rf"\b(?:python3?|node|bash|sh)\b[^\n;&|]*(?:{path_pattern}|{basename_pattern})", command):
+            return command
+        if _re.search(rf"(?:^|[\s;&|])(?:\.\/)?(?:{path_pattern}|{basename_pattern})(?:[\s;&|]|$)", command):
+            return command
+    return None
+
+
+def _direct_skill_name_texts(payload: dict[str, Any]) -> list[str]:
+    texts: list[str] = []
+    for source in (payload, payload.get("arguments")):
+        if not isinstance(source, dict):
+            continue
+        for key in ("skill", "skill_name"):
+            value = source.get(key)
+            if isinstance(value, str) and value:
+                texts.append(value)
+    return texts
+
+
 def _codex_skill_name_from_payload_texts(
     payload: dict[str, Any],
     *,
@@ -305,34 +385,171 @@ def _codex_skill_name_from_payload_texts(
     return names[0] if names else None
 
 
+def _codex_runtime_skill_refs_from_payload(
+    payload: dict[str, Any],
+    *,
+    known_skill_names: set[str] | None,
+) -> list[RuntimeSkillRef]:
+    texts = _codex_payload_texts(payload)
+    cwd = _codex_payload_cwd(payload)
+    refs: list[RuntimeSkillRef] = []
+    seen: set[tuple[str | None, str | None, str | None, str]] = set()
+
+    def add_ref(
+        *,
+        name: str | None,
+        runtime_root_raw: str | None = None,
+        runtime_path_raw: str | None = None,
+        evidence_kind: str,
+        text_source: str,
+        confidence: str,
+    ) -> None:
+        runtime_root = None
+        runtime_path = None
+        root_hash = None
+        if runtime_root_raw and not any(marker in runtime_root_raw for marker in ("$", "`")):
+            runtime_root = str(Path(runtime_root_raw).expanduser().resolve(strict=False))
+            root_hash = _runtime_root_path_hash(runtime_root)
+        if runtime_path_raw and not any(marker in runtime_path_raw for marker in ("$", "`")):
+            runtime_path = str(Path(runtime_path_raw).expanduser().resolve(strict=False))
+        key = (name, runtime_root, runtime_path, evidence_kind)
+        if key in seen:
+            return
+        seen.add(key)
+        refs.append(
+            RuntimeSkillRef(
+                ref_ordinal=len(refs),
+                name=name,
+                runtime_root_raw=runtime_root_raw,
+                runtime_root=runtime_root,
+                runtime_path_raw=runtime_path_raw,
+                runtime_path=runtime_path,
+                observed_runtime_root_path_hash=root_hash,
+                evidence_kind=evidence_kind,  # type: ignore[arg-type]
+                text_source=text_source,
+                adapter_observed=True,
+                adapter_origin="a3s_gateway_harness",
+                confidence=confidence,  # type: ignore[arg-type]
+            )
+        )
+
+    path_token_pattern = _re.compile(
+        r"(?P<path>(?:~|/|\$|\.{1,2}/)?[^\s'\";|&)]*?(?:\.codex/|\.agents/)?skills/"
+        r"(?P<name>[^/\s'\";|&)]+)(?:/[^\s'\";|&)]*)?)"
+    )
+    cd_skill_pattern = _re.compile(
+        r"(?:^|[;&|]\s*)cd\s+(?P<root>(?:~|/|\$|\.{1,2}/)?[^\s'\";|&)]*?(?:\.codex/|\.agents/)?skills/"
+        r"(?P<name>[^/\s'\";|&)]+))(?P<tail>.*?)(?=$|[;&|]\s*cd\s+)",
+        _re.S,
+    )
+    relative_script_pattern = _re.compile(
+        r"\b(?:python3?|node|bash|sh)\b\s+(?P<script>(?:\./)?(?:scripts|references|data)/[^\s'\";|&)]+)"
+    )
+    dynamic_shell_pattern = _re.compile(r"\b(?:bash|sh|python3?|node)\s+-c\b")
+    for text_index, text in enumerate(texts):
+        text_source = f"text[{text_index}]"
+        for match in cd_skill_pattern.finditer(text):
+            raw_root = match.group("root").strip().strip("'\"")
+            if "$" in raw_root or "`" in raw_root:
+                continue
+            root_path = Path(raw_root).expanduser()
+            if not root_path.is_absolute():
+                if cwd is None:
+                    continue
+                root_path = Path(cwd) / root_path
+            runtime_root = str(root_path.resolve(strict=False))
+            runtime_path = runtime_root
+            script_match = relative_script_pattern.search(match.group("tail") or "")
+            if script_match:
+                script_path = script_match.group("script").lstrip("./")
+                runtime_path = str((Path(runtime_root) / script_path).resolve(strict=False))
+            add_ref(
+                name=match.group("name"),
+                runtime_root_raw=runtime_root,
+                runtime_path_raw=runtime_path,
+                evidence_kind="shell_skill_path",
+                text_source=text_source,
+                confidence="high",
+            )
+        for match in path_token_pattern.finditer(text):
+            raw_path = match.group("path").strip().strip("`'\"")
+            name = match.group("name")
+            name_end = match.start("name") - match.start("path") + len(name)
+            raw_root = raw_path[:name_end]
+            if "$" in raw_path or "`" in raw_path or dynamic_shell_pattern.search(text):
+                add_ref(
+                    name=name,
+                    evidence_kind="dynamic_execution",
+                    text_source=text_source,
+                    confidence="low",
+                )
+                continue
+            if raw_path.startswith(("/", "~")):
+                add_ref(
+                    name=name,
+                    runtime_root_raw=raw_root,
+                    runtime_path_raw=raw_path,
+                    evidence_kind="shell_skill_path",
+                    text_source=text_source,
+                    confidence="high",
+                )
+            else:
+                if any(ref.name == name and ref.runtime_root for ref in refs):
+                    continue
+                add_ref(
+                    name=name,
+                    runtime_path_raw=raw_path,
+                    evidence_kind="path_fragment",
+                    text_source=text_source,
+                    confidence="low",
+                )
+
+    if known_skill_names:
+        for text in _direct_skill_name_texts(payload):
+            if text in known_skill_names:
+                add_ref(
+                    name=text,
+                    evidence_kind="native_skill_call",
+                    text_source="skill",
+                    confidence="high",
+                )
+        path_contexts = ("/scripts", "/SKILL.md", "/README.md", "/references", "/data")
+        split_path_matches: list[tuple[int, int, str]] = []
+        for text_index, text in enumerate(texts):
+            for skill_name in known_skill_names:
+                path_pattern = (
+                    r"(?<![A-Za-z0-9_.-])"
+                    + _re.escape(skill_name)
+                    + r"(?=(?:"
+                    + "|".join(_re.escape(item) for item in path_contexts)
+                    + r")(?:/|['\"\s),]|$))"
+                )
+                match = _re.search(path_pattern, text)
+                if match:
+                    split_path_matches.append((text_index, match.start(), skill_name))
+        for text_index, _offset, skill_name in sorted(split_path_matches):
+            if any(ref.name == skill_name for ref in refs):
+                continue
+            add_ref(
+                name=skill_name,
+                evidence_kind="path_fragment",
+                text_source=f"text[{text_index}]",
+                confidence="low",
+            )
+
+    return refs
+
+
 def _codex_skill_names_from_payload_texts(
     payload: dict[str, Any],
     *,
     known_skill_names: set[str] | None,
 ) -> list[str]:
-    texts = _codex_payload_texts(payload)
-    names: list[str] = []
-    for text in texts:
-        for match in _re.finditer(r"(?:^|/)(?:\.agents/)?skills/([^/\s'\";|&]+)(?:/|$)", text):
-            names.append(match.group(1))
-    if not known_skill_names:
-        return list(dict.fromkeys(names))
-    path_contexts = ("/scripts", "/SKILL.md", "/README.md", "/references", "/data")
-    split_path_matches: list[tuple[int, int, str]] = []
-    for text_index, text in enumerate(texts):
-        for skill_name in known_skill_names:
-            path_pattern = (
-                r"(?<![A-Za-z0-9_.-])"
-                + _re.escape(skill_name)
-                + r"(?=(?:"
-                + "|".join(_re.escape(item) for item in path_contexts)
-                + r")(?:/|['\"\s),]|$))"
-            )
-            match = _re.search(path_pattern, text)
-            if match:
-                split_path_matches.append((text_index, match.start(), skill_name))
-    names.extend(skill_name for _text_index, _offset, skill_name in sorted(split_path_matches))
-    return list(dict.fromkeys(names))
+    refs = _codex_runtime_skill_refs_from_payload(
+        payload,
+        known_skill_names=known_skill_names,
+    )
+    return list(dict.fromkeys(ref.name for ref in refs if ref.name))
 
 
 def _load_codex_skill_runtime_metadata(skill_name: str) -> dict[str, Any] | None:
@@ -385,9 +602,9 @@ def _load_skill_runtime_metadata_bundle(
             bundle = json.loads(metadata_path.read_text(encoding="utf-8"))
         except Exception:
             continue
-        raw_by_skill = bundle.get("raw_metadata_by_skill") if isinstance(bundle, dict) else None
-        if isinstance(raw_by_skill, dict):
-            return raw_by_skill, metadata_source
+        if isinstance(bundle, dict):
+            normalized = load_skill_trust_runtime_metadata_bundle(bundle)
+            return normalized.raw_metadata_by_skill, metadata_source
     return {}, None
 
 
@@ -406,10 +623,11 @@ def _enrich_skill_trust_from_runtime_bundle(
     )
     if not raw_by_skill:
         return
-    skill_names = _codex_skill_names_from_payload_texts(
+    runtime_refs = _codex_runtime_skill_refs_from_payload(
         payload,
         known_skill_names={str(name) for name in raw_by_skill},
     )
+    skill_names = [ref.name for ref in runtime_refs if ref.name]
     if not skill_names:
         return
     candidates: list[tuple[int, str, dict[str, Any]]] = []
@@ -430,11 +648,19 @@ def _enrich_skill_trust_from_runtime_bundle(
     }
     if raw.get("skill_root_path"):
         lineage_raw["skill_root_path"] = raw.get("skill_root_path")
+    runtime_ref_payloads = [
+        ref.model_dump(mode="json", exclude_none=True)
+        for ref in runtime_refs
+    ]
     _merge_clawsentry_meta(
         payload,
         {
             "skill_trust_raw": raw,
             "skill_lineage_raw": lineage_raw,
+            "_gateway_observed": {
+                "runtime_skill_refs": runtime_ref_payloads,
+                "adapter_origin": "a3s_gateway_harness",
+            },
         },
     )
 
@@ -532,6 +758,15 @@ def _decision_to_ahp_result(decision: CanonicalDecision) -> dict[str, Any]:
         result["retry_after_ms"] = decision.retry_after_ms
 
     return result
+
+
+def _attach_adapter_response_metadata(adapter: Any, result: dict[str, Any]) -> None:
+    response_metadata = getattr(adapter, "last_decision_response_metadata", None)
+    if not isinstance(response_metadata, dict) or not response_metadata:
+        return
+    metadata = result.setdefault("metadata", {})
+    if isinstance(metadata, dict):
+        metadata.update(copy.deepcopy(response_metadata))
 
 
 def _requested_effect_outcomes(decision_effects: dict[str, Any] | None) -> list[str]:
@@ -881,6 +1116,7 @@ class A3SGatewayHarness:
 
             decision = await self.adapter.request_decision(evt)
             result = _decision_to_ahp_result(decision)
+            _attach_adapter_response_metadata(self.adapter, result)
             _record_inprocess_adapter_effect_result(
                 self.adapter,
                 evt,
@@ -998,6 +1234,7 @@ class A3SGatewayHarness:
             DecisionContext(agent_trust_level=AgentTrustLevel.STANDARD),
         )
         result = _decision_to_ahp_result(decision)
+        _attach_adapter_response_metadata(self.adapter, result)
         _record_inprocess_adapter_effect_result(
             self.adapter,
             evt,
@@ -1039,6 +1276,7 @@ class A3SGatewayHarness:
 
         decision = await self.adapter.request_decision(evt)
         result = _decision_to_ahp_result(decision)
+        _attach_adapter_response_metadata(self.adapter, result)
         event_name = str(msg.get("hook_event_name", ""))
         action = str(result.get("action", "continue"))
         enforced = action in {"continue", "allow", "block"} and event_name in {
@@ -1088,6 +1326,7 @@ class A3SGatewayHarness:
 
         decision = await self.adapter.request_decision(evt)
         result = _decision_to_ahp_result(decision)
+        _attach_adapter_response_metadata(self.adapter, result)
         event_name = str(msg.get("hook_event_name", ""))
         can_enforce = event_name in {
             "BeforeAgent",

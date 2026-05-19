@@ -586,6 +586,13 @@ def _build_parser() -> argparse.ArgumentParser:
     skill_trust_register_dir.add_argument("--skills-dir", type=Path, required=True)
     skill_trust_register_dir.add_argument("--registry", type=Path, required=True)
     skill_trust_register_dir.add_argument("--metadata", type=Path, required=True)
+    skill_trust_register_dir.add_argument(
+        "--allowed-runtime-parent",
+        type=Path,
+        action="append",
+        default=[],
+        help="Additional parent directory whose per-skill child roots may bind as runtime mirrors.",
+    )
     skill_trust_register_dir.add_argument("--framework", default="codex")
     skill_trust_register_dir.add_argument(
         "--scope",
@@ -593,6 +600,80 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["workspace", "user_home", "project", "global"],
     )
     skill_trust_register_dir.add_argument("--json", action="store_true", default=False)
+    skill_trust_transition = skill_trust_sub.add_parser(
+        "transition",
+        help="Apply an auditable operator lifecycle transition to one registry record.",
+    )
+    skill_trust_transition.add_argument("--registry", type=Path, required=True)
+    skill_trust_transition.add_argument("--canonical-skill-id", required=True)
+    skill_trust_transition.add_argument(
+        "--target-state",
+        required=True,
+        choices=["allowlist", "greylist", "blacklist", "revoked", "disabled"],
+    )
+    skill_trust_transition.add_argument("--reason-code", required=True)
+    skill_trust_transition.add_argument("--expected-registry-snapshot-id", required=True)
+    skill_trust_transition.add_argument("--idempotency-key", required=True)
+    skill_trust_transition.add_argument("--operator-id-hash", default=None)
+    skill_trust_transition.add_argument("--override-id", default=None)
+    skill_trust_transition.add_argument("--override-indefinite-reason", default=None)
+    skill_trust_transition.add_argument("--expires-at", default=None)
+    skill_trust_transition.add_argument("--disabled-until", default=None)
+    skill_trust_transition.add_argument("--json", action="store_true", default=False)
+
+    def _add_skill_trust_lifecycle_shortcut(
+        name: str,
+        *,
+        help_text: str,
+        restore: bool = False,
+    ) -> None:
+        shortcut = skill_trust_sub.add_parser(name, help=help_text)
+        shortcut.add_argument("--registry", type=Path, required=True)
+        shortcut.add_argument("--canonical-skill-id", required=True)
+        shortcut.add_argument("--expected-registry-snapshot-id", required=True)
+        shortcut.add_argument("--idempotency-key", required=True)
+        shortcut.add_argument("--operator-id-hash", default=None)
+        shortcut.add_argument("--override-id", default=None)
+        shortcut.add_argument("--override-indefinite-reason", default=None)
+        shortcut.add_argument("--expires-at", default=None)
+        shortcut.add_argument("--disabled-until", default=None)
+        if restore:
+            shortcut.add_argument(
+                "--restore-target-state",
+                choices=["allowlist", "greylist", "blacklist", "unlisted"],
+                default=None,
+            )
+        shortcut.add_argument("--json", action="store_true", default=False)
+
+    _add_skill_trust_lifecycle_shortcut(
+        "allowlist",
+        help_text="Operator transition one skill to allowlist.",
+    )
+    _add_skill_trust_lifecycle_shortcut(
+        "greylist",
+        help_text="Operator transition one skill to greylist.",
+    )
+    _add_skill_trust_lifecycle_shortcut(
+        "blacklist",
+        help_text="Operator transition one skill to blacklist.",
+    )
+    _add_skill_trust_lifecycle_shortcut(
+        "revoke",
+        help_text="Operator revoke one skill identity.",
+    )
+    _add_skill_trust_lifecycle_shortcut(
+        "disable",
+        help_text="Operator disable one skill while preserving previous state.",
+    )
+    _add_skill_trust_lifecycle_shortcut(
+        "restore",
+        help_text="Operator restore a disabled skill to its previous or explicit active state.",
+        restore=True,
+    )
+    _add_skill_trust_lifecycle_shortcut(
+        "override",
+        help_text="Operator override transition one skill to allowlist.",
+    )
 
     # --- latch ---
     latch_parser = sub.add_parser(

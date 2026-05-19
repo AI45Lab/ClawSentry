@@ -40,6 +40,9 @@ L1 完全基于确定性规则，不调用任何 LLM 接口，**零外部依赖*
 | 输出 | `RiskSnapshot` + `CanonicalDecision` |
 | 注入检测 | D6 三层架构：启发式正则 + Canary Token + 可插拔 EmbeddingBackend |
 
+!!! note "Skill Trust runtime binding rules"
+    v0.8.0 起，L1 也消费 Skill Trust runtime evidence：`runtime_path_disallowed`、`runtime_source_ambiguous`、`runtime_path_unverified`、`runtime_content_unverified`、`runtime_content_mismatch`、post-action provenance findings 和 `first_use_skill_package_review` verdict 都会按 profile action 进入 risk snapshot。FSPR、P2 provenance validator 和 L2/L3 只能追加 evidence；canonical allow/defer/block 仍由 Gateway policy engine 产生。
+
 ```mermaid
 graph TD
     E[CanonicalEvent] --> D1[D1 工具危险度]

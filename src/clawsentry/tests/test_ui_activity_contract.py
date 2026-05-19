@@ -328,6 +328,12 @@ def test_session_detail_replay_surfaces_l3_state_and_reason() -> None:
     assert "record.meta.l3_reason" in source
 
 
+def test_session_detail_replay_surfaces_skill_trust_grade() -> None:
+    source = _read_ui_file("pages/SessionDetail.tsx")
+
+    assert "skill_trust_grade" in source
+
+
 def test_session_detail_replay_surfaces_compact_evidence_summary() -> None:
     source = _read_ui_file("pages/SessionDetail.tsx")
 

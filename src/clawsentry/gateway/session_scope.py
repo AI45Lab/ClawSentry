@@ -21,6 +21,7 @@ from .models import (
     SessionScopeProfile,
     SessionScopeVerdict,
 )
+from .tool_permissions import resolve_tool_permission
 
 
 _URL_RE = re.compile(r"https?://[^\s'\"<>|)]+", re.IGNORECASE)
@@ -85,6 +86,10 @@ def evaluate_session_scope(
 
     command = _event_command(event)
     tool = (event.tool_name or "").lower()
+    tool_permission_group = resolve_tool_permission(
+        tool,
+        overrides=context.tool_permission_group_overrides if context else None,
+    ).group
     paths = _event_paths(event, command)
     domains = _event_domains(event, command)
     capabilities = tuple(normalize_action_effect(event, context).effects)
@@ -109,6 +114,7 @@ def evaluate_session_scope(
         mcp_status,
         mcp_trust_level,
         capabilities,
+        tool_permission_group,
     )
     if deny_reasons:
         return SessionScopeEvaluation(
@@ -131,6 +137,7 @@ def evaluate_session_scope(
         mcp_status,
         mcp_trust_level,
         capabilities,
+        tool_permission_group,
     )
     defer_reasons = _task_defer_reasons(
         profile,
@@ -147,6 +154,7 @@ def evaluate_session_scope(
         mcp_status,
         mcp_trust_level,
         capabilities,
+        tool_permission_group,
     )
     if defer_reasons:
         return SessionScopeEvaluation(
@@ -275,6 +283,7 @@ def _base_deny_reasons(
     mcp_status: str | None,
     mcp_trust_level: str | None,
     capabilities: Iterable[str],
+    tool_permission_group: str | None,
 ) -> list[str]:
     reasons: list[str] = []
     if tool and _contains_ci(profile.base_rules.denied_tools, tool):
@@ -305,6 +314,11 @@ def _base_deny_reasons(
     for capability in capabilities:
         if _contains_ci(profile.base_rules.denied_capabilities, capability):
             reasons.append(f"scope_deny:capability {capability}")
+    if (
+        tool_permission_group
+        and _contains_ci(profile.base_rules.denied_tool_permission_groups, tool_permission_group)
+    ):
+        reasons.append(f"scope_deny:tool_permission_group {tool_permission_group}")
     if _DESTRUCTIVE_COMMAND_RE.search(command):
         # User-friendly base invariant even when the profile author forgot the
         # exact command prefix.
@@ -326,6 +340,7 @@ def _task_allow_reasons(
     mcp_status: str | None,
     mcp_trust_level: str | None,
     capabilities: Iterable[str],
+    tool_permission_group: str | None,
 ) -> list[str]:
     reasons: list[str] = []
     if tool and _contains_ci(profile.task_rules.allowed_tools, tool):
@@ -364,6 +379,11 @@ def _task_allow_reasons(
     for capability in capabilities:
         if _contains_ci(profile.task_rules.allowed_capabilities, capability):
             reasons.append(f"scope_allow:capability {capability}")
+    if (
+        tool_permission_group
+        and _contains_ci(profile.task_rules.allowed_tool_permission_groups, tool_permission_group)
+    ):
+        reasons.append(f"scope_allow:tool_permission_group {tool_permission_group}")
     return reasons
 
 
@@ -382,10 +402,20 @@ def _task_defer_reasons(
     mcp_status: str | None,
     mcp_trust_level: str | None,
     capabilities: Iterable[str],
+    tool_permission_group: str | None,
 ) -> list[str]:
     reasons: list[str] = []
     task = profile.task_rules
-    if task.allowed_tools and tool and not _contains_ci(task.allowed_tools, tool):
+    allowed_by_permission_group = bool(
+        tool_permission_group
+        and _contains_ci(task.allowed_tool_permission_groups, tool_permission_group)
+    )
+    if (
+        task.allowed_tools
+        and tool
+        and not _contains_ci(task.allowed_tools, tool)
+        and not allowed_by_permission_group
+    ):
         reasons.append(f"scope_defer:unknown_tool {tool}")
     if task.allowed_domains:
         for domain in domains:
@@ -439,6 +469,17 @@ def _task_defer_reasons(
         for capability in capabilities:
             if _contains_ci(task.queued_capabilities, capability):
                 reasons.append(f"scope_defer:queued_capability {capability}")
+    if (
+        tool_permission_group
+        and _contains_ci(task.queued_tool_permission_groups, tool_permission_group)
+    ):
+        reasons.append(f"scope_defer:queued_tool_permission_group {tool_permission_group}")
+    if (
+        task.allowed_tool_permission_groups
+        and tool_permission_group
+        and not _contains_ci(task.allowed_tool_permission_groups, tool_permission_group)
+    ):
+        reasons.append(f"scope_defer:unknown_tool_permission_group {tool_permission_group}")
     if task.allowed_capabilities:
         for capability in capabilities:
             if not _contains_ci(task.allowed_capabilities, capability):

@@ -86,6 +86,14 @@ Session scope 现在也能约束 skill 与 MCP 上下文：`denied_skill_ids`、
 MCP server/tool/status/trust-level。缺失的 skill/MCP 元数据按 typed
 uncertainty 处理，不会由 adapter 本地隐藏过滤。
 
+MCP status 允许值为 `allowlist`、`greylist`、`blacklist`、`unlisted`、
+`revoked`、`disabled`；MCP trust level 允许值为 `trusted`、
+`local_unreviewed`、`unknown`、`untrusted`。自动 capability narrowing 会通过
+`CS_CAPABILITY_NARROWING_ALLOWED_MCP_*` 与
+`CS_CAPABILITY_NARROWING_DENIED_MCP_*` 生成同一组 SessionScopeProfile 字段，
+默认允许 `filesystem.read_file`，拒绝 `fetch.fetch`、`blacklist`/`revoked`/
+`disabled` 状态以及 `untrusted`/`unknown`/`local_unreviewed` trust level。
+
 ## 本地预览：先看会发生什么
 
 准备一个事件文件 `event.json`：

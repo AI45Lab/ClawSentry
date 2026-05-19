@@ -19,6 +19,58 @@ def test_gemini_setup_uses_project_temp_settings(tmp_path):
     result = GeminiCLIInitializer().setup_gemini_hooks(target_dir=tmp_path)
     assert (tmp_path / ".gemini" / "settings.json").exists()
     assert result.files_modified == [tmp_path / ".gemini" / "settings.json"]
+    payload = json.loads((tmp_path / ".gemini" / "settings.json").read_text(encoding="utf-8"))
+    assert payload["hooksConfig"]["enabled"] is True
+    assert "enabled" not in payload["hooks"]
+
+
+def test_gemini_hook_commands_resolve_user_local_clawsentry(tmp_path):
+    GeminiCLIInitializer().setup_gemini_hooks(target_dir=tmp_path)
+
+    payload = json.loads((tmp_path / ".gemini" / "settings.json").read_text(encoding="utf-8"))
+    before_tool_command = payload["hooks"]["BeforeTool"][0]["hooks"][0]["command"]
+    notification_command = payload["hooks"]["Notification"][0]["hooks"][0]["command"]
+
+    assert 'PATH="${HOME}/.local/bin:${PATH}"' in before_tool_command
+    assert 'PATH="${HOME}/.local/bin:${PATH}"' in notification_command
+    assert "clawsentry harness --framework gemini-cli" in before_tool_command
+
+
+def test_gemini_setup_removes_legacy_inline_hooks_enabled(tmp_path):
+    settings = tmp_path / ".gemini" / "settings.json"
+    settings.parent.mkdir()
+    settings.write_text(
+        json.dumps(
+            {
+                "hooksConfig": {"enabled": False},
+                "hooks": {
+                    "enabled": True,
+                    "BeforeTool": [
+                        {
+                            "hooks": [
+                                {
+                                    "type": "command",
+                                    "name": "user-hook",
+                                    "command": "echo user",
+                                }
+                            ]
+                        }
+                    ],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    GeminiCLIInitializer().setup_gemini_hooks(target_dir=tmp_path)
+
+    payload = json.loads(settings.read_text(encoding="utf-8"))
+    assert payload["hooksConfig"]["enabled"] is True
+    assert "enabled" not in payload["hooks"]
+    assert any(
+        entry.get("hooks", [{}])[0].get("name") == "user-hook"
+        for entry in payload["hooks"]["BeforeTool"]
+    )
 
 
 def test_gemini_uninstall_preserves_user_hooks_and_other_settings(tmp_path):

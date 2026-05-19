@@ -22,8 +22,10 @@ import os
 import re
 import struct
 import sys
+import threading
 import time
-from typing import Any, Optional
+from dataclasses import asdict
+from typing import Any, Literal, Optional
 
 from pathlib import Path
 import uuid
@@ -40,6 +42,7 @@ from .anti_bypass_llm_recognizer import (
     recognize_anti_bypass_candidate,
 )
 from .event_bus import EventBus
+from .first_use_skill_review import FSPRLLMRoleProvider, run_first_use_skill_package_review
 from .idempotency import IdempotencyCache, periodic_cleanup
 from .llm_provider import InstrumentedProvider
 from .session_registry import (
@@ -58,6 +61,8 @@ from .trajectory_store import (
     MAX_WINDOW_SECONDS,
 )
 from .models import (
+    AgentAdvisoryFeedback,
+    AgentSafetyFeedback,
     AdapterEffectResult,
     CanonicalDecision,
     CanonicalEvent,
@@ -95,15 +100,31 @@ from .l3_runtime import build_l3_runtime_info
 from .pattern_evolution import PatternEvolutionManager
 from .policy_engine import L1PolicyEngine
 from .post_action_analyzer import PostActionAnalyzer
+from .provenance_validator import (
+    ProvenanceFinding,
+    collect_policy_artifacts,
+    load_provenance_policy_from_config,
+    validate_provenance_claims,
+)
 from .session_scope import evaluate_session_scope, scope_protection_statement
+from .tool_permissions import parse_tool_permission_group_overrides, resolve_tool_permission
 from .metrics import LLMBudgetTracker, MetricsCollector
 from .trajectory_analyzer import TrajectoryAnalyzer
 from .session_enforcement import (
     EnforcementAction,
     SessionEnforcementPolicy,
 )
-from .skill_trust import AdmissionScanner, load_skill_registry_records, resolve_skill_trust
-from .models import LineageEvent, McpContext, SkillRegistryRecord, SkillTrustContext
+from .skill_trust import (
+    AdmissionScanner,
+    bind_runtime_skill_refs,
+    derive_skill_trust_grade,
+    load_skill_registry_records,
+    load_skill_trust_runtime_metadata_bundle,
+    record_with_skill_trust_grade,
+    resolve_skill_trust,
+)
+from .skill_trust_lifecycle import apply_expired_lifecycle_windows, apply_lifecycle_transition
+from .models import LineageEvent, McpContext, RuntimeSkillRef, SkillRegistryRecord, SkillTrustContext
 from .enterprise import (
     build_enterprise_event_async,
     build_enterprise_live_snapshot_cached_async,
@@ -168,6 +189,17 @@ _CAPABILITY_NARROWING_DENIED_TOOLS = (
 _SAFE_LINEAGE_KEYS = {
     "presented_skill_name",
     "skill_root_path_hash",
+    "runtime_root_path_hash",
+    "runtime_path_status",
+    "runtime_binding_reason",
+    "runtime_content_status",
+    "workspace_relation",
+    "metadata_record_id",
+    "runtime_evidence_kind",
+    "observed_name",
+    "ref_ordinal",
+    "current_runner_contract_id",
+    "runtime_skill_ref_summaries",
     "skill_manifest_hash",
     "content_hash",
     "native_tool_label",
@@ -188,19 +220,115 @@ def _risk_points(risk_level: Any) -> int:
     return _risk_rank(str(risk_level or "low"))
 
 
-def _capability_narrowing_profile(reason_code: str) -> SessionScopeProfile:
+def _capability_narrowing_profile(
+    reason_code: str,
+    config: DetectionConfig | None = None,
+) -> SessionScopeProfile:
     """Build a Gateway-enforced scope profile for critical session risk."""
 
+    allowed_groups = (
+        tuple(config.capability_narrowing_allowed_tool_permission_groups)
+        if config is not None
+        else ("read_only",)
+    )
+    denied_groups = (
+        tuple(config.capability_narrowing_denied_tool_permission_groups)
+        if config is not None
+        else ("write", "network", "credentialed", "destructive", "mcp_admin", "unknown")
+    )
+    denied_tools = [
+        tool
+        for tool in _CAPABILITY_NARROWING_DENIED_TOOLS
+        if resolve_tool_permission(tool).group in denied_groups
+    ]
+    greylist_action = str(
+        (config.capability_narrowing_greylist_action if config is not None else "defer")
+        or "defer"
+    ).strip().lower()
+    denied_skill_trust_states = (
+        list(config.capability_narrowing_denied_skill_trust_states)
+        if config is not None
+        else ["blacklist", "revoked"]
+    )
+    allowed_skill_trust_states = (
+        list(config.capability_narrowing_allowed_skill_trust_states)
+        if config is not None
+        else ["allowlist"]
+    )
+    if greylist_action == "block":
+        denied_skill_trust_states.append("greylist")
+    elif greylist_action == "allow":
+        allowed_skill_trust_states.append("greylist")
+    denied_skill_trust_states = list(dict.fromkeys(denied_skill_trust_states))
+    allowed_skill_trust_states = list(dict.fromkeys(allowed_skill_trust_states))
+    denied_mcp_servers = (
+        list(config.capability_narrowing_denied_mcp_servers)
+        if config is not None
+        else []
+    )
+    denied_mcp_tools = (
+        list(config.capability_narrowing_denied_mcp_tools)
+        if config is not None
+        else ["fetch.fetch"]
+    )
+    denied_mcp_statuses = (
+        list(config.capability_narrowing_denied_mcp_statuses)
+        if config is not None
+        else ["blacklist", "revoked", "disabled"]
+    )
+    denied_mcp_trust_levels = (
+        list(config.capability_narrowing_denied_mcp_trust_levels)
+        if config is not None
+        else ["untrusted", "unknown", "local_unreviewed"]
+    )
+    allowed_mcp_servers = (
+        list(config.capability_narrowing_allowed_mcp_servers)
+        if config is not None
+        else []
+    )
+    allowed_mcp_tools = (
+        list(config.capability_narrowing_allowed_mcp_tools)
+        if config is not None
+        else ["filesystem.read_file"]
+    )
+    allowed_mcp_statuses = (
+        list(config.capability_narrowing_allowed_mcp_statuses)
+        if config is not None
+        else []
+    )
+    allowed_mcp_trust_levels = (
+        list(config.capability_narrowing_allowed_mcp_trust_levels)
+        if config is not None
+        else []
+    )
+    denied_capabilities = (
+        list(config.capability_narrowing_denied_capabilities)
+        if config is not None
+        else []
+    )
+    allowed_capabilities = (
+        list(config.capability_narrowing_allowed_capabilities)
+        if config is not None
+        else []
+    )
+    queued_capabilities = (
+        list(config.capability_narrowing_queued_capabilities)
+        if config is not None
+        else []
+    )
     return SessionScopeProfile(
         profile_id=f"capability-narrowing:{reason_code}",
         confirmed=True,
         dry_run=False,
         base_rules=SessionScopeBaseRules(
-            denied_tools=list(_CAPABILITY_NARROWING_DENIED_TOOLS),
-            denied_skill_trust_states=["blacklist", "revoked"],
-            denied_mcp_tools=["fetch.fetch"],
-            denied_mcp_statuses=["blacklist", "revoked"],
-            denied_mcp_trust_levels=["untrusted"],
+            denied_tools=denied_tools,
+            denied_skill_trust_states=denied_skill_trust_states,
+            denied_mcp_servers=denied_mcp_servers,
+            denied_mcp_tools=denied_mcp_tools,
+            denied_mcp_statuses=denied_mcp_statuses,
+            denied_mcp_trust_levels=denied_mcp_trust_levels,
+            denied_capabilities=denied_capabilities,
+            denied_tool_permission_groups=list(denied_groups),
             denied_command_prefixes=[
                 "rm ",
                 "sudo ",
@@ -211,11 +339,37 @@ def _capability_narrowing_profile(reason_code: str) -> SessionScopeProfile:
         ),
         task_rules=SessionScopeTaskRules(
             allowed_tools=list(_CAPABILITY_NARROWING_READONLY_TOOLS),
-            allowed_skill_trust_states=["allowlist"],
-            allowed_mcp_tools=["filesystem.read_file"],
+            allowed_tool_permission_groups=list(allowed_groups),
+            allowed_skill_trust_states=allowed_skill_trust_states,
+            allowed_mcp_servers=allowed_mcp_servers,
+            allowed_mcp_tools=allowed_mcp_tools,
+            allowed_mcp_statuses=allowed_mcp_statuses,
+            allowed_mcp_trust_levels=allowed_mcp_trust_levels,
+            allowed_capabilities=allowed_capabilities,
+            queued_capabilities=queued_capabilities,
             queued_categories=["network"],
         ),
     )
+
+
+def _capability_narrowing_policy_summary(config: DetectionConfig) -> dict[str, list[str]]:
+    return {
+        "allowed_tool_permission_groups": list(config.capability_narrowing_allowed_tool_permission_groups),
+        "denied_tool_permission_groups": list(config.capability_narrowing_denied_tool_permission_groups),
+        "allowed_skill_trust_states": list(config.capability_narrowing_allowed_skill_trust_states),
+        "denied_skill_trust_states": list(config.capability_narrowing_denied_skill_trust_states),
+        "allowed_mcp_servers": list(config.capability_narrowing_allowed_mcp_servers),
+        "denied_mcp_servers": list(config.capability_narrowing_denied_mcp_servers),
+        "allowed_mcp_tools": list(config.capability_narrowing_allowed_mcp_tools),
+        "denied_mcp_tools": list(config.capability_narrowing_denied_mcp_tools),
+        "allowed_mcp_statuses": list(config.capability_narrowing_allowed_mcp_statuses),
+        "denied_mcp_statuses": list(config.capability_narrowing_denied_mcp_statuses),
+        "allowed_mcp_trust_levels": list(config.capability_narrowing_allowed_mcp_trust_levels),
+        "denied_mcp_trust_levels": list(config.capability_narrowing_denied_mcp_trust_levels),
+        "allowed_capabilities": list(config.capability_narrowing_allowed_capabilities),
+        "denied_capabilities": list(config.capability_narrowing_denied_capabilities),
+        "queued_capabilities": list(config.capability_narrowing_queued_capabilities),
+    }
 
 
 def _lineage_summary_from_event(event: dict[str, Any]) -> dict[str, Any] | None:
@@ -266,7 +420,21 @@ def _lineage_event_from_summary(
     if not event_id or not session_id or not tool_name or not policy_version:
         return None
 
-    skill_trust = context.skill_trust if context is not None else None
+    skill_trust = _lineage_skill_trust_from_summary(context, summary)
+    ledger_decision = _lineage_decision_value(decision.get("decision"))
+    observed_identity = (
+        str(summary.get("observed_name") or getattr(skill_trust, "presented_name", None) or "").strip()
+    )
+    observed_identity_key = (
+        "observed_name_hash:" + hashlib.sha256(observed_identity.lower().encode("utf-8")).hexdigest()
+        if observed_identity
+        else "observed_name_hash:unknown"
+    )
+    metadata_or_observed_key = (
+        getattr(skill_trust, "metadata_record_id", None)
+        or summary.get("metadata_record_id")
+        or observed_identity_key
+    )
     try:
         lineage = LineageEvent(
             event_id=event_id,
@@ -276,7 +444,57 @@ def _lineage_event_from_summary(
                 if skill_trust is not None
                 else None
             ),
+            occurred_at=str(event.get("occurred_at")) if event.get("occurred_at") else None,
+            ref_ordinal=(
+                int(summary.get("ref_ordinal"))
+                if isinstance(summary.get("ref_ordinal"), int)
+                else getattr(skill_trust, "ref_ordinal", None) if skill_trust is not None else None
+            ),
+            dedupe_key=(
+                f"{session_id}:{event_id}:"
+                f"{summary.get('ref_ordinal') if isinstance(summary.get('ref_ordinal'), int) else 0}:"
+                f"{metadata_or_observed_key}:"
+                f"{summary.get('runtime_root_path_hash') or 'no-runtime-root'}:"
+                f"{summary.get('runtime_evidence_kind') or getattr(skill_trust, 'runtime_evidence_kind', None) or 'unknown'}"
+            ),
             tool_name=tool_name,
+            observed_name=(
+                str(summary.get("observed_name") or getattr(skill_trust, "presented_name", None) or "")
+                or None
+            ),
+            runtime_path_status=(
+                summary.get("runtime_path_status")
+                or getattr(skill_trust, "runtime_path_status", None)
+            ),
+            runtime_root_path_hash=(
+                str(summary.get("runtime_root_path_hash"))
+                if summary.get("runtime_root_path_hash")
+                else getattr(skill_trust, "runtime_root_path_hash", None)
+            ),
+            runtime_content_status=(
+                summary.get("runtime_content_status")
+                or getattr(skill_trust, "runtime_content_status", None)
+            ),
+            runtime_evidence_kind=(
+                summary.get("runtime_evidence_kind")
+                or getattr(skill_trust, "runtime_evidence_kind", None)
+            ),
+            current_runner_contract_id=(
+                summary.get("current_runner_contract_id")
+                or getattr(skill_trust, "current_runner_contract_id", None)
+            ),
+            metadata_record_id=(
+                str(summary.get("metadata_record_id"))
+                if summary.get("metadata_record_id")
+                else getattr(skill_trust, "metadata_record_id", None)
+            ),
+            decision=ledger_decision,
+            risk_level=str(decision.get("risk_level") or "unknown"),
+            invariant_violations=(
+                list(getattr(skill_trust, "invariant_violations", []) or [])
+                if skill_trust is not None
+                else []
+            ),
             output_provenance_label=(
                 str(summary.get("output_provenance_label") or summary.get("tool_called"))
                 if summary.get("output_provenance_label") or summary.get("tool_called")
@@ -299,11 +517,119 @@ def _lineage_event_from_summary(
     return lineage.model_dump(mode="json")
 
 
+def _lineage_skill_trust_from_summary(
+    context: DecisionContext | None,
+    summary: dict[str, Any],
+) -> SkillTrustContext | None:
+    if context is None:
+        return None
+    refs = list(context.skill_trust_refs or [])
+    if refs:
+        summary_ordinal = summary.get("ref_ordinal")
+        summary_record_id = summary.get("metadata_record_id")
+        for ref in refs:
+            if isinstance(summary_ordinal, int) and ref.ref_ordinal == summary_ordinal:
+                return ref
+            if summary_record_id and ref.metadata_record_id == summary_record_id:
+                return ref
+    return context.skill_trust
+
+
+def _lineage_decision_value(value: Any) -> str:
+    normalized = str(value or "").strip().lower().replace("_", "-")
+    if normalized in {"allow", "allow-once", "allow-always"}:
+        return "allow"
+    if normalized in {"block", "deny"}:
+        return "block"
+    if normalized == "defer":
+        return "defer"
+    if normalized == "error":
+        return "error"
+    return "unknown"
+
+
+def _lineage_events_from_summary(
+    *,
+    event: dict[str, Any],
+    decision: dict[str, Any],
+    context: DecisionContext | None,
+    summary: dict[str, Any],
+) -> list[dict[str, Any]]:
+    ref_summaries = summary.get("runtime_skill_ref_summaries")
+    if not isinstance(ref_summaries, list) and context is not None and context.skill_trust_refs:
+        ref_summaries = [
+            {
+                "observed_name": ref.presented_name,
+                "ref_ordinal": ref.ref_ordinal,
+                "runtime_path_status": ref.runtime_path_status,
+                "runtime_root_path_hash": ref.runtime_root_path_hash,
+                "runtime_content_status": ref.runtime_content_status,
+                "metadata_record_id": ref.metadata_record_id,
+                "runtime_evidence_kind": ref.runtime_evidence_kind,
+            }
+            for ref in context.skill_trust_refs
+        ]
+    if isinstance(ref_summaries, list) and ref_summaries:
+        entries: list[dict[str, Any]] = []
+        base_summary = {
+            key: value for key, value in summary.items()
+            if key != "runtime_skill_ref_summaries"
+        }
+        for ref_summary in ref_summaries:
+            if not isinstance(ref_summary, dict):
+                continue
+            merged_summary = dict(base_summary)
+            merged_summary.update(ref_summary)
+            entry = _lineage_event_from_summary(
+                event=event,
+                decision=decision,
+                context=context,
+                summary=merged_summary,
+            )
+            if entry is not None:
+                entries.append(entry)
+        if entries:
+            return entries
+    entry = _lineage_event_from_summary(
+        event=event,
+        decision=decision,
+        context=context,
+        summary=summary,
+    )
+    return [entry] if entry is not None else []
+
+
 def _safe_lineage_value(key: str, value: Any) -> Any | None:
-    if key in {"skill_root_path_hash", "skill_manifest_hash", "content_hash"}:
+    if key in {"skill_root_path_hash", "runtime_root_path_hash", "skill_manifest_hash", "content_hash"}:
         if isinstance(value, str) and _is_sha256_digest(value):
             return value[:256]
         return None
+    if key in {"runtime_path_status", "runtime_content_status", "runtime_evidence_kind", "workspace_relation"}:
+        return _safe_identity_label(value, max_len=80)
+    if key in {"runtime_binding_reason", "observed_name", "current_runner_contract_id"}:
+        return _safe_identity_label(value, max_len=256)
+    if key == "metadata_record_id":
+        if isinstance(value, str) and value.startswith("sha256:"):
+            return value[:256]
+        return None
+    if key == "ref_ordinal":
+        return value if isinstance(value, int) and 0 <= value < 1000 else None
+    if key == "runtime_skill_ref_summaries":
+        if not isinstance(value, list):
+            return None
+        safe_items: list[dict[str, Any]] = []
+        for item in value[:20]:
+            if not isinstance(item, dict):
+                continue
+            safe_item: dict[str, Any] = {}
+            for item_key, item_value in item.items():
+                if item_key in _SAFE_LINEAGE_KEYS and item_key != "runtime_skill_ref_summaries":
+                    safe_value = _safe_lineage_value(str(item_key), item_value)
+                    if safe_value is not None:
+                        safe_item[str(item_key)] = safe_value
+            if safe_item:
+                safe_items.append(safe_item)
+        return safe_items
     if key == "field_availability":
         if not isinstance(value, dict):
             return None
@@ -387,6 +713,10 @@ def _safe_skill_trust_raw_value(key: str, value: Any) -> Any | None:
         return [str(item)[:120] for item in value[:20] if isinstance(item, str)]
     if key == "provenance_label_conflict" and isinstance(value, bool):
         return value
+    if key == "skill_trust_grade":
+        grade = _safe_identity_label(value, max_len=32)
+        if grade in {"trusted", "review", "restricted", "blocked", "disabled"}:
+            return grade
     return None
 
 
@@ -578,6 +908,7 @@ def _context_with_skill_trust_raw(
     event: CanonicalEvent,
     trusted_records: list[SkillRegistryRecord] | None = None,
     deadline_at: float | None = None,
+    detection_config: DetectionConfig | None = None,
 ) -> DecisionContext | None:
     """Resolve raw skill metadata from event meta into DecisionContext evidence."""
 
@@ -600,15 +931,69 @@ def _context_with_skill_trust_raw(
         "admission_scan_id",
         "admission_risk",
         "policy_fingerprint",
-        "skill_root_path",
+            "skill_root_path",
     ):
         raw.pop(key, None)
+    runtime_refs = _gateway_observed_runtime_skill_refs(meta, context, event)
+    if runtime_refs:
+        metadata_bundle = _gateway_owned_skill_trust_bundle()
+        if metadata_bundle is not None:
+            bound_refs = bind_runtime_skill_refs(
+                metadata_bundle,
+                runtime_refs,
+                framework_contract_allows_name_only=True,
+                current_runner_contract_id=_gateway_current_runner_contract_id(meta, context),
+                mirror_hash_max_files=(
+                    detection_config.skill_trust_mirror_hash_max_files
+                    if detection_config is not None
+                    else None
+                ),
+                mirror_hash_max_file_bytes=(
+                    detection_config.skill_trust_mirror_hash_max_file_bytes
+                    if detection_config is not None
+                    else None
+                ),
+                mirror_hash_max_total_ms=(
+                    detection_config.skill_trust_mirror_hash_max_total_ms
+                    if detection_config is not None
+                    else None
+                ),
+            )
+            binding_decisive_statuses = {
+                "verified_source",
+                "verified_mirror",
+                "verified_name",
+                "disallowed",
+                "ambiguous_runtime_source",
+                "name_only_unverified",
+                "path_fragment_unverified",
+            }
+            if bound_refs and any(
+                ref.runtime_path_status in binding_decisive_statuses
+                for ref in bound_refs
+            ):
+                primary = bound_refs[0]
+                if context is None:
+                    return DecisionContext(
+                        skill_trust=primary,
+                        skill_trust_refs=bound_refs,
+                    )
+                return context.model_copy(update={
+                    "skill_trust": primary,
+                    "skill_trust_refs": bound_refs,
+                })
     owned_raw = _gateway_owned_skill_trust_metadata(raw_metadata.get("presented_name"))
     records: list[SkillRegistryRecord] = []
     if owned_raw:
         records = list(gateway_records)
         raw_metadata.update(owned_raw)
         _apply_gateway_owned_first_use_scan(raw_metadata, deadline_at=deadline_at)
+        _apply_gateway_owned_first_use_package_review(
+            raw_metadata,
+            event=event,
+            detection_config=detection_config,
+            deadline_at=deadline_at,
+        )
         raw.update(owned_raw)
         for key in (
             "admission_scan_id",
@@ -617,6 +1002,7 @@ def _context_with_skill_trust_raw(
             "content_hashes",
             "admission_scan_requested",
             "admission_scan_failure_class",
+            "first_use_package_review",
         ):
             if key in raw_metadata:
                 raw[key] = raw_metadata[key]
@@ -640,6 +1026,9 @@ def _context_with_skill_trust_raw(
             ),
             "trust_list_state": "unlisted",
         })
+    raw["skill_trust_grade"] = derive_skill_trust_grade(
+        skill_trust.model_dump(mode="json")
+    )
     if context is None:
         return DecisionContext(skill_trust=skill_trust)
     return context.model_copy(update={"skill_trust": skill_trust})
@@ -663,22 +1052,120 @@ def _sanitize_request_skill_trust_raw(raw: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in raw.items() if key in allowed}
 
 
-def _gateway_owned_skill_trust_metadata(presented_name: Any) -> dict[str, Any]:
-    if not presented_name:
-        return {}
+def _gateway_owned_skill_trust_bundle():
     metadata_path = os.environ.get("CS_SKILL_TRUST_METADATA_PATH")
     if not metadata_path:
-        return {}
+        return None
     path = Path(metadata_path)
     if not path.is_file():
-        return {}
+        return None
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return load_skill_trust_runtime_metadata_bundle(payload)
+
+
+def _gateway_owned_provenance_aliases() -> dict[str, list[str]]:
+    bundle = _gateway_owned_skill_trust_bundle()
+    if bundle is None:
         return {}
-    raw_by_skill = payload.get("raw_metadata_by_skill") if isinstance(payload, dict) else None
-    if not isinstance(raw_by_skill, dict):
+    aliases: dict[str, list[str]] = {}
+    for record in bundle.metadata_records:
+        canonical_id = record.canonical_skill_id
+        raw_aliases = record.raw.get("aliases")
+        if not canonical_id or not isinstance(raw_aliases, list):
+            continue
+        safe_aliases = [
+            str(alias)
+            for alias in raw_aliases
+            if isinstance(alias, str) and alias.strip()
+        ]
+        if safe_aliases:
+            aliases.setdefault(canonical_id, []).extend(safe_aliases)
+    return {
+        canonical_id: list(dict.fromkeys(values))
+        for canonical_id, values in aliases.items()
+    }
+
+
+def _safe_provenance_artifact_key(file_path: str | None) -> str:
+    if not file_path:
+        return "output.json"
+    path = Path(file_path)
+    if path.is_absolute() or ".." in path.parts:
+        return path.name or "output.json"
+    return path.as_posix()
+
+
+def _provenance_workspace_root(config: DetectionConfig) -> Path:
+    configured = str(config.skill_trust_provenance_workspace_root or "").strip()
+    return Path(configured).expanduser() if configured else Path.cwd()
+
+
+def _trusted_gateway_observed(
+    meta: dict[str, Any],
+    context: DecisionContext | None,
+) -> dict[str, Any] | None:
+    observed = meta.get("_gateway_observed")
+    if not isinstance(observed, dict):
+        return None
+    adapter_origin = str(observed.get("adapter_origin") or "")
+    caller_adapter = str(context.caller_adapter if context else "")
+    trusted_origin = (
+        adapter_origin == "a3s_gateway_harness"
+        and caller_adapter in {"a3s_gateway_harness", "a3s-adapter.v1"}
+    )
+    if not trusted_origin:
+        return None
+    return observed
+
+
+def _gateway_current_runner_contract_id(
+    meta: dict[str, Any],
+    context: DecisionContext | None,
+) -> str | None:
+    observed = _trusted_gateway_observed(meta, context)
+    if observed is None:
+        return None
+    value = observed.get("current_runner_contract_id")
+    return _safe_identity_label(value, max_len=256) if value else None
+
+
+def _gateway_observed_runtime_skill_refs(
+    meta: dict[str, Any],
+    context: DecisionContext | None,
+    event: CanonicalEvent,
+) -> list[RuntimeSkillRef]:
+    observed = _trusted_gateway_observed(meta, context)
+    if observed is None:
+        return []
+    adapter_origin = str(observed.get("adapter_origin") or "")
+    values = observed.get("runtime_skill_refs")
+    if not isinstance(values, list):
+        return []
+    refs: list[RuntimeSkillRef] = []
+    for value in values[:20]:
+        if not isinstance(value, dict):
+            continue
+        try:
+            ref = RuntimeSkillRef.model_validate(value)
+        except ValidationError:
+            continue
+        if ref.adapter_observed and ref.adapter_origin == adapter_origin:
+            refs.append(ref)
+    return refs
+
+
+def _gateway_owned_skill_trust_metadata(presented_name: Any) -> dict[str, Any]:
+    if not presented_name:
         return {}
+    bundle = _gateway_owned_skill_trust_bundle()
+    if bundle is None:
+        return {}
+    raw_by_skill = bundle.raw_metadata_by_skill
     wanted = _skill_trust_identity_key(presented_name)
     for key, value in raw_by_skill.items():
         if _skill_trust_identity_key(key) == wanted and isinstance(value, dict):
@@ -694,6 +1181,14 @@ def _gateway_owned_skill_trust_metadata(presented_name: Any) -> dict[str, Any]:
                     "admission_scan_id",
                     "admission_risk",
                     "policy_fingerprint",
+                    "metadata_record_id",
+                    "source_root_path",
+                    "source_root_path_hash",
+                    "allowed_runtime_roots",
+                    "allowed_runtime_root_hashes",
+                    "mirror_integrity_mode",
+                    "trusted_runner_contract_id",
+                    "runner_contract_attestation_required",
                     "skill_root_path",
                     "skill_root_path_hash",
                 )
@@ -738,6 +1233,84 @@ def _apply_gateway_owned_first_use_scan(
     raw_metadata["content_hashes"] = report.content_hashes
 
 
+def _fspr_timing_mode_for_event(
+    event: CanonicalEvent,
+    detection_config: DetectionConfig | None,
+) -> str | None:
+    if detection_config is None or not detection_config.skill_trust_fspr_enabled:
+        return None
+    if (
+        event.event_type == EventType.PRE_ACTION
+        and detection_config.skill_trust_fspr_pre_use_enabled
+    ):
+        return "pre_use_gate"
+    if (
+        event.event_type == EventType.POST_ACTION
+        and detection_config.skill_trust_fspr_post_action_enabled
+    ):
+        return "post_action_incremental_evidence"
+    return None
+
+
+def _apply_gateway_owned_first_use_package_review(
+    raw_metadata: dict[str, Any],
+    *,
+    event: CanonicalEvent,
+    detection_config: DetectionConfig | None,
+    deadline_at: float | None = None,
+) -> None:
+    """Attach bounded FSPR evidence only for Gateway-owned skill metadata."""
+
+    if raw_metadata.get("first_use_package_review"):
+        return
+    if not raw_metadata.get("gateway_owned_metadata"):
+        return
+    timing_mode = _fspr_timing_mode_for_event(event, detection_config)
+    if timing_mode is None:
+        return
+    root_value = raw_metadata.get("skill_root_path")
+    if not isinstance(root_value, str) or not root_value.strip():
+        return
+    timeout_s = (
+        max(0.0, float(detection_config.skill_trust_fspr_timeout_ms) / 1000.0)
+        if detection_config is not None
+        else 120.0
+    )
+    if deadline_at is not None:
+        timeout_s = min(timeout_s, max(0.0, deadline_at - time.monotonic()))
+    provider = None
+    selected_roles: tuple[str, ...] | None = None
+    if detection_config is not None and detection_config.skill_trust_fspr_provider_enabled:
+        raw_provider = build_provider_from_env()
+        if raw_provider is not None:
+            provider = FSPRLLMRoleProvider(raw_provider, timeout_ms=timeout_s * 1000.0)
+            selected_roles = (
+                "metadata_reviewer",
+                "script_behavior_reviewer",
+                "data_reference_reviewer",
+                "provenance_identity_reviewer",
+                "cross_file_consistency_reviewer",
+            )
+    try:
+        result = run_first_use_skill_package_review(
+            root_value,
+            timeout_s=timeout_s,
+            timing_mode=timing_mode,
+            registry_snapshot_id=str(raw_metadata.get("registry_snapshot_id") or "unknown"),
+            policy_fingerprint=str(raw_metadata.get("policy_fingerprint") or "unknown"),
+            cache_enabled=(
+                detection_config.skill_trust_fspr_cache_enabled
+                if detection_config is not None
+                else True
+            ),
+            provider=provider,
+            selected_roles=selected_roles,
+        )
+    except Exception:
+        return
+    raw_metadata["first_use_package_review"] = result.model_dump(mode="json")
+
+
 def _request_skill_trust_metadata(skill_trust: SkillTrustContext) -> dict[str, Any]:
     """Extract runtime-observation fields from request context trust data."""
 
@@ -754,6 +1327,7 @@ def _request_skill_trust_metadata(skill_trust: SkillTrustContext) -> dict[str, A
 def _agent_safety_feedback(
     *,
     decision: CanonicalDecision,
+    event: CanonicalEvent,
     snapshot: dict[str, Any],
     delivery: str,
 ) -> dict[str, Any] | None:
@@ -767,27 +1341,88 @@ def _agent_safety_feedback(
     rule_hits = snapshot.get("rule_hits")
     if not isinstance(rule_hits, list):
         rule_hits = []
-    return {
-        "risk_level": risk_level,
-        "policy_id": decision.policy_id,
-        "rule_hits": [str(item) for item in rule_hits],
-        "delivery": delivery,
-        "message": (
-            "ClawSentry blocked this action because the supervisor classified it "
-            "as critical risk. Use a read-only inspection step or a narrower, "
-            "user-approved alternative instead of retrying the same action unchanged."
+    if event.payload.get("command") is not None:
+        blocked_surface = "command"
+    elif event.tool_name:
+        blocked_surface = "tool"
+    else:
+        blocked_surface = "artifact"
+    evidence_refs = [f"rule:{str(item)}" for item in rule_hits[:8]]
+    if not evidence_refs and decision.policy_id:
+        evidence_refs = [f"policy:{decision.policy_id}"]
+    feedback = AgentSafetyFeedback(
+        delivery=delivery,
+        risk_level="critical",
+        decision_id=event.event_id,
+        blocked_surface=blocked_surface,
+        reason_summary=(
+            "ClawSentry blocked this action because the supervisor classified "
+            "the requested surface as critical risk."
         ),
-        "redaction_policy_version": "cs.agent_safety_feedback.v1",
-    }
+        safe_next_step=(
+            "Use a read-only inspection step or ask the operator to review a "
+            "narrower alternative before retrying."
+        ),
+        evidence_refs=evidence_refs,
+    )
+    return feedback.model_dump(mode="json", by_alias=True)
 
 
-def _agent_safety_feedback_supported(context: DecisionContext | None, event: CanonicalEvent) -> bool:
+def _agent_safety_feedback_delivery(
+    context: DecisionContext | None,
+    event: CanonicalEvent,
+) -> Literal["prompt_injection", "response", "audit_only", "unsupported"]:
     caller_adapter = str(context.caller_adapter if context else "" or "").lower()
     source_framework = str(event.source_framework or "").lower()
-    supported_markers = ("codex", "a3s", "openclaw")
-    return any(marker in caller_adapter for marker in supported_markers) or any(
-        marker in source_framework for marker in supported_markers
+    signals = (caller_adapter, source_framework)
+    if any("a3s" in signal for signal in signals) or any("openclaw" in signal for signal in signals):
+        return "response"
+    if any(marker in signal for signal in signals for marker in ("codex", "gemini", "kimi")):
+        return "audit_only"
+    return "unsupported"
+
+
+def _agent_advisory_feedback(
+    *,
+    decision: CanonicalDecision,
+    event: CanonicalEvent,
+    delivery: str,
+) -> dict[str, Any] | None:
+    """Return a separate redacted advisory envelope for greylist scope warnings."""
+
+    scope = decision.scope_evaluation
+    if scope is None:
+        return None
+    greylist_warning_reasons = [
+        reason
+        for reason in scope.reason_codes
+        if "skill_trust_state greylist" in reason
+        and (reason.startswith("scope_defer:") or reason.startswith("scope_deny:"))
+    ]
+    if not greylist_warning_reasons:
+        return None
+    if decision.decision not in {DecisionVerdict.ALLOW, DecisionVerdict.DEFER, DecisionVerdict.BLOCK}:
+        return None
+    feedback = AgentAdvisoryFeedback(
+        delivery=delivery,
+        advisory_type="greylist_skill",
+        severity="warning",
+        decision_id=event.event_id,
+        affected_surface="skill",
+        reason_summary=(
+            "ClawSentry routed this action through the configured greylist "
+            "Skill Trust policy."
+        ),
+        safe_next_step=(
+            "Prefer read-only inspection or ask the operator to review the "
+            "skill before continuing with state-changing work."
+        ),
+        evidence_refs=[
+            f"scope:{reason}"
+            for reason in greylist_warning_reasons[:8]
+        ],
     )
+    return feedback.model_dump(mode="json", by_alias=True)
 
 
 def _float_or_zero(value: Any) -> float:
@@ -1532,6 +2167,285 @@ def _read_auth_token() -> str:
     return os.getenv("CS_AUTH_TOKEN", "")
 
 
+def _skill_trust_registry_snapshot_id(payload: dict[str, Any]) -> str:
+    records = [
+        {key: value for key, value in row.items() if key != "skill_trust_grade"}
+        if isinstance(row, dict)
+        else row
+        for row in payload.get("records", [])
+    ]
+    material = {
+        "schema_version": payload.get("schema_version"),
+        "records": records,
+        "transition_events": payload.get("transition_events", []),
+    }
+    encoded = json.dumps(material, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+_SKILL_TRUST_REGISTRY_LOCKS: dict[str, threading.RLock] = {}
+_SKILL_TRUST_REGISTRY_LOCKS_GUARD = threading.Lock()
+
+
+def _skill_trust_registry_lock(path: Path) -> threading.RLock:
+    key = str(path.expanduser().resolve(strict=False))
+    with _SKILL_TRUST_REGISTRY_LOCKS_GUARD:
+        lock = _SKILL_TRUST_REGISTRY_LOCKS.get(key)
+        if lock is None:
+            lock = threading.RLock()
+            _SKILL_TRUST_REGISTRY_LOCKS[key] = lock
+        return lock
+
+
+def _skill_trust_transition_sidecar_path(path: Path) -> Path:
+    return path.with_name(f"{path.name}.transitions.jsonl")
+
+
+def _transition_event_id(event: Any) -> str:
+    if isinstance(event, dict):
+        return str(event.get("transition_id") or "")
+    return ""
+
+
+def _read_skill_trust_transition_sidecar(path: Path) -> list[dict[str, Any]]:
+    sidecar = _skill_trust_transition_sidecar_path(path)
+    if not sidecar.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line_number, line in enumerate(
+        sidecar.read_text(encoding="utf-8").splitlines(),
+        start=1,
+    ):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if not isinstance(row, dict):
+            raise ValueError(
+                f"skill registry transition sidecar row {line_number} must be a JSON object"
+            )
+        rows.append(row)
+    return rows
+
+
+def _merge_transition_events(
+    embedded_events: list[Any],
+    sidecar_events: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    sidecar_ids = {
+        event_id for event_id in (_transition_event_id(event) for event in sidecar_events)
+        if event_id
+    }
+    merged: list[dict[str, Any]] = [
+        event
+        for event in embedded_events
+        if isinstance(event, dict)
+        and (
+            not _transition_event_id(event)
+            or _transition_event_id(event) not in sidecar_ids
+        )
+    ]
+    merged.extend(sidecar_events)
+    return merged
+
+
+def _write_skill_trust_transition_sidecar(
+    path: Path,
+    events: list[Any],
+) -> None:
+    event_rows = [event for event in events if isinstance(event, dict)]
+    if not event_rows:
+        return
+    sidecar = _skill_trust_transition_sidecar_path(path)
+    existing_rows = _read_skill_trust_transition_sidecar(path)
+    existing_ids = {
+        event_id for event_id in (_transition_event_id(row) for row in existing_rows)
+        if event_id
+    }
+    rows = list(existing_rows)
+    for event in event_rows:
+        event_id = _transition_event_id(event)
+        if event_id and event_id in existing_ids:
+            continue
+        rows.append(event)
+        if event_id:
+            existing_ids.add(event_id)
+    if len(rows) == len(existing_rows):
+        return
+    sidecar.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = sidecar.with_name(f".{sidecar.name}.{uuid.uuid4().hex}.tmp")
+    temp_path.write_text(
+        "".join(
+            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n"
+            for row in rows
+        ),
+        encoding="utf-8",
+    )
+    os.replace(temp_path, sidecar)
+
+
+def _read_skill_trust_registry_payload(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise FileNotFoundError(path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(payload, list):
+        payload = {
+            "schema_version": "clawsentry.skill_registry.v1",
+            "records": payload,
+            "transition_events": [],
+        }
+    if not isinstance(payload, dict):
+        raise ValueError("skill registry must be a JSON object")
+    payload.setdefault("schema_version", "clawsentry.skill_registry.v1")
+    payload.setdefault("records", [])
+    payload.setdefault("transition_events", [])
+    payload.setdefault("transition_recommendations", [])
+    if not isinstance(payload["records"], list):
+        raise ValueError("skill registry records must be a list")
+    if not isinstance(payload["transition_events"], list):
+        raise ValueError("skill registry transition_events must be a list")
+    if not isinstance(payload["transition_recommendations"], list):
+        raise ValueError("skill registry transition_recommendations must be a list")
+    payload["transition_events"] = _merge_transition_events(
+        payload["transition_events"],
+        _read_skill_trust_transition_sidecar(path),
+    )
+    payload["records"] = [
+        record_with_skill_trust_grade(row) if isinstance(row, dict) else row
+        for row in payload["records"]
+    ]
+    payload["registry_snapshot_id"] = _skill_trust_registry_snapshot_id(payload)
+    return payload
+
+
+def _write_skill_trust_registry_payload(
+    path: Path,
+    payload: dict[str, Any],
+    *,
+    expected_registry_snapshot_id: str | None = None,
+) -> dict[str, Any]:
+    with _skill_trust_registry_lock(path):
+        if expected_registry_snapshot_id is not None:
+            current_payload = _read_skill_trust_registry_payload(path)
+            current_snapshot_id = current_payload["registry_snapshot_id"]
+            if current_snapshot_id != expected_registry_snapshot_id:
+                raise ValueError("registry snapshot conflict")
+        payload = dict(payload)
+        payload["records"] = [
+            record_with_skill_trust_grade(row) if isinstance(row, dict) else row
+            for row in payload.get("records", [])
+        ]
+        payload["registry_snapshot_id"] = _skill_trust_registry_snapshot_id(payload)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+        temp_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.replace(temp_path, path)
+        _write_skill_trust_transition_sidecar(path, payload.get("transition_events", []))
+        return payload
+
+
+def _consume_expired_skill_trust_lifecycle_windows(
+    path: Path,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    records = [
+        SkillRegistryRecord.model_validate(row)
+        for row in payload.get("records", [])
+        if isinstance(row, dict)
+    ]
+    updated_records, events = apply_expired_lifecycle_windows(
+        records,
+        now=utc_now_iso(),
+        policy_fingerprint="sha256:skill-trust-lifecycle-v1",
+    )
+    if not events:
+        return payload
+    updated_payload = dict(payload)
+    updated_payload["records"] = [
+        record.model_dump(mode="json") for record in updated_records
+    ]
+    updated_payload["transition_events"] = [
+        *payload.get("transition_events", []),
+        *(event.model_dump(mode="json") for event in events),
+    ]
+    return _write_skill_trust_registry_payload(
+        path,
+        updated_payload,
+        expected_registry_snapshot_id=payload["registry_snapshot_id"],
+    )
+
+
+def _transition_request_optional_str(body: dict[str, Any], key: str) -> str | None:
+    value = body.get(key)
+    return str(value) if value else None
+
+
+def _transition_request_evidence_refs(body: dict[str, Any]) -> list[str]:
+    return [
+        str(item) for item in body.get("evidence_refs", [])
+        if isinstance(item, str)
+    ]
+
+
+def _transition_idempotency_matches(
+    event: dict[str, Any],
+    body: dict[str, Any],
+) -> bool:
+    requested_reason_code = str(body["reason_code"])
+    expected_reason_code = (
+        "operator_override"
+        if (
+            body.get("override_id")
+            and str(body["target_state"]) == "allowlist"
+            and requested_reason_code != "trusted_migration"
+        )
+        else requested_reason_code
+    )
+    required_matches = {
+        "canonical_skill_id": str(body["canonical_skill_id"]),
+        "to_state": str(body["target_state"]),
+        "reason_code": expected_reason_code,
+        "operator_id_hash": _transition_request_optional_str(body, "operator_id_hash"),
+        "override_id": _transition_request_optional_str(body, "override_id"),
+        "override_indefinite_reason": _transition_request_optional_str(
+            body,
+            "override_indefinite_reason",
+        ),
+        "expires_at": _transition_request_optional_str(body, "expires_at"),
+        "disabled_until": _transition_request_optional_str(body, "disabled_until"),
+        "restore_target_state": _transition_request_optional_str(body, "restore_target_state"),
+    }
+    for key, expected in required_matches.items():
+        actual = event.get(key)
+        if (str(actual) if actual is not None else None) != expected:
+            return False
+    return list(event.get("evidence_refs") or []) == _transition_request_evidence_refs(body)
+
+
+def _find_transition_event_by_idempotency_key(
+    payload: dict[str, Any],
+    idempotency_key: str,
+) -> dict[str, Any] | None:
+    for event in payload.get("transition_events", []):
+        if isinstance(event, dict) and str(event.get("idempotency_key") or "") == idempotency_key:
+            return event
+    return None
+
+
+def _registry_record_evidence_hashes(record: SkillRegistryRecord) -> list[str]:
+    values = {
+        value for value in record.content_hashes.values()
+        if isinstance(value, str) and value.strip()
+    }
+    for key in ("skill_root_hash", "path_hash", "metadata_record_id"):
+        value = record.source.get(key)
+        if isinstance(value, str) and value.strip():
+            values.add(value)
+    return sorted(values)
+
+
 def _make_auth_dependency(auth_token: str):
     """Create a FastAPI dependency that enforces Bearer token auth.
 
@@ -1613,6 +2527,7 @@ class SupervisionGateway:
             if skill_registry_records is not None
             else load_skill_registry_records(self._detection_config.skill_trust_registry_path)
         )
+        self._agent_safety_feedback_delivered_surfaces: set[tuple[str, str, str]] = set()
         self.default_session_scope_profile = _load_default_session_scope_profile()
         self.post_action_analyzer = PostActionAnalyzer(
             whitelist_patterns=self._detection_config.post_action_whitelist,
@@ -1858,6 +2773,29 @@ class SupervisionGateway:
         })
         return write_result
 
+    def _skill_use_ledger_entries_for_session(self, session_id: str) -> list[dict[str, Any]]:
+        """Return replay-safe skill-use ledger entries recorded for a session."""
+
+        entries: list[dict[str, Any]] = []
+        try:
+            records = self.replay_session(session_id).get("records") or []
+        except Exception:
+            return entries
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            meta = record.get("meta")
+            if not isinstance(meta, dict):
+                continue
+            ledger = meta.get("skill_use_ledger")
+            if isinstance(ledger, dict) and isinstance(ledger.get("entries"), list):
+                entries.extend(
+                    dict(entry)
+                    for entry in ledger["entries"]
+                    if isinstance(entry, dict)
+                )
+        return entries
+
     async def handle_jsonrpc(self, raw_body: bytes) -> dict[str, Any]:
         """
         Process a JSON-RPC 2.0 request and return a JSON-RPC response dict.
@@ -1950,6 +2888,41 @@ class SupervisionGateway:
                     external_multiplier=external_multiplier,
                 ),
             )
+            provenance_findings: list[dict[str, Any]] = []
+            policy, policy_findings = load_provenance_policy_from_config(self._detection_config)
+            provenance_findings.extend(asdict(item) for item in policy_findings)
+            if policy is not None:
+                max_bytes = int(self._detection_config.skill_trust_provenance_max_artifact_bytes)
+                artifacts: dict[str, str] = {}
+                if output_text:
+                    artifact_key = _safe_provenance_artifact_key(file_path)
+                    if len(output_text.encode("utf-8")) > max_bytes:
+                        provenance_findings.append(asdict(ProvenanceFinding(
+                            finding_type="policy_not_applicable",
+                            severity="low",
+                            confidence="high",
+                            handling="artifact_too_large",
+                            artifact_path=artifact_key,
+                        )))
+                    artifacts[artifact_key] = output_text[:max_bytes]
+                file_artifacts, artifact_findings = collect_policy_artifacts(
+                    policy,
+                    workspace_root=_provenance_workspace_root(self._detection_config),
+                    max_artifact_bytes=max_bytes,
+                )
+                artifacts.update(file_artifacts)
+                provenance_findings.extend(asdict(item) for item in artifact_findings)
+                validation_findings = (
+                    validate_provenance_claims(
+                        policy,
+                        artifacts=artifacts,
+                        ledger_entries=self._skill_use_ledger_entries_for_session(session_id),
+                        approved_aliases=_gateway_owned_provenance_aliases(),
+                    )
+                    if artifacts
+                    else []
+                )
+                provenance_findings.extend(asdict(item) for item in validation_findings)
             self.session_registry.record_post_action_score(
                 session_id=session_id,
                 event_id=event_id,
@@ -1960,7 +2933,17 @@ class SupervisionGateway:
                 tool_name=tool_name,
                 source_framework=source_framework,
                 handling=finding_action,
+                provenance_findings=provenance_findings,
             )
+            if provenance_findings:
+                self.event_bus.broadcast({
+                    "type": "provenance_finding",
+                    "event_id": event_id,
+                    "session_id": session_id,
+                    "source_framework": source_framework,
+                    "findings": provenance_findings,
+                    "timestamp": occurred_at,
+                })
             if finding.tier.value != "log_only":
                 handling = finding_action
                 if session_id and handling in ("defer", "block"):
@@ -2052,6 +3035,7 @@ class SupervisionGateway:
                 req.event,
                 self.skill_registry_records,
                 deadline_at=deadline_at,
+                detection_config=self._detection_config,
             )
         })
         req = req.model_copy(update={
@@ -2135,38 +3119,65 @@ class SupervisionGateway:
             str(req.event.session_id or "")
         )
         capability_narrowing_enabled = bool(effective_config.capability_narrowing_enabled)
+        capability_trigger_rank = _risk_rank(effective_config.capability_narrowing_trigger_risk)
+        if capability_trigger_rank <= 0:
+            capability_trigger_rank = _risk_rank("high")
         elevated_session_risk = (
-            _risk_rank(previous_session_risk) >= _risk_rank("high")
-            or int(previous_session_stats.get("high_risk_event_count") or 0) > 0
+            _risk_rank(previous_session_risk) >= capability_trigger_rank
+            or (
+                capability_trigger_rank <= _risk_rank("high")
+                and int(previous_session_stats.get("high_risk_event_count") or 0) > 0
+            )
         )
         capability_narrowing_reason = "disabled"
+        capability_narrowing_reason_code = "disabled"
         if capability_narrowing_enabled:
             if req.event.event_type != EventType.PRE_ACTION:
                 capability_narrowing_reason = "not_pre_action"
+                capability_narrowing_reason_code = "not_pre_action"
             elif enforcement is not None:
                 capability_narrowing_reason = "explicit_enforcement"
+                capability_narrowing_reason_code = "explicit_enforcement"
+            elif req.context is not None and req.context.session_scope_profile is not None:
+                capability_narrowing_reason = "explicit_scope_profile"
+                capability_narrowing_reason_code = "explicit_scope_profile"
             elif elevated_session_risk:
                 capability_narrowing_reason = "elevated_session_risk"
+                capability_narrowing_reason_code = "eligible"
             else:
                 capability_narrowing_reason = "session_risk_below_threshold"
+                capability_narrowing_reason_code = "session_risk_below_threshold"
         if capability_narrowing_reason == "elevated_session_risk":
             reason_code = "elevated_session_risk"
-            narrowed_profile = _capability_narrowing_profile(reason_code)
+            narrowed_profile = _capability_narrowing_profile(reason_code, effective_config)
             capability_narrowing_profile_id = narrowed_profile.profile_id
+            tool_permission_overrides = parse_tool_permission_group_overrides(
+                effective_config.tool_permission_group_overrides
+            ).overrides
             if req.context is None:
                 narrowed_context = DecisionContext(
                     session_scope_profile_id=narrowed_profile.profile_id,
                     session_scope_profile=narrowed_profile,
+                    tool_permission_group_overrides={
+                        tool: list(groups)
+                        for tool, groups in tool_permission_overrides.items()
+                    },
                 )
-            elif req.context.session_scope_profile is None:
+            else:
                 narrowed_context = req.context.model_copy(update={
                     "session_scope_profile_id": narrowed_profile.profile_id,
                     "session_scope_profile": narrowed_profile,
+                    "tool_permission_group_overrides": {
+                        **req.context.tool_permission_group_overrides,
+                        **{
+                            tool: list(groups)
+                            for tool, groups in tool_permission_overrides.items()
+                        },
+                    },
                 })
-            else:
-                narrowed_context = req.context
             req = req.model_copy(update={"context": narrowed_context})
             capability_narrowing_applied = True
+            capability_narrowing_reason_code = "applied"
         if quarantine_applied:
             pass
         elif (
@@ -2477,6 +3488,8 @@ class SupervisionGateway:
             "enabled": capability_narrowing_enabled,
             "applied": capability_narrowing_applied,
             "reason": capability_narrowing_reason,
+            "reason_code": capability_narrowing_reason_code,
+            "reason_codes": [capability_narrowing_reason_code],
         }
         if capability_narrowing_applied:
             capability_narrowing_meta["profile_id"] = capability_narrowing_profile_id or (
@@ -2484,6 +3497,12 @@ class SupervisionGateway:
                 if req.context and req.context.session_scope_profile
                 else None
             )
+        if effective_config.capability_narrowing_audit_verbosity == "verbose":
+            capability_narrowing_meta.update({
+                "audit_verbosity": "verbose",
+                "trigger_risk": effective_config.capability_narrowing_trigger_risk,
+                "policy_summary": _capability_narrowing_policy_summary(effective_config),
+            })
         meta_dict["capability_narrowing"] = capability_narrowing_meta
         if anti_bypass_match is not None:
             meta_dict["anti_bypass"] = anti_bypass_match.to_metadata()
@@ -2503,14 +3522,19 @@ class SupervisionGateway:
         skill_lineage = _lineage_summary_from_event(event_dict)
         if skill_lineage is not None:
             meta_dict["skill_lineage"] = skill_lineage
-            lineage_event = _lineage_event_from_summary(
+        if skill_lineage is not None or (req.context is not None and req.context.skill_trust_refs):
+            lineage_events = _lineage_events_from_summary(
                 event=event_dict,
                 decision=decision_dict,
                 context=req.context,
-                summary=skill_lineage,
+                summary=skill_lineage or {},
             )
-            if lineage_event is not None:
-                meta_dict["lineage_event"] = lineage_event
+            if lineage_events:
+                meta_dict["lineage_event"] = lineage_events[0]
+                meta_dict["skill_use_ledger"] = {
+                    "schema": "clawsentry.skill_use_ledger.v1",
+                    "entries": lineage_events,
+                }
         skill_trust_raw = _redact_skill_trust_raw_from_event(event_dict)
         if skill_trust_raw is not None:
             meta_dict["skill_trust_raw"] = skill_trust_raw
@@ -2662,20 +3686,44 @@ class SupervisionGateway:
             })
 
         agent_safety_feedback_for_response: dict[str, Any] | None = None
+        agent_advisory_feedback_for_response: dict[str, Any] | None = None
         if (
             effective_config.agent_safety_feedback_enabled
             and req.event.event_type == EventType.PRE_ACTION
         ):
-            feedback_supported = _agent_safety_feedback_supported(req.context, req.event)
+            feedback_delivery = _agent_safety_feedback_delivery(req.context, req.event)
             feedback = _agent_safety_feedback(
                 decision=decision,
+                event=req.event,
                 snapshot=snapshot_dict,
-                delivery="response" if feedback_supported else "audit_only",
+                delivery=feedback_delivery,
             )
             if feedback is not None:
                 meta_dict["agent_safety_feedback"] = feedback
-                if feedback_supported:
-                    agent_safety_feedback_for_response = feedback
+                feedback_surface = str(feedback.get("blocked_surface") or "unknown")
+                feedback_delivery_key = (
+                    str(req.event.session_id or req.event.trace_id or "unknown"),
+                    feedback_delivery,
+                    feedback_surface,
+                )
+                if feedback_delivery == "response":
+                    if feedback_delivery_key in self._agent_safety_feedback_delivered_surfaces:
+                        meta_dict["agent_safety_feedback_delivery_suppressed"] = {
+                            "reason": "already_delivered_for_surface",
+                            "surface": feedback_surface,
+                        }
+                    else:
+                        self._agent_safety_feedback_delivered_surfaces.add(feedback_delivery_key)
+                        agent_safety_feedback_for_response = feedback
+            advisory_feedback = _agent_advisory_feedback(
+                decision=decision,
+                event=req.event,
+                delivery=feedback_delivery,
+            )
+            if advisory_feedback is not None:
+                meta_dict["agent_advisory_feedback"] = advisory_feedback
+                if feedback_delivery == "response":
+                    agent_advisory_feedback_for_response = advisory_feedback
 
         record_id = self._record_decision_path(
             event=event_dict,
@@ -3485,11 +4533,14 @@ class SupervisionGateway:
             l3_reason=l3_info["l3_reason"],
             l3_reason_code=l3_info["l3_reason_code"],
             agent_safety_feedback=agent_safety_feedback_for_response,
+            agent_advisory_feedback=agent_advisory_feedback_for_response,
             served_at=utc_now_iso(),
         )
         resp_dict = resp.model_dump(mode="json")
         if resp_dict.get("agent_safety_feedback") is None:
             resp_dict.pop("agent_safety_feedback", None)
+        if resp_dict.get("agent_advisory_feedback") is None:
+            resp_dict.pop("agent_advisory_feedback", None)
 
         # Cache response
         self.idempotency_cache.put(req.request_id, resp_dict, req.deadline_ms)
@@ -4839,6 +5890,266 @@ def create_http_app(
     @app.get("/health")
     async def health_endpoint():
         return gateway.health()
+
+    @app.get("/skill-trust/registry")
+    async def skill_trust_registry_endpoint(request: Request):
+        auth_result = await verify_auth(request)
+        if isinstance(auth_result, Response):
+            return auth_result
+        registry_path = getattr(gateway._detection_config, "skill_trust_registry_path", None)
+        if not registry_path:
+            return Response(
+                content=json.dumps({"error": "skill trust registry is not configured"}),
+                status_code=404,
+                media_type="application/json",
+            )
+        try:
+            path = Path(str(registry_path)).expanduser()
+            payload = _read_skill_trust_registry_payload(path)
+            payload = _consume_expired_skill_trust_lifecycle_windows(path, payload)
+        except FileNotFoundError:
+            return Response(
+                content=json.dumps({"error": "skill trust registry is unavailable"}),
+                status_code=404,
+                media_type="application/json",
+            )
+        except Exception as exc:  # noqa: BLE001
+            return Response(
+                content=json.dumps({"error": f"skill trust registry read failed: {exc}"}),
+                status_code=500,
+                media_type="application/json",
+            )
+        return {
+            "records": payload.get("records", []),
+            "transition_events": payload.get("transition_events", []),
+            "registry_snapshot_id": payload["registry_snapshot_id"],
+            "next_cursor": None,
+        }
+
+    @app.get("/skill-trust/transition/recommendations")
+    async def skill_trust_transition_recommendations_endpoint(request: Request):
+        auth_result = await verify_auth(request)
+        if isinstance(auth_result, Response):
+            return auth_result
+        registry_path = getattr(gateway._detection_config, "skill_trust_registry_path", None)
+        if not registry_path:
+            return Response(
+                content=json.dumps({"error": "skill trust registry is not configured"}),
+                status_code=404,
+                media_type="application/json",
+            )
+        try:
+            path = Path(str(registry_path)).expanduser()
+            payload = _read_skill_trust_registry_payload(path)
+            payload = _consume_expired_skill_trust_lifecycle_windows(path, payload)
+        except FileNotFoundError:
+            return Response(
+                content=json.dumps({"error": "skill trust registry is unavailable"}),
+                status_code=404,
+                media_type="application/json",
+            )
+        except Exception as exc:  # noqa: BLE001
+            return Response(
+                content=json.dumps({"error": f"skill trust registry read failed: {exc}"}),
+                status_code=500,
+                media_type="application/json",
+            )
+        params = request.query_params
+        try:
+            limit = min(max(int(params.get("limit", "100")), 1), 1000)
+            offset = max(int(params.get("cursor", "0")), 0)
+        except ValueError:
+            return Response(
+                content=json.dumps({"error": "limit and cursor must be integers"}),
+                status_code=400,
+                media_type="application/json",
+            )
+        filters = {
+            key: params.get(key)
+            for key in ("canonical_skill_id", "metadata_record_id", "session_id", "severity")
+            if params.get(key)
+        }
+        recommendations = [
+            item for item in payload.get("transition_recommendations", [])
+            if isinstance(item, dict)
+            and all(str(item.get(key) or "") == str(value) for key, value in filters.items())
+        ]
+        page = recommendations[offset:offset + limit]
+        next_offset = offset + limit
+        return {
+            "recommendations": page,
+            "next_cursor": str(next_offset) if next_offset < len(recommendations) else None,
+            "registry_snapshot_id": payload["registry_snapshot_id"],
+        }
+
+    @app.post("/skill-trust/transition")
+    async def skill_trust_transition_endpoint(request: Request):
+        auth_result = await verify_auth(request)
+        if isinstance(auth_result, Response):
+            return auth_result
+        registry_path = getattr(gateway._detection_config, "skill_trust_registry_path", None)
+        if not registry_path:
+            return Response(
+                content=json.dumps({"error": "skill trust registry is not configured"}),
+                status_code=404,
+                media_type="application/json",
+            )
+        body = await request.json()
+        missing = [
+            key for key in (
+                "canonical_skill_id",
+                "target_state",
+                "reason_code",
+                "expected_registry_snapshot_id",
+                "idempotency_key",
+            )
+            if not body.get(key)
+        ]
+        if missing:
+            return Response(
+                content=json.dumps({"error": f"missing required fields: {', '.join(missing)}"}),
+                status_code=400,
+                media_type="application/json",
+            )
+        path = Path(str(registry_path)).expanduser()
+        try:
+            payload = _read_skill_trust_registry_payload(path)
+            payload = _consume_expired_skill_trust_lifecycle_windows(path, payload)
+        except FileNotFoundError:
+            return Response(
+                content=json.dumps({"error": "skill trust registry is unavailable"}),
+                status_code=404,
+                media_type="application/json",
+            )
+        except Exception as exc:  # noqa: BLE001
+            return Response(
+                content=json.dumps({"error": f"skill trust registry read failed: {exc}"}),
+                status_code=500,
+                media_type="application/json",
+            )
+        current_snapshot = payload["registry_snapshot_id"]
+        records = [row for row in payload.get("records", []) if isinstance(row, dict)]
+        record_row = next(
+            (
+                row for row in records
+                if str(row.get("canonical_skill_id") or "") == str(body["canonical_skill_id"])
+            ),
+            None,
+        )
+        replay_event = _find_transition_event_by_idempotency_key(
+            payload,
+            str(body["idempotency_key"]),
+        )
+        if replay_event is not None:
+            if not _transition_idempotency_matches(replay_event, body):
+                return Response(
+                    content=json.dumps({
+                        "error": "idempotency key conflict",
+                        "registry_snapshot_id": current_snapshot,
+                    }),
+                    status_code=409,
+                    media_type="application/json",
+                )
+            if record_row is None:
+                return Response(
+                    content=json.dumps({"error": "skill not found"}),
+                    status_code=404,
+                    media_type="application/json",
+                )
+            return {
+                "record": record_row,
+                "transition_event": replay_event,
+                "registry_snapshot_id": current_snapshot,
+                "idempotent_replay": True,
+            }
+        if str(body["expected_registry_snapshot_id"]) != current_snapshot:
+            return Response(
+                content=json.dumps({
+                    "error": "registry snapshot conflict",
+                    "registry_snapshot_id": current_snapshot,
+                }),
+                status_code=409,
+                media_type="application/json",
+            )
+        if record_row is None:
+            return Response(
+                content=json.dumps({"error": "skill not found"}),
+                status_code=404,
+                media_type="application/json",
+            )
+        try:
+            record = SkillRegistryRecord.model_validate(record_row)
+            updated, event = apply_lifecycle_transition(
+                record,
+                target_state=str(body["target_state"]),
+                reason_code=str(body["reason_code"]),
+                actor_type="operator",
+                operator_id_hash=(
+                    str(body["operator_id_hash"]) if body.get("operator_id_hash") else None
+                ),
+                override_id=str(body["override_id"]) if body.get("override_id") else None,
+                override_indefinite_reason=(
+                    str(body["override_indefinite_reason"])
+                    if body.get("override_indefinite_reason")
+                    else None
+                ),
+                evidence_hashes=_registry_record_evidence_hashes(record),
+                evidence_refs=_transition_request_evidence_refs(body),
+                expected_registry_snapshot_id=current_snapshot,
+                idempotency_key=str(body["idempotency_key"]),
+                policy_fingerprint=record.policy_fingerprint or "sha256:skill-trust-lifecycle-v1",
+                expires_at=str(body["expires_at"]) if body.get("expires_at") else None,
+                disabled_until=str(body["disabled_until"]) if body.get("disabled_until") else None,
+                restore_target_state=(
+                    str(body["restore_target_state"]) if body.get("restore_target_state") else None
+                ),
+            )
+        except ValueError as exc:
+            return Response(
+                content=json.dumps({"error": str(exc)}),
+                status_code=422,
+                media_type="application/json",
+            )
+        except ValidationError as exc:
+            return Response(
+                content=json.dumps({"error": f"transition validation failed: {exc.error_count()} error(s)"}),
+                status_code=400,
+                media_type="application/json",
+            )
+        updated_rows = [
+            row for row in records
+            if str(row.get("canonical_skill_id") or "") != updated.canonical_skill_id
+        ]
+        updated_rows.append(updated.model_dump(mode="json"))
+        payload["records"] = sorted(updated_rows, key=lambda row: str(row.get("canonical_name") or ""))
+        payload["transition_events"] = [
+            *payload.get("transition_events", []),
+            event.model_dump(mode="json"),
+        ]
+        try:
+            payload = _write_skill_trust_registry_payload(
+                path,
+                payload,
+                expected_registry_snapshot_id=current_snapshot,
+            )
+        except ValueError as exc:
+            if str(exc) == "registry snapshot conflict":
+                latest_payload = _read_skill_trust_registry_payload(path)
+                return Response(
+                    content=json.dumps({
+                        "error": "registry snapshot conflict",
+                        "registry_snapshot_id": latest_payload["registry_snapshot_id"],
+                    }),
+                    status_code=409,
+                    media_type="application/json",
+                )
+            raise
+        return {
+            "record": record_with_skill_trust_grade(updated),
+            "transition_event": event.model_dump(mode="json"),
+            "registry_snapshot_id": payload["registry_snapshot_id"],
+            "idempotent_replay": False,
+        }
 
     @_enterprise_get("/enterprise/health")
     async def enterprise_health_endpoint(request: Request):

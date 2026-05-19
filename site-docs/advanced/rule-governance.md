@@ -367,7 +367,7 @@ clawsentry rules report \
 !!! warning "发布门控"
     若 `status` 不为 `pass`，或仪表板显示无法解释的 `FAIL` 发现项，请在发布前修复规则或记录风险说明。
 
-### 策略变更审查清单 {#policy-change-review-checklist}
+### Policy-change review checklist / 策略变更审查清单 {#policy-change-review-checklist}
 
 在合并攻击模式、演进模式或审查技能的变更时，在 PR 或变更说明中记录以下内容：
 

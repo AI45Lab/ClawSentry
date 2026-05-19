@@ -62,6 +62,7 @@ class OpenClawGatewayClient:
         self.retry_backoff_ms = retry_backoff_ms
         self.auth_token = auth_token or os.getenv("CS_AUTH_TOKEN", "")
         self.transport_preference = transport_preference
+        self.last_decision_response_metadata: dict[str, Any] = {}
 
     def _transport_chain(self) -> tuple[Any, Any]:
         if self.transport_preference == "http_first":
@@ -76,6 +77,7 @@ class OpenClawGatewayClient:
         decision_tier: DecisionTier = DecisionTier.L1,
     ) -> CanonicalDecision:
         """Send SyncDecision request with retry and fallback."""
+        self.last_decision_response_metadata = {}
         effective_deadline = deadline_ms or self.default_deadline_ms
         request_id = f"oc-{event.event_id}-{int(time.monotonic() * 1000)}"
         deadline_start = time.monotonic()
@@ -115,6 +117,14 @@ class OpenClawGatewayClient:
                     if "result" in response:
                         result = response["result"]
                         if result.get("rpc_status") == "ok":
+                            self.last_decision_response_metadata = {
+                                key: result[key]
+                                for key in (
+                                    "agent_safety_feedback",
+                                    "agent_advisory_feedback",
+                                )
+                                if result.get(key) is not None
+                            }
                             return CanonicalDecision(**result["decision"])
                     if "error" in response:
                         error_data = response["error"].get("data", {})

@@ -15,6 +15,10 @@ from pathlib import Path
 from typing import Any, Literal
 
 from .initializers.codex import _codex_hook_state_trust_issues
+from .initializers.gemini_cli import (
+    _GEMINI_HOOK_COMMAND_ASYNC,
+    _GEMINI_HOOK_COMMAND_SYNC,
+)
 
 
 @dataclass
@@ -314,14 +318,8 @@ _CODEX_REQUIRED_HOOK_SHAPES: tuple[tuple[str, str | None, str, str], ...] = (
 )
 
 _GEMINI_HOOK_MARKER = "clawsentry harness --framework gemini-cli"
-_GEMINI_HOOK_SYNC_COMMAND = (
-    "sh -c 'clawsentry harness --framework gemini-cli "
-    "2>>\"${CS_HARNESS_DIAG_LOG:-/dev/null}\" || true'"
-)
-_GEMINI_HOOK_ASYNC_COMMAND = (
-    "sh -c 'clawsentry harness --framework gemini-cli --async "
-    "2>>\"${CS_HARNESS_DIAG_LOG:-/dev/null}\" || true'"
-)
+_GEMINI_HOOK_SYNC_COMMAND = _GEMINI_HOOK_COMMAND_SYNC
+_GEMINI_HOOK_ASYNC_COMMAND = _GEMINI_HOOK_COMMAND_ASYNC
 _GEMINI_REQUIRED_HOOK_SHAPES: tuple[tuple[str, str, str], ...] = (
     ("BeforeAgent", _GEMINI_HOOK_SYNC_COMMAND, "synchronous"),
     ("AfterAgent", _GEMINI_HOOK_SYNC_COMMAND, "synchronous"),

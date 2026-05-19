@@ -7,6 +7,29 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
+## v0.8.0 {#v080}
+
+*2026-05-19*
+
+<div class="cs-pill-row">
+<span class="cs-pill cs-pill--release">Skill Trust Runtime Binding</span>
+<span class="cs-pill cs-pill--test">3645 passed, 16 skipped</span>
+</div>
+
+### 新增
+
+- **Runtime skill binding** — Skill Trust 现在把真实运行时 skill path / native skill name / mirror root 与 Gateway-owned metadata 绑定成显式状态，阻止同名不同源、路径片段和伪造 metadata 静默继承 trust。
+- **Skill-use ledger and provenance validator** — Gateway 会记录 replay-safe skill-use ledger；post-action provenance validator 将产物声明的 skill labels 与 ledger 比对，但不会反向创造 runtime invocation 或改写已完成判决。
+- **FSPR and lifecycle API** — First-Use Skill Package Review 默认作为 evidence-only 审查结果输出；allowlist、greylist、blacklist、revoke、disable、restore 和 operator override 通过 auditable lifecycle API/CLI 管理。
+- **Capability narrowing and feedback** — 高风险会话后可按 tool permission groups、skill trust state 和 MCP scope 收窄能力；critical block 可返回脱敏 agent-facing feedback。
+
+### 验收边界
+
+- 新增六框架 surface acceptance：A3S、Codex、Claude Code、Kimi、Gemini、OpenClaw 均覆盖 Gateway UDS + adapter/harness path 的 critical block 和 runtime-path-disallowed 证据。
+- 该验收不是外部 CLI binary harbor smoke，也不发布 benchmark leaderboard、ASR/TSR/TFR 或 raw-vs-protected 结论。
+
+---
+
 ## v0.7.5 {#v075}
 
 *2026-05-17*

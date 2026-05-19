@@ -80,6 +80,25 @@ DetectionConfig（frozen dataclass）
 # CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION=audit
 # CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=defer
 # CS_CAPABILITY_NARROWING_ENABLED=false
+# CS_CAPABILITY_NARROWING_TRIGGER_RISK=high
+# CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS=read_only
+# CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS=write,network,credentialed,destructive,mcp_admin,unknown
+# CS_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES=allowlist
+# CS_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES=blacklist,revoked
+# CS_CAPABILITY_NARROWING_ALLOWED_MCP_SERVERS=
+# CS_CAPABILITY_NARROWING_DENIED_MCP_SERVERS=
+# CS_CAPABILITY_NARROWING_ALLOWED_MCP_TOOLS=filesystem.read_file
+# CS_CAPABILITY_NARROWING_DENIED_MCP_TOOLS=fetch.fetch
+# CS_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES=
+# CS_CAPABILITY_NARROWING_DENIED_MCP_STATUSES=blacklist,revoked,disabled
+# CS_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS=
+# CS_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS=untrusted,unknown,local_unreviewed
+# CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES=
+# CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES=
+# CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES=
+# CS_CAPABILITY_NARROWING_AUDIT_VERBOSITY=summary
+# CS_CAPABILITY_NARROWING_GREYLIST_ACTION=defer
+# CS_TOOL_PERMISSION_GROUP_OVERRIDES=custom_read=read_only
 # CS_AGENT_SAFETY_FEEDBACK_ENABLED=false
 ```
 
@@ -99,8 +118,82 @@ DetectionConfig（frozen dataclass）
 | `skill_trust_first_use_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION` | benchmark 模式 first-use/unbound skill 动作 |
 | `skill_trust_first_use_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION` | strict 模式 first-use/unbound skill 动作 |
 | `skill_trust_first_use_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION` | permissive 模式 first-use/unbound skill 动作 |
+| `skill_trust_runtime_normal_action` | `str` | `force_l3` | `CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION` | normal 模式通用 runtime binding 动作 |
+| `skill_trust_runtime_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION` | benchmark 模式通用 runtime binding 动作 |
+| `skill_trust_runtime_strict_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_STRICT_ACTION` | strict 模式通用 runtime binding 动作 |
+| `skill_trust_runtime_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION` | permissive 模式通用 runtime binding 动作 |
+| `skill_trust_runtime_path_disallowed_normal_action` | `str` | `force_l3` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION` | normal 模式 disallowed runtime path 动作 |
+| `skill_trust_runtime_path_disallowed_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_BENCHMARK_ACTION` | benchmark 模式 disallowed runtime path 动作 |
+| `skill_trust_runtime_path_disallowed_strict_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_STRICT_ACTION` | strict 模式 disallowed runtime path 动作 |
+| `skill_trust_runtime_path_disallowed_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_PERMISSIVE_ACTION` | permissive 模式 disallowed runtime path 动作 |
+| `skill_trust_runtime_source_ambiguous_normal_action` | `str` | `force_l3` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION` | normal 模式 ambiguous runtime source 动作 |
+| `skill_trust_runtime_source_ambiguous_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_BENCHMARK_ACTION` | benchmark 模式 ambiguous runtime source 动作 |
+| `skill_trust_runtime_source_ambiguous_strict_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION` | strict 模式 ambiguous runtime source 动作 |
+| `skill_trust_runtime_source_ambiguous_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_PERMISSIVE_ACTION` | permissive 模式 ambiguous runtime source 动作 |
+| `skill_trust_runtime_path_unverified_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_NORMAL_ACTION` | normal 模式 unverified runtime path 动作 |
+| `skill_trust_runtime_path_unverified_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_BENCHMARK_ACTION` | benchmark 模式 unverified runtime path 动作 |
+| `skill_trust_runtime_path_unverified_strict_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_STRICT_ACTION` | strict 模式 unverified runtime path 动作 |
+| `skill_trust_runtime_path_unverified_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_PERMISSIVE_ACTION` | permissive 模式 unverified runtime path 动作 |
+| `skill_trust_runtime_content_unverified_normal_action` | `str` | `force_l3` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_NORMAL_ACTION` | normal 模式 unverified runtime content 动作 |
+| `skill_trust_runtime_content_unverified_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION` | benchmark 模式 unverified runtime content 动作 |
+| `skill_trust_runtime_content_unverified_strict_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_STRICT_ACTION` | strict 模式 unverified runtime content 动作 |
+| `skill_trust_runtime_content_unverified_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_PERMISSIVE_ACTION` | permissive 模式 unverified runtime content 动作 |
+| `skill_trust_runtime_content_mismatch_normal_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION` | normal 模式 runtime content mismatch 动作 |
+| `skill_trust_runtime_content_mismatch_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_BENCHMARK_ACTION` | benchmark 模式 runtime content mismatch 动作 |
+| `skill_trust_runtime_content_mismatch_strict_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_STRICT_ACTION` | strict 模式 runtime content mismatch 动作 |
+| `skill_trust_runtime_content_mismatch_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_PERMISSIVE_ACTION` | permissive 模式 runtime content mismatch 动作 |
+| `skill_trust_mirror_hash_max_files` | `int` | `200` | `CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES` | runtime mirror content hash 最大文件数 |
+| `skill_trust_mirror_hash_max_file_bytes` | `int` | `1048576` | `CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES` | runtime mirror content hash 单文件最大字节数 |
+| `skill_trust_mirror_hash_max_total_ms` | `int` | `1000` | `CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS` | runtime mirror content hash 总毫秒预算 |
+| `skill_trust_fspr_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_ENABLED` | 启用 First-Use Skill Package Review |
+| `skill_trust_fspr_pre_use_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED` | pre-use gate FSPR evidence |
+| `skill_trust_fspr_post_action_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED` | post-action incremental FSPR evidence |
+| `skill_trust_fspr_role_set` | `str` | `default` | `CS_SKILL_TRUST_FSPR_ROLE_SET` | FSPR role set 标识 |
+| `skill_trust_fspr_timeout_ms` | `int` | `120000` | `CS_SKILL_TRUST_FSPR_TIMEOUT_MS` | FSPR 超时预算 |
+| `skill_trust_fspr_cache_enabled` | `bool` | `true` | `CS_SKILL_TRUST_FSPR_CACHE_ENABLED` | 启用 FSPR cache |
+| `skill_trust_fspr_provider_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED` | 允许 provider-backed FSPR roles |
+| `skill_trust_fspr_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_NORMAL_ACTION` | normal 模式通用 FSPR verdict 动作 |
+| `skill_trust_fspr_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_BENCHMARK_ACTION` | benchmark 模式通用 FSPR verdict 动作 |
+| `skill_trust_fspr_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_STRICT_ACTION` | strict 模式通用 FSPR verdict 动作 |
+| `skill_trust_fspr_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_PERMISSIVE_ACTION` | permissive 模式通用 FSPR verdict 动作 |
+| `skill_trust_fspr_inconsistent_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INCONSISTENT_NORMAL_ACTION` | normal 模式 inconsistent FSPR verdict 动作 |
+| `skill_trust_fspr_inconsistent_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INCONSISTENT_BENCHMARK_ACTION` | benchmark 模式 inconsistent FSPR verdict 动作 |
+| `skill_trust_fspr_inconsistent_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INCONSISTENT_STRICT_ACTION` | strict 模式 inconsistent FSPR verdict 动作 |
+| `skill_trust_fspr_inconsistent_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INCONSISTENT_PERMISSIVE_ACTION` | permissive 模式 inconsistent FSPR verdict 动作 |
+| `skill_trust_fspr_suspicious_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_SUSPICIOUS_NORMAL_ACTION` | normal 模式 suspicious FSPR verdict 动作 |
+| `skill_trust_fspr_suspicious_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_SUSPICIOUS_BENCHMARK_ACTION` | benchmark 模式 suspicious FSPR verdict 动作 |
+| `skill_trust_fspr_suspicious_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_SUSPICIOUS_STRICT_ACTION` | strict 模式 suspicious FSPR verdict 动作 |
+| `skill_trust_fspr_suspicious_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_SUSPICIOUS_PERMISSIVE_ACTION` | permissive 模式 suspicious FSPR verdict 动作 |
+| `skill_trust_fspr_insufficient_evidence_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_NORMAL_ACTION` | normal 模式 insufficient-evidence FSPR verdict 动作 |
+| `skill_trust_fspr_insufficient_evidence_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_BENCHMARK_ACTION` | benchmark 模式 insufficient-evidence FSPR verdict 动作 |
+| `skill_trust_fspr_insufficient_evidence_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_STRICT_ACTION` | strict 模式 insufficient-evidence FSPR verdict 动作 |
+| `skill_trust_fspr_insufficient_evidence_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_PERMISSIVE_ACTION` | permissive 模式 insufficient-evidence FSPR verdict 动作 |
+| `skill_trust_provenance_enabled` | `bool` | `false` | `CS_SKILL_TRUST_PROVENANCE_ENABLED` | 启用 post-action artifact provenance validation |
+| `skill_trust_provenance_policy_path` | `str \| None` | `None` | `CS_SKILL_TRUST_PROVENANCE_POLICY_PATH` | JSON provenance validation policy 路径 |
+| `skill_trust_provenance_policy_json` | `str \| None` | `None` | `CS_SKILL_TRUST_PROVENANCE_POLICY_JSON` | inline JSON provenance validation policy |
+| `skill_trust_provenance_workspace_root` | `str \| None` | `None` | `CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT` | provenance artifact glob 的 workspace/sandbox 根目录；为空时使用 Gateway cwd |
+| `skill_trust_provenance_max_artifact_bytes` | `int` | `1048576` | `CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES` | 单个 artifact 最大读取字节数；超限记录 bounded finding |
 | `capability_narrowing_enabled` | `bool` | `false` | `CS_CAPABILITY_NARROWING_ENABLED` | 高会话风险时应用收窄的 SessionScopeProfile |
-| `agent_safety_feedback_enabled` | `bool` | `false` | `CS_AGENT_SAFETY_FEEDBACK_ENABLED` | critical block 后生成红线化 agent feedback |
+| `capability_narrowing_trigger_risk` | `str` | `high` | `CS_CAPABILITY_NARROWING_TRIGGER_RISK` | 自动收窄触发阈值：`low`、`medium`、`high`、`critical` |
+| `capability_narrowing_allowed_tool_permission_groups` | `tuple[str, ...]` | `("read_only",)` | `CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS` | 自动收窄后允许的工具权限组 |
+| `capability_narrowing_denied_tool_permission_groups` | `tuple[str, ...]` | `("write","network","credentialed","destructive","mcp_admin","unknown")` | `CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS` | 自动收窄后拒绝的工具权限组 |
+| `capability_narrowing_allowed_skill_trust_states` | `tuple[str, ...]` | `("allowlist",)` | `CS_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES` | 自动收窄后允许的 Skill Trust 状态 |
+| `capability_narrowing_denied_skill_trust_states` | `tuple[str, ...]` | `("blacklist","revoked")` | `CS_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES` | 自动收窄后拒绝的 Skill Trust 状态 |
+| `capability_narrowing_allowed_mcp_servers` | `tuple[str, ...]` | `()` | `CS_CAPABILITY_NARROWING_ALLOWED_MCP_SERVERS` | 自动收窄后允许的 MCP server |
+| `capability_narrowing_denied_mcp_servers` | `tuple[str, ...]` | `()` | `CS_CAPABILITY_NARROWING_DENIED_MCP_SERVERS` | 自动收窄后拒绝的 MCP server |
+| `capability_narrowing_allowed_mcp_tools` | `tuple[str, ...]` | `("filesystem.read_file",)` | `CS_CAPABILITY_NARROWING_ALLOWED_MCP_TOOLS` | 自动收窄后允许的 MCP tool |
+| `capability_narrowing_denied_mcp_tools` | `tuple[str, ...]` | `("fetch.fetch",)` | `CS_CAPABILITY_NARROWING_DENIED_MCP_TOOLS` | 自动收窄后拒绝的 MCP tool |
+| `capability_narrowing_allowed_mcp_statuses` | `tuple[str, ...]` | `()` | `CS_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES` | 自动收窄后允许的 MCP 状态 |
+| `capability_narrowing_denied_mcp_statuses` | `tuple[str, ...]` | `("blacklist","revoked","disabled")` | `CS_CAPABILITY_NARROWING_DENIED_MCP_STATUSES` | 自动收窄后拒绝的 MCP 状态 |
+| `capability_narrowing_allowed_mcp_trust_levels` | `tuple[str, ...]` | `()` | `CS_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS` | 自动收窄后允许的 MCP trust level |
+| `capability_narrowing_denied_mcp_trust_levels` | `tuple[str, ...]` | `("untrusted","unknown","local_unreviewed")` | `CS_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS` | 自动收窄后拒绝的 MCP trust level |
+| `capability_narrowing_allowed_capabilities` | `tuple[str, ...]` | `()` | `CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES` | 自动收窄后允许的 action capability |
+| `capability_narrowing_denied_capabilities` | `tuple[str, ...]` | `()` | `CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES` | 自动收窄后拒绝的 action capability |
+| `capability_narrowing_queued_capabilities` | `tuple[str, ...]` | `()` | `CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES` | 自动收窄后转人工复核的 action capability |
+| `capability_narrowing_audit_verbosity` | `str` | `summary` | `CS_CAPABILITY_NARROWING_AUDIT_VERBOSITY` | 自动收窄审计元数据详细度：`minimal`、`summary`、`verbose` |
+| `capability_narrowing_greylist_action` | `str` | `defer` | `CS_CAPABILITY_NARROWING_GREYLIST_ACTION` | 自动收窄中 greylist skill 的处理：`allow`、`defer`、`block` |
+| `tool_permission_group_overrides` | `str` | `""` | `CS_TOOL_PERMISSION_GROUP_OVERRIDES` | `tool=group[,group]` 映射；用于 capability narrowing 和 scope preview |
+| `agent_safety_feedback_enabled` | `bool` | `false` | `CS_AGENT_SAFETY_FEEDBACK_ENABLED` | critical block 后生成红线化 agent feedback；response delivery 对同一 session/surface 只投递一次，greylist warning 使用独立 advisory envelope |
 
 Skill Trust 动作允许值为 `audit`、`force_l2`、`force_l3`、`defer`、`block`。如果需要登记 skill registry，先运行 `clawsentry skill-trust register-dir`，再把生成的 registry/metadata 路径写入 env。详见 [Skill Trust / Registry](../advanced/skill-trust.md)。
 

@@ -11,11 +11,11 @@ from .base import LOCAL_ENV_FILE_EXAMPLE, InitResult, SetupResult, merge_project
 
 _GEMINI_HOOK_MARKER = "clawsentry harness --framework gemini-cli"
 _GEMINI_HOOK_COMMAND_SYNC = (
-    "sh -c 'clawsentry harness --framework gemini-cli "
+    "sh -c 'PATH=\"${HOME}/.local/bin:${PATH}\"; clawsentry harness --framework gemini-cli "
     "2>>\"${CS_HARNESS_DIAG_LOG:-/dev/null}\" || true'"
 )
 _GEMINI_HOOK_COMMAND_ASYNC = (
-    "sh -c 'clawsentry harness --framework gemini-cli --async "
+    "sh -c 'PATH=\"${HOME}/.local/bin:${PATH}\"; clawsentry harness --framework gemini-cli --async "
     "2>>\"${CS_HARNESS_DIAG_LOG:-/dev/null}\" || true'"
 )
 _GEMINI_SYNC_EVENTS = {
@@ -187,9 +187,7 @@ def _merge_gemini_hooks(existing: dict[str, Any]) -> dict[str, Any]:
     merged["hooksConfig"] = hooks_config
 
     hooks = dict(merged.get("hooks") or {})
-    # Keep the legacy/proven inline toggle too; Gemini 0.25 accepted it in the
-    # feasibility smoke, while newer source exposes hooksConfig.enabled.
-    hooks["enabled"] = True
+    hooks.pop("enabled", None)
     for event_name, matcher, description in _GEMINI_HOOK_EVENTS:
         current = hooks.get(event_name)
         entries = list(current) if isinstance(current, list) else []

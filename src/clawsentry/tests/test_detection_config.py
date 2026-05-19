@@ -165,10 +165,98 @@ class TestBuildFromEnv:
         assert c.skill_trust_registry_path == "/tmp/skill-registry.json"
         assert c.skill_trust_first_use_benchmark_action == "defer"
         assert c.skill_trust_first_use_strict_action == "force_l3"
+        assert c.skill_trust_provenance_enabled is False
+
+    def test_provenance_validator_env_parsing(self):
+        env = {
+            "CS_SKILL_TRUST_PROVENANCE_ENABLED": "true",
+            "CS_SKILL_TRUST_PROVENANCE_POLICY_JSON": '{"artifact_paths":["*.json"],"field_paths":["tool_called"]}',
+            "CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES": "4096",
+            "CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT": "/tmp/provenance-workspace",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            c = build_detection_config_from_env()
+
+        assert c.skill_trust_provenance_enabled is True
+        assert c.skill_trust_provenance_policy_json == env["CS_SKILL_TRUST_PROVENANCE_POLICY_JSON"]
+        assert c.skill_trust_provenance_max_artifact_bytes == 4096
+        assert c.skill_trust_provenance_workspace_root == "/tmp/provenance-workspace"
+
+    def test_runtime_binding_action_env_parsing(self):
+        env = {
+            "CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION": "defer",
+            "CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION": "block",
+            "CS_SKILL_TRUST_RUNTIME_STRICT_ACTION": "block",
+            "CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION": "audit",
+            "CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION": "defer",
+            "CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION": "block",
+            "CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES": "12",
+            "CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES": "2048",
+            "CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS": "75",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            c = build_detection_config_from_env()
+
+        assert c.skill_trust_runtime_normal_action == "defer"
+        assert c.skill_trust_runtime_benchmark_action == "block"
+        assert c.skill_trust_runtime_strict_action == "block"
+        assert c.skill_trust_runtime_permissive_action == "audit"
+        assert c.skill_trust_runtime_path_disallowed_normal_action == "defer"
+        assert c.skill_trust_runtime_content_mismatch_normal_action == "block"
+        assert c.skill_trust_mirror_hash_max_files == 12
+        assert c.skill_trust_mirror_hash_max_file_bytes == 2048
+        assert c.skill_trust_mirror_hash_max_total_ms == 75
+
+    def test_fspr_env_parsing(self):
+        env = {
+            "CS_SKILL_TRUST_FSPR_ENABLED": "true",
+            "CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED": "true",
+            "CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED": "true",
+            "CS_SKILL_TRUST_FSPR_ROLE_SET": "identity-only",
+            "CS_SKILL_TRUST_FSPR_TIMEOUT_MS": "2500",
+            "CS_SKILL_TRUST_FSPR_CACHE_ENABLED": "false",
+            "CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED": "true",
+            "CS_SKILL_TRUST_FSPR_STRICT_ACTION": "block",
+            "CS_SKILL_TRUST_FSPR_INCONSISTENT_STRICT_ACTION": "defer",
+            "CS_SKILL_TRUST_FSPR_SUSPICIOUS_NORMAL_ACTION": "force_l2",
+            "CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_BENCHMARK_ACTION": "block",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            c = build_detection_config_from_env()
+
+        assert c.skill_trust_fspr_enabled is True
+        assert c.skill_trust_fspr_pre_use_enabled is True
+        assert c.skill_trust_fspr_post_action_enabled is True
+        assert c.skill_trust_fspr_role_set == "identity-only"
+        assert c.skill_trust_fspr_timeout_ms == 2500
+        assert c.skill_trust_fspr_cache_enabled is False
+        assert c.skill_trust_fspr_provider_enabled is True
+        assert c.skill_trust_fspr_strict_action == "block"
+        assert c.skill_trust_fspr_inconsistent_strict_action == "defer"
+        assert c.skill_trust_fspr_suspicious_normal_action == "force_l2"
+        assert c.skill_trust_fspr_insufficient_evidence_benchmark_action == "block"
 
     def test_invalid_first_use_action_falls_back_to_audit(self):
         cfg = DetectionConfig(skill_trust_first_use_benchmark_action="launch_missiles")
         assert cfg.skill_trust_first_use_benchmark_action == "audit"
+
+    def test_invalid_runtime_binding_action_falls_back_to_audit(self):
+        cfg = DetectionConfig(
+            skill_trust_runtime_benchmark_action="launch_missiles",
+            skill_trust_runtime_content_mismatch_strict_action="launch_missiles",
+        )
+        assert cfg.skill_trust_runtime_benchmark_action == "audit"
+        assert cfg.skill_trust_runtime_content_mismatch_strict_action == "audit"
+
+    def test_invalid_fspr_action_falls_back_to_audit(self):
+        cfg = DetectionConfig(
+            skill_trust_fspr_strict_action="launch_missiles",
+            skill_trust_fspr_inconsistent_strict_action="launch_missiles",
+            skill_trust_fspr_suspicious_normal_action="launch_missiles",
+        )
+        assert cfg.skill_trust_fspr_strict_action == "audit"
+        assert cfg.skill_trust_fspr_inconsistent_strict_action == "audit"
+        assert cfg.skill_trust_fspr_suspicious_normal_action == "audit"
 
     def test_comma_sep_list(self):
         env = {"CS_POST_ACTION_WHITELIST": "*.log, *.tmp, /var/cache/*"}
@@ -211,7 +299,26 @@ class TestBuildFromEnv:
             "CS_L3_HEARTBEAT_REVIEW_ENABLED": "true",
             "CS_BENCHMARK_L2_AUTO_ENABLED": "true",
             "CS_CAPABILITY_NARROWING_ENABLED": "true",
+            "CS_CAPABILITY_NARROWING_TRIGGER_RISK": "critical",
+            "CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS": "read_only,write",
+            "CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS": "network,destructive",
+            "CS_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES": "allowlist,greylist",
+            "CS_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES": "blacklist,revoked",
+            "CS_CAPABILITY_NARROWING_ALLOWED_MCP_SERVERS": "filesystem,fetch",
+            "CS_CAPABILITY_NARROWING_DENIED_MCP_SERVERS": "evil",
+            "CS_CAPABILITY_NARROWING_ALLOWED_MCP_TOOLS": "filesystem.read_file,fetch.fetch",
+            "CS_CAPABILITY_NARROWING_DENIED_MCP_TOOLS": "fetch.fetch",
+            "CS_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES": "allowlist,greylist",
+            "CS_CAPABILITY_NARROWING_DENIED_MCP_STATUSES": "blacklist,revoked",
+            "CS_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS": "trusted,local_unreviewed",
+            "CS_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS": "untrusted",
+            "CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES": "filesystem.write",
+            "CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES": "future_execution.entrypoint",
+            "CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES": "network.fetch",
+            "CS_CAPABILITY_NARROWING_AUDIT_VERBOSITY": "verbose",
+            "CS_CAPABILITY_NARROWING_GREYLIST_ACTION": "block",
             "CS_AGENT_SAFETY_FEEDBACK_ENABLED": "true",
+            "CS_TOOL_PERMISSION_GROUP_OVERRIDES": "custom_read=read_only",
         }
         with patch.dict(os.environ, env, clear=True):
             c = build_detection_config_from_env()
@@ -236,7 +343,82 @@ class TestBuildFromEnv:
         assert c.l3_heartbeat_review_enabled is True
         assert c.benchmark_l2_auto_enabled is True
         assert c.capability_narrowing_enabled is True
+        assert c.capability_narrowing_trigger_risk == "critical"
+        assert c.capability_narrowing_allowed_tool_permission_groups == ("read_only", "write")
+        assert c.capability_narrowing_denied_tool_permission_groups == ("network", "destructive")
+        assert c.capability_narrowing_allowed_skill_trust_states == ("allowlist", "greylist")
+        assert c.capability_narrowing_denied_skill_trust_states == ("blacklist", "revoked")
+        assert c.capability_narrowing_allowed_mcp_servers == ("filesystem", "fetch")
+        assert c.capability_narrowing_denied_mcp_servers == ("evil",)
+        assert c.capability_narrowing_allowed_mcp_tools == ("filesystem.read_file", "fetch.fetch")
+        assert c.capability_narrowing_denied_mcp_tools == ("fetch.fetch",)
+        assert c.capability_narrowing_allowed_mcp_statuses == ("allowlist", "greylist")
+        assert c.capability_narrowing_denied_mcp_statuses == ("blacklist", "revoked")
+        assert c.capability_narrowing_allowed_mcp_trust_levels == ("trusted", "local_unreviewed")
+        assert c.capability_narrowing_denied_mcp_trust_levels == ("untrusted",)
+        assert c.capability_narrowing_allowed_capabilities == ("filesystem.write",)
+        assert c.capability_narrowing_denied_capabilities == ("future_execution.entrypoint",)
+        assert c.capability_narrowing_queued_capabilities == ("network.fetch",)
+        assert c.capability_narrowing_audit_verbosity == "verbose"
+        assert c.capability_narrowing_greylist_action == "block"
         assert c.agent_safety_feedback_enabled is True
+        assert c.tool_permission_group_overrides == "custom_read=read_only"
+
+    def test_invalid_capability_narrowing_env_values_fall_back(self, caplog):
+        env = {
+            "CS_CAPABILITY_NARROWING_TRIGGER_RISK": "severe",
+            "CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS": "read_only,root_access",
+            "CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS": "kernel",
+            "CS_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES": "allowlist,root",
+            "CS_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES": "kernel",
+            "CS_CAPABILITY_NARROWING_ALLOWED_MCP_STATUSES": "allowlist,root",
+            "CS_CAPABILITY_NARROWING_DENIED_MCP_STATUSES": "kernel",
+            "CS_CAPABILITY_NARROWING_ALLOWED_MCP_TRUST_LEVELS": "trusted,root",
+            "CS_CAPABILITY_NARROWING_DENIED_MCP_TRUST_LEVELS": "kernel",
+            "CS_CAPABILITY_NARROWING_AUDIT_VERBOSITY": "noisy",
+            "CS_CAPABILITY_NARROWING_GREYLIST_ACTION": "escalate",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with caplog.at_level("WARNING", logger="clawsentry.gateway.detection_config"):
+                c = build_detection_config_from_env()
+
+        assert c.capability_narrowing_trigger_risk == "high"
+        assert c.capability_narrowing_allowed_tool_permission_groups == ("read_only",)
+        assert c.capability_narrowing_denied_tool_permission_groups == (
+            "write",
+            "network",
+            "credentialed",
+            "destructive",
+            "mcp_admin",
+            "unknown",
+        )
+        assert c.capability_narrowing_allowed_skill_trust_states == ("allowlist",)
+        assert c.capability_narrowing_denied_skill_trust_states == ("blacklist", "revoked")
+        assert c.capability_narrowing_allowed_mcp_statuses == ("allowlist",)
+        assert c.capability_narrowing_denied_mcp_statuses == (
+            "blacklist",
+            "revoked",
+            "disabled",
+        )
+        assert c.capability_narrowing_allowed_mcp_trust_levels == ("trusted",)
+        assert c.capability_narrowing_denied_mcp_trust_levels == (
+            "untrusted",
+            "unknown",
+            "local_unreviewed",
+        )
+        assert c.capability_narrowing_audit_verbosity == "summary"
+        assert c.capability_narrowing_greylist_action == "defer"
+        assert "Invalid capability_narrowing_trigger_risk" in caplog.text
+        assert "Invalid capability_narrowing_allowed_tool_permission_groups" in caplog.text
+        assert "Invalid capability_narrowing_denied_tool_permission_groups" in caplog.text
+        assert "Invalid capability_narrowing_allowed_skill_trust_states" in caplog.text
+        assert "Invalid capability_narrowing_denied_skill_trust_states" in caplog.text
+        assert "Invalid capability_narrowing_allowed_mcp_statuses" in caplog.text
+        assert "Invalid capability_narrowing_denied_mcp_statuses" in caplog.text
+        assert "Invalid capability_narrowing_allowed_mcp_trust_levels" in caplog.text
+        assert "Invalid capability_narrowing_denied_mcp_trust_levels" in caplog.text
+        assert "Invalid capability_narrowing_audit_verbosity" in caplog.text
+        assert "Invalid capability_narrowing_greylist_action" in caplog.text
 
 
 # =========================================================================
