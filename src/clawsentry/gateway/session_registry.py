@@ -965,7 +965,6 @@ class SessionRegistry:
         tool_name: Optional[str] = None,
         source_framework: Optional[str] = None,
         handling: Optional[str] = None,
-        provenance_findings: Optional[list[dict[str, Any]]] = None,
     ) -> None:
         """Record a post-action guard score for session-level reporting."""
 
@@ -1024,7 +1023,6 @@ class SessionRegistry:
             "tool_name": str(tool_name) if tool_name else None,
             "source_framework": str(source_framework or session.get("source_framework") or "unknown"),
             "handling": str(handling) if handling else None,
-            "provenance_findings": list(provenance_findings or []),
         })
         if tool_name:
             session["tools_used"].add(str(tool_name))
@@ -1312,7 +1310,6 @@ class SessionRegistry:
                         "patterns_matched": list(item.get("patterns_matched") or []),
                         "score": item["score"],
                         "handling": item.get("handling"),
-                        "provenance_findings": list(item.get("provenance_findings") or []),
                     }
                     for item in post_action_timeline
                 ],

@@ -76,13 +76,17 @@ _TOOL_PARAMETER_SCHEMAS: dict[str, dict[str, str]] = {
 }
 
 _MAX_TOOL_ENVELOPE_CONTENT_CHARS = 5000
+DEFAULT_L3_MAX_TOKENS = 100_000
+DEFAULT_L3_PROVIDER_TIMEOUT_MS = 300_000.0
+DEFAULT_L3_HARD_CAP_MS = 600_000.0
 
 
 @dataclass
 class AgentAnalyzerConfig:
-    provider_timeout_ms: float = 120_000.0
-    hard_cap_ms: float = 120_000.0
+    provider_timeout_ms: float = DEFAULT_L3_PROVIDER_TIMEOUT_MS
+    hard_cap_ms: float = DEFAULT_L3_HARD_CAP_MS
     l3_budget_ms: Optional[float] = None  # User-configurable L3 budget; None = use passed budget
+    max_tokens: Optional[int] = None
     max_reasoning_turns: int = 8
     initial_trajectory_limit: int = 20
     max_findings: int = 10
@@ -115,6 +119,15 @@ class AgentAnalyzer:
     @property
     def analyzer_id(self) -> str:
         return "agent-reviewer"
+
+    def _single_turn_max_tokens(self) -> int:
+        return self._config.max_tokens or DEFAULT_L3_MAX_TOKENS
+
+    def _format_retry_max_tokens(self) -> int:
+        return self._config.max_tokens or DEFAULT_L3_MAX_TOKENS
+
+    def _multi_turn_max_tokens(self) -> int:
+        return self._config.max_tokens or DEFAULT_L3_MAX_TOKENS
 
     @staticmethod
     def _infer_l3_reason_code(
@@ -550,7 +563,7 @@ class AgentAnalyzer:
                 skill.system_prompt,
                 prompt,
                 timeout_ms=effective_budget,
-                max_tokens=256,
+                max_tokens=self._single_turn_max_tokens(),
             ),
             timeout=effective_budget / 1000,
         )
@@ -577,7 +590,7 @@ class AgentAnalyzer:
                             skill.system_prompt,
                             self._FORMAT_CORRECTION_PROMPT,
                             timeout_ms=remaining_ms,
-                            max_tokens=256,
+                            max_tokens=self._format_retry_max_tokens(),
                         ),
                         timeout=remaining_ms / 1000,
                     )
@@ -737,7 +750,7 @@ class AgentAnalyzer:
                         system_prompt,
                         msg_json,
                         timeout_ms=min(remaining, self._config.provider_timeout_ms),
-                        max_tokens=512,
+                        max_tokens=self._multi_turn_max_tokens(),
                     ),
                     timeout=min(remaining, self._config.provider_timeout_ms) / 1000,
                 )
@@ -918,7 +931,7 @@ class AgentAnalyzer:
         metadata = trigger_metadata if isinstance(trigger_metadata, dict) else {}
         reason = str(metadata.get("trigger_reason") or "")
         skills = self._skill_registry.skills
-        if reason == "first_use_skill_trust_action" and "skill-trust-audit" in skills:
+        if reason in {"fspr_package_review", "runtime_binding_identity_conflict"} and "skill-trust-audit" in skills:
             return skills["skill-trust-audit"]
         if reason == "anti_bypass_followup" and "data-staging-exfil-chain-audit" in skills:
             return skills["data-staging-exfil-chain-audit"]
@@ -1056,7 +1069,8 @@ class AgentAnalyzer:
         questions = {
             "manual_l3_escalate": "Review the current event and recent trajectory requested by manual/operator escalation.",
             "anti_bypass_followup": "Determine whether the current action is a follow-up attempt to bypass a prior blocked or deferred risky operation.",
-            "first_use_skill_trust_action": "Review skill identity, provenance, and admission evidence that required L3.",
+            "fspr_package_review": "Review FSPR package evidence, findings, and admission recommendation that requested L3.",
+            "runtime_binding_identity_conflict": "Review runtime skill identity, provenance, and binding evidence that requested L3.",
             "session_l3_require": "Review why session enforcement requires L3 and whether this action should be allowed.",
             "suspicious_pattern": "Gather evidence around the suspicious trigger detail and assess the attack chain.",
             "cumulative_risk": "Review cumulative risk contribution events, not only the current event.",

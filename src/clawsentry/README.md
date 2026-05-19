@@ -6,7 +6,7 @@
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.8.0)**: Skill Trust now binds observed runtime skill use to Gateway-owned metadata, records replay-safe skill-use ledger entries, validates post-action provenance claims, and routes first-use package review evidence through auditable lifecycle controls.
+**Current release highlight (v0.8.2)**: Post-action artifact provenance validation has been removed. Skill Trust runtime binding, replay-safe `skill_use_ledger`, FSPR evidence-only review, and runtime mirror content verification remain available.
 
 ---
 

@@ -77,8 +77,8 @@ DetectionConfig（frozen dataclass）
 
 # ── Skill Trust / capability narrowing / feedback（v0.7.0）──────────────
 # CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json
-# CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION=audit
-# CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=defer
+# CS_SKILL_TRUST_FIRST_USE_NORMAL_POLICY=audit_only
+# CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY=defer_for_review
 # CS_CAPABILITY_NARROWING_ENABLED=false
 # CS_CAPABILITY_NARROWING_TRIGGER_RISK=high
 # CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS=read_only
@@ -114,19 +114,19 @@ DetectionConfig（frozen dataclass）
 | 字段名 | 类型 | 默认值 | CS_ 变量 | 说明 |
 |--------|------|--------|----------|------|
 | `skill_trust_registry_path` | `str \| None` | `None` | `CS_SKILL_TRUST_REGISTRY_PATH` | Skill Trust registry JSON 路径 |
-| `skill_trust_first_use_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION` | normal 模式 first-use/unbound skill 动作 |
-| `skill_trust_first_use_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION` | benchmark 模式 first-use/unbound skill 动作 |
-| `skill_trust_first_use_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION` | strict 模式 first-use/unbound skill 动作 |
-| `skill_trust_first_use_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION` | permissive 模式 first-use/unbound skill 动作 |
-| `skill_trust_runtime_normal_action` | `str` | `force_l3` | `CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION` | normal 模式通用 runtime binding 动作 |
-| `skill_trust_runtime_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION` | benchmark 模式通用 runtime binding 动作 |
-| `skill_trust_runtime_strict_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_STRICT_ACTION` | strict 模式通用 runtime binding 动作 |
-| `skill_trust_runtime_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION` | permissive 模式通用 runtime binding 动作 |
-| `skill_trust_runtime_path_disallowed_normal_action` | `str` | `force_l3` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION` | normal 模式 disallowed runtime path 动作 |
+| `skill_trust_first_use_normal_policy` | `str` | `audit_only` | `CS_SKILL_TRUST_FIRST_USE_NORMAL_POLICY` | normal 模式 first-use/unbound skill admission policy |
+| `skill_trust_first_use_benchmark_policy` | `str` | `scan_sync` | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY` | benchmark 模式 first-use/unbound skill admission policy |
+| `skill_trust_first_use_strict_policy` | `str` | `defer_for_review` | `CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY` | strict 模式 first-use/unbound skill admission policy |
+| `skill_trust_first_use_permissive_policy` | `str` | `audit_only` | `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_POLICY` | permissive 模式 first-use/unbound skill admission policy |
+| `skill_trust_runtime_normal_action` | `str` | `force_l3` | `CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION` | legacy profile-level runtime binding config surface；per-condition evidence 由下方字段执法 |
+| `skill_trust_runtime_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION` | legacy profile-level runtime binding config surface；per-condition evidence 由下方字段执法 |
+| `skill_trust_runtime_strict_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_STRICT_ACTION` | legacy profile-level runtime binding config surface；per-condition evidence 由下方字段执法 |
+| `skill_trust_runtime_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION` | legacy profile-level runtime binding config surface；per-condition evidence 由下方字段执法 |
+| `skill_trust_runtime_path_disallowed_normal_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION` | normal 模式 disallowed runtime path 动作 |
 | `skill_trust_runtime_path_disallowed_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_BENCHMARK_ACTION` | benchmark 模式 disallowed runtime path 动作 |
 | `skill_trust_runtime_path_disallowed_strict_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_STRICT_ACTION` | strict 模式 disallowed runtime path 动作 |
 | `skill_trust_runtime_path_disallowed_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_PERMISSIVE_ACTION` | permissive 模式 disallowed runtime path 动作 |
-| `skill_trust_runtime_source_ambiguous_normal_action` | `str` | `force_l3` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION` | normal 模式 ambiguous runtime source 动作 |
+| `skill_trust_runtime_source_ambiguous_normal_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION` | normal 模式 ambiguous runtime source 动作 |
 | `skill_trust_runtime_source_ambiguous_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_BENCHMARK_ACTION` | benchmark 模式 ambiguous runtime source 动作 |
 | `skill_trust_runtime_source_ambiguous_strict_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION` | strict 模式 ambiguous runtime source 动作 |
 | `skill_trust_runtime_source_ambiguous_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_PERMISSIVE_ACTION` | permissive 模式 ambiguous runtime source 动作 |
@@ -135,7 +135,7 @@ DetectionConfig（frozen dataclass）
 | `skill_trust_runtime_path_unverified_strict_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_STRICT_ACTION` | strict 模式 unverified runtime path 动作 |
 | `skill_trust_runtime_path_unverified_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_PERMISSIVE_ACTION` | permissive 模式 unverified runtime path 动作 |
 | `skill_trust_runtime_content_unverified_normal_action` | `str` | `force_l3` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_NORMAL_ACTION` | normal 模式 unverified runtime content 动作 |
-| `skill_trust_runtime_content_unverified_benchmark_action` | `str` | `block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION` | benchmark 模式 unverified runtime content 动作 |
+| `skill_trust_runtime_content_unverified_benchmark_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION` | benchmark 模式 unverified runtime content 动作 |
 | `skill_trust_runtime_content_unverified_strict_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_STRICT_ACTION` | strict 模式 unverified runtime content 动作 |
 | `skill_trust_runtime_content_unverified_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_PERMISSIVE_ACTION` | permissive 模式 unverified runtime content 动作 |
 | `skill_trust_runtime_content_mismatch_normal_action` | `str` | `defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION` | normal 模式 runtime content mismatch 动作 |
@@ -152,27 +152,6 @@ DetectionConfig（frozen dataclass）
 | `skill_trust_fspr_timeout_ms` | `int` | `120000` | `CS_SKILL_TRUST_FSPR_TIMEOUT_MS` | FSPR 超时预算 |
 | `skill_trust_fspr_cache_enabled` | `bool` | `true` | `CS_SKILL_TRUST_FSPR_CACHE_ENABLED` | 启用 FSPR cache |
 | `skill_trust_fspr_provider_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED` | 允许 provider-backed FSPR roles |
-| `skill_trust_fspr_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_NORMAL_ACTION` | normal 模式通用 FSPR verdict 动作 |
-| `skill_trust_fspr_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_BENCHMARK_ACTION` | benchmark 模式通用 FSPR verdict 动作 |
-| `skill_trust_fspr_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_STRICT_ACTION` | strict 模式通用 FSPR verdict 动作 |
-| `skill_trust_fspr_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_PERMISSIVE_ACTION` | permissive 模式通用 FSPR verdict 动作 |
-| `skill_trust_fspr_inconsistent_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INCONSISTENT_NORMAL_ACTION` | normal 模式 inconsistent FSPR verdict 动作 |
-| `skill_trust_fspr_inconsistent_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INCONSISTENT_BENCHMARK_ACTION` | benchmark 模式 inconsistent FSPR verdict 动作 |
-| `skill_trust_fspr_inconsistent_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INCONSISTENT_STRICT_ACTION` | strict 模式 inconsistent FSPR verdict 动作 |
-| `skill_trust_fspr_inconsistent_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INCONSISTENT_PERMISSIVE_ACTION` | permissive 模式 inconsistent FSPR verdict 动作 |
-| `skill_trust_fspr_suspicious_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_SUSPICIOUS_NORMAL_ACTION` | normal 模式 suspicious FSPR verdict 动作 |
-| `skill_trust_fspr_suspicious_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_SUSPICIOUS_BENCHMARK_ACTION` | benchmark 模式 suspicious FSPR verdict 动作 |
-| `skill_trust_fspr_suspicious_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_SUSPICIOUS_STRICT_ACTION` | strict 模式 suspicious FSPR verdict 动作 |
-| `skill_trust_fspr_suspicious_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_SUSPICIOUS_PERMISSIVE_ACTION` | permissive 模式 suspicious FSPR verdict 动作 |
-| `skill_trust_fspr_insufficient_evidence_normal_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_NORMAL_ACTION` | normal 模式 insufficient-evidence FSPR verdict 动作 |
-| `skill_trust_fspr_insufficient_evidence_benchmark_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_BENCHMARK_ACTION` | benchmark 模式 insufficient-evidence FSPR verdict 动作 |
-| `skill_trust_fspr_insufficient_evidence_strict_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_STRICT_ACTION` | strict 模式 insufficient-evidence FSPR verdict 动作 |
-| `skill_trust_fspr_insufficient_evidence_permissive_action` | `str` | `audit` | `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_PERMISSIVE_ACTION` | permissive 模式 insufficient-evidence FSPR verdict 动作 |
-| `skill_trust_provenance_enabled` | `bool` | `false` | `CS_SKILL_TRUST_PROVENANCE_ENABLED` | 启用 post-action artifact provenance validation |
-| `skill_trust_provenance_policy_path` | `str \| None` | `None` | `CS_SKILL_TRUST_PROVENANCE_POLICY_PATH` | JSON provenance validation policy 路径 |
-| `skill_trust_provenance_policy_json` | `str \| None` | `None` | `CS_SKILL_TRUST_PROVENANCE_POLICY_JSON` | inline JSON provenance validation policy |
-| `skill_trust_provenance_workspace_root` | `str \| None` | `None` | `CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT` | provenance artifact glob 的 workspace/sandbox 根目录；为空时使用 Gateway cwd |
-| `skill_trust_provenance_max_artifact_bytes` | `int` | `1048576` | `CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES` | 单个 artifact 最大读取字节数；超限记录 bounded finding |
 | `capability_narrowing_enabled` | `bool` | `false` | `CS_CAPABILITY_NARROWING_ENABLED` | 高会话风险时应用收窄的 SessionScopeProfile |
 | `capability_narrowing_trigger_risk` | `str` | `high` | `CS_CAPABILITY_NARROWING_TRIGGER_RISK` | 自动收窄触发阈值：`low`、`medium`、`high`、`critical` |
 | `capability_narrowing_allowed_tool_permission_groups` | `tuple[str, ...]` | `("read_only",)` | `CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS` | 自动收窄后允许的工具权限组 |

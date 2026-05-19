@@ -16,12 +16,16 @@ from clawsentry.gateway.models import (
     DecisionVerdict,
     DecisionSource,
     DecisionTier,
+    FirstUseScanState,
+    FirstUseSkillPackageReview,
     RiskDimensions,
     RiskLevel,
     AgentTrustLevel,
     FailureClass,
+    ReviewRoutingIntent,
     SessionScopeBaseRules,
     SessionScopeProfile,
+    SkillTrustContext,
 )
 from clawsentry.gateway.risk_snapshot import (
     SessionRiskTracker,
@@ -77,6 +81,205 @@ def _scope_ctx(*disabled_capabilities: str, trust=None) -> DecisionContext:
             ),
         ),
     )
+
+
+def test_review_routing_intent_schema_is_policy_owned():
+    intent = ReviewRoutingIntent(
+        source="fspr_package_review",
+        recommended_tier="l3",
+        policy_action="audit",
+        reason="fspr_package_review",
+        source_metadata={"verdict": "suspicious", "confidence": 0.7},
+        routing_affecting=True,
+        decision_affecting=False,
+    )
+
+    assert intent.source == "fspr_package_review"
+    assert intent.recommended_tier == "l3"
+    assert intent.policy_action == "audit"
+
+
+def test_fspr_suspicious_normal_generates_l3_audit_routing_intent():
+    context = DecisionContext(
+        skill_trust=SkillTrustContext(
+            first_use_package_review=FirstUseSkillPackageReview(
+                timing_mode="pre_use_gate",
+                verdict="suspicious",
+                severity="medium",
+                confidence=0.75,
+            )
+        )
+    )
+
+    snapshot = compute_risk_snapshot(
+        _evt(tool_name="read_file", payload={"path": "/workspace/README.md"}),
+        context,
+        SessionRiskTracker(),
+        config=DetectionConfig(mode="normal"),
+    )
+
+    assert snapshot.routing_intents
+    intent = snapshot.routing_intents[0]
+    assert intent.source == "fspr_package_review"
+    assert intent.policy_action == "audit"
+    assert intent.recommended_tier == "l3"
+    assert intent.routing_affecting is True
+    assert intent.decision_affecting is False
+
+
+def test_skill_trust_refs_generate_sorted_routing_intents():
+    context = DecisionContext(
+        skill_trust_refs=[
+            SkillTrustContext(
+                first_use_scan=FirstUseScanState(state="scan_not_started"),
+            ),
+            SkillTrustContext(
+                first_use_package_review=FirstUseSkillPackageReview(
+                    timing_mode="pre_use_gate",
+                    verdict="suspicious",
+                    severity="medium",
+                    confidence=0.7,
+                )
+            ),
+            SkillTrustContext(
+                runtime_path_status="name_only_unverified",
+                runtime_content_status="content_verified",
+                runtime_binding_reason="weak_name_only_binding",
+            ),
+            SkillTrustContext(
+                first_use_package_review=FirstUseSkillPackageReview(
+                    timing_mode="pre_use_gate",
+                    verdict="inconsistent",
+                    severity="high",
+                    confidence=0.9,
+                )
+            ),
+        ]
+    )
+
+    snapshot = compute_risk_snapshot(
+        _evt(tool_name="read_file", payload={"path": "/workspace/README.md"}),
+        context,
+        SessionRiskTracker(),
+        config=DetectionConfig(
+            mode="normal",
+            skill_trust_first_use_normal_policy="block_until_reviewed",
+            skill_trust_runtime_path_unverified_normal_action="force_l2",
+        ),
+    )
+
+    assert len(snapshot.routing_intents) >= 4
+    assert snapshot.routing_intents[0].policy_action == "block"
+    assert snapshot.routing_intents[0].recommended_tier == "none"
+    assert snapshot.routing_intents[0].source == "first_use_admission"
+    assert any(
+        intent.policy_action == "defer" and intent.recommended_tier == "l3"
+        for intent in snapshot.routing_intents
+    )
+    assert any(
+        intent.policy_action == "audit" and intent.recommended_tier == "l3"
+        for intent in snapshot.routing_intents
+    )
+    assert any(
+        intent.policy_action == "audit" and intent.recommended_tier == "l2"
+        for intent in snapshot.routing_intents
+    )
+
+
+def _context_with_fspr(verdict: str, timing_mode: str = "pre_use_gate") -> DecisionContext:
+    return DecisionContext(
+        skill_trust=SkillTrustContext(
+            first_use_package_review=FirstUseSkillPackageReview(
+                timing_mode=timing_mode,
+                verdict=verdict,
+                severity="high" if verdict == "inconsistent" else "medium",
+                confidence=0.8,
+            )
+        )
+    )
+
+
+def test_fspr_audit_l3_routes_without_decision_change():
+    class L3AllowingAnalyzer:
+        analyzer_id = "agent-reviewer"
+
+        async def analyze(self, event, context, l1_snapshot, budget_ms):
+            return L2Result(
+                target_level=RiskLevel.LOW,
+                reasons=["fspr package review completed without escalation"],
+                confidence=0.9,
+                analyzer_id=self.analyzer_id,
+                decision_tier=DecisionTier.L3,
+                trace={"trigger_reason": "fspr_package_review", "degraded": False},
+            )
+
+    engine = L1PolicyEngine(analyzer=L3AllowingAnalyzer(), config=DetectionConfig(mode="normal"))
+    context = _context_with_fspr(verdict="suspicious", timing_mode="pre_use_gate")
+
+    decision, snapshot, actual_tier = engine.evaluate(
+        _evt(tool_name="read_file", payload={"path": "/workspace/README.md"}),
+        context=context,
+    )
+
+    assert actual_tier == DecisionTier.L3
+    assert decision.decision == DecisionVerdict.ALLOW
+    assert snapshot.l2_l3_summary["l3_request_reason"] == "fspr_package_review"
+
+
+def test_fspr_strict_inconsistent_blocks_without_l3():
+    class UnexpectedAnalyzer:
+        analyzer_id = "agent-reviewer"
+
+        async def analyze(self, event, context, l1_snapshot, budget_ms):
+            raise AssertionError("strict inconsistent FSPR should block at L1")
+
+    engine = L1PolicyEngine(analyzer=UnexpectedAnalyzer(), config=DetectionConfig(mode="strict"))
+    context = _context_with_fspr(verdict="inconsistent", timing_mode="pre_use_gate")
+
+    decision, snapshot, actual_tier = engine.evaluate(
+        _evt(tool_name="read_file", payload={"path": "/workspace/README.md"}),
+        context=context,
+    )
+
+    assert actual_tier == DecisionTier.L1
+    assert decision.decision == DecisionVerdict.BLOCK
+    assert snapshot.routing_intents[0].policy_action == "block"
+
+
+def test_fspr_consistent_does_not_offset_runtime_disallowed_gate():
+    skill_trust = SkillTrustContext(
+        registry_status="matched",
+        canonical_skill_id="skill:search-accommodation",
+        presented_name="search-accommodation",
+        runtime_path_status="disallowed",
+        runtime_root_path_hash="sha256:evil",
+        runtime_evidence_kind="shell_skill_path",
+        invariant_violations=["runtime_path_disallowed"],
+        first_use_package_review=FirstUseSkillPackageReview(
+            timing_mode="pre_use_gate",
+            verdict="consistent",
+            severity="low",
+            confidence=0.95,
+        ),
+    )
+
+    decision, snapshot, actual_tier = L1PolicyEngine(config=DetectionConfig(mode="normal")).evaluate(
+        _evt(tool_name="read_file", payload={"path": "/workspace/README.md"}),
+        context=DecisionContext(skill_trust=skill_trust, skill_trust_refs=[skill_trust]),
+    )
+
+    assert actual_tier in {DecisionTier.L2, DecisionTier.L3}
+    assert decision.decision == DecisionVerdict.DEFER
+    assert "runtime_path_disallowed" in snapshot.rule_hits
+    assert snapshot.routing_intents[0].source == "runtime_binding"
+    assert snapshot.routing_intents[0].policy_action == "defer"
+    assert snapshot.routing_intents[0].recommended_tier == "l3"
+    assert snapshot.routing_intents[0].reason == "runtime_binding_identity_conflict"
+    assert any(
+        intent.source == "fspr_package_review" and intent.policy_action == "audit"
+        for intent in snapshot.routing_intents
+    )
+    assert snapshot.l2_l3_summary["l3_request_reason"] == "runtime_binding_identity_conflict"
 
 
 # ===========================================================================

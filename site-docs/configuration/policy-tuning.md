@@ -58,13 +58,12 @@ v0.8.0 将 Skill Trust runtime binding、capability narrowing 和 feedback 收�
 
 | 能力 | 默认值 | 调优入口 | 行为边界 |
 |---|---:|---|---|
-| Skill Trust first-use action | `audit` | `CS_SKILL_TRUST_FIRST_USE_*_ACTION` | 可设 `audit`、`force_l2`、`force_l3`、`defer`、`block`；依赖 registry/runtime metadata |
-| Runtime path disallowed action | normal `force_l3` / strict `block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_*_ACTION` | observed runtime root 不在 Gateway-owned source/mirror roots 时执行 |
-| Runtime source ambiguous action | normal `force_l3` / strict `defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_*_ACTION` | 同名或多来源候选无法唯一绑定时执行 |
+| Skill Trust first-use admission policy | `audit_only` / benchmark `scan_sync` / strict `defer_for_review` | `CS_SKILL_TRUST_FIRST_USE_*_POLICY` | 可设 `audit_only`、`scan_sync`、`scan_async_defer`、`defer_for_review`、`block_until_reviewed`；依赖 registry/runtime metadata |
+| Runtime path disallowed action | normal `defer` / strict `block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_*_ACTION` | observed runtime root 不在 Gateway-owned source/mirror roots 时执行，并独立请求 runtime binding review tier |
+| Runtime source ambiguous action | normal `defer` / strict `defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_*_ACTION` | 同名或多来源候选无法唯一绑定时执行，并独立请求 runtime binding review tier |
 | Runtime path/name unverified action | `audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_*_ACTION` | 只有 name/path fragment 弱证据时不提升 trust，可按 profile 审计或升级 |
 | Runtime content mismatch/unverified | strict `block` / `defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_*_ACTION` | mirror 内容 hash 或 runner contract 不能证明时执行 |
-| Post-action provenance validator | `false` | `CS_SKILL_TRUST_PROVENANCE_VALIDATOR_ENABLED` | 事后把 artifact claims 与 `skill_use_ledger` 比对；不改写已完成 decision |
-| FSPR package review | `false` | `CS_SKILL_TRUST_FSPR_*` | 首次使用包级审查；默认 evidence-only，可按 verdict/profile 产生 policy evidence 或 transition recommendation |
+| FSPR package review | `false` | `CS_SKILL_TRUST_FSPR_*` | 首次使用包级审查；package role 只产出 evidence，Gateway 内置矩阵派生 policy action 和 review tier |
 | Capability narrowing | `false` | `CS_CAPABILITY_NARROWING_ENABLED` | 高会话风险时收紧后续 SessionScopeProfile，不改写历史 decision |
 | Capability narrowing threshold | `high` | `CS_CAPABILITY_NARROWING_TRIGGER_RISK` | 设置为 `critical` 时，只有 critical 历史风险会触发自动收窄 |
 | Capability narrowing group policy | read-only allow / write+network+admin deny | `CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS`, `CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS` | 用权限组调整自动收窄后的工具边界 |
@@ -89,7 +88,7 @@ agent-facing safety feedback；后续 retry 仍保留审计 metadata，并以
 
 1. 用 `clawsentry skill-trust register-dir` 生成 registry 和 Gateway-owned runtime metadata。
 2. normal 模式先保持 runtime unverified / provenance / FSPR 为 `audit`，观察 `skill_trust`、`skill_use_ledger` 和 post-action findings。
-3. 对无人值守测试或 strict profile，将 disallowed / ambiguous / content mismatch 提升为 `defer` / `block`。
+3. 对无人值守测试或 strict profile，确认 disallowed / ambiguous / content mismatch 的 `defer` / `block` 策略与人工审批或 benchmark defer handling 匹配。
 4. 启用 lifecycle mutation 前先要求 operator reason、expected snapshot id 和 idempotency key。
 5. 启用 capability narrowing 前先验证 session scope profile 不会误伤常用只读工具。
 

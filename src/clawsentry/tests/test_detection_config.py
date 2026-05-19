@@ -156,31 +156,44 @@ class TestBuildFromEnv:
         env = {
             "CS_ATTACK_PATTERNS_PATH": "/tmp/custom.yaml",
             "CS_SKILL_TRUST_REGISTRY_PATH": "/tmp/skill-registry.json",
-            "CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION": "defer",
-            "CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION": "force_l3",
+            "CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY": "scan_sync",
+            "CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY": "defer_for_review",
         }
         with patch.dict(os.environ, env, clear=True):
             c = build_detection_config_from_env()
         assert c.attack_patterns_path == "/tmp/custom.yaml"
         assert c.skill_trust_registry_path == "/tmp/skill-registry.json"
-        assert c.skill_trust_first_use_benchmark_action == "defer"
-        assert c.skill_trust_first_use_strict_action == "force_l3"
-        assert c.skill_trust_provenance_enabled is False
+        assert c.skill_trust_first_use_benchmark_policy == "scan_sync"
+        assert c.skill_trust_first_use_strict_policy == "defer_for_review"
+        assert not hasattr(c, "skill_trust_provenance_enabled")
 
-    def test_provenance_validator_env_parsing(self):
+    def test_first_use_admission_policy_env_parsing(self):
         env = {
-            "CS_SKILL_TRUST_PROVENANCE_ENABLED": "true",
-            "CS_SKILL_TRUST_PROVENANCE_POLICY_JSON": '{"artifact_paths":["*.json"],"field_paths":["tool_called"]}',
-            "CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES": "4096",
-            "CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT": "/tmp/provenance-workspace",
+            "CS_SKILL_TRUST_FIRST_USE_NORMAL_POLICY": "audit_only",
+            "CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY": "scan_sync",
+            "CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY": "defer_for_review",
+            "CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_POLICY": "audit_only",
         }
         with patch.dict(os.environ, env, clear=True):
             c = build_detection_config_from_env()
 
-        assert c.skill_trust_provenance_enabled is True
-        assert c.skill_trust_provenance_policy_json == env["CS_SKILL_TRUST_PROVENANCE_POLICY_JSON"]
-        assert c.skill_trust_provenance_max_artifact_bytes == 4096
-        assert c.skill_trust_provenance_workspace_root == "/tmp/provenance-workspace"
+        assert c.skill_trust_first_use_normal_policy == "audit_only"
+        assert c.skill_trust_first_use_benchmark_policy == "scan_sync"
+        assert c.skill_trust_first_use_strict_policy == "defer_for_review"
+        assert c.skill_trust_first_use_permissive_policy == "audit_only"
+        assert not hasattr(c, "skill_trust_first_use_benchmark_action")
+
+    def test_removed_provenance_validator_knobs_are_not_config_fields(self):
+        c = DetectionConfig()
+
+        for field_name in (
+            "skill_trust_provenance_enabled",
+            "skill_trust_provenance_policy_json",
+            "skill_trust_provenance_policy_path",
+            "skill_trust_provenance_workspace_root",
+            "skill_trust_provenance_max_artifact_bytes",
+        ):
+            assert not hasattr(c, field_name)
 
     def test_runtime_binding_action_env_parsing(self):
         env = {
@@ -216,10 +229,6 @@ class TestBuildFromEnv:
             "CS_SKILL_TRUST_FSPR_TIMEOUT_MS": "2500",
             "CS_SKILL_TRUST_FSPR_CACHE_ENABLED": "false",
             "CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED": "true",
-            "CS_SKILL_TRUST_FSPR_STRICT_ACTION": "block",
-            "CS_SKILL_TRUST_FSPR_INCONSISTENT_STRICT_ACTION": "defer",
-            "CS_SKILL_TRUST_FSPR_SUSPICIOUS_NORMAL_ACTION": "force_l2",
-            "CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_BENCHMARK_ACTION": "block",
         }
         with patch.dict(os.environ, env, clear=True):
             c = build_detection_config_from_env()
@@ -231,14 +240,10 @@ class TestBuildFromEnv:
         assert c.skill_trust_fspr_timeout_ms == 2500
         assert c.skill_trust_fspr_cache_enabled is False
         assert c.skill_trust_fspr_provider_enabled is True
-        assert c.skill_trust_fspr_strict_action == "block"
-        assert c.skill_trust_fspr_inconsistent_strict_action == "defer"
-        assert c.skill_trust_fspr_suspicious_normal_action == "force_l2"
-        assert c.skill_trust_fspr_insufficient_evidence_benchmark_action == "block"
 
-    def test_invalid_first_use_action_falls_back_to_audit(self):
-        cfg = DetectionConfig(skill_trust_first_use_benchmark_action="launch_missiles")
-        assert cfg.skill_trust_first_use_benchmark_action == "audit"
+    def test_invalid_first_use_policy_falls_back_to_audit_only(self):
+        cfg = DetectionConfig(skill_trust_first_use_benchmark_policy="launch_missiles")
+        assert cfg.skill_trust_first_use_benchmark_policy == "audit_only"
 
     def test_invalid_runtime_binding_action_falls_back_to_audit(self):
         cfg = DetectionConfig(
@@ -247,16 +252,6 @@ class TestBuildFromEnv:
         )
         assert cfg.skill_trust_runtime_benchmark_action == "audit"
         assert cfg.skill_trust_runtime_content_mismatch_strict_action == "audit"
-
-    def test_invalid_fspr_action_falls_back_to_audit(self):
-        cfg = DetectionConfig(
-            skill_trust_fspr_strict_action="launch_missiles",
-            skill_trust_fspr_inconsistent_strict_action="launch_missiles",
-            skill_trust_fspr_suspicious_normal_action="launch_missiles",
-        )
-        assert cfg.skill_trust_fspr_strict_action == "audit"
-        assert cfg.skill_trust_fspr_inconsistent_strict_action == "audit"
-        assert cfg.skill_trust_fspr_suspicious_normal_action == "audit"
 
     def test_comma_sep_list(self):
         env = {"CS_POST_ACTION_WHITELIST": "*.log, *.tmp, /var/cache/*"}

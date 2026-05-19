@@ -13,6 +13,9 @@ from typing import Mapping, Optional
 
 _TRUTHY_VALUES = {"true", "1", "yes", "on"}
 _SUPPORTED_PROVIDERS = {"anthropic", "openai"}
+DEFAULT_L2_MAX_TOKENS = 10_000
+DEFAULT_L3_MAX_TOKENS = 100_000
+DEFAULT_LLM_PROVIDER_TIMEOUT_MS = 60_000.0
 
 
 @dataclass(frozen=True)
@@ -24,7 +27,9 @@ class LLMSettings:
     model: str = ""
     base_url: Optional[str] = None
     temperature: float = 0.0
-    provider_timeout_ms: float = 3000.0
+    provider_timeout_ms: float = DEFAULT_LLM_PROVIDER_TIMEOUT_MS
+    max_tokens: int = DEFAULT_L2_MAX_TOKENS
+    l3_max_tokens: int = DEFAULT_L3_MAX_TOKENS
     l3_enabled: bool = False
     enterprise_enabled: bool = False
 
@@ -70,6 +75,37 @@ def _env_float(
         return default
 
 
+def _env_int(
+    name: str,
+    *,
+    environ: Optional[Mapping[str, str]] = None,
+    default: int,
+) -> int:
+    raw = _env(name, environ=environ).strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
+def _env_optional_int(
+    name: str,
+    *,
+    environ: Optional[Mapping[str, str]] = None,
+) -> Optional[int]:
+    raw = _env(name, environ=environ).strip()
+    if not raw:
+        return None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None
+    return value if value > 0 else None
+
+
 def _resolve_api_key(provider: str, *, environ: Optional[Mapping[str, str]] = None) -> str:
     shared = _env("CS_LLM_API_KEY", environ=environ).strip()
     if shared:
@@ -109,7 +145,13 @@ def resolve_llm_settings(
     model = _env("CS_LLM_MODEL", environ=environ).strip()
     base_url = _env("CS_LLM_BASE_URL", environ=environ).strip() or None
     temperature = _env_float("CS_LLM_TEMPERATURE", environ=environ, default=0.0)
-    provider_timeout_ms = _env_float("CS_LLM_PROVIDER_TIMEOUT_MS", environ=environ, default=3000.0)
+    provider_timeout_ms = _env_float(
+        "CS_LLM_PROVIDER_TIMEOUT_MS",
+        environ=environ,
+        default=DEFAULT_LLM_PROVIDER_TIMEOUT_MS,
+    )
+    max_tokens = _env_int("CS_LLM_MAX_TOKENS", environ=environ, default=DEFAULT_L2_MAX_TOKENS)
+    l3_max_tokens = _env_int("CS_L3_MAX_TOKENS", environ=environ, default=DEFAULT_L3_MAX_TOKENS)
     l3_enabled = _env_bool("CS_L3_ENABLED", environ=environ) or _env_bool("CS_LLM_L3_ENABLED", environ=environ)
     enterprise_enabled = (
         _env_bool("CS_ENTERPRISE_ENABLED", environ=environ)
@@ -124,6 +166,8 @@ def resolve_llm_settings(
         base_url=base_url,
         temperature=temperature,
         provider_timeout_ms=provider_timeout_ms,
+        max_tokens=max_tokens,
+        l3_max_tokens=l3_max_tokens,
         l3_enabled=l3_enabled,
         enterprise_enabled=enterprise_enabled,
     )

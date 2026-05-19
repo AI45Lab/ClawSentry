@@ -41,7 +41,7 @@ L1 完全基于确定性规则，不调用任何 LLM 接口，**零外部依赖*
 | 注入检测 | D6 三层架构：启发式正则 + Canary Token + 可插拔 EmbeddingBackend |
 
 !!! note "Skill Trust runtime binding rules"
-    v0.8.0 起，L1 也消费 Skill Trust runtime evidence：`runtime_path_disallowed`、`runtime_source_ambiguous`、`runtime_path_unverified`、`runtime_content_unverified`、`runtime_content_mismatch`、post-action provenance findings 和 `first_use_skill_package_review` verdict 都会按 profile action 进入 risk snapshot。FSPR、P2 provenance validator 和 L2/L3 只能追加 evidence；canonical allow/defer/block 仍由 Gateway policy engine 产生。
+    v0.8.0 起，L1 也消费 Skill Trust runtime evidence：`runtime_path_disallowed`、`runtime_source_ambiguous`、`runtime_path_unverified`、`runtime_content_unverified`、`runtime_content_mismatch` 和 `first_use_skill_package_review` verdict 都会按 profile action 进入 risk snapshot。FSPR 和 L2/L3 只能追加 evidence；canonical allow/defer/block 仍由 Gateway policy engine 产生。v0.8.2 起 post-action provenance validator 已移除。
 
 ```mermaid
 graph TD
@@ -516,7 +516,7 @@ graph TD
 | `HIGH` | `BLOCK` | 高风险操作，拦截并返回拒绝原因 |
 | `CRITICAL` | `BLOCK` | 绝对禁止，无条件拦截 |
 | `rule_hits` 含 `disabled_capability_equivalent`（且未升级到 HIGH/CRITICAL） | `DEFER`（`final=False`） | Disabled 工具等价能力 → operator review |
-| `first_use_action == "defer"` | `DEFER` | Skill 首次使用扫描需要 operator 审核 |
+| `ReviewRoutingIntent.policy_action == "defer"` | `DEFER` | Gateway-owned evidence routing requires operator review |
 | `short_circuit_rule == "SC-8"` | `DEFER` | 未来执行入口写入 + 低信任 skill 证据 |
 | Session scope 评估输出 `DENY` / `DEFER` | `BLOCK` / `DEFER` | 由 `session-scope` 策略层覆盖（policy_id 改为 `session-scope`） |
 
@@ -695,7 +695,7 @@ L1 不仅产生自己的判决，还决定是否将事件升级到 L2 语义分�
 | 触发原因 | 条件 | 来源 |
 |---------|------|------|
 | `medium_pre_action` | `event_type == PRE_ACTION` 且 L1 风险等级 == `MEDIUM` | `policy_engine._automatic_l2_trigger_reason` |
-| `first_use_skill_trust_action` | Skill Trust 首次使用扫描动作为 `force_l2` 或 `force_l3` | 同上 |
+| `fspr_package_review` / `runtime_binding_identity_conflict` | Skill Trust routing intent 请求 L2/L3 review | 同上 |
 | `key_domain_event` | 事件文本匹配 `KEY_DOMAIN_PATTERN`（`prod`/`production`/`credential`/`secret`/`token`/`password`/`key`） | `semantic_analyzer.KEY_DOMAIN_PATTERN` |
 | `manual_l2_escalation` | `DecisionContext.session_risk_summary` 含手动升级标志 | `semantic_analyzer.has_manual_l2_escalation_flag` |
 
@@ -710,8 +710,8 @@ L1 不仅产生自己的判决，还决定是否将事件升级到 L2 语义分�
 
 | 输入 | 重写结果 |
 |------|---------|
-| `first_use_action == "force_l3"` | `requested_tier ← L3` |
-| `first_use_action == "force_l2"` 且 `requested_tier == L1` | `requested_tier ← L2` |
+| `ReviewRoutingIntent.recommended_tier == "l3"` | `requested_tier ← L3` |
+| `ReviewRoutingIntent.recommended_tier == "l2"` 且 `requested_tier == L1` | `requested_tier ← L2` |
 | `requested_tier == L2` 且 `l3_routing_mode == "replace_l2"` 且 analyzer 支持 L3 | `requested_tier ← L3` |
 
 !!! important "升级只增不减（upgrade-only）"

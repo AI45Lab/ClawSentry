@@ -9,10 +9,11 @@ import json
 import re
 import threading
 import time
-import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, MutableMapping, Protocol, Sequence
+
+from clawsentry import _tomllib as tomllib
 
 from .models import FirstUseSkillPackageReview
 
@@ -67,6 +68,10 @@ class FSPRInventory:
 
 class FSPRResult(FirstUseSkillPackageReview):
     """Concrete FSPR result model returned by the package review runner."""
+
+
+class FSPRProviderSchemaError(ValueError):
+    """Provider returned a policy/action field outside the evidence-only schema."""
 
 
 class FSPRRoleProvider(Protocol):
@@ -735,7 +740,6 @@ def _timeout_result(
         verdict="insufficient_evidence",
         severity="low",
         confidence=0.0,
-        recommended_action="audit",
         role_results=[
             _deterministic_inventory_role_result(
                 "insufficient_evidence",
@@ -756,6 +760,13 @@ def _parse_provider_role_result(role: str, raw: str) -> dict[str, Any]:
     payload = json.loads(raw)
     if not isinstance(payload, dict):
         raise ValueError("role result must be a JSON object")
+    forbidden = {
+        "recommended_action",
+        "recommended_policy_action",
+        "recommended_review_tier",
+    }
+    if any(field in payload for field in forbidden):
+        raise FSPRProviderSchemaError("provider_invalid_schema")
     result = dict(payload)
     result.setdefault("role", role)
     result.setdefault("findings", [])
@@ -763,7 +774,7 @@ def _parse_provider_role_result(role: str, raw: str) -> dict[str, Any]:
     return result
 
 
-def _transition_recommendation_for_inventory(
+def _admission_recommendation_for_inventory(
     inventory: FSPRInventory,
     *,
     cache_key: str,
@@ -840,7 +851,7 @@ def run_first_use_skill_package_review(
     severity = "high" if inventory.findings else "low"
     deterministic_role_result = _deterministic_inventory_role_result(verdict, inventory.findings)
     evidence_capsule = _fspr_evidence_capsule(inventory)
-    transition_recommendation = _transition_recommendation_for_inventory(
+    admission_recommendation = _admission_recommendation_for_inventory(
         inventory,
         cache_key=cache_key,
         registry_snapshot_id=registry_snapshot_id,
@@ -852,8 +863,7 @@ def run_first_use_skill_package_review(
             verdict="insufficient_evidence",
             severity="low",
             confidence=0.0,
-            recommended_action="audit",
-            transition_recommendation=transition_recommendation,
+            admission_recommendation=admission_recommendation,
             deterministic_findings_preserved=True,
             role_results=[
                 deterministic_role_result,
@@ -894,7 +904,6 @@ def run_first_use_skill_package_review(
                     verdict="insufficient_evidence",
                     severity="low",
                     confidence=0.0,
-                    recommended_action="audit",
                     deterministic_findings_preserved=True,
                     role_results=[
                         *role_results,
@@ -912,13 +921,33 @@ def run_first_use_skill_package_review(
                 return result
             try:
                 role_result = _parse_provider_role_result(role, raw_role_result)
+            except FSPRProviderSchemaError:
+                result = FSPRResult(
+                    timing_mode=timing_mode,
+                    verdict="insufficient_evidence",
+                    severity="low",
+                    confidence=0.0,
+                    deterministic_findings_preserved=True,
+                    role_results=[
+                        *role_results,
+                        _role_degradation_result(role, "provider_invalid_schema"),
+                    ],
+                    final_findings=[],
+                    evidence_capsule=evidence_capsule,
+                    degraded=True,
+                    degradation_reason="provider_invalid_schema",
+                    cache_key=cache_key,
+                    cache=_fspr_cache_summary(cache_key, hit=False),
+                )
+                if cache_enabled and cache is not None:
+                    cache[cache_key] = result
+                return result
             except (json.JSONDecodeError, ValueError):
                 result = FSPRResult(
                     timing_mode=timing_mode,
                     verdict="insufficient_evidence",
                     severity="low",
                     confidence=0.0,
-                    recommended_action="audit",
                     deterministic_findings_preserved=True,
                     role_results=[
                         *role_results,
@@ -947,18 +976,15 @@ def run_first_use_skill_package_review(
         adjudicator = role_results[-1]
         provider_verdict = str(adjudicator.get("verdict", "insufficient_evidence"))
         provider_severity = str(adjudicator.get("severity", "low"))
-        provider_recommended_action = str(adjudicator.get("recommended_action", "audit"))
         if _has_hard_deterministic_findings(inventory) and provider_verdict == "consistent":
             provider_verdict = "inconsistent"
             provider_severity = "high"
-            provider_recommended_action = "force_l3"
         result = FSPRResult(
             timing_mode=timing_mode,
             verdict=provider_verdict,
             severity=provider_severity,
             confidence=float(adjudicator.get("confidence", 0.0) or 0.0),
-            recommended_action=provider_recommended_action,
-            transition_recommendation=transition_recommendation,
+            admission_recommendation=admission_recommendation,
             deterministic_findings_preserved=True,
             role_results=role_results,
             final_findings=list(adjudicator.get("findings") or []),
@@ -975,8 +1001,7 @@ def run_first_use_skill_package_review(
         verdict=verdict,
         severity=severity,
         confidence=0.8 if inventory.findings else 0.6,
-        recommended_action="force_l3" if inventory.findings else "audit",
-        transition_recommendation=transition_recommendation,
+        admission_recommendation=admission_recommendation,
         deterministic_findings_preserved=True,
         role_results=[deterministic_role_result],
         final_findings=inventory.findings,

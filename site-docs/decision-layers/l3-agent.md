@@ -37,7 +37,7 @@ L3 是 ClawSentry 三层决策模型的最高层，部署一个拥有只读工�
 | 优先级 | 触发原因 | 条件 |
 |---|---|---|
 | 1 | `anti_bypass_followup` | `session_risk_summary.l3_request_reason == "anti_bypass_followup"` |
-| 2 | `first_use_skill_trust_action` | `session_risk_summary.first_use_skill_trust_action == "force_l3"` |
+| 2 | `fspr_package_review` / `runtime_binding_identity_conflict` | `session_risk_summary.l3_request_reason` 来自 Skill Trust routing intent |
 | 3 | `session_l3_require` | `session_risk_summary.l3_require_enforced is True` |
 | 4 | `replace_l2_routing` | `session_risk_summary.l3_routing_mode == "replace_l2"` |
 | 5 | `requested_tier_l3` | `session_risk_summary.l3_request_reason == "requested_tier_l3"` |
@@ -53,7 +53,7 @@ flowchart TD
 
     subgraph EXPLICIT ["显式路由（P1–P6）"]
         P1["1. anti_bypass_followup"]
-        P2["2. first_use → force_l3"]
+        P2["2. review routing intent"]
         P3["3. l3_require_enforced"]
         P4["4. replace_l2 routing"]
         P5["5. requested_tier_l3"]
@@ -225,7 +225,7 @@ flowchart TD
 
 | `trigger_reason` | 强制选择的 Skill |
 |---|---|
-| `first_use_skill_trust_action` | `skill-trust-audit`（若存在）|
+| `fspr_package_review` / `runtime_binding_identity_conflict` | `skill-trust-audit`（若存在）|
 | `anti_bypass_followup` | `data-staging-exfil-chain-audit`（若存在）|
 
 ### Skill Manifest 字段 `clawsentry.l3_skill.v1`

@@ -7,6 +7,55 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
+## v0.8.2 {#v082}
+
+*2026-05-20*
+
+<div class="cs-pill-row">
+<span class="cs-pill cs-pill--release">Provenance Validator Removal</span>
+<span class="cs-pill cs-pill--test">focused regression passed</span>
+</div>
+
+### 移除
+
+- **Post-action provenance validator** — 移除 artifact label 与 `skill_use_ledger` 的事后对账模块、配置项、post-action 接线和 session report 字段。Post-action 输出风险评分继续保留。
+
+### 保留边界
+
+- **Runtime mirror verification remains** — `verified_mirror` 仍按 Gateway-owned mirror content hash 或 trusted runner contract 校验；`CS_SKILL_TRUST_MIRROR_HASH_*` 预算配置不变。
+
+### 文档
+
+- Skill Trust、env vars、detection config、API reference / models 和 benchmark 配置页已移除 post-action provenance validator 当前功能口径。
+
+---
+
+## v0.8.1 {#v081}
+
+*2026-05-20*
+
+<div class="cs-pill-row">
+<span class="cs-pill cs-pill--release">First-Use Review Routing</span>
+<span class="cs-pill cs-pill--test">focused regression passed</span>
+</div>
+
+### 改进
+
+- **FSPR evidence-only contract** — First-Use Skill Package Review 只输出包级证据和 `admission_recommendation`；provider 返回 action / tier 这类可执行路由字段时会被视为合同漂移并降级处理。
+- **Gateway-owned routing intents** — first-use、runtime binding hard evidence 和 post-action evidence 现在通过 `ReviewRoutingIntent` 进入 policy engine；最终 allow / defer / block / L2 / L3 路由由 Gateway policy 统一生成。
+- **First-use policy naming** — 配置项统一为 `skill_trust_first_use_*_policy` / `CS_SKILL_TRUST_FIRST_USE_*_POLICY`，减少 FSPR provider 建议和 Gateway admission policy 之间的歧义。
+
+### 文档
+
+- 新增 first-use 链路材料，说明 skill 第一次被查看或使用时，从 raw evidence、Gateway-owned metadata、first-use scan、FSPR、risk snapshot、routing intent、policy decision 到 ledger/replay 的完整链条。
+- Skill Trust、env vars、detection config、L1/L2/L3 和 API 模型页已更新到 first-use/FSPR routing split 口径。
+
+### 验收边界
+
+- 本版本修正 first-use/FSPR 路由合同与文档，不声明新的 benchmark leaderboard、ASR/TSR/TFR 或 raw-vs-protected 结论。
+
+---
+
 ## v0.8.0 {#v080}
 
 *2026-05-19*

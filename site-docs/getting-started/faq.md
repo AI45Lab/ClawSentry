@@ -411,7 +411,7 @@ clawsentry watch --gateway-url http://127.0.0.1:9090 --token your-token
     Kimi CLI 和 Gemini CLI 的 native hook 目前不支持真正的暂停等待人工审批（defer）语义。ClawSentry 的 `defer` 对这两个框架会以 deny/block 形式呈现，并记录在审计日志中。需要完整 defer 审批语义，请使用 Claude Code、a3s-code 或 OpenClaw 接入路径。
 
 ??? question "什么是 Skill Trust？首次使用未注册的 skill 会发生什么？"
-    Skill Trust 用来管理 agent skill 包的供应链风险。当一个 skill 首次被调用且尚未在 registry 中登记时，Gateway 会按 `CS_SKILL_TRUST_FIRST_USE_*_ACTION` 配置的动作处理：默认在 normal 模式下记录（`audit`），在 strict 模式下进入 DEFER，在 benchmark 模式下 BLOCK。可通过 `clawsentry skill-trust register` 命令将 skill 加入白名单。详见[Skill Trust / Registry](../advanced/skill-trust.md)。
+    Skill Trust 用来管理 agent skill 包的供应链风险。当一个 skill 首次被调用且尚未在 registry 中登记时，Gateway 会按 `CS_SKILL_TRUST_FIRST_USE_*_POLICY` 配置 admission lifecycle：normal/permissive 默认记录，benchmark 默认同步 scan，strict 默认进入 operator review。可通过 `clawsentry skill-trust register` 命令将 skill 加入白名单。详见[Skill Trust / Registry](../advanced/skill-trust.md)。
 
 ??? question "L3 AgentAnalyzer 是单轮还是多轮审查？"
     从 v0.7.4 开始，L3 默认使用**多轮审查**模式（`CS_L3_MULTI_TURN=true`）。只有显式设置 `CS_L3_MULTI_TURN=false`、`0`、`no` 或 `off` 才会回退到旧版单轮模式。多轮模式允许 L3 agent 多次调用只读工具（读文件、查 git 历史、搜索代码）收集证据，再给出最终判决，通常准确性更高但延迟增加。

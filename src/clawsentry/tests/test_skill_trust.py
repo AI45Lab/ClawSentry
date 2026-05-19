@@ -923,18 +923,110 @@ def test_runtime_path_disallowed_normal_defer_action_returns_operator_defer():
     decision, snapshot, tier = L1PolicyEngine().evaluate(
         _evt(),
         DecisionContext(skill_trust=skill_trust, skill_trust_refs=[skill_trust]),
-        config=DetectionConfig(
-            mode="normal",
-            skill_trust_runtime_normal_action="defer",
-        ),
+        config=DetectionConfig(mode="normal"),
     )
 
     assert decision.decision == DecisionVerdict.DEFER
     assert decision.final is False
-    assert tier == DecisionTier.L1
+    assert tier in {DecisionTier.L2, DecisionTier.L3}
     assert "runtime_path_disallowed" in snapshot.rule_hits
     assert snapshot.skill_trust_findings[-1]["runtime_binding_action"] == "defer"
     assert snapshot.skill_trust_findings[-1]["decision_affecting"] is True
+    assert snapshot.routing_intents[0].source == "runtime_binding"
+    assert snapshot.routing_intents[0].recommended_tier == "l3"
+    assert snapshot.l2_l3_summary["l3_request_reason"] == "runtime_binding_identity_conflict"
+
+
+def test_runtime_source_ambiguous_normal_default_returns_operator_defer():
+    skill_trust = SkillTrustContext(
+        registry_status="unknown",
+        presented_name="search-accommodation",
+        runtime_path_status="ambiguous_runtime_source",
+        runtime_root_path_hash="sha256:ambiguous",
+        runtime_evidence_kind="shell_skill_path",
+        invariant_violations=["runtime_source_ambiguous"],
+    )
+
+    decision, snapshot, tier = L1PolicyEngine().evaluate(
+        _evt(),
+        DecisionContext(skill_trust=skill_trust, skill_trust_refs=[skill_trust]),
+        config=DetectionConfig(mode="normal"),
+    )
+
+    assert decision.decision == DecisionVerdict.DEFER
+    assert decision.final is False
+    assert tier in {DecisionTier.L2, DecisionTier.L3}
+    assert "runtime_source_ambiguous" in snapshot.rule_hits
+    finding = next(
+        item
+        for item in snapshot.skill_trust_findings
+        if item.get("rule_id") == "runtime_source_ambiguous"
+    )
+    assert finding["runtime_binding_action"] == "defer"
+    assert finding["decision_affecting"] is True
+    assert snapshot.routing_intents[0].source == "runtime_binding"
+    assert snapshot.routing_intents[0].recommended_tier == "l3"
+    assert snapshot.l2_l3_summary["l3_request_reason"] == "runtime_binding_identity_conflict"
+
+
+@pytest.mark.parametrize(
+    ("skill_trust", "rule_id"),
+    [
+        (
+            SkillTrustContext(
+                registry_status="unknown",
+                presented_name="search-accommodation",
+                runtime_path_status="disallowed",
+                runtime_root_path_hash="sha256:evil",
+                runtime_evidence_kind="shell_skill_path",
+                invariant_violations=["runtime_path_disallowed"],
+            ),
+            "runtime_path_disallowed",
+        ),
+        (
+            SkillTrustContext(
+                registry_status="unknown",
+                presented_name="search-accommodation",
+                runtime_path_status="ambiguous_runtime_source",
+                runtime_root_path_hash="sha256:ambiguous",
+                runtime_evidence_kind="shell_skill_path",
+                invariant_violations=["runtime_source_ambiguous"],
+            ),
+            "runtime_source_ambiguous",
+        ),
+        (
+            SkillTrustContext(
+                registry_status="matched",
+                canonical_skill_id="skill:search-accommodation",
+                presented_name="search-accommodation",
+                runtime_path_status="verified_mirror",
+                runtime_root_path_hash="sha256:mirror",
+                runtime_content_status="content_mismatch",
+                runtime_evidence_kind="shell_skill_path",
+                invariant_violations=["runtime_content_mismatch"],
+            ),
+            "runtime_content_mismatch",
+        ),
+    ],
+)
+def test_runtime_hard_evidence_ignores_profile_level_audit_downgrade(
+    skill_trust: SkillTrustContext,
+    rule_id: str,
+):
+    decision, snapshot, _tier = L1PolicyEngine().evaluate(
+        _evt(),
+        DecisionContext(skill_trust=skill_trust, skill_trust_refs=[skill_trust]),
+        config=DetectionConfig(
+            mode="normal",
+            skill_trust_runtime_normal_action="audit",
+        ),
+    )
+
+    assert decision.decision == DecisionVerdict.DEFER
+    assert rule_id in snapshot.rule_hits
+    assert snapshot.routing_intents[0].source == "runtime_binding"
+    assert snapshot.routing_intents[0].policy_action == "defer"
+    assert snapshot.routing_intents[0].recommended_tier == "l3"
 
 
 def test_runtime_content_mismatch_uses_condition_specific_normal_action():
@@ -957,7 +1049,7 @@ def test_runtime_content_mismatch_uses_condition_specific_normal_action():
 
     assert decision.decision == DecisionVerdict.DEFER
     assert decision.final is False
-    assert tier == DecisionTier.L1
+    assert tier in {DecisionTier.L2, DecisionTier.L3}
     assert "runtime_content_mismatch" in snapshot.rule_hits
     finding = next(
         item
@@ -965,6 +1057,7 @@ def test_runtime_content_mismatch_uses_condition_specific_normal_action():
         if item.get("rule_id") == "runtime_content_mismatch"
     )
     assert finding["runtime_binding_action"] == "defer"
+    assert snapshot.routing_intents[0].recommended_tier == "l3"
 
 
 def test_multi_runtime_refs_aggregate_strongest_action():
@@ -2148,7 +2241,7 @@ def test_policy_allows_low_trust_routing_claim_without_identity_conflict_in_benc
     assert all(finding["decision_affecting"] is False for finding in snapshot.skill_trust_findings)
 
 
-def test_local_unreviewed_matched_skill_can_follow_first_use_defer_action():
+def test_local_unreviewed_matched_skill_can_follow_first_use_defer_policy():
     engine = L1PolicyEngine()
     context = DecisionContext(
         agent_trust_level=AgentTrustLevel.PRIVILEGED,
@@ -2163,7 +2256,7 @@ def test_local_unreviewed_matched_skill_can_follow_first_use_defer_action():
         context,
         config=DetectionConfig(
             mode="benchmark",
-            skill_trust_first_use_benchmark_action="defer",
+            skill_trust_first_use_benchmark_policy="defer_for_review",
         ),
     )
 
@@ -2172,7 +2265,7 @@ def test_local_unreviewed_matched_skill_can_follow_first_use_defer_action():
     assert context.skill_trust.first_use_scan.state == "scan_not_started"
     assert decision.decision == DecisionVerdict.DEFER
     assert "first_use_scan_not_started" in snapshot.rule_hits
-    assert snapshot.skill_trust_findings[-1]["first_use_action"] == "defer"
+    assert snapshot.skill_trust_findings[-1]["first_use_policy_effect"] == "defer"
 
 
 def test_skill_trust_identity_blocks_do_not_poison_d4_recovery_path():
@@ -2555,7 +2648,7 @@ def test_strict_first_use_unknown_skill_audits_without_blocking_on_missing_regis
     assert "first_use_strict_block" not in strict_snapshot.rule_hits
 
 
-def test_first_use_unknown_skill_defer_action_returns_operator_defer():
+def test_first_use_unknown_skill_defer_policy_returns_operator_defer():
     event = _evt()
     context = DecisionContext(
         agent_trust_level=AgentTrustLevel.PRIVILEGED,
@@ -2574,7 +2667,7 @@ def test_first_use_unknown_skill_defer_action_returns_operator_defer():
         context,
         config=DetectionConfig(
             mode="benchmark",
-            skill_trust_first_use_benchmark_action="defer",
+            skill_trust_first_use_benchmark_policy="defer_for_review",
         ),
     )
 
@@ -2582,11 +2675,11 @@ def test_first_use_unknown_skill_defer_action_returns_operator_defer():
     assert decision.final is False
     assert tier == DecisionTier.L1
     assert "first_use_scan_pending_budget_exhausted" in snapshot.rule_hits
-    assert snapshot.skill_trust_findings[-1]["first_use_action"] == "defer"
+    assert snapshot.skill_trust_findings[-1]["first_use_policy_effect"] == "defer"
     assert snapshot.skill_trust_findings[-1]["decision_affecting"] is True
 
 
-def test_first_use_unknown_skill_block_action_upgrades_risk_and_blocks():
+def test_first_use_unknown_skill_block_policy_upgrades_risk_and_blocks():
     event = _evt()
     context = DecisionContext(
         agent_trust_level=AgentTrustLevel.PRIVILEGED,
@@ -2598,51 +2691,36 @@ def test_first_use_unknown_skill_block_action_upgrades_risk_and_blocks():
         context,
         config=DetectionConfig(
             mode="strict",
-            skill_trust_first_use_strict_action="block",
+            skill_trust_first_use_strict_policy="block_until_reviewed",
         ),
     )
 
     assert decision.decision == DecisionVerdict.BLOCK
     assert snapshot.risk_level == RiskLevel.HIGH
     assert "first_use_scan_not_started" in snapshot.rule_hits
-    assert snapshot.skill_trust_findings[-1]["first_use_action"] == "block"
+    assert snapshot.skill_trust_findings[-1]["first_use_policy_effect"] == "block"
 
 
-def test_first_use_unknown_skill_force_l3_action_requests_l3_followup():
-    class ForcedL3Analyzer:
-        analyzer_id = "test-first-use-l3"
-
-        async def analyze(self, event, context, l1_snapshot, budget_ms):
-            assert context is not None
-            assert context.session_risk_summary["force_l3"] is True
-            assert context.session_risk_summary["first_use_skill_trust_action"] == "force_l3"
-            return L2Result(
-                target_level=RiskLevel.HIGH,
-                reasons=["first-use skill trust review"],
-                confidence=0.9,
-                analyzer_id=self.analyzer_id,
-                trace={"trigger_reason": "first_use_skill_trust_action"},
-                decision_tier=DecisionTier.L3,
-            )
-
+def test_first_use_unknown_skill_scan_sync_policy_audits_without_legacy_l3_reason():
     event = _evt()
     context = DecisionContext(
         agent_trust_level=AgentTrustLevel.PRIVILEGED,
         skill_trust=resolve_skill_trust([], {"presented_name": "new-local-helper"}),
     )
 
-    decision, snapshot, tier = L1PolicyEngine(analyzer=ForcedL3Analyzer()).evaluate(
+    decision, snapshot, tier = L1PolicyEngine().evaluate(
         event,
         context,
         config=DetectionConfig(
             mode="benchmark",
-            skill_trust_first_use_benchmark_action="force_l3",
+            skill_trust_first_use_benchmark_policy="scan_sync",
         ),
     )
 
-    assert tier == DecisionTier.L3
-    assert decision.decision == DecisionVerdict.BLOCK
-    assert snapshot.l3_trace["trigger_reason"] == "first_use_skill_trust_action"
+    assert tier == DecisionTier.L1
+    assert decision.decision == DecisionVerdict.ALLOW
+    assert snapshot.routing_intents[0].source == "first_use_admission"
+    assert snapshot.routing_intents[0].policy_action == "audit"
     assert "first_use_scan_not_started" in snapshot.rule_hits
 
 

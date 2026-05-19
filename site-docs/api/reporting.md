@@ -1849,7 +1849,7 @@ Each returned record includes derived `skill_trust_grade`: `trusted`, `review`, 
 
 `POST /skill-trust/transition` applies one auditable lifecycle transition to a registry record. Mutating requests must include `expected_registry_snapshot_id` and `idempotency_key`; stale snapshots return a conflict instead of silently overwriting another operator or policy change.
 
-The lifecycle API is an operator surface, not the runtime decision path. Runtime binding evidence such as `runtime_path_status`, `runtime_content_status`, `metadata_record_id`, `skill_use_ledger`, FSPR verdicts, and post-action provenance findings appears in AHP decision/replay metadata. FSPR/P2 recommendations remain evidence-only until an operator or explicit policy workflow submits a transition.
+The lifecycle API is an operator surface, not the runtime decision path. Runtime binding evidence such as `runtime_path_status`, `runtime_content_status`, `metadata_record_id`, `skill_use_ledger`, and FSPR verdicts appears in AHP decision/replay metadata. FSPR/P2 recommendations remain evidence-only until an operator or explicit policy workflow submits a transition.
 
 ```bash
 curl -H "Authorization: Bearer $CS_AUTH_TOKEN" \

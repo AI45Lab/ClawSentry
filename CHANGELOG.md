@@ -8,6 +8,47 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.8.2] — 2026-05-20
+
+### 移除
+
+- **Post-action provenance validator** — 移除 artifact label 与 `skill_use_ledger` 的事后对账模块、配置项、post-action 接线、session report 字段和对应测试。Post-action 仍保留原有输出风险评分；Skill Trust ledger 继续作为 runtime binding / replay / FSPR evidence 使用。
+- **Active P2 taxonomy cleanup** — benchmark fixture/replay 中的 P2 stage 改为 post-action session evidence，移除 `unobserved_claim` 当前期望，避免继续暴露已删除 validator 的功能表面。
+
+### 保留边界
+
+- **Runtime mirror content verification 保留** — `verified_mirror` 的 mirror content hash / trusted runner contract 校验和 `CS_SKILL_TRUST_MIRROR_HASH_*` 预算配置继续存在，本版本不改变 runtime mirror 内容校验行为。
+
+### 文档
+
+- 在线 Skill Trust、env vars、detection config、API reference / models、benchmark config 与 README 更新到 v0.8.2 口径，移除 post-action provenance validator 的当前功能说明。
+
+## [0.8.1] — 2026-05-20
+
+### 改进
+
+- **First-use review routing split** — First-Use Skill Package Review 现在只输出包级 evidence 与 `admission_recommendation`，不再让 provider 直接给出 action / tier；Gateway 统一把审查证据转换为 `ReviewRoutingIntent`，再由 policy engine 生成最终 allow / defer / block / L2 / L3 路由。
+- **Admission policy naming** — 首次使用策略配置统一为 `skill_trust_first_use_*_policy` 与 `CS_SKILL_TRUST_FIRST_USE_*_POLICY`，旧的 FSPR/runtime action 命名从运行时合同中移除，避免把 provider 建议误读成可执行动作。
+- **Runtime binding hard gate** — runtime binding hard evidence 现在直接进入 routing intent，不再被 legacy profile-level action fallback 降级；first-use、unbound、disallowed、ambiguous 和 post-action evidence 的责任边界更清晰。
+
+### 文档
+
+- 新增机制文档：`docs/materials/2026-05-20-skill-first-use-chain.md`，从 skill 第一次被查看/使用开始，串起 request raw evidence、Gateway-owned metadata、first-use scan、FSPR、`SkillTrustContext`、`RiskSnapshot`、`ReviewRoutingIntent`、policy decision、ledger 和 replay storage。
+- 新增设计总结：`docs/materials/2026-05-20-fspr-first-use-redesign.md`。
+- 在线文档刷新 Skill Trust、L1/L2/L3、env vars、detection config、policy tuning、template、FAQ 和 API 模型说明，统一 first-use/FSPR evidence-only 与 Gateway-owned routing 口径。
+
+### 测试与验证
+
+- Focused Skill Trust / FSPR / routing regression：`875 passed`。
+- Docs/public contract + Skill Inject metrics focused regression：`4 passed`；session first-use targeted regression：`2 passed`。
+- Real Codex → Gateway E2E smoke：PASS，hook deny 与 Gateway decision 记录均命中。
+- `mkdocs build --strict`、`git diff --check`：PASS。
+
+### 边界
+
+- FSPR、post-action provenance validator 和 first-use scan 仍是 evidence appenders；registry/list-state mutation 必须经 Gateway lifecycle API/CLI 或 operator workflow。
+- 本版本修正 first-use/FSPR 路由合同与文档口径，不发布新的 benchmark leaderboard、ASR/TSR/TFR 或 raw-vs-protected 评测结论。
+
 ## [0.8.0] — 2026-05-19
 
 ### 新增
@@ -1674,6 +1715,8 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.8.2]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.2
+[0.8.1]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.1
 [0.8.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.0
 [0.7.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.5
 [0.7.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.7.4

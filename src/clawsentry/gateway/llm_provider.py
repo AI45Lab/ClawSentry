@@ -79,6 +79,15 @@ class AnthropicProvider:
     def provider_id(self) -> str:
         return "anthropic"
 
+    @staticmethod
+    def _extract_text_content(response: object) -> str:
+        content = getattr(response, "content", None) or []
+        for block in content:
+            text = getattr(block, "text", None)
+            if isinstance(text, str) and text.strip():
+                return text
+        raise ValueError("Anthropic response did not contain a text content block")
+
     async def aclose(self) -> None:
         """Close any lazy async client before its owning event loop exits."""
 
@@ -118,7 +127,7 @@ class AnthropicProvider:
             provider="anthropic",
             model=self._model,
         )
-        return response.content[0].text  # type: ignore[union-attr]
+        return self._extract_text_content(response)
 
 
 class OpenAIProvider:
@@ -187,7 +196,10 @@ class OpenAIProvider:
             provider="openai",
             model=self._model,
         )
-        return response.choices[0].message.content  # type: ignore[union-attr]
+        content = response.choices[0].message.content  # type: ignore[union-attr]
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("OpenAI response did not contain message content")
+        return content
 
 
 class InstrumentedProvider:

@@ -437,6 +437,64 @@ def test_agent_analyzer_initial_prompt_sanitizes_l1_snapshot(tmp_path: Path):
     assert "END_UNTRUSTED_AHP_PAYLOAD" not in prompt
 
 
+def test_single_turn_uses_configured_l3_max_tokens(tmp_path: Path):
+    provider = MagicMock()
+    provider.provider_id = "mock-llm"
+    provider.complete = AsyncMock(
+        return_value='{"risk_level": "high", "findings": ["budget honored"], "confidence": 0.8}'
+    )
+    toolkit = ReadOnlyToolkit(tmp_path, StubTrajectoryStore())
+    registry = SkillRegistry(_skills_dir(tmp_path))
+    analyzer = AgentAnalyzer(
+        provider=provider,
+        toolkit=toolkit,
+        skill_registry=registry,
+        trigger_policy=L3TriggerPolicy(),
+        config=AgentAnalyzerConfig(enable_multi_turn=False, initial_trajectory_limit=5, max_tokens=1024),
+    )
+
+    result = asyncio.run(
+        analyzer.analyze(
+            _evt(tool_name="bash", payload={"command": "cat token.txt"}, risk_hints=["credential_exfiltration"]),
+            DecisionContext(session_risk_summary={"l3_escalate": True}),
+            _snap(RiskLevel.MEDIUM),
+            10000,
+        )
+    )
+
+    assert result.confidence == 0.8
+    assert provider.complete.await_args.kwargs["max_tokens"] == 1024
+
+
+def test_single_turn_defaults_to_large_l3_max_tokens(tmp_path: Path):
+    provider = MagicMock()
+    provider.provider_id = "mock-llm"
+    provider.complete = AsyncMock(
+        return_value='{"risk_level": "high", "findings": ["default budget honored"], "confidence": 0.8}'
+    )
+    toolkit = ReadOnlyToolkit(tmp_path, StubTrajectoryStore())
+    registry = SkillRegistry(_skills_dir(tmp_path))
+    analyzer = AgentAnalyzer(
+        provider=provider,
+        toolkit=toolkit,
+        skill_registry=registry,
+        trigger_policy=L3TriggerPolicy(),
+        config=AgentAnalyzerConfig(enable_multi_turn=False, initial_trajectory_limit=5),
+    )
+
+    asyncio.run(
+        analyzer.analyze(
+            _evt(tool_name="bash", payload={"command": "cat token.txt"}, risk_hints=["credential_exfiltration"]),
+            DecisionContext(session_risk_summary={"l3_escalate": True}),
+            _snap(RiskLevel.MEDIUM),
+            500000,
+        )
+    )
+
+    assert provider.complete.await_args.kwargs["max_tokens"] == 100000
+    assert provider.complete.await_args.kwargs["timeout_ms"] == 300000.0
+
+
 def test_toolkit_budget_cap_scales_with_initial_evidence_sources(tmp_path: Path):
     provider = MagicMock()
     provider.provider_id = "mock-llm"
@@ -735,7 +793,7 @@ def test_l3_prompt_includes_secondary_criteria_without_examples(tmp_path: Path):
     assert "data-staging-exfil-chain-audit" in prompt or "network-audit" in prompt
 
 
-def test_first_use_skill_trust_routes_to_skill_trust_audit_with_evidence(tmp_path: Path):
+def test_fspr_package_review_routes_to_skill_trust_audit_with_evidence(tmp_path: Path):
     provider = MagicMock()
     provider.provider_id = "mock-llm"
     provider.complete = AsyncMock(
@@ -776,7 +834,7 @@ def test_first_use_skill_trust_routes_to_skill_trust_audit_with_evidence(tmp_pat
                 ),
                 session_risk_summary={
                     "force_l3": True,
-                    "first_use_skill_trust_action": "force_l3",
+                    "l3_request_reason": "fspr_package_review",
                     "l3_trigger_source_metadata": {"canonical_skill_id": "skill-a"},
                 },
             ),
@@ -864,6 +922,61 @@ def test_multi_turn_parses_markdown_wrapped_tool_call_response(tmp_path: Path):
     assert result.target_level == RiskLevel.CRITICAL
     assert provider.complete.call_count == 2
     assert result.trace["turns"][1]["tool_name"] == "read_file"
+
+
+def test_multi_turn_uses_configured_l3_max_tokens(tmp_path: Path):
+    final_response = '{"risk_level": "critical", "findings": ["budget honored"], "confidence": 0.94}'
+    provider = MagicMock()
+    provider.provider_id = "mock-llm"
+    provider.complete = AsyncMock(return_value=final_response)
+    toolkit = ReadOnlyToolkit(tmp_path, StubTrajectoryStore())
+    registry = SkillRegistry(_skills_dir(tmp_path))
+    analyzer = AgentAnalyzer(
+        provider=provider,
+        toolkit=toolkit,
+        skill_registry=registry,
+        trigger_policy=L3TriggerPolicy(),
+        config=AgentAnalyzerConfig(enable_multi_turn=True, initial_trajectory_limit=5, max_tokens=2048),
+    )
+
+    result = asyncio.run(
+        analyzer.analyze(
+            _evt(tool_name="bash", payload={"command": "cat secrets.env"}, risk_hints=["credential_exfiltration"]),
+            DecisionContext(session_risk_summary={"l3_escalate": True}),
+            _snap(RiskLevel.MEDIUM),
+            10000,
+        )
+    )
+
+    assert result.target_level == RiskLevel.CRITICAL
+    assert provider.complete.await_args.kwargs["max_tokens"] == 2048
+
+
+def test_multi_turn_defaults_to_large_l3_max_tokens(tmp_path: Path):
+    final_response = '{"risk_level": "critical", "findings": ["default budget honored"], "confidence": 0.94}'
+    provider = MagicMock()
+    provider.provider_id = "mock-llm"
+    provider.complete = AsyncMock(return_value=final_response)
+    toolkit = ReadOnlyToolkit(tmp_path, StubTrajectoryStore())
+    registry = SkillRegistry(_skills_dir(tmp_path))
+    analyzer = AgentAnalyzer(
+        provider=provider,
+        toolkit=toolkit,
+        skill_registry=registry,
+        trigger_policy=L3TriggerPolicy(),
+        config=AgentAnalyzerConfig(enable_multi_turn=True, initial_trajectory_limit=5),
+    )
+
+    asyncio.run(
+        analyzer.analyze(
+            _evt(tool_name="bash", payload={"command": "cat secrets.env"}, risk_hints=["credential_exfiltration"]),
+            DecisionContext(session_risk_summary={"l3_escalate": True}),
+            _snap(RiskLevel.MEDIUM),
+            10000,
+        )
+    )
+
+    assert provider.complete.await_args.kwargs["max_tokens"] == 100000
 
 
 def test_multi_turn_tool_result_is_evidence_envelope(tmp_path: Path):

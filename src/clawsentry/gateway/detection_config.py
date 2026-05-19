@@ -209,19 +209,19 @@ class DetectionConfig:
     tool_permission_group_overrides: str = ""
     agent_safety_feedback_enabled: bool = False
     skill_trust_registry_path: Optional[str] = None
-    skill_trust_first_use_normal_action: str = "audit"
-    skill_trust_first_use_benchmark_action: str = "audit"
-    skill_trust_first_use_strict_action: str = "audit"
-    skill_trust_first_use_permissive_action: str = "audit"
+    skill_trust_first_use_normal_policy: str = "audit_only"
+    skill_trust_first_use_benchmark_policy: str = "scan_sync"
+    skill_trust_first_use_strict_policy: str = "defer_for_review"
+    skill_trust_first_use_permissive_policy: str = "audit_only"
     skill_trust_runtime_normal_action: str = "force_l3"
     skill_trust_runtime_benchmark_action: str = "block"
     skill_trust_runtime_strict_action: str = "block"
     skill_trust_runtime_permissive_action: str = "audit"
-    skill_trust_runtime_path_disallowed_normal_action: str = "force_l3"
+    skill_trust_runtime_path_disallowed_normal_action: str = "defer"
     skill_trust_runtime_path_disallowed_benchmark_action: str = "block"
     skill_trust_runtime_path_disallowed_strict_action: str = "block"
     skill_trust_runtime_path_disallowed_permissive_action: str = "audit"
-    skill_trust_runtime_source_ambiguous_normal_action: str = "force_l3"
+    skill_trust_runtime_source_ambiguous_normal_action: str = "defer"
     skill_trust_runtime_source_ambiguous_benchmark_action: str = "block"
     skill_trust_runtime_source_ambiguous_strict_action: str = "defer"
     skill_trust_runtime_source_ambiguous_permissive_action: str = "audit"
@@ -230,7 +230,7 @@ class DetectionConfig:
     skill_trust_runtime_path_unverified_strict_action: str = "defer"
     skill_trust_runtime_path_unverified_permissive_action: str = "audit"
     skill_trust_runtime_content_unverified_normal_action: str = "force_l3"
-    skill_trust_runtime_content_unverified_benchmark_action: str = "block"
+    skill_trust_runtime_content_unverified_benchmark_action: str = "defer"
     skill_trust_runtime_content_unverified_strict_action: str = "defer"
     skill_trust_runtime_content_unverified_permissive_action: str = "audit"
     skill_trust_runtime_content_mismatch_normal_action: str = "defer"
@@ -247,27 +247,6 @@ class DetectionConfig:
     skill_trust_fspr_timeout_ms: int = 120_000
     skill_trust_fspr_cache_enabled: bool = True
     skill_trust_fspr_provider_enabled: bool = False
-    skill_trust_fspr_normal_action: str = "audit"
-    skill_trust_fspr_benchmark_action: str = "audit"
-    skill_trust_fspr_strict_action: str = "audit"
-    skill_trust_fspr_permissive_action: str = "audit"
-    skill_trust_fspr_inconsistent_normal_action: str = "audit"
-    skill_trust_fspr_inconsistent_benchmark_action: str = "audit"
-    skill_trust_fspr_inconsistent_strict_action: str = "audit"
-    skill_trust_fspr_inconsistent_permissive_action: str = "audit"
-    skill_trust_fspr_suspicious_normal_action: str = "audit"
-    skill_trust_fspr_suspicious_benchmark_action: str = "audit"
-    skill_trust_fspr_suspicious_strict_action: str = "audit"
-    skill_trust_fspr_suspicious_permissive_action: str = "audit"
-    skill_trust_fspr_insufficient_evidence_normal_action: str = "audit"
-    skill_trust_fspr_insufficient_evidence_benchmark_action: str = "audit"
-    skill_trust_fspr_insufficient_evidence_strict_action: str = "audit"
-    skill_trust_fspr_insufficient_evidence_permissive_action: str = "audit"
-    skill_trust_provenance_enabled: bool = False
-    skill_trust_provenance_policy_path: Optional[str] = None
-    skill_trust_provenance_policy_json: Optional[str] = None
-    skill_trust_provenance_workspace_root: Optional[str] = None
-    skill_trust_provenance_max_artifact_bytes: int = 1_048_576
 
     # --- E-5: Self-evolving pattern repository ---
     evolving_enabled: bool = False
@@ -633,12 +612,31 @@ class DetectionConfig:
                 self.anti_bypass_llm_action,
             )
             object.__setattr__(self, "anti_bypass_llm_action", "force_l3")
-        first_use_actions = {"audit", "force_l2", "force_l3", "defer", "block"}
+        first_use_policies = {
+            "audit_only",
+            "scan_sync",
+            "scan_async_defer",
+            "defer_for_review",
+            "block_until_reviewed",
+        }
         for field_name in (
-            "skill_trust_first_use_normal_action",
-            "skill_trust_first_use_benchmark_action",
-            "skill_trust_first_use_strict_action",
-            "skill_trust_first_use_permissive_action",
+            "skill_trust_first_use_normal_policy",
+            "skill_trust_first_use_benchmark_policy",
+            "skill_trust_first_use_strict_policy",
+            "skill_trust_first_use_permissive_policy",
+        ):
+            value = str(getattr(self, field_name) or "").strip().lower()
+            if value not in first_use_policies:
+                logger.warning(
+                    "Invalid %s=%r, falling back to 'audit_only'",
+                    field_name,
+                    getattr(self, field_name),
+                )
+                value = "audit_only"
+            object.__setattr__(self, field_name, value)
+
+        skill_trust_actions = {"audit", "force_l2", "force_l3", "defer", "block"}
+        for field_name in (
             "skill_trust_runtime_normal_action",
             "skill_trust_runtime_benchmark_action",
             "skill_trust_runtime_strict_action",
@@ -663,25 +661,9 @@ class DetectionConfig:
             "skill_trust_runtime_content_mismatch_benchmark_action",
             "skill_trust_runtime_content_mismatch_strict_action",
             "skill_trust_runtime_content_mismatch_permissive_action",
-            "skill_trust_fspr_normal_action",
-            "skill_trust_fspr_benchmark_action",
-            "skill_trust_fspr_strict_action",
-            "skill_trust_fspr_permissive_action",
-            "skill_trust_fspr_inconsistent_normal_action",
-            "skill_trust_fspr_inconsistent_benchmark_action",
-            "skill_trust_fspr_inconsistent_strict_action",
-            "skill_trust_fspr_inconsistent_permissive_action",
-            "skill_trust_fspr_suspicious_normal_action",
-            "skill_trust_fspr_suspicious_benchmark_action",
-            "skill_trust_fspr_suspicious_strict_action",
-            "skill_trust_fspr_suspicious_permissive_action",
-            "skill_trust_fspr_insufficient_evidence_normal_action",
-            "skill_trust_fspr_insufficient_evidence_benchmark_action",
-            "skill_trust_fspr_insufficient_evidence_strict_action",
-            "skill_trust_fspr_insufficient_evidence_permissive_action",
         ):
             value = str(getattr(self, field_name) or "").strip().lower()
-            if value not in first_use_actions:
+            if value not in skill_trust_actions:
                 logger.warning(
                     "Invalid %s=%r, falling back to 'audit'",
                     field_name,
@@ -689,11 +671,6 @@ class DetectionConfig:
                 )
                 value = "audit"
             object.__setattr__(self, field_name, value)
-        if self.skill_trust_provenance_max_artifact_bytes <= 0:
-            raise ValueError(
-                "skill_trust_provenance_max_artifact_bytes must be > 0, got "
-                f"{self.skill_trust_provenance_max_artifact_bytes}"
-            )
         if self.skill_trust_mirror_hash_max_files <= 0:
             raise ValueError(
                 "skill_trust_mirror_hash_max_files must be > 0, got "
@@ -794,10 +771,10 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_CAPABILITY_NARROWING_GREYLIST_ACTION", "capability_narrowing_greylist_action", str),
     ("CS_TOOL_PERMISSION_GROUP_OVERRIDES", "tool_permission_group_overrides", str),
     ("CS_SKILL_TRUST_REGISTRY_PATH", "skill_trust_registry_path", str),
-    ("CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION", "skill_trust_first_use_normal_action", str),
-    ("CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION", "skill_trust_first_use_benchmark_action", str),
-    ("CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION", "skill_trust_first_use_strict_action", str),
-    ("CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION", "skill_trust_first_use_permissive_action", str),
+    ("CS_SKILL_TRUST_FIRST_USE_NORMAL_POLICY", "skill_trust_first_use_normal_policy", str),
+    ("CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY", "skill_trust_first_use_benchmark_policy", str),
+    ("CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY", "skill_trust_first_use_strict_policy", str),
+    ("CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_POLICY", "skill_trust_first_use_permissive_policy", str),
     ("CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION", "skill_trust_runtime_normal_action", str),
     ("CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION", "skill_trust_runtime_benchmark_action", str),
     ("CS_SKILL_TRUST_RUNTIME_STRICT_ACTION", "skill_trust_runtime_strict_action", str),
@@ -827,26 +804,6 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS", "skill_trust_mirror_hash_max_total_ms", int),
     ("CS_SKILL_TRUST_FSPR_ROLE_SET", "skill_trust_fspr_role_set", str),
     ("CS_SKILL_TRUST_FSPR_TIMEOUT_MS", "skill_trust_fspr_timeout_ms", int),
-    ("CS_SKILL_TRUST_FSPR_NORMAL_ACTION", "skill_trust_fspr_normal_action", str),
-    ("CS_SKILL_TRUST_FSPR_BENCHMARK_ACTION", "skill_trust_fspr_benchmark_action", str),
-    ("CS_SKILL_TRUST_FSPR_STRICT_ACTION", "skill_trust_fspr_strict_action", str),
-    ("CS_SKILL_TRUST_FSPR_PERMISSIVE_ACTION", "skill_trust_fspr_permissive_action", str),
-    ("CS_SKILL_TRUST_FSPR_INCONSISTENT_NORMAL_ACTION", "skill_trust_fspr_inconsistent_normal_action", str),
-    ("CS_SKILL_TRUST_FSPR_INCONSISTENT_BENCHMARK_ACTION", "skill_trust_fspr_inconsistent_benchmark_action", str),
-    ("CS_SKILL_TRUST_FSPR_INCONSISTENT_STRICT_ACTION", "skill_trust_fspr_inconsistent_strict_action", str),
-    ("CS_SKILL_TRUST_FSPR_INCONSISTENT_PERMISSIVE_ACTION", "skill_trust_fspr_inconsistent_permissive_action", str),
-    ("CS_SKILL_TRUST_FSPR_SUSPICIOUS_NORMAL_ACTION", "skill_trust_fspr_suspicious_normal_action", str),
-    ("CS_SKILL_TRUST_FSPR_SUSPICIOUS_BENCHMARK_ACTION", "skill_trust_fspr_suspicious_benchmark_action", str),
-    ("CS_SKILL_TRUST_FSPR_SUSPICIOUS_STRICT_ACTION", "skill_trust_fspr_suspicious_strict_action", str),
-    ("CS_SKILL_TRUST_FSPR_SUSPICIOUS_PERMISSIVE_ACTION", "skill_trust_fspr_suspicious_permissive_action", str),
-    ("CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_NORMAL_ACTION", "skill_trust_fspr_insufficient_evidence_normal_action", str),
-    ("CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_BENCHMARK_ACTION", "skill_trust_fspr_insufficient_evidence_benchmark_action", str),
-    ("CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_STRICT_ACTION", "skill_trust_fspr_insufficient_evidence_strict_action", str),
-    ("CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_PERMISSIVE_ACTION", "skill_trust_fspr_insufficient_evidence_permissive_action", str),
-    ("CS_SKILL_TRUST_PROVENANCE_POLICY_PATH", "skill_trust_provenance_policy_path", str),
-    ("CS_SKILL_TRUST_PROVENANCE_POLICY_JSON", "skill_trust_provenance_policy_json", str),
-    ("CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT", "skill_trust_provenance_workspace_root", str),
-    ("CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES", "skill_trust_provenance_max_artifact_bytes", int),
 ]
 
 _ENV_ALIAS_MAP: list[tuple[str, str, type, str]] = [
@@ -961,7 +918,6 @@ def build_detection_config_from_env() -> DetectionConfig:
     _parse_bool_env("CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS", "anti_bypass_record_allow_decisions")
     _parse_bool_env("CS_CAPABILITY_NARROWING_ENABLED", "capability_narrowing_enabled")
     _parse_bool_env("CS_AGENT_SAFETY_FEEDBACK_ENABLED", "agent_safety_feedback_enabled")
-    _parse_bool_env("CS_SKILL_TRUST_PROVENANCE_ENABLED", "skill_trust_provenance_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_ENABLED", "skill_trust_fspr_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED", "skill_trust_fspr_pre_use_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED", "skill_trust_fspr_post_action_enabled")
@@ -1139,7 +1095,6 @@ def build_detection_config_with_preset(
     _parse_bool_env("CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS", "anti_bypass_record_allow_decisions")
     _parse_bool_env("CS_CAPABILITY_NARROWING_ENABLED", "capability_narrowing_enabled")
     _parse_bool_env("CS_AGENT_SAFETY_FEEDBACK_ENABLED", "agent_safety_feedback_enabled")
-    _parse_bool_env("CS_SKILL_TRUST_PROVENANCE_ENABLED", "skill_trust_provenance_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_ENABLED", "skill_trust_fspr_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED", "skill_trust_fspr_pre_use_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED", "skill_trust_fspr_post_action_enabled")

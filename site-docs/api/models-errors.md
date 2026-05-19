@@ -38,10 +38,9 @@ v0.8.0 以后，决策响应和 replay metadata 可能携带以下 Skill Trust /
 | `skill_trust_refs` | Adapter/harness 观测到的 runtime skill references，Gateway 会重新绑定到 Gateway-owned metadata |
 | `runtime_path_status` | `verified_source`、`verified_mirror`、`verified_name`、`name_only_unverified`、`path_fragment_unverified`、`disallowed`、`ambiguous_runtime_source` 或 `absent` |
 | `runtime_content_status` | `content_verified`、`trusted_runner_immutable`、`content_unverified`、`content_mismatch` 或 `not_applicable` |
-| `metadata_record_id` | Gateway-owned Skill Trust metadata record 标识，用于 same-name disambiguation、ledger 和 provenance validation |
+| `metadata_record_id` | Gateway-owned Skill Trust metadata record 标识，用于 same-name disambiguation 和 ledger |
 | `skill_use_ledger` | session 级 observed skill use ledger，记录 allow/block/defer、hash、status、dedupe key 和 ref ordinal |
-| `provenance_findings` | post-action artifact provenance validator 追加的 findings；不改写已完成 decision |
-| `first_use_package_review` | FSPR evidence capsule，包括 verdict、role summaries、degradation 和 transition recommendation |
+| `first_use_package_review` | FSPR evidence capsule，包括 verdict、role summaries、degradation 和 admission recommendation |
 | `agent_safety_feedback` | critical block 的脱敏 agent-facing feedback envelope，delivery 为 `response`、`audit_only` 或 `unsupported` |
 
 ## CanonicalEvent

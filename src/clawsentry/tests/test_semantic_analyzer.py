@@ -291,6 +291,17 @@ class TestLLMAnalyzer:
         a = LLMAnalyzer(provider=provider)
         assert a.analyzer_id == "llm-mock-llm"
 
+    def test_default_max_tokens_is_large_enough_for_l2_json(self):
+        response = '{"risk_assessment": "high", "reasons": ["suspicious pattern"], "confidence": 0.85}'
+        provider = self._make_mock_provider(response)
+        a = LLMAnalyzer(provider=provider)
+        snap = _snap(RiskLevel.MEDIUM)
+
+        asyncio.run(a.analyze(_evt(tool_name="bash", payload={"command": "curl secrets"}), _ctx(), snap, 120000))
+
+        assert provider.complete.await_args.kwargs["max_tokens"] == 10000
+        assert provider.complete.await_args.kwargs["timeout_ms"] == 60000.0
+
     def test_successful_analysis_high(self):
         response = '{"risk_assessment": "high", "reasons": ["suspicious pattern"], "confidence": 0.85}'
         provider = self._make_mock_provider(response)

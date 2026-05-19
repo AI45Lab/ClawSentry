@@ -90,6 +90,6 @@ OpenAPI 中的 Skill Trust 端点是 operator surface，不是 adapter 决策路
 | `GET /skill-trust/transition/recommendations` | 查看 FSPR/P2 等 evidence-only 推荐 | recommendation source、target state、evidence refs |
 | `POST /skill-trust/transition` | 写入 allowlist/greylist/blacklist/revoke/disable/restore/override transition | `idempotency_key`、`expected_registry_snapshot_id`、`target_state`、`reason_code`、`evidence_refs`、`operator_id_hash`、`override_id` |
 
-Runtime binding evidence remains in AHP decisions and replay metadata: `runtime_path_status`、`runtime_root_path_hash`、`runtime_content_status`、`metadata_record_id`、`skill_use_ledger` and `provenance_findings`. Artifact provenance validation is post-action and generic; it compares declared labels with the skill-use ledger and does not rewrite the completed canonical decision.
+Runtime binding evidence remains in AHP decisions and replay metadata: `runtime_path_status`、`runtime_root_path_hash`、`runtime_content_status`、`metadata_record_id` and `skill_use_ledger`. v0.8.2 removed the post-action artifact provenance validator; completed canonical decisions are not revisited through artifact label claims.
 
 Agent-facing safety feedback appears in decision responses only for supported critical-block delivery modes. Unsupported hosts record audit metadata instead of claiming prompt injection delivery.

@@ -102,7 +102,10 @@ def build_analyzer_from_env(
         RuleBasedAnalyzer(patterns_path=patterns_path, evolved_patterns_path=evolved_patterns_path),
         LLMAnalyzer(
             l2_provider,
-            LLMAnalyzerConfig(provider_timeout_ms=settings.provider_timeout_ms),
+            LLMAnalyzerConfig(
+                provider_timeout_ms=settings.provider_timeout_ms,
+                max_tokens=settings.max_tokens,
+            ),
         ),
     ]
     l2_composite = CompositeAnalyzer(l2_analyzers)
@@ -128,6 +131,7 @@ def build_analyzer_from_env(
             enable_multi_turn = l3_multi_turn_raw not in {"false", "0", "no", "off"}
             agent_config = AgentAnalyzerConfig(
                 l3_budget_ms=l3_budget_ms,
+                max_tokens=settings.l3_max_tokens,
                 enable_multi_turn=enable_multi_turn,
             )
             # Wrap L3 provider separately so L2 and L3 calls are tracked independently.

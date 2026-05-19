@@ -3090,7 +3090,7 @@ class TestSessionEnforcementIntegration:
             trajectory_db_path=":memory:",
             detection_config=DetectionConfig(
                 mode="strict",
-                skill_trust_first_use_strict_action="block",
+                skill_trust_first_use_strict_policy="block_until_reviewed",
             ),
         )
 
@@ -3149,7 +3149,7 @@ class TestSessionEnforcementIntegration:
             trajectory_db_path=":memory:",
             detection_config=DetectionConfig(
                 mode="strict",
-                skill_trust_first_use_strict_action="block",
+                skill_trust_first_use_strict_policy="block_until_reviewed",
             ),
         )
 

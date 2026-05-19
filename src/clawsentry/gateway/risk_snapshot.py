@@ -11,7 +11,7 @@ import hashlib
 import re
 import shlex
 from collections import deque
-from typing import Optional
+from typing import Any, Optional
 
 from .detection_config import DetectionConfig
 from .effect_normalizer import normalize_action_effect
@@ -26,6 +26,7 @@ from .models import (
     RiskDimensions,
     RiskLevel,
     RiskSnapshot,
+    ReviewRoutingIntent,
     utc_now_iso,
 )
 from .risk_signals import (
@@ -930,15 +931,20 @@ def skill_trust_first_use_state_rule(skill_trust) -> str | None:
     return _FIRST_USE_SCAN_RULE_BY_STATE.get(scan.state)
 
 
-def skill_trust_first_use_action(skill_trust, config: DetectionConfig) -> str | None:
-    """Resolve the configured first-use action for the active profile."""
+def skill_trust_first_use_policy_effect(skill_trust, config: DetectionConfig) -> str | None:
+    """Resolve first-use admission policy to a legacy action until policy migration finishes."""
 
     if skill_trust_first_use_state_rule(skill_trust) is None:
         return None
     mode = str(config.mode or "normal").strip().lower()
     if mode not in {"normal", "benchmark", "strict", "permissive"}:
         mode = "normal"
-    return str(getattr(config, f"skill_trust_first_use_{mode}_action", "audit"))
+    policy = str(getattr(config, f"skill_trust_first_use_{mode}_policy", "audit_only"))
+    if policy == "block_until_reviewed":
+        return "block"
+    if policy in {"scan_async_defer", "defer_for_review"}:
+        return "defer"
+    return "audit"
 
 
 def skill_trust_runtime_binding_action(skill_trust, config: DetectionConfig) -> str | None:
@@ -972,17 +978,65 @@ def skill_trust_runtime_binding_action(skill_trust, config: DetectionConfig) -> 
     if condition is None:
         return None
     condition_attr = f"skill_trust_runtime_{condition}_{mode}_action"
-    condition_action = str(getattr(config, condition_attr, "audit"))
-    legacy_defaults = {
-        "normal": "force_l3",
-        "benchmark": "block",
-        "strict": "block",
-        "permissive": "audit",
+    return str(getattr(config, condition_attr, "audit"))
+
+
+def _skill_trust_runtime_binding_condition(skill_trust) -> str | None:
+    runtime_status = getattr(skill_trust, "runtime_path_status", None)
+    runtime_content_status = getattr(skill_trust, "runtime_content_status", None)
+    if runtime_status == "disallowed":
+        return "path_disallowed"
+    if runtime_status == "ambiguous_runtime_source":
+        return "source_ambiguous"
+    if runtime_status in {"name_only_unverified", "path_fragment_unverified"}:
+        return "path_unverified"
+    if runtime_content_status == "content_unverified":
+        return "content_unverified"
+    if runtime_content_status == "content_mismatch":
+        return "content_mismatch"
+    return None
+
+
+def skill_trust_runtime_binding_review_tier(skill_trust, config: DetectionConfig) -> str:
+    """Resolve the policy-owned review tier for runtime-binding evidence."""
+
+    condition = _skill_trust_runtime_binding_condition(skill_trust)
+    mode = str(config.mode or "normal").strip().lower()
+    if mode not in {"normal", "benchmark", "strict", "permissive"}:
+        mode = "normal"
+    matrix = {
+        "path_disallowed": {
+            "normal": "l3",
+            "benchmark": "none",
+            "strict": "none",
+            "permissive": "none",
+        },
+        "source_ambiguous": {
+            "normal": "l3",
+            "benchmark": "none",
+            "strict": "l3",
+            "permissive": "none",
+        },
+        "path_unverified": {
+            "normal": "none",
+            "benchmark": "none",
+            "strict": "l3",
+            "permissive": "none",
+        },
+        "content_unverified": {
+            "normal": "l3",
+            "benchmark": "l3",
+            "strict": "l3",
+            "permissive": "none",
+        },
+        "content_mismatch": {
+            "normal": "l3",
+            "benchmark": "none",
+            "strict": "none",
+            "permissive": "none",
+        },
     }
-    legacy_action = str(getattr(config, f"skill_trust_runtime_{mode}_action", "audit"))
-    if legacy_action != legacy_defaults.get(mode, "audit"):
-        return legacy_action
-    return condition_action
+    return matrix.get(condition or "", {}).get(mode, "none")
 
 
 def _validated_fspr_review(fspr_review: object) -> dict | None:
@@ -991,6 +1045,18 @@ def _validated_fspr_review(fspr_review: object) -> dict | None:
     if not isinstance(fspr_review, dict):
         return None
     review = dict(fspr_review)
+    forbidden_policy_fields = {
+        "recommended_action",
+        "recommended_policy_action",
+        "recommended_review_tier",
+    }
+    if any(field in review for field in forbidden_policy_fields):
+        review["verdict"] = "insufficient_evidence"
+        if str(review.get("timing_mode") or "") not in _FSPR_ALLOWED_TIMING_MODES:
+            review["timing_mode"] = "post_action_incremental_evidence"
+        review["degraded"] = True
+        review["degradation_reason"] = "invalid_policy_field"
+        return review
     schema = str(review.get("schema") or "")
     verdict = str(review.get("verdict") or "")
     timing_mode = str(review.get("timing_mode") or "")
@@ -1014,27 +1080,214 @@ def _validated_fspr_review(fspr_review: object) -> dict | None:
     return review
 
 
-def skill_trust_fspr_action(skill_trust, config: DetectionConfig) -> str | None:
-    """Resolve configured First-Use Skill Package Review action for active profile/verdict."""
+def skill_trust_fspr_policy_action(fspr_review: object, config: DetectionConfig) -> str | None:
+    """Resolve Gateway-owned policy action from FSPR evidence."""
 
-    if skill_trust is None:
+    review = _validated_fspr_review(fspr_review)
+    if review is None:
         return None
-    fspr_review = _validated_fspr_review(getattr(skill_trust, "first_use_package_review", None))
-    if fspr_review is None:
-        return None
-    if str(fspr_review.get("timing_mode") or "") != "pre_use_gate":
-        return None
-    verdict = str(fspr_review.get("verdict") or "")
-    if verdict not in {"suspicious", "inconsistent", "insufficient_evidence"}:
-        return None
+    if str(review.get("timing_mode") or "") != "pre_use_gate":
+        return "audit"
+    verdict = str(review.get("verdict") or "")
     mode = str(config.mode or "normal").strip().lower()
     if mode not in {"normal", "benchmark", "strict", "permissive"}:
         mode = "normal"
-    legacy_action = str(getattr(config, f"skill_trust_fspr_{mode}_action", "audit"))
-    specific_action = str(getattr(config, f"skill_trust_fspr_{verdict}_{mode}_action", "audit"))
-    if legacy_action != "audit" and specific_action == "audit":
-        return legacy_action
-    return specific_action
+    matrix = {
+        "normal": {
+            "consistent": "audit",
+            "insufficient_evidence": "audit",
+            "suspicious": "audit",
+            "inconsistent": "defer",
+        },
+        "benchmark": {
+            "consistent": "audit",
+            "insufficient_evidence": "block",
+            "suspicious": "defer",
+            "inconsistent": "block",
+        },
+        "strict": {
+            "consistent": "audit",
+            "insufficient_evidence": "defer",
+            "suspicious": "defer",
+            "inconsistent": "block",
+        },
+        "permissive": {
+            "consistent": "audit",
+            "insufficient_evidence": "audit",
+            "suspicious": "audit",
+            "inconsistent": "audit",
+        },
+    }
+    return matrix[mode].get(verdict, "audit")
+
+
+def skill_trust_fspr_review_tier(fspr_review: object, config: DetectionConfig) -> str | None:
+    """Resolve Gateway-owned review tier from FSPR evidence."""
+
+    review = _validated_fspr_review(fspr_review)
+    if review is None:
+        return None
+    if str(review.get("timing_mode") or "") != "pre_use_gate":
+        return "none"
+    verdict = str(review.get("verdict") or "")
+    mode = str(config.mode or "normal").strip().lower()
+    if mode not in {"normal", "benchmark", "strict", "permissive"}:
+        mode = "normal"
+    matrix = {
+        "normal": {
+            "consistent": "none",
+            "insufficient_evidence": "none",
+            "suspicious": "l3",
+            "inconsistent": "l3",
+        },
+        "benchmark": {
+            "consistent": "none",
+            "insufficient_evidence": "none",
+            "suspicious": "l3",
+            "inconsistent": "none",
+        },
+        "strict": {
+            "consistent": "none",
+            "insufficient_evidence": "l3",
+            "suspicious": "l3",
+            "inconsistent": "none",
+        },
+        "permissive": {
+            "consistent": "none",
+            "insufficient_evidence": "none",
+            "suspicious": "none",
+            "inconsistent": "none",
+        },
+    }
+    return matrix[mode].get(verdict, "none")
+
+
+def _action_to_routing(action: str | None) -> tuple[str, str]:
+    if action == "force_l3":
+        return "audit", "l3"
+    if action == "force_l2":
+        return "audit", "l2"
+    if action == "defer":
+        return "defer", "none"
+    if action == "block":
+        return "block", "none"
+    return "audit", "none"
+
+
+def _compact_skill_trust_metadata(skill_trust, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    metadata = {
+        "registry_status": getattr(skill_trust, "registry_status", None),
+        "canonical_skill_id": getattr(skill_trust, "canonical_skill_id", None),
+        "presented_name": getattr(skill_trust, "presented_name", None),
+        "ref_ordinal": getattr(skill_trust, "ref_ordinal", None),
+    }
+    if extra:
+        metadata.update(extra)
+    return {key: value for key, value in metadata.items() if value is not None}
+
+
+def build_skill_trust_routing_intents(skill_trust, config: DetectionConfig) -> list[ReviewRoutingIntent]:
+    """Build policy-owned routing intents from one Skill Trust evidence object."""
+
+    if skill_trust is None:
+        return []
+    intents: list[ReviewRoutingIntent] = []
+
+    first_use_rule = skill_trust_first_use_state_rule(skill_trust)
+    first_use_effect = skill_trust_first_use_policy_effect(skill_trust, config)
+    if first_use_rule is not None:
+        policy_action, recommended_tier = _action_to_routing(first_use_effect)
+        mode = str(config.mode or "normal").strip().lower()
+        if mode not in {"normal", "benchmark", "strict", "permissive"}:
+            mode = "normal"
+        configured_policy = str(getattr(config, f"skill_trust_first_use_{mode}_policy", "audit_only"))
+        intents.append(ReviewRoutingIntent(
+            source="first_use_admission",
+            recommended_tier=recommended_tier,
+            policy_action=policy_action,
+            reason="first_use_unreviewed_skill",
+            source_metadata=_compact_skill_trust_metadata(skill_trust, {
+                "first_use_rule": first_use_rule,
+                "first_use_scan_state": getattr(getattr(skill_trust, "first_use_scan", None), "state", None),
+                "admission_policy": configured_policy,
+                "policy_effect": first_use_effect or "audit",
+            }),
+            routing_affecting=recommended_tier in {"l2", "l3"},
+            decision_affecting=policy_action in {"defer", "block"},
+        ))
+
+    runtime_action = skill_trust_runtime_binding_action(skill_trust, config)
+    if runtime_action is not None:
+        policy_action, fallback_tier = _action_to_routing(runtime_action)
+        recommended_tier = skill_trust_runtime_binding_review_tier(skill_trust, config)
+        if recommended_tier == "none":
+            recommended_tier = fallback_tier
+        intents.append(ReviewRoutingIntent(
+            source="runtime_binding",
+            recommended_tier=recommended_tier,
+            policy_action=policy_action,
+            reason="runtime_binding_identity_conflict",
+            source_metadata=_compact_skill_trust_metadata(skill_trust, {
+                "runtime_path_status": getattr(skill_trust, "runtime_path_status", None),
+                "runtime_content_status": getattr(skill_trust, "runtime_content_status", None),
+                "runtime_binding_reason": getattr(skill_trust, "runtime_binding_reason", None),
+                "configured_action": runtime_action,
+                "review_tier": recommended_tier,
+            }),
+            routing_affecting=recommended_tier in {"l2", "l3"},
+            decision_affecting=policy_action in {"defer", "block"},
+        ))
+
+    fspr_review = _validated_fspr_review(getattr(skill_trust, "first_use_package_review", None))
+    if fspr_review is not None:
+        if str(fspr_review.get("timing_mode") or "") != "pre_use_gate":
+            return intents
+        policy_action = skill_trust_fspr_policy_action(fspr_review, config) or "audit"
+        review_tier = skill_trust_fspr_review_tier(fspr_review, config) or "none"
+        intents.append(ReviewRoutingIntent(
+            source="fspr_package_review",
+            recommended_tier=review_tier,
+            policy_action=policy_action,
+            reason="fspr_package_review",
+            source_metadata=_compact_skill_trust_metadata(skill_trust, {
+                "verdict": fspr_review.get("verdict"),
+                "severity": fspr_review.get("severity"),
+                "confidence": fspr_review.get("confidence"),
+                "degraded": bool(fspr_review.get("degraded", False)),
+                "degradation_reason": fspr_review.get("degradation_reason"),
+            }),
+            routing_affecting=review_tier in {"l2", "l3"},
+            decision_affecting=policy_action in {"defer", "block"},
+        ))
+
+    return intents
+
+
+def _skill_trust_routing_intents_for_context(
+    context: Optional[DecisionContext],
+    config: DetectionConfig,
+) -> list[ReviewRoutingIntent]:
+    if context is None:
+        return []
+    refs = list(context.skill_trust_refs or [])
+    if context.skill_trust is not None and all(ref is not context.skill_trust for ref in refs):
+        refs.append(context.skill_trust)
+    intents = [
+        intent
+        for ref in refs
+        for intent in build_skill_trust_routing_intents(ref, config)
+    ]
+    policy_priority = {"block": 3, "defer": 2, "audit": 1}
+    tier_priority = {"l3": 3, "l2": 2, "none": 1}
+    return sorted(
+        intents,
+        key=lambda intent: (
+            -policy_priority.get(intent.policy_action, 0),
+            -tier_priority.get(intent.recommended_tier, 0),
+            intent.source,
+            intent.reason,
+        ),
+    )
 
 
 def _skill_trust_evidence(
@@ -1110,12 +1363,14 @@ def _skill_trust_evidence(
         rule_hits.append("provenance_label_mismatch")
 
     first_use_rule = skill_trust_first_use_state_rule(skill_trust)
-    first_use_action = skill_trust_first_use_action(skill_trust, config)
+    first_use_effect = skill_trust_first_use_policy_effect(skill_trust, config)
     runtime_binding_action = skill_trust_runtime_binding_action(skill_trust, config)
     fspr_review = _validated_fspr_review(getattr(skill_trust, "first_use_package_review", None))
     fspr_rule: str | None = None
-    fspr_action = skill_trust_fspr_action(skill_trust, config)
+    fspr_policy_action = skill_trust_fspr_policy_action(fspr_review, config) if fspr_review is not None else None
+    fspr_review_tier = skill_trust_fspr_review_tier(fspr_review, config) if fspr_review is not None else None
     fspr_decision_affecting = False
+    fspr_routing_affecting = False
     if isinstance(fspr_review, dict):
         fspr_verdict = str(fspr_review.get("verdict") or "")
         fspr_timing_mode = str(fspr_review.get("timing_mode") or "")
@@ -1127,7 +1382,11 @@ def _skill_trust_evidence(
             fspr_rule = "first_use_skill_package_insufficient_evidence"
         fspr_decision_affecting = (
             fspr_timing_mode == "pre_use_gate"
-            and fspr_action in {"force_l2", "force_l3", "defer", "block"}
+            and fspr_policy_action in {"defer", "block"}
+        )
+        fspr_routing_affecting = (
+            fspr_timing_mode == "pre_use_gate"
+            and fspr_review_tier in {"l2", "l3"}
         )
         if fspr_rule and fspr_rule not in rule_hits:
             rule_hits.append(fspr_rule)
@@ -1158,7 +1417,12 @@ def _skill_trust_evidence(
         if rule_id == first_use_rule and skill_trust.first_use_scan is not None:
             finding.update({
                 "first_use_scan_state": skill_trust.first_use_scan.state,
-                "first_use_action": first_use_action or "audit",
+                "first_use_admission_policy": str(getattr(
+                    config,
+                    f"skill_trust_first_use_{str(config.mode or 'normal').strip().lower()}_policy",
+                    "audit_only",
+                )),
+                "first_use_policy_effect": first_use_effect or "audit",
                 "first_use_scan_failure_class": skill_trust.first_use_scan.failure_class,
                 "first_use_scan_admission_risk": skill_trust.first_use_scan.admission_risk,
             })
@@ -1177,9 +1441,10 @@ def _skill_trust_evidence(
                 "fspr_timing_mode": fspr_review.get("timing_mode"),
                 "fspr_severity": fspr_review.get("severity"),
                 "fspr_confidence": fspr_review.get("confidence"),
-                "fspr_recommended_action": fspr_review.get("recommended_action"),
                 "deterministic_findings_preserved": fspr_review.get("deterministic_findings_preserved"),
-                "fspr_action": fspr_action or "audit",
+                "fspr_policy_action": fspr_policy_action or "audit",
+                "fspr_review_tier": fspr_review_tier or "none",
+                "routing_affecting": fspr_routing_affecting,
                 "fspr_degraded": bool(fspr_review.get("degraded", False)),
                 "fspr_degradation_reason": fspr_review.get("degradation_reason"),
                 "decision_affecting": fspr_decision_affecting,
@@ -1200,7 +1465,7 @@ def _skill_trust_evidence(
     fspr_inconsistent_pre_use = (
         fspr_decision_affecting
         and "first_use_skill_package_inconsistent" in rule_set
-        and fspr_action == "block"
+        and fspr_policy_action == "block"
     )
     hard_confidence = (
         "skill_hash_mismatch" in rule_set
@@ -1234,9 +1499,9 @@ def _skill_trust_evidence(
         and config.mode in {"strict", "benchmark"}
     ):
         upgrade_level = _max_risk_level(upgrade_level or current_level, RiskLevel.MEDIUM)
-    if fspr_action == "block":
+    if fspr_policy_action == "block":
         upgrade_level = RiskLevel.HIGH
-    if first_use_action == "block":
+    if first_use_effect == "block":
         upgrade_level = RiskLevel.HIGH
     if runtime_binding_action == "block":
         upgrade_level = RiskLevel.HIGH
@@ -1244,7 +1509,7 @@ def _skill_trust_evidence(
         upgrade_level = RiskLevel.CRITICAL
 
     if upgrade_level is None:
-        if first_use_action in {"force_l2", "force_l3", "defer"}:
+        if first_use_effect in {"force_l2", "force_l3", "defer"}:
             for finding in findings:
                 if finding.get("rule_id") == first_use_rule:
                     finding["decision_affecting"] = True
@@ -1442,6 +1707,7 @@ def compute_risk_snapshot(
         score,
         config,
     )
+    routing_intents = _skill_trust_routing_intents_for_context(context, config)
     for rule_id in effect_envelope.evidence_rules:
         if rule_id not in rule_hits:
             rule_hits.append(rule_id)
@@ -1495,6 +1761,7 @@ def compute_risk_snapshot(
         classified_at=utc_now_iso(),
         rule_hits=rule_hits,
         skill_trust_findings=skill_trust_findings,
+        routing_intents=routing_intents,
         taint_flow_summary=taint_flow_summary,
         effect_summary=effect_summary,
     )

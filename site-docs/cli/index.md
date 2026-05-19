@@ -1430,7 +1430,7 @@ clawsentry skill-trust register-dir --skills-dir DIR --registry FILE --metadata 
 | `register` | 扫描单个 skill root，并写入 registry transition event |
 | `register-dir` | 扫描目录下的 skill 包，生成 registry 与 runtime metadata |
 
-`register`、`register-dir` 和 lifecycle JSON 输出中的 registry record 会包含派生字段 `skill_trust_grade`（`trusted` / `review` / `restricted` / `blocked` / `disabled`）。该字段仅用于 operator 展示；策略仍读取 trust-list state、admission、runtime binding、FSPR 和 provenance/P2 原始证据。
+`register`、`register-dir` 和 lifecycle JSON 输出中的 registry record 会包含派生字段 `skill_trust_grade`（`trusted` / `review` / `restricted` / `blocked` / `disabled`）。该字段仅用于 operator 展示；策略仍读取 trust-list state、admission、runtime binding、FSPR 和 post-action session evidence。
 
 ### 示例
 
@@ -1452,7 +1452,7 @@ clawsentry skill-trust register-dir \
 ```bash
 CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json
 CS_SKILL_TRUST_METADATA_PATH=.clawsentry/skill-trust-runtime.json
-CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=defer
+CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY=defer_for_review
 ```
 
 ---

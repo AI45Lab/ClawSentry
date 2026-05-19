@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from clawsentry.gateway.first_use_skill_review import (
     FSPRLLMRoleProvider,
@@ -39,6 +40,20 @@ def _pre_action_event() -> CanonicalEvent:
         tool_name="read_file",
         payload={"path": "/workspace/README.md"},
     )
+
+
+def test_fspr_result_rejects_policy_action_fields():
+    payload = {
+        "schema": "clawsentry.first_use_skill_package_review.v1",
+        "timing_mode": "pre_use_gate",
+        "verdict": "suspicious",
+        "severity": "medium",
+        "confidence": 0.7,
+        "recommended_action": "force_l3",
+    }
+
+    with pytest.raises(ValidationError):
+        FirstUseSkillPackageReview.model_validate(payload)
 
 
 class _FakeFSPRProvider:
@@ -653,7 +668,6 @@ def test_gateway_pre_use_fspr_uses_configured_provider_when_enabled(
                 "verdict": verdict,
                 "severity": "medium" if verdict == "suspicious" else "low",
                 "confidence": 0.76,
-                "recommended_action": "force_l2" if verdict == "suspicious" else "audit",
                 "findings": [{"id": "provider-finding"}] if verdict == "suspicious" else [],
             })
 
@@ -765,7 +779,6 @@ def test_fspr_provider_runs_selected_roles_and_uses_adjudicator_verdict(tmp_path
             "verdict": "inconsistent",
             "severity": "high",
             "confidence": 0.94,
-            "recommended_action": "force_l3",
             "findings": [{"id": "adjudicator-1", "severity": "high"}],
         }),
     })
@@ -786,7 +799,6 @@ def test_fspr_provider_runs_selected_roles_and_uses_adjudicator_verdict(tmp_path
     assert result.verdict == "inconsistent"
     assert result.severity == "high"
     assert result.confidence == 0.94
-    assert result.recommended_action == "force_l3"
     assert result.deterministic_findings_preserved is True
     assert result.degraded is False
     assert result.role_results[0]["role"] == "deterministic_inventory"
@@ -799,6 +811,38 @@ def test_fspr_provider_runs_selected_roles_and_uses_adjudicator_verdict(tmp_path
         "script_behavior_reviewer",
         "final_adjudicator",
     ]
+
+
+def test_fspr_provider_output_rejects_action_fields(tmp_path: Path):
+    skill_root = tmp_path / "skill"
+    skill_root.mkdir()
+    (skill_root / "SKILL.md").write_text("# Test skill\n", encoding="utf-8")
+
+    provider = _FakeFSPRProvider({
+        "final_adjudicator": json.dumps({
+            "role": "final_adjudicator",
+            "verdict": "suspicious",
+            "severity": "medium",
+            "confidence": 0.8,
+            "recommended_action": "force_l3",
+            "findings": [],
+        }),
+    })
+
+    result = run_first_use_skill_package_review(
+        skill_root,
+        provider=provider,
+        selected_roles=["final_adjudicator"],
+        timing_mode="pre_use_gate",
+    )
+
+    assert result.verdict == "insufficient_evidence"
+    assert result.degraded is True
+    assert result.degradation_reason == "provider_invalid_schema"
+    dumped = result.model_dump(by_alias=True)
+    assert "recommended_action" not in dumped
+    assert "recommended_policy_action" not in dumped
+    assert "recommended_review_tier" not in dumped
 
 
 def test_fspr_llm_role_provider_bridges_async_complete():
@@ -872,7 +916,6 @@ def test_fspr_provider_cannot_downgrade_deterministic_hard_findings(tmp_path: Pa
             "verdict": "consistent",
             "severity": "low",
             "confidence": 0.9,
-            "recommended_action": "audit",
             "findings": [],
         }),
     })
@@ -881,7 +924,6 @@ def test_fspr_provider_cannot_downgrade_deterministic_hard_findings(tmp_path: Pa
 
     assert result.verdict == "inconsistent"
     assert result.severity == "high"
-    assert result.recommended_action == "force_l3"
     assert result.deterministic_findings_preserved is True
 
 
@@ -905,10 +947,9 @@ def test_fspr_provider_unavailable_returns_degraded_insufficient_evidence_withou
     )
 
     assert result.verdict == "insufficient_evidence"
-    assert result.recommended_action == "audit"
     assert result.degraded is True
     assert result.degradation_reason == "provider_unavailable"
-    assert result.transition_recommendation is None
+    assert result.admission_recommendation is None
     assert registry.read_text(encoding="utf-8") == before
     degraded_roles = [role for role in result.role_results if role.get("degraded")]
     assert degraded_roles
@@ -978,42 +1019,6 @@ def test_fspr_pre_use_inconsistent_result_adds_skill_trust_finding():
             "verdict": "inconsistent",
             "severity": "high",
             "confidence": 0.91,
-            "recommended_action": "force_l3",
-            "deterministic_findings_preserved": True,
-        },
-    )
-
-    snapshot = compute_risk_snapshot(
-        _pre_action_event(),
-        DecisionContext(skill_trust=skill_trust),
-        SessionRiskTracker(),
-        config=DetectionConfig(skill_trust_fspr_inconsistent_normal_action="force_l3"),
-    )
-
-    assert "first_use_skill_package_inconsistent" in snapshot.rule_hits
-    finding = next(
-        item
-        for item in snapshot.skill_trust_findings
-        if item["rule_id"] == "first_use_skill_package_inconsistent"
-    )
-    assert finding["fspr_verdict"] == "inconsistent"
-    assert finding["fspr_timing_mode"] == "pre_use_gate"
-    assert finding["fspr_action"] == "force_l3"
-    assert finding["decision_affecting"] is True
-
-
-def test_fspr_pre_use_audit_action_is_not_decision_affecting_by_default():
-    skill_trust = SkillTrustContext(
-        registry_status="matched",
-        canonical_skill_id="skill:budget-helper",
-        presented_name="budget-helper",
-        first_use_package_review={
-            "schema": "clawsentry.first_use_skill_package_review.v1",
-            "timing_mode": "pre_use_gate",
-            "verdict": "inconsistent",
-            "severity": "high",
-            "confidence": 0.91,
-            "recommended_action": "force_l3",
             "deterministic_findings_preserved": True,
         },
     )
@@ -1025,13 +1030,77 @@ def test_fspr_pre_use_audit_action_is_not_decision_affecting_by_default():
         config=DetectionConfig(),
     )
 
+    assert "first_use_skill_package_inconsistent" in snapshot.rule_hits
     finding = next(
         item
         for item in snapshot.skill_trust_findings
         if item["rule_id"] == "first_use_skill_package_inconsistent"
     )
-    assert finding["fspr_action"] == "audit"
-    assert finding["decision_affecting"] is False
+    assert finding["fspr_verdict"] == "inconsistent"
+    assert finding["fspr_timing_mode"] == "pre_use_gate"
+    assert finding["fspr_policy_action"] == "defer"
+    assert finding["fspr_review_tier"] == "l3"
+    assert finding["routing_affecting"] is True
+    assert finding["decision_affecting"] is True
+
+
+def test_fspr_pre_use_consistent_audit_is_not_decision_affecting_by_default():
+    skill_trust = SkillTrustContext(
+        registry_status="matched",
+        canonical_skill_id="skill:budget-helper",
+        presented_name="budget-helper",
+        first_use_package_review={
+            "schema": "clawsentry.first_use_skill_package_review.v1",
+            "timing_mode": "pre_use_gate",
+            "verdict": "consistent",
+            "severity": "low",
+            "confidence": 0.91,
+            "deterministic_findings_preserved": True,
+        },
+    )
+
+    snapshot = compute_risk_snapshot(
+        _pre_action_event(),
+        DecisionContext(skill_trust=skill_trust),
+        SessionRiskTracker(),
+        config=DetectionConfig(),
+    )
+
+    assert snapshot.routing_intents[0].source == "fspr_package_review"
+    assert snapshot.routing_intents[0].policy_action == "audit"
+    assert snapshot.routing_intents[0].recommended_tier == "none"
+    assert snapshot.routing_intents[0].decision_affecting is False
+
+
+def test_fspr_raw_dict_with_policy_fields_degrades_to_insufficient_evidence():
+    context = DecisionContext(
+        skill_trust=SkillTrustContext(
+            first_use_package_review={
+                "schema": "clawsentry.first_use_skill_package_review.v1",
+                "timing_mode": "pre_use_gate",
+                "verdict": "inconsistent",
+                "severity": "high",
+                "confidence": 0.9,
+                "recommended_action": "force_l3",
+            }
+        )
+    )
+
+    snapshot = compute_risk_snapshot(
+        _pre_action_event(),
+        context,
+        SessionRiskTracker(),
+        config=DetectionConfig(),
+    )
+    finding = next(
+        item
+        for item in snapshot.skill_trust_findings
+        if item["rule_id"] == "first_use_skill_package_insufficient_evidence"
+    )
+
+    assert finding["fspr_verdict"] == "insufficient_evidence"
+    assert finding["fspr_degraded"] is True
+    assert finding["fspr_degradation_reason"] == "invalid_policy_field"
 
 
 def test_fspr_suspicious_verdict_is_valid_policy_evidence():
@@ -1045,7 +1114,6 @@ def test_fspr_suspicious_verdict_is_valid_policy_evidence():
             "verdict": "suspicious",
             "severity": "medium",
             "confidence": 0.72,
-            "recommended_action": "force_l2",
             "deterministic_findings_preserved": True,
         },
     )
@@ -1054,7 +1122,7 @@ def test_fspr_suspicious_verdict_is_valid_policy_evidence():
         _pre_action_event(),
         DecisionContext(skill_trust=skill_trust),
         SessionRiskTracker(),
-        config=DetectionConfig(skill_trust_fspr_suspicious_normal_action="force_l2"),
+        config=DetectionConfig(),
     )
 
     assert "first_use_skill_package_suspicious" in snapshot.rule_hits
@@ -1065,9 +1133,11 @@ def test_fspr_suspicious_verdict_is_valid_policy_evidence():
         if item["rule_id"] == "first_use_skill_package_suspicious"
     )
     assert finding["fspr_verdict"] == "suspicious"
-    assert finding["fspr_action"] == "force_l2"
+    assert finding["fspr_policy_action"] == "audit"
+    assert finding["fspr_review_tier"] == "l3"
     assert finding["fspr_degraded"] is False
-    assert finding["decision_affecting"] is True
+    assert finding["routing_affecting"] is True
+    assert finding["decision_affecting"] is False
 
 
 def test_fspr_post_action_result_cannot_affect_completed_decision():
@@ -1081,7 +1151,6 @@ def test_fspr_post_action_result_cannot_affect_completed_decision():
             "verdict": "inconsistent",
             "severity": "high",
             "confidence": 0.91,
-            "recommended_action": "force_l3",
             "deterministic_findings_preserved": True,
         },
     )
@@ -1100,7 +1169,10 @@ def test_fspr_post_action_result_cannot_affect_completed_decision():
         for item in snapshot.skill_trust_findings
         if item["rule_id"] == "first_use_skill_package_inconsistent"
     )
+    assert finding["fspr_timing_mode"] == "post_action_incremental_evidence"
+    assert finding["routing_affecting"] is False
     assert finding["decision_affecting"] is False
+    assert snapshot.routing_intents == []
 
 
 def test_fspr_invalid_schema_is_consumed_as_insufficient_evidence():
@@ -1114,7 +1186,6 @@ def test_fspr_invalid_schema_is_consumed_as_insufficient_evidence():
             "verdict": "inconsistent",
             "severity": "high",
             "confidence": 0.91,
-            "recommended_action": "force_l3",
             "deterministic_findings_preserved": True,
         },
     )
@@ -1149,7 +1220,6 @@ def test_fspr_invalid_timing_is_consumed_as_insufficient_evidence():
             "verdict": "inconsistent",
             "severity": "high",
             "confidence": 0.91,
-            "recommended_action": "force_l3",
             "deterministic_findings_preserved": True,
         },
     )
@@ -1173,7 +1243,7 @@ def test_fspr_invalid_timing_is_consumed_as_insufficient_evidence():
     assert finding["fspr_degradation_reason"] == "invalid_timing_mode"
 
 
-def test_fspr_normal_mode_inconsistent_pre_use_is_evidence_only_by_default():
+def test_fspr_normal_mode_inconsistent_pre_use_defers_by_matrix():
     skill_trust = SkillTrustContext(
         registry_status="matched",
         canonical_skill_id="skill:budget-helper",
@@ -1184,7 +1254,6 @@ def test_fspr_normal_mode_inconsistent_pre_use_is_evidence_only_by_default():
             "verdict": "inconsistent",
             "severity": "high",
             "confidence": 0.91,
-            "recommended_action": "force_l3",
             "deterministic_findings_preserved": True,
         },
     )
@@ -1196,10 +1265,11 @@ def test_fspr_normal_mode_inconsistent_pre_use_is_evidence_only_by_default():
     )
 
     assert "first_use_skill_package_inconsistent" in snapshot.rule_hits
-    assert decision.decision == DecisionVerdict.ALLOW
+    assert snapshot.routing_intents[0].policy_action == "defer"
+    assert decision.decision == DecisionVerdict.DEFER
 
 
-def test_fspr_configured_actions_drive_pre_use_decisions():
+def test_fspr_builtin_matrix_drives_pre_use_policy_actions():
     event = _pre_action_event()
     inconsistent_context = DecisionContext(
         skill_trust=SkillTrustContext(
@@ -1212,7 +1282,6 @@ def test_fspr_configured_actions_drive_pre_use_decisions():
                 "verdict": "inconsistent",
                 "severity": "high",
                 "confidence": 0.91,
-                "recommended_action": "force_l3",
                 "deterministic_findings_preserved": True,
             },
         )
@@ -1228,38 +1297,108 @@ def test_fspr_configured_actions_drive_pre_use_decisions():
                 "verdict": "insufficient_evidence",
                 "severity": "low",
                 "confidence": 0.2,
-                "recommended_action": "audit",
                 "deterministic_findings_preserved": True,
             },
         )
     )
 
-    strict_defer = L1PolicyEngine(config=DetectionConfig(
-        mode="strict",
-        skill_trust_fspr_inconsistent_strict_action="defer",
-    ))
-    benchmark_block = L1PolicyEngine(config=DetectionConfig(
-        mode="benchmark",
-        skill_trust_fspr_inconsistent_benchmark_action="block",
-    ))
-    strict_insufficient_defer = L1PolicyEngine(config=DetectionConfig(
-        mode="strict",
-        skill_trust_fspr_insufficient_evidence_strict_action="defer",
-    ))
+    strict_block = L1PolicyEngine(config=DetectionConfig(mode="strict"))
+    benchmark_block = L1PolicyEngine(config=DetectionConfig(mode="benchmark"))
+    strict_insufficient_defer = L1PolicyEngine(config=DetectionConfig(mode="strict"))
 
-    strict_decision, strict_snapshot, _tier = strict_defer.evaluate(event, inconsistent_context)
+    strict_decision, strict_snapshot, _tier = strict_block.evaluate(event, inconsistent_context)
     benchmark_decision, benchmark_snapshot, _tier = benchmark_block.evaluate(event, inconsistent_context)
     insufficient_decision, insufficient_snapshot, _tier = strict_insufficient_defer.evaluate(
         event,
         insufficient_context,
     )
 
-    assert strict_decision.decision == DecisionVerdict.DEFER
-    assert strict_snapshot.skill_trust_findings[-1]["fspr_action"] == "defer"
+    assert strict_decision.decision == DecisionVerdict.BLOCK
+    assert strict_snapshot.routing_intents[0].policy_action == "block"
     assert benchmark_decision.decision == DecisionVerdict.BLOCK
-    assert benchmark_snapshot.skill_trust_findings[-1]["fspr_action"] == "block"
+    assert benchmark_snapshot.routing_intents[0].policy_action == "block"
     assert insufficient_decision.decision == DecisionVerdict.DEFER
-    assert insufficient_snapshot.skill_trust_findings[-1]["fspr_action"] == "defer"
+    assert insufficient_snapshot.routing_intents[0].policy_action == "defer"
+
+
+@pytest.mark.parametrize(
+    ("mode", "verdict", "expected_action", "expected_tier", "expected_decision"),
+    [
+        ("benchmark", "consistent", "audit", "none", DecisionVerdict.ALLOW),
+        ("benchmark", "insufficient_evidence", "block", "none", DecisionVerdict.BLOCK),
+        ("benchmark", "suspicious", "defer", "l3", DecisionVerdict.DEFER),
+        ("benchmark", "inconsistent", "block", "none", DecisionVerdict.BLOCK),
+        ("strict", "consistent", "audit", "none", DecisionVerdict.ALLOW),
+        ("strict", "insufficient_evidence", "defer", "l3", DecisionVerdict.DEFER),
+        ("strict", "suspicious", "defer", "l3", DecisionVerdict.DEFER),
+        ("strict", "inconsistent", "block", "none", DecisionVerdict.BLOCK),
+    ],
+)
+def test_fspr_strict_and_benchmark_matrix_coverage(
+    mode: str,
+    verdict: str,
+    expected_action: str,
+    expected_tier: str,
+    expected_decision: DecisionVerdict,
+):
+    context = DecisionContext(
+        skill_trust=SkillTrustContext(
+            registry_status="matched",
+            canonical_skill_id="skill:budget-helper",
+            presented_name="budget-helper",
+            first_use_package_review={
+                "schema": "clawsentry.first_use_skill_package_review.v1",
+                "timing_mode": "pre_use_gate",
+                "verdict": verdict,
+                "severity": "high" if verdict in {"suspicious", "inconsistent"} else "low",
+                "confidence": 0.8,
+                "deterministic_findings_preserved": True,
+            },
+        )
+    )
+
+    decision, snapshot, _tier = L1PolicyEngine(config=DetectionConfig(mode=mode)).evaluate(
+        _pre_action_event(),
+        context,
+    )
+
+    assert decision.decision == expected_decision
+    assert snapshot.routing_intents[0].policy_action == expected_action
+    assert snapshot.routing_intents[0].recommended_tier == expected_tier
+
+
+@pytest.mark.parametrize("legacy_value", ["audit", "force_l3", "block"])
+def test_fspr_legacy_policy_field_value_is_ignored_for_policy(legacy_value: str):
+    context = DecisionContext(
+        skill_trust=SkillTrustContext(
+            registry_status="matched",
+            canonical_skill_id="skill:budget-helper",
+            presented_name="budget-helper",
+            first_use_package_review={
+                "schema": "clawsentry.first_use_skill_package_review.v1",
+                "timing_mode": "pre_use_gate",
+                "verdict": "inconsistent",
+                "severity": "high",
+                "confidence": 0.9,
+                "recommended_action": legacy_value,
+            },
+        )
+    )
+
+    decision, snapshot, _tier = L1PolicyEngine(config=DetectionConfig(mode="strict")).evaluate(
+        _pre_action_event(),
+        context,
+    )
+    finding = next(
+        item
+        for item in snapshot.skill_trust_findings
+        if item["rule_id"] == "first_use_skill_package_insufficient_evidence"
+    )
+
+    assert finding["fspr_degradation_reason"] == "invalid_policy_field"
+    assert snapshot.routing_intents[0].policy_action == "defer"
+    assert snapshot.routing_intents[0].recommended_tier == "l3"
+    assert decision.decision == DecisionVerdict.DEFER
 
 
 def test_fspr_recommendation_does_not_mutate_registry(tmp_path: Path):
@@ -1290,7 +1429,7 @@ def test_fspr_recommendation_does_not_mutate_registry(tmp_path: Path):
         policy_fingerprint="sha256:policy",
     )
 
-    assert result.transition_recommendation is not None
-    assert result.transition_recommendation["source"] == "fspr"
-    assert result.transition_recommendation["recommended_state"] == "greylist"
+    assert result.admission_recommendation is not None
+    assert result.admission_recommendation["source"] == "fspr"
+    assert result.admission_recommendation["recommended_state"] == "greylist"
     assert registry.read_text(encoding="utf-8") == before

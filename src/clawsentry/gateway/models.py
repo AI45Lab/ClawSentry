@@ -1020,14 +1020,7 @@ class FirstUseSkillPackageReview(BaseModel):
     ] = "insufficient_evidence"
     severity: Literal["low", "medium", "high", "critical"] = "low"
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-    recommended_action: Literal[
-        "audit",
-        "force_l2",
-        "force_l3",
-        "defer",
-        "block",
-    ] = "audit"
-    transition_recommendation: Optional[dict[str, Any]] = None
+    admission_recommendation: Optional[dict[str, Any]] = None
     deterministic_findings_preserved: bool = True
     role_results: list[dict[str, Any]] = Field(default_factory=list)
     final_findings: list[dict[str, Any]] = Field(default_factory=list)
@@ -1223,6 +1216,26 @@ class RiskOverride(BaseModel):
     approved_by: Optional[str] = None
 
 
+class ReviewRoutingIntent(BaseModel):
+    """Policy-owned review and decision routing intent derived from evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source: Literal[
+        "first_use_admission",
+        "runtime_binding",
+        "fspr_package_review",
+        "anti_bypass",
+        "manual",
+    ]
+    recommended_tier: Literal["none", "l2", "l3"] = "none"
+    policy_action: Literal["audit", "defer", "block"] = "audit"
+    reason: str = Field(..., min_length=1)
+    source_metadata: dict[str, Any] = Field(default_factory=dict)
+    routing_affecting: bool = False
+    decision_affecting: bool = False
+
+
 class RiskSnapshot(BaseModel):
     """
     Immutable risk snapshot per 04-policy-decision-and-fallback.md section 13.
@@ -1244,6 +1257,7 @@ class RiskSnapshot(BaseModel):
     l2_l3_summary: Optional[dict[str, Any]] = None
     rule_hits: list[str] = Field(default_factory=list)
     skill_trust_findings: list[dict[str, Any]] = Field(default_factory=list)
+    routing_intents: list[ReviewRoutingIntent] = Field(default_factory=list)
     taint_flow_summary: Optional[dict[str, Any]] = None
     effect_summary: Optional[dict[str, Any]] = None
 

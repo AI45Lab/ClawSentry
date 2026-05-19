@@ -202,7 +202,7 @@ def derive_skill_trust_grade(record: SkillRegistryRecord | dict[str, Any]) -> st
     }
     unresolved_p2 = any(
         str(item.get("source") or item.get("finding_family") or "").lower()
-        in {"p2", "provenance", "provenance_validator"}
+        == "p2"
         and item.get("resolved") is not True
         for item in advisory
     )

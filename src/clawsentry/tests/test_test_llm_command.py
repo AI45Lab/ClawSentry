@@ -34,6 +34,7 @@ _LLM_ENV_KEYS = [
     "OPENAI_API_KEY",
     "CS_L3_ENABLED",
     "CS_L3_MULTI_TURN",
+    "CS_LLM_MAX_TOKENS",
 ]
 
 
@@ -144,6 +145,13 @@ class TestReachability:
         assert latency > 0
         assert "PONG" in detail
 
+    def test_passes_configured_max_tokens(self):
+        provider = MagicMock()
+        provider.complete = AsyncMock(return_value="PONG")
+        ok, _, _ = asyncio.run(_test_reachability(provider, max_tokens=1024))
+        assert ok is True
+        assert provider.complete.await_args.kwargs["max_tokens"] == 1024
+
     def test_timeout(self):
         async def slow_complete(*args, **kwargs):
             raise asyncio.TimeoutError()
@@ -166,6 +174,51 @@ class TestReachability:
 
 
 class TestL2Probe:
+    def test_passes_timeout_to_analyzer_config(self, monkeypatch):
+        captured: dict[str, object] = {}
+
+        class FakeAnalyzer:
+            def __init__(self, provider, config):
+                captured["provider_timeout_ms"] = config.provider_timeout_ms
+                captured["max_tokens"] = config.max_tokens
+
+            async def analyze(self, event, context, l1_snapshot, budget_ms):
+                return L2Result(
+                    target_level=RiskLevel.HIGH,
+                    reasons=["credential access detected"],
+                    confidence=0.95,
+                )
+
+        monkeypatch.setattr("clawsentry.gateway.semantic_analyzer.LLMAnalyzer", FakeAnalyzer)
+
+        provider = MagicMock()
+        ok, _, _ = asyncio.run(_test_l2(provider, timeout_ms=30000, max_tokens=1024))
+
+        assert ok is True
+        assert captured == {"provider_timeout_ms": 30000, "max_tokens": 1024}
+
+    def test_defaults_to_large_l2_max_tokens(self, monkeypatch):
+        captured: dict[str, object] = {}
+
+        class FakeAnalyzer:
+            def __init__(self, provider, config):
+                captured["max_tokens"] = config.max_tokens
+
+            async def analyze(self, event, context, l1_snapshot, budget_ms):
+                return L2Result(
+                    target_level=RiskLevel.HIGH,
+                    reasons=["credential access detected"],
+                    confidence=0.95,
+                )
+
+        monkeypatch.setattr("clawsentry.gateway.semantic_analyzer.LLMAnalyzer", FakeAnalyzer)
+
+        provider = MagicMock()
+        ok, _, _ = asyncio.run(_test_l2(provider))
+
+        assert ok is True
+        assert captured["max_tokens"] == 10000
+
     def test_success_formats_current_l2_result_shape(self, monkeypatch):
         async def fake_analyze(self, event, context, l1_snapshot, budget_ms):
             return L2Result(
@@ -217,8 +270,10 @@ class TestL3Probe:
         class FakeAgent:
             def __init__(self, provider, toolkit, skill_registry, config, **kwargs):
                 captured["enable_multi_turn"] = config.enable_multi_turn
+                captured["l3_budget_ms"] = config.l3_budget_ms
 
             async def analyze(self, event, context, l1_snapshot, budget_ms):
+                captured["budget_ms"] = budget_ms
                 return L2Result(
                     target_level=RiskLevel.HIGH,
                     reasons=["operator review confirmed"],
@@ -238,6 +293,8 @@ class TestL3Probe:
 
         assert ok is True
         assert captured["enable_multi_turn"] is True
+        assert captured["l3_budget_ms"] == 300000
+        assert captured["budget_ms"] == 300000
         assert "mode=multi_turn" in detail
 
     def test_success_detail_includes_runtime_mode_and_trigger_reason(self, monkeypatch):
@@ -382,6 +439,9 @@ class TestRunTestLlm:
 
         code = run_test_llm(color=False, skip_l3=True)
         assert code == 0
+        assert mock_reach.await_args_list[1].kwargs["timeout_ms"] == 60000
+        assert mock_l2.await_args.kwargs["timeout_ms"] == 60000
+        assert mock_l2.await_args.kwargs["max_tokens"] == 10000
 
     @patch("clawsentry.cli.test_llm_command._build_provider")
     @patch("clawsentry.cli.test_llm_command._test_reachability")

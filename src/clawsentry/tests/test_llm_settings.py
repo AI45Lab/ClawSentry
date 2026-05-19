@@ -16,6 +16,8 @@ def _clean_env() -> dict[str, str]:
         "CS_LLM_BASE_URL": "",
         "CS_LLM_TEMPERATURE": "",
         "CS_LLM_PROVIDER_TIMEOUT_MS": "",
+        "CS_LLM_MAX_TOKENS": "",
+        "CS_L3_MAX_TOKENS": "",
         "CS_LLM_API_KEY_ENV": "",
         "CS_L3_ENABLED": "",
         "CS_LLM_L3_ENABLED": "",
@@ -71,7 +73,35 @@ class TestResolveLlmSettings:
 
         assert settings is not None
         assert settings.temperature == 0.0
-        assert settings.provider_timeout_ms == 3000.0
+        assert settings.provider_timeout_ms == 60000.0
+        assert settings.max_tokens == 10000
+        assert settings.l3_max_tokens == 100000
+
+    def test_resolves_l2_max_tokens_override(self):
+        env = {
+            **_clean_env(),
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY": "sk-shared-key",
+            "CS_LLM_MAX_TOKENS": "1024",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            settings = resolve_llm_settings()
+
+        assert settings is not None
+        assert settings.max_tokens == 1024
+
+    def test_resolves_l3_max_tokens_override(self):
+        env = {
+            **_clean_env(),
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY": "sk-shared-key",
+            "CS_L3_MAX_TOKENS": "2048",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            settings = resolve_llm_settings()
+
+        assert settings is not None
+        assert settings.l3_max_tokens == 2048
 
     def test_legacy_openai_key_is_still_supported(self):
         env = {

@@ -153,10 +153,10 @@ clawsentry service validate --env-file /etc/clawsentry/gateway.env
 
 ## 发布状态核对 {#release-status}
 
-截至 2026-05-19，本仓库发布面刷新到 `v0.8.0`：
+截至 2026-05-20，本仓库发布面准备刷新到 `v0.8.2`：
 
-- GitHub latest release / tags：`v0.8.0`
-- PyPI：`clawsentry` 最新版本为 `0.8.0`
-- 运行时配置来源仍保持 env-first strict split；v0.8.0 起 Skill Trust runtime binding、skill-use ledger、post-action provenance validator、FSPR、trust-list lifecycle、capability narrowing 和 agent-facing safety feedback 都通过 `CS_*` env / profile action 显式配置。
+- GitHub latest release / tags：待 v0.8.2 tag publish
+- PyPI：待 `clawsentry==0.8.2` publish
+- 运行时配置来源仍保持 env-first strict split；Skill Trust runtime binding、skill-use ledger、FSPR、trust-list lifecycle、runtime mirror content verification、capability narrowing 和 agent-facing safety feedback 都通过 `CS_*` env / profile action 显式配置。v0.8.2 起不再提供 post-action artifact provenance validator。
 
 若你看到更早版本，优先清浏览器/CDN 缓存，并确认访问的是 <https://github.com/Elroyper/ClawSentry> 与 <https://pypi.org/project/clawsentry/>。

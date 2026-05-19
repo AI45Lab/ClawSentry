@@ -97,10 +97,42 @@ def test_trigger_metadata_prioritizes_anti_bypass_metadata_over_generic_force_l3
     }
 
 
-def test_trigger_metadata_prioritizes_skill_trust_and_session_require_sources():
+def test_l3_trigger_reason_fspr_package_review():
     policy = L3TriggerPolicy()
+    snapshot = _snap(RiskLevel.MEDIUM).model_copy(
+        update={
+            "l2_l3_summary": {
+                "l3_request_reason": "fspr_package_review",
+                "l3_trigger_source_metadata": {
+                    "verdict": "suspicious",
+                    "confidence": 0.8,
+                },
+            }
+        }
+    )
 
-    skill_metadata = policy.trigger_metadata(
+    trigger = policy.trigger_metadata(
+        _evt(tool_name="bash"),
+        DecisionContext(
+            session_risk_summary={
+                "force_l3": True,
+                "l3_request_reason": "fspr_package_review",
+                "l3_trigger_source_metadata": {
+                    "verdict": "suspicious",
+                    "confidence": 0.8,
+                },
+            }
+        ),
+        snapshot,
+        [],
+    )
+
+    assert trigger["trigger_reason"] == "fspr_package_review"
+    assert trigger["source_metadata"]["verdict"] == "suspicious"
+
+
+def test_l3_trigger_no_longer_accepts_first_use_skill_trust_action_reason():
+    metadata = L3TriggerPolicy().trigger_metadata(
         _evt(tool_name="bash"),
         DecisionContext(
             session_risk_summary={
@@ -112,8 +144,12 @@ def test_trigger_metadata_prioritizes_skill_trust_and_session_require_sources():
         _snap(RiskLevel.MEDIUM),
         [],
     )
-    assert skill_metadata["trigger_reason"] == "first_use_skill_trust_action"
-    assert skill_metadata["source_metadata"] == {"skill_id": "skill-a"}
+
+    assert metadata is None or metadata["trigger_reason"] != "first_use_skill_trust_action"
+
+
+def test_trigger_metadata_prioritizes_session_require_source():
+    policy = L3TriggerPolicy()
 
     session_metadata = policy.trigger_metadata(
         _evt(tool_name="bash"),

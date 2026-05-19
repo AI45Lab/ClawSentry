@@ -37,7 +37,6 @@ from .risk_snapshot import (
     DANGEROUS_TOOLS,
     SessionRiskTracker,
     compute_risk_snapshot,
-    skill_trust_first_use_action,
 )
 from .session_scope import evaluate_session_scope
 from .semantic_analyzer import (
@@ -105,33 +104,27 @@ def _context_with_l3_config(
     return DecisionContext(session_risk_summary=session_summary)
 
 
-def _context_with_first_use_action(
+def _context_with_routing_intents(
     context: Optional[DecisionContext],
-    action: str | None,
+    snapshot: RiskSnapshot,
 ) -> Optional[DecisionContext]:
-    if action not in {"force_l2", "force_l3"}:
+    routing_intent = _highest_routing_intent(snapshot, routing_only=True)
+    if routing_intent is None:
         return context
     session_summary = {}
     if context is not None and isinstance(context.session_risk_summary, dict):
         session_summary.update(context.session_risk_summary)
-    session_summary["first_use_skill_trust_action"] = action
-    if action == "force_l3":
+    metadata = session_summary.get("l3_trigger_source_metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+    metadata.update(routing_intent.source_metadata)
+    if routing_intent.recommended_tier == "l3":
         session_summary["force_l3"] = True
-        session_summary["l3_request_reason"] = "first_use_skill_trust_action"
-        metadata = session_summary.get("l3_trigger_source_metadata")
-        if not isinstance(metadata, dict):
-            metadata = {}
-        if context is not None and getattr(context, "skill_trust", None) is not None:
-            skill_trust = context.skill_trust
-            metadata.update({
-                "canonical_skill_id": getattr(skill_trust, "canonical_skill_id", None),
-                "display_name": getattr(skill_trust, "display_name", None),
-                "trust_state": getattr(skill_trust, "trust_state", None),
-            })
+        session_summary["l3_request_reason"] = routing_intent.reason
         session_summary["l3_trigger_source_metadata"] = {
             key: value for key, value in metadata.items() if value is not None
         }
-    else:
+    elif routing_intent.recommended_tier == "l2":
         session_summary["force_l2"] = True
     if context is not None:
         return context.model_copy(update={"session_risk_summary": session_summary})
@@ -182,28 +175,44 @@ def _skill_trust_reason_hint(snapshot: RiskSnapshot) -> str | None:
     return None
 
 
-def _first_use_action_from_snapshot(snapshot: RiskSnapshot) -> str | None:
-    for finding in snapshot.skill_trust_findings:
-        action = finding.get("first_use_action")
-        if action in {"force_l2", "force_l3", "defer", "block"}:
-            return str(action)
-    return None
+def _highest_routing_intent(
+    snapshot: RiskSnapshot,
+    *,
+    routing_only: bool = False,
+    decision_only: bool = False,
+):
+    policy_priority = {"block": 3, "defer": 2, "audit": 1}
+    tier_priority = {"l3": 3, "l2": 2, "none": 1}
+    intents = list(snapshot.routing_intents or [])
+    if routing_only:
+        intents = [intent for intent in intents if intent.routing_affecting]
+    if decision_only:
+        intents = [intent for intent in intents if intent.decision_affecting]
+    if not intents:
+        return None
+    return sorted(
+        intents,
+        key=lambda intent: (
+            -policy_priority.get(intent.policy_action, 0),
+            -tier_priority.get(intent.recommended_tier, 0),
+            intent.source,
+            intent.reason,
+        ),
+    )[0]
 
 
-def _runtime_binding_action_from_snapshot(snapshot: RiskSnapshot) -> str | None:
-    for finding in snapshot.skill_trust_findings:
-        action = finding.get("runtime_binding_action")
-        if action in {"force_l2", "force_l3", "defer", "block"}:
-            return str(action)
-    return None
-
-
-def _fspr_action_from_snapshot(snapshot: RiskSnapshot) -> str | None:
-    for finding in snapshot.skill_trust_findings:
-        action = finding.get("fspr_action")
-        if action in {"force_l2", "force_l3", "defer", "block"}:
-            return str(action)
-    return None
+def _requested_tier_from_routing_intents(
+    requested_tier: DecisionTier,
+    snapshot: RiskSnapshot,
+) -> DecisionTier:
+    routing_intent = _highest_routing_intent(snapshot, routing_only=True)
+    if routing_intent is None:
+        return requested_tier
+    if routing_intent.recommended_tier == "l3":
+        return DecisionTier.L3
+    if routing_intent.recommended_tier == "l2" and requested_tier == DecisionTier.L1:
+        return DecisionTier.L2
+    return requested_tier
 
 
 def _automatic_l2_trigger_reason(
@@ -211,21 +220,9 @@ def _automatic_l2_trigger_reason(
     context: Optional[DecisionContext],
     l1_snapshot: RiskSnapshot,
 ) -> str | None:
-    first_use_action = _first_use_action_from_snapshot(l1_snapshot)
-    runtime_binding_action = _runtime_binding_action_from_snapshot(l1_snapshot)
-    fspr_action = _fspr_action_from_snapshot(l1_snapshot)
-    if first_use_action in {"force_l2", "force_l3"}:
-        return "first_use_skill_trust_action"
-    if runtime_binding_action in {"force_l2", "force_l3"}:
-        return "runtime_binding_skill_trust_action"
-    if fspr_action in {"force_l2", "force_l3"}:
-        return "first_use_skill_package_review_action"
-    if (
-        first_use_action in {"defer", "block"}
-        or runtime_binding_action in {"defer", "block"}
-        or fspr_action in {"defer", "block"}
-    ):
-        return None
+    routing_intent = _highest_routing_intent(l1_snapshot, routing_only=True)
+    if routing_intent is not None:
+        return routing_intent.reason
     if event.event_type == EventType.PRE_ACTION and l1_snapshot.risk_level == RiskLevel.MEDIUM:
         return "medium_pre_action"
     if bool(KEY_DOMAIN_PATTERN.search(event_text(event))):
@@ -315,24 +312,17 @@ class L1PolicyEngine:
             (decision, risk_snapshot, actual_tier)
         """
         effective_config = config if config is not None else self._config
-        first_use_action = skill_trust_first_use_action(
-            context.skill_trust if context is not None else None,
-            effective_config,
-        )
-        context = _context_with_first_use_action(context, first_use_action)
-        if first_use_action == "force_l3":
-            requested_tier = DecisionTier.L3
-        elif first_use_action == "force_l2" and requested_tier == DecisionTier.L1:
-            requested_tier = DecisionTier.L2
+        start = time.monotonic()
+
+        l1_snapshot = compute_risk_snapshot(event, context, self._session_tracker, effective_config)
+        requested_tier = _requested_tier_from_routing_intents(requested_tier, l1_snapshot)
         requested_tier = _effective_requested_tier_for_l3_config(
             requested_tier,
             effective_config,
             self._analyzer,
         )
+        context = _context_with_routing_intents(context, l1_snapshot)
         context = _context_with_l3_config(context, effective_config, requested_tier)
-        start = time.monotonic()
-
-        l1_snapshot = compute_risk_snapshot(event, context, self._session_tracker, effective_config)
         snapshot = l1_snapshot
         decision = self._decide(event, snapshot, context)
         actual_tier = DecisionTier.L1
@@ -488,57 +478,42 @@ class L1PolicyEngine:
                 context,
             )
 
-        first_use_action = _first_use_action_from_snapshot(snapshot)
-        if event.event_type == EventType.PRE_ACTION and first_use_action == "defer":
+        routing_policy_intent = _highest_routing_intent(snapshot, decision_only=True)
+        if (
+            event.event_type == EventType.PRE_ACTION
+            and routing_policy_intent is not None
+            and routing_policy_intent.policy_action == "block"
+        ):
             return self._with_scope_evaluation(
                 CanonicalDecision(
-                    decision=DecisionVerdict.DEFER,
+                    decision=DecisionVerdict.BLOCK,
                     reason=self._build_reason(
                         event,
                         snapshot,
-                        "First-use skill trust scan requires operator review",
+                        f"{routing_policy_intent.reason} policy blocked action",
                     ),
                     policy_id=self.POLICY_ID,
                     risk_level=risk,
                     decision_source=DecisionSource.POLICY,
                     policy_version=self.POLICY_VERSION,
                     failure_class=FailureClass.NONE,
-                    final=False,
+                    final=True,
                 ),
                 event,
                 context,
             )
-
-        runtime_binding_action = _runtime_binding_action_from_snapshot(snapshot)
-        if event.event_type == EventType.PRE_ACTION and runtime_binding_action == "defer":
+        if (
+            event.event_type == EventType.PRE_ACTION
+            and routing_policy_intent is not None
+            and routing_policy_intent.policy_action == "defer"
+        ):
             return self._with_scope_evaluation(
                 CanonicalDecision(
                     decision=DecisionVerdict.DEFER,
                     reason=self._build_reason(
                         event,
                         snapshot,
-                        "Runtime skill binding requires operator review",
-                    ),
-                    policy_id=self.POLICY_ID,
-                    risk_level=risk,
-                    decision_source=DecisionSource.POLICY,
-                    policy_version=self.POLICY_VERSION,
-                    failure_class=FailureClass.NONE,
-                    final=False,
-                ),
-                event,
-                context,
-            )
-
-        fspr_action = _fspr_action_from_snapshot(snapshot)
-        if event.event_type == EventType.PRE_ACTION and fspr_action == "defer":
-            return self._with_scope_evaluation(
-                CanonicalDecision(
-                    decision=DecisionVerdict.DEFER,
-                    reason=self._build_reason(
-                        event,
-                        snapshot,
-                        "First-use skill package review requires operator review",
+                        f"{routing_policy_intent.reason} requires operator review",
                     ),
                     policy_id=self.POLICY_ID,
                     risk_level=risk,
@@ -808,6 +783,21 @@ class L1PolicyEngine:
             min_score_for_level[target_level],
         )
         classified_by = ClassifiedBy.L3 if actual_tier == DecisionTier.L3 else ClassifiedBy.L2
+        context_summary = context.session_risk_summary if context is not None else None
+        l2_l3_summary = {
+            "status": "completed",
+            "requested_tier": requested_tier.value,
+            "actual_tier": actual_tier.value,
+            "analyzer_id": result.analyzer_id,
+            "reasons": list(result.reasons),
+        }
+        if isinstance(context_summary, dict):
+            if context_summary.get("l3_request_reason"):
+                l2_l3_summary["l3_request_reason"] = context_summary["l3_request_reason"]
+            if context_summary.get("l3_trigger_source_metadata"):
+                l2_l3_summary["l3_trigger_source_metadata"] = context_summary[
+                    "l3_trigger_source_metadata"
+                ]
         return RiskSnapshot(
             risk_level=target_level,
             composite_score=score,
@@ -819,15 +809,10 @@ class L1PolicyEngine:
             override=override,
             l1_snapshot=l1_snapshot if upgraded else None,
             l3_trace=result.trace,
-            l2_l3_summary={
-                "status": "completed",
-                "requested_tier": requested_tier.value,
-                "actual_tier": actual_tier.value,
-                "analyzer_id": result.analyzer_id,
-                "reasons": list(result.reasons),
-            },
+            l2_l3_summary=l2_l3_summary,
             rule_hits=list(l1_snapshot.rule_hits),
             skill_trust_findings=list(l1_snapshot.skill_trust_findings),
+            routing_intents=list(l1_snapshot.routing_intents),
             taint_flow_summary=l1_snapshot.taint_flow_summary,
             effect_summary=l1_snapshot.effect_summary,
         ), actual_tier

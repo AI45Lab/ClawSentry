@@ -371,7 +371,6 @@ def _context_prompt_lines(context: Optional[DecisionContext]) -> list[str]:
         request_reason = (
             session_summary.get("l2_request_reason")
             or session_summary.get("l3_request_reason")
-            or session_summary.get("first_use_skill_trust_action")
         )
         if request_reason:
             lines.append(
@@ -651,11 +650,14 @@ class RuleBasedAnalyzer:
 # LLMAnalyzer — L2 semantic analyzer backed by an LLM provider
 # ---------------------------------------------------------------------------
 
+DEFAULT_L2_MAX_TOKENS = 10_000
+DEFAULT_L2_PROVIDER_TIMEOUT_MS = 60_000.0
+
 @dataclass
 class LLMAnalyzerConfig:
     """Configuration for LLMAnalyzer."""
-    provider_timeout_ms: float = 3000.0
-    max_tokens: int = 256
+    provider_timeout_ms: float = DEFAULT_L2_PROVIDER_TIMEOUT_MS
+    max_tokens: int = DEFAULT_L2_MAX_TOKENS
     temperature: float = 0.0
 
 

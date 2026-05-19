@@ -85,10 +85,12 @@ class L3TriggerPolicy:
             metadata["source_metadata"] = dict(source_metadata)
             return metadata
 
-        if summary.get("first_use_skill_trust_action") == "force_l3":
+        if summary.get("l3_request_reason") in {
+            "fspr_package_review",
+            "runtime_binding_identity_conflict",
+        }:
             return {
-                "trigger_reason": "first_use_skill_trust_action",
-                "trigger_detail": "force_l3",
+                "trigger_reason": str(summary["l3_request_reason"]),
                 "source_metadata": dict(source_metadata),
             }
 

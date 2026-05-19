@@ -39,12 +39,12 @@ Adapter / harness 只收集 native skill name、shell skill path、runtime root�
 <div markdown>
 <span>4</span>
 **策略决策**
-Gateway 调用 `resolve_skill_trust()` 做 identity / provenance / hash / mirror / content 匹配，产出 `SkillTrustContext`；policy 按 runtime binding、trust-list state、FSPR/P2 evidence 和 profile action 生成 canonical decision。
+Gateway 调用 `resolve_skill_trust()` 做 identity / lineage / hash / mirror / content 匹配，产出 `SkillTrustContext`；policy 按 runtime binding、trust-list state、FSPR/post-action session evidence 和 profile action 生成 canonical decision。
 </div>
 <div markdown>
 <span>5</span>
 **Ledger 与事后证据**
-每次 observed skill use 写入 replay-safe `skill_use_ledger`；post-action provenance validator 只把 artifact claims 与 ledger 比对，不反向创造 runtime invocation，也不改写已完成 decision。
+每次 observed skill use 写入 replay-safe `skill_use_ledger`；FSPR 和 L2/L3 可以复用这些 bounded evidence。v0.8.2 起不再提供 artifact label 与 ledger 的 post-action provenance 对账器。
 </div>
 </div>
 
@@ -173,18 +173,18 @@ Gateway 只用 Gateway-owned registry/runtime metadata 强化 Skill Trust。Adap
 
 Controlled benchmark runners add explicit mirror parents while generating metadata. For Codex benchmark containers this includes `/workspace/.codex/skills/<name>`, `$CODEX_HOME/skills/<name>`, and `$HOME/.agents/skills/<name>`. The runner may mirror files into those roots, but Gateway still re-binds the observed runtime path and verifies content before treating a mirror as trusted.
 
-## 首次使用动作配置 {#first-use-actions}
+## 首次使用准入策略 {#first-use-policies}
 
-当 skill 处于 `unlisted`、`disabled` 或 `unknown`/`unbound` 时，Gateway 按以下 profile 配置决定动作：
+当 skill 处于 `unlisted`、`disabled` 或 `unknown`/`unbound` 时，Gateway 按以下 profile 配置决定 admission lifecycle 策略：
 
 | Profile | 环境变量 | 默认值 |
 |---|---|---|
-| normal | `CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION` | `audit` |
-| permissive | `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION` | `audit` |
-| strict | `CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION` | `audit` |
-| benchmark | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION` | `audit` |
+| normal | `CS_SKILL_TRUST_FIRST_USE_NORMAL_POLICY` | `audit_only` |
+| permissive | `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_POLICY` | `audit_only` |
+| strict | `CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY` | `defer_for_review` |
+| benchmark | `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY` | `scan_sync` |
 
-Runtime binding violations use the same action vocabulary through a separate profile matrix. The legacy profile-level knobs below still work as compatibility overrides:
+Runtime binding violations use the same action vocabulary through a per-condition profile matrix. The profile-level fields below are retained for config compatibility and visibility, but condition-specific runtime evidence is enforced by the per-condition fields and cannot be downgraded by these legacy knobs:
 
 | Profile | 环境变量 | 默认值 |
 |---|---|---|
@@ -193,14 +193,14 @@ Runtime binding violations use the same action vocabulary through a separate pro
 | strict | `CS_SKILL_TRUST_RUNTIME_STRICT_ACTION` | `block` |
 | benchmark | `CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION` | `block` |
 
-For new deployments, prefer the per-condition runtime binding action fields:
+Configure runtime binding through the per-condition action fields:
 
 | Runtime condition | normal | strict | benchmark | permissive |
 |---|---|---|---|---|
-| disallowed runtime path | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION=force_l3` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_STRICT_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_PERMISSIVE_ACTION=audit` |
-| ambiguous runtime source | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION=force_l3` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_PERMISSIVE_ACTION=audit` |
+| disallowed runtime path | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_STRICT_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_PERMISSIVE_ACTION=audit` |
+| ambiguous runtime source | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_PERMISSIVE_ACTION=audit` |
 | unverified runtime path/name | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_NORMAL_ACTION=audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_STRICT_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_BENCHMARK_ACTION=audit` | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_PERMISSIVE_ACTION=audit` |
-| unverified mirror content | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_NORMAL_ACTION=force_l3` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_STRICT_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_PERMISSIVE_ACTION=audit` |
+| unverified mirror content | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_NORMAL_ACTION=force_l3` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_STRICT_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_PERMISSIVE_ACTION=audit` |
 | mirror content mismatch | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION=defer` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_STRICT_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_BENCHMARK_ACTION=block` | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_PERMISSIVE_ACTION=audit` |
 
 Mirror content verification is Gateway-owned and bounded. Use `CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES`, `CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES`, and `CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS` to cap files, per-file bytes, and elapsed hashing time. If the budget is exhausted, the mirror becomes `content_unverified`; path membership alone never upgrades it to trusted.
@@ -278,7 +278,7 @@ Gateway 不信任请求侧的 raw skill metadata。以下字段被清洗或降�
 
 ## 与 Capability Narrowing 的关系 {#capability-narrowing}
 
-Skill Trust 是 **identity / provenance evidence**；Capability Narrowing 是基于风险的 **能力收紧**。两者独立工作，但风险信号可以联动：
+Skill Trust 是 **identity / lineage evidence**；Capability Narrowing 是基于风险的 **能力收紧**。两者独立工作，但风险信号可以联动：
 
 - **`CS_CAPABILITY_NARROWING_ENABLED=true`** 时，高 session 风险可自动应用更窄的 `SessionScopeProfile`
 - Skill Trust 的 **`trust_list_state`** 和 **`invariant_violations`** 可作为会话风险的输入，触发 MCP server/tool 或外部域名的范围限制
@@ -305,30 +305,23 @@ Skill Trust 是 **identity / provenance evidence**；Capability Narrowing 是基
 CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json
 CS_SKILL_TRUST_METADATA_PATH=.clawsentry/skill-trust-runtime.json
 
-# First-use 动作（可选值：audit | force_l2 | force_l3 | defer | block）
-CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION=audit
-CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION=audit
-CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=audit
-CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION=audit
+# First-use admission policy（可选值：audit_only | scan_sync | scan_async_defer | defer_for_review | block_until_reviewed）
+CS_SKILL_TRUST_FIRST_USE_NORMAL_POLICY=audit_only
+CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_POLICY=audit_only
+CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY=defer_for_review
+CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY=scan_sync
 
 # Runtime binding 动作（可选值：audit | force_l2 | force_l3 | defer | block）
 CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION=force_l3
 CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION=audit
 CS_SKILL_TRUST_RUNTIME_STRICT_ACTION=block
 CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION=block
-CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION=force_l3
+CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION=defer
 CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION=defer
 CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION=defer
 CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES=200
 CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES=1048576
 CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS=1000
-
-# Post-action provenance validation
-CS_SKILL_TRUST_PROVENANCE_ENABLED=false
-CS_SKILL_TRUST_PROVENANCE_POLICY_PATH=
-CS_SKILL_TRUST_PROVENANCE_POLICY_JSON=
-CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT=
-CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES=1048576
 
 # First-Use Skill Package Review（FSPR）
 CS_SKILL_TRUST_FSPR_ENABLED=false
@@ -338,10 +331,6 @@ CS_SKILL_TRUST_FSPR_ROLE_SET=default
 CS_SKILL_TRUST_FSPR_TIMEOUT_MS=120000
 CS_SKILL_TRUST_FSPR_CACHE_ENABLED=true
 CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED=false
-CS_SKILL_TRUST_FSPR_NORMAL_ACTION=audit
-CS_SKILL_TRUST_FSPR_PERMISSIVE_ACTION=audit
-CS_SKILL_TRUST_FSPR_STRICT_ACTION=audit
-CS_SKILL_TRUST_FSPR_BENCHMARK_ACTION=audit
 ```
 
 ## CLI 参考 {#cli-reference}
@@ -439,13 +428,13 @@ All shortcut commands accept `--operator-id-hash` and `--json`. `restore` uses t
 
 ### Operator-visible grade
 
-Registry records in CLI JSON output and `GET /skill-trust/registry` include `skill_trust_grade`. The grade is derived for operators; policy still consumes raw fields such as `list_state`, admission risk, runtime binding status, FSPR verdicts, and P2/provenance evidence.
+Registry records in CLI JSON output and `GET /skill-trust/registry` include `skill_trust_grade`. The grade is derived for operators; policy still consumes raw fields such as `list_state`, admission risk, runtime binding status, FSPR verdicts, and post-action session evidence.
 
 | `skill_trust_grade` | Derived from |
 |---|---|
-| `trusted` | `allowlist` without high-risk admission, runtime mismatch, FSPR inconsistency, or unresolved provenance findings |
+| `trusted` | `allowlist` without high-risk admission, runtime mismatch, FSPR inconsistency, or unresolved P2 evidence |
 | `review` | `greylist`/`unlisted`, medium or unknown admission, unverified runtime binding/content, or insufficient FSPR evidence |
-| `restricted` | high/critical admission, disallowed or ambiguous runtime source, content mismatch, FSPR inconsistency, or unresolved P2/provenance findings |
+| `restricted` | high/critical admission, disallowed or ambiguous runtime source, content mismatch, FSPR inconsistency, or unresolved P2 evidence |
 | `blocked` | `blacklist` or `revoked` |
 | `disabled` | `disabled` |
 
@@ -494,27 +483,11 @@ The same skill name under an unapproved root cannot inherit trusted source metad
 
 Name-only evidence can identify ambiguity, but it cannot verify path, content, or mirror integrity.
 
-### Provenance and FSPR examples
-
-**final provenance mismatch example**
-
-```json
-{
-  "event_type": "post_action",
-  "finding": "unobserved_claim",
-  "declared_label": "document-summary",
-  "matched_ledger_entry_ids": [],
-  "handling": "coverage_gap"
-}
-```
-
-artifact provenance validation is generic and post-action. A handwritten output label is compared with the Skill Use Ledger; it does not create a fake runtime invocation and does not rewrite the completed pre-action decision.
-
-Registry-approved aliases from Gateway-owned Skill Trust metadata are accepted during provenance comparison. Missing fields, non-string labels, parse failures, oversized artifacts, and unsafe artifact paths are recorded as bounded provenance findings with safe artifact path summaries/hashes rather than raw private paths.
+### FSPR examples
 
 **FSPR evidence-only**
 
-First-Use Skill Package Review can inspect `SKILL.md`, scripts, references, data summaries, admission findings, ledger entries, and provenance claims. It is distinct from L3 runtime review and is optional by profile. FSPR cannot mutate allowlist, greylist, blacklist, revoked, disabled, or restore state; it emits bounded evidence and transition recommendations for Gateway/operator review.
+First-Use Skill Package Review can inspect `SKILL.md`, scripts, references, data summaries, admission findings, and ledger entries. It is distinct from L3 runtime review and is optional by profile. FSPR cannot mutate allowlist, greylist, blacklist, revoked, disabled, or restore state; it emits bounded evidence and admission recommendations for Gateway/operator review.
 
 ### Lifecycle examples
 

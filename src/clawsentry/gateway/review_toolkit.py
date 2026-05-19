@@ -6,10 +6,11 @@ import asyncio
 import json
 import re
 import time
-import tomllib
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
+
+from clawsentry import _tomllib as tomllib
 
 
 class ToolCallBudgetExhausted(RuntimeError):

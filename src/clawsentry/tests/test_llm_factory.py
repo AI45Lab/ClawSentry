@@ -23,6 +23,8 @@ def _clean_env():
         "CS_LLM_BASE_URL",
         "CS_LLM_TEMPERATURE",
         "CS_LLM_PROVIDER_TIMEOUT_MS",
+        "CS_LLM_MAX_TOKENS",
+        "CS_L3_MAX_TOKENS",
         "CS_L3_ENABLED",
         "CS_L3_MULTI_TURN",
         "CS_LLM_L3_ENABLED",
@@ -97,6 +99,7 @@ class TestBuildAnalyzerFromEnv:
         assert isinstance(result, CompositeAnalyzer)
         assert isinstance(result._analyzers[1], LLMAnalyzer)
         assert isinstance(result._analyzers[1]._provider, OpenAIProvider)
+        assert result._analyzers[1]._config.provider_timeout_ms == 60000.0
 
     def test_openai_provider_uses_temperature_and_provider_timeout_env(self):
         env = {
@@ -114,6 +117,22 @@ class TestBuildAnalyzerFromEnv:
         assert isinstance(l2, LLMAnalyzer)
         assert l2._provider._config.temperature == 1.0
         assert l2._config.provider_timeout_ms == 20000.0
+        assert l2._config.max_tokens == 10000
+
+    def test_openai_provider_uses_l2_max_tokens_env(self):
+        env = {
+            **_clean_env(),
+            "CS_LLM_PROVIDER": "openai",
+            "CS_LLM_API_KEY": "sk-shared-key-123",
+            "CS_LLM_MAX_TOKENS": "1024",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            result = build_analyzer_from_env()
+
+        assert isinstance(result, CompositeAnalyzer)
+        l2 = result._analyzers[1]
+        assert isinstance(l2, LLMAnalyzer)
+        assert l2._config.max_tokens == 1024
 
     def test_anthropic_provider_from_env(self):
         """CS_LLM_PROVIDER=anthropic + ANTHROPIC_API_KEY → CompositeAnalyzer with AnthropicProvider."""
@@ -241,6 +260,30 @@ class TestBuildAnalyzerFromEnv:
         assert isinstance(result._analyzers[0], CompositeAnalyzer)
         assert isinstance(result._analyzers[1], AgentAnalyzer)
         assert result._analyzers[1]._config.enable_multi_turn is False
+
+    def test_l3_max_tokens_env_configures_agent_analyzer(self):
+        """CS_L3_MAX_TOKENS configures every L3 provider call budget."""
+        from pathlib import Path
+        from clawsentry.gateway.server import TrajectoryStore
+        from clawsentry.gateway.agent_analyzer import AgentAnalyzer
+
+        env = {
+            **_clean_env(),
+            "CS_LLM_PROVIDER": "openai",
+            "OPENAI_API_KEY": "sk-test-key-123",
+            "CS_L3_ENABLED": "true",
+            "CS_L3_MAX_TOKENS": "2048",
+        }
+        store = TrajectoryStore(db_path=":memory:")
+        with mock.patch.dict(os.environ, env, clear=False):
+            result = build_analyzer_from_env(
+                trajectory_store=store,
+                workspace_root=Path("/tmp"),
+            )
+
+        assert isinstance(result, CompositeAnalyzer)
+        assert isinstance(result._analyzers[1], AgentAnalyzer)
+        assert result._analyzers[1]._config.max_tokens == 2048
 
     def test_l3_multi_turn_invalid_value_keeps_default_multi_turn(self):
         """Unexpected CS_L3_MULTI_TURN values should not silently force single-turn."""

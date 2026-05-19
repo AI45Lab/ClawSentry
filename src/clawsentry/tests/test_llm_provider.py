@@ -103,6 +103,28 @@ class TestAnthropicProvider:
         assert "risk_assessment" in result
         mock_client.messages.create.assert_awaited_once()
 
+    def test_complete_uses_first_text_block_after_thinking_block(self):
+        p = self._make_provider()
+        mock_response = MagicMock()
+        thinking_block = MagicMock()
+        del thinking_block.text
+        thinking_block.type = "thinking"
+        text_block = MagicMock()
+        text_block.type = "text"
+        text_block.text = '{"risk_assessment":"high","reasons":["test"],"confidence":0.9}'
+        mock_response.content = [thinking_block, text_block]
+
+        mock_client = MagicMock()
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
+        p._client = mock_client
+
+        result = asyncio.run(
+            p.complete("system", "user msg", timeout_ms=3000)
+        )
+
+        assert "risk_assessment" in result
+        mock_client.messages.create.assert_awaited_once()
+
     def test_complete_timeout(self):
         p = self._make_provider()
 

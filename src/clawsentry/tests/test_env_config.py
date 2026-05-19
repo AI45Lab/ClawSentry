@@ -22,13 +22,11 @@ def test_skill_trust_docs_include_operator_examples():
     )
 
     required_phrases = [
-        "artifact provenance validation is generic and post-action",
         "FSPR evidence-only",
         "cannot mutate allowlist, greylist, blacklist, revoked, disabled, or restore",
         "verified mirror example",
         "disallowed same-name path example",
         "ambiguous name-only example",
-        "final provenance mismatch example",
         "blacklist-to-greylist override example",
         "revoked-to-allowlist trusted migration example",
         "disabled/restore example",
@@ -215,7 +213,7 @@ def test_skill_trust_control_plane_inputs_are_visible_config_fields(tmp_path):
     env_file.write_text(
         "CS_SKILL_TRUST_REGISTRY_PATH=/tmp/registry.json\n"
         "CS_SKILL_TRUST_METADATA_PATH=/tmp/metadata.json\n"
-        "CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION=block\n",
+        "CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY=defer_for_review\n",
         encoding="utf-8",
     )
     parsed = parse_env_file(env_file)
@@ -224,11 +222,20 @@ def test_skill_trust_control_plane_inputs_are_visible_config_fields(tmp_path):
 
     assert effective.values["skill_trust.registry_path"] == "/tmp/registry.json"
     assert effective.values["skill_trust.metadata_path"] == "/tmp/metadata.json"
-    assert effective.values["skill_trust.first_use_strict_action"] == "block"
+    assert effective.values["skill_trust.first_use_strict_policy"] == "defer_for_review"
     assert effective.source_detail_for("skill_trust.metadata_path") == f"{env_file}:2"
 
 
-def test_provenance_validator_inputs_are_visible_config_fields(tmp_path):
+def test_first_use_policy_settings_are_visible_without_legacy_actions():
+    effective = resolve_effective_config(
+        environ={"CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY": "scan_sync"},
+    )
+
+    assert effective.values["skill_trust.first_use_benchmark_policy"] == "scan_sync"
+    assert "skill_trust.first_use_benchmark_action" not in effective.values
+
+
+def test_provenance_validator_inputs_are_not_config_fields(tmp_path):
     env_file = tmp_path / "local.env"
     env_file.write_text(
         "CS_SKILL_TRUST_PROVENANCE_ENABLED=true\n"
@@ -241,10 +248,10 @@ def test_provenance_validator_inputs_are_visible_config_fields(tmp_path):
 
     effective = resolve_effective_config(environ={}, env_file=parsed)
 
-    assert effective.values["skill_trust.provenance_enabled"] is True
-    assert effective.values["skill_trust.provenance_policy_path"] == "/tmp/provenance.json"
-    assert effective.values["skill_trust.provenance_max_artifact_bytes"] == 4096
-    assert effective.values["skill_trust.provenance_workspace_root"] == "/tmp/provenance-workspace"
+    assert "skill_trust.provenance_enabled" not in effective.values
+    assert "skill_trust.provenance_policy_path" not in effective.values
+    assert "skill_trust.provenance_max_artifact_bytes" not in effective.values
+    assert "skill_trust.provenance_workspace_root" not in effective.values
 
 
 def test_skill_trust_config_docs_include_runtime_binding_fields():
@@ -308,10 +315,6 @@ def test_fspr_settings_are_visible_config_fields():
             "CS_SKILL_TRUST_FSPR_TIMEOUT_MS": "2500",
             "CS_SKILL_TRUST_FSPR_CACHE_ENABLED": "false",
             "CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED": "true",
-            "CS_SKILL_TRUST_FSPR_STRICT_ACTION": "block",
-            "CS_SKILL_TRUST_FSPR_INCONSISTENT_STRICT_ACTION": "defer",
-            "CS_SKILL_TRUST_FSPR_SUSPICIOUS_NORMAL_ACTION": "force_l2",
-            "CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_BENCHMARK_ACTION": "block",
         },
     )
 
@@ -322,10 +325,6 @@ def test_fspr_settings_are_visible_config_fields():
     assert effective.values["skill_trust.fspr_timeout_ms"] == 2500
     assert effective.values["skill_trust.fspr_cache_enabled"] is False
     assert effective.values["skill_trust.fspr_provider_enabled"] is True
-    assert effective.values["skill_trust.fspr_strict_action"] == "block"
-    assert effective.values["skill_trust.fspr_inconsistent_strict_action"] == "defer"
-    assert effective.values["skill_trust.fspr_suspicious_normal_action"] == "force_l2"
-    assert effective.values["skill_trust.fspr_insufficient_evidence_benchmark_action"] == "block"
 
 
 def test_scope_profile_file_deprecated_alias_resolves_from_process_env():

@@ -105,19 +105,19 @@ v0.7.0 新增的 Skill Trust / capability narrowing / agent feedback surfaces �
 |------|--------|------|
 | `CS_SKILL_TRUST_REGISTRY_PATH` | (空) | Skill Trust registry JSON 路径；为空时仅使用请求上下文或 Gateway runtime metadata |
 | `CS_SKILL_TRUST_METADATA_PATH` | (空) | Gateway-owned runtime metadata JSON 路径，通常由 `clawsentry skill-trust register-dir` 生成 |
-| `CS_SKILL_TRUST_FIRST_USE_NORMAL_ACTION` | `audit` | normal 模式下首次/未绑定 skill 的动作：`audit`、`force_l2`、`force_l3`、`defer`、`block` |
-| `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_ACTION` | `audit` | benchmark 模式下首次/未绑定 skill 的动作 |
-| `CS_SKILL_TRUST_FIRST_USE_STRICT_ACTION` | `audit` | strict 模式下首次/未绑定 skill 的动作 |
-| `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_ACTION` | `audit` | permissive 模式下首次/未绑定 skill 的动作 |
-| `CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION` | `force_l3` | normal 模式下通用 runtime binding finding 动作 |
-| `CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION` | `block` | benchmark 模式下通用 runtime binding finding 动作 |
-| `CS_SKILL_TRUST_RUNTIME_STRICT_ACTION` | `block` | strict 模式下通用 runtime binding finding 动作 |
-| `CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION` | `audit` | permissive 模式下通用 runtime binding finding 动作 |
-| `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION` | `force_l3` | normal 模式下 `runtime_path_disallowed` 动作 |
+| `CS_SKILL_TRUST_FIRST_USE_NORMAL_POLICY` | `audit_only` | normal 模式下首次/未绑定 skill admission policy：`audit_only`、`scan_sync`、`scan_async_defer`、`defer_for_review`、`block_until_reviewed` |
+| `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY` | `scan_sync` | benchmark 模式下首次/未绑定 skill admission policy |
+| `CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY` | `defer_for_review` | strict 模式下首次/未绑定 skill admission policy |
+| `CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_POLICY` | `audit_only` | permissive 模式下首次/未绑定 skill admission policy |
+| `CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION` | `force_l3` | legacy profile-level runtime binding config surface；per-condition evidence 由下方字段执法 |
+| `CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION` | `block` | legacy profile-level runtime binding config surface；per-condition evidence 由下方字段执法 |
+| `CS_SKILL_TRUST_RUNTIME_STRICT_ACTION` | `block` | legacy profile-level runtime binding config surface；per-condition evidence 由下方字段执法 |
+| `CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION` | `audit` | legacy profile-level runtime binding config surface；per-condition evidence 由下方字段执法 |
+| `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION` | `defer` | normal 模式下 `runtime_path_disallowed` 动作 |
 | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_BENCHMARK_ACTION` | `block` | benchmark 模式下 `runtime_path_disallowed` 动作 |
 | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_STRICT_ACTION` | `block` | strict 模式下 `runtime_path_disallowed` 动作 |
 | `CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_PERMISSIVE_ACTION` | `audit` | permissive 模式下 `runtime_path_disallowed` 动作 |
-| `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION` | `force_l3` | normal 模式下 `ambiguous_runtime_source` 动作 |
+| `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION` | `defer` | normal 模式下 `ambiguous_runtime_source` 动作 |
 | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_BENCHMARK_ACTION` | `block` | benchmark 模式下 `ambiguous_runtime_source` 动作 |
 | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION` | `defer` | strict 模式下 `ambiguous_runtime_source` 动作 |
 | `CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_PERMISSIVE_ACTION` | `audit` | permissive 模式下 `ambiguous_runtime_source` 动作 |
@@ -126,7 +126,7 @@ v0.7.0 新增的 Skill Trust / capability narrowing / agent feedback surfaces �
 | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_STRICT_ACTION` | `defer` | strict 模式下 unverified runtime path 动作 |
 | `CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_PERMISSIVE_ACTION` | `audit` | permissive 模式下 unverified runtime path 动作 |
 | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_NORMAL_ACTION` | `force_l3` | normal 模式下 unverified runtime mirror content 动作 |
-| `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION` | `block` | benchmark 模式下 unverified runtime mirror content 动作 |
+| `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION` | `defer` | benchmark 模式下 unverified runtime mirror content 动作 |
 | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_STRICT_ACTION` | `defer` | strict 模式下 unverified runtime mirror content 动作 |
 | `CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_PERMISSIVE_ACTION` | `audit` | permissive 模式下 unverified runtime mirror content 动作 |
 | `CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION` | `defer` | normal 模式下 runtime mirror content mismatch 动作 |
@@ -143,27 +143,6 @@ v0.7.0 新增的 Skill Trust / capability narrowing / agent feedback surfaces �
 | `CS_SKILL_TRUST_FSPR_TIMEOUT_MS` | `120000` | FSPR 总超时预算 |
 | `CS_SKILL_TRUST_FSPR_CACHE_ENABLED` | `true` | 启用 FSPR cache |
 | `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED` | `false` | 允许使用配置的 provider-backed FSPR roles |
-| `CS_SKILL_TRUST_FSPR_NORMAL_ACTION` | `audit` | normal 模式下通用 FSPR verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_BENCHMARK_ACTION` | `audit` | benchmark 模式下通用 FSPR verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_STRICT_ACTION` | `audit` | strict 模式下通用 FSPR verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_PERMISSIVE_ACTION` | `audit` | permissive 模式下通用 FSPR verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_INCONSISTENT_NORMAL_ACTION` | `audit` | normal 模式下 FSPR inconsistent verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_INCONSISTENT_BENCHMARK_ACTION` | `audit` | benchmark 模式下 FSPR inconsistent verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_INCONSISTENT_STRICT_ACTION` | `audit` | strict 模式下 FSPR inconsistent verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_INCONSISTENT_PERMISSIVE_ACTION` | `audit` | permissive 模式下 FSPR inconsistent verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_SUSPICIOUS_NORMAL_ACTION` | `audit` | normal 模式下 FSPR suspicious verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_SUSPICIOUS_BENCHMARK_ACTION` | `audit` | benchmark 模式下 FSPR suspicious verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_SUSPICIOUS_STRICT_ACTION` | `audit` | strict 模式下 FSPR suspicious verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_SUSPICIOUS_PERMISSIVE_ACTION` | `audit` | permissive 模式下 FSPR suspicious verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_NORMAL_ACTION` | `audit` | normal 模式下 FSPR insufficient-evidence verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_BENCHMARK_ACTION` | `audit` | benchmark 模式下 FSPR insufficient-evidence verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_STRICT_ACTION` | `audit` | strict 模式下 FSPR insufficient-evidence verdict 动作 |
-| `CS_SKILL_TRUST_FSPR_INSUFFICIENT_EVIDENCE_PERMISSIVE_ACTION` | `audit` | permissive 模式下 FSPR insufficient-evidence verdict 动作 |
-| `CS_SKILL_TRUST_PROVENANCE_ENABLED` | `false` | 启用 post-action artifact provenance validation |
-| `CS_SKILL_TRUST_PROVENANCE_POLICY_PATH` | (空) | JSON provenance validation policy 路径 |
-| `CS_SKILL_TRUST_PROVENANCE_POLICY_JSON` | (空) | inline JSON provenance validation policy |
-| `CS_SKILL_TRUST_PROVENANCE_WORKSPACE_ROOT` | (空=Gateway cwd) | provenance artifact glob 的 workspace/sandbox 根目录 |
-| `CS_SKILL_TRUST_PROVENANCE_MAX_ARTIFACT_BYTES` | `1048576` | provenance validation 单个 artifact 最大读取字节数；超限记录 bounded finding |
 | `CS_CAPABILITY_NARROWING_ENABLED` | `false` | 高会话风险时应用收窄的 SessionScopeProfile，不静默改写历史 canonical decision |
 | `CS_CAPABILITY_NARROWING_TRIGGER_RISK` | `high` | 自动收窄的历史 session risk 阈值：`low`、`medium`、`high`、`critical` |
 | `CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS` | `read_only` | 自动收窄后允许的工具权限组，逗号分隔 |

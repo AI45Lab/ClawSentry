@@ -24,7 +24,6 @@ import struct
 import sys
 import threading
 import time
-from dataclasses import asdict
 from typing import Any, Literal, Optional
 
 from pathlib import Path
@@ -100,12 +99,6 @@ from .l3_runtime import build_l3_runtime_info
 from .pattern_evolution import PatternEvolutionManager
 from .policy_engine import L1PolicyEngine
 from .post_action_analyzer import PostActionAnalyzer
-from .provenance_validator import (
-    ProvenanceFinding,
-    collect_policy_artifacts,
-    load_provenance_policy_from_config,
-    validate_provenance_claims,
-)
 from .session_scope import evaluate_session_scope, scope_protection_statement
 from .tool_permissions import parse_tool_permission_group_overrides, resolve_tool_permission
 from .metrics import LLMBudgetTracker, MetricsCollector
@@ -1066,43 +1059,6 @@ def _gateway_owned_skill_trust_bundle():
     if not isinstance(payload, dict):
         return None
     return load_skill_trust_runtime_metadata_bundle(payload)
-
-
-def _gateway_owned_provenance_aliases() -> dict[str, list[str]]:
-    bundle = _gateway_owned_skill_trust_bundle()
-    if bundle is None:
-        return {}
-    aliases: dict[str, list[str]] = {}
-    for record in bundle.metadata_records:
-        canonical_id = record.canonical_skill_id
-        raw_aliases = record.raw.get("aliases")
-        if not canonical_id or not isinstance(raw_aliases, list):
-            continue
-        safe_aliases = [
-            str(alias)
-            for alias in raw_aliases
-            if isinstance(alias, str) and alias.strip()
-        ]
-        if safe_aliases:
-            aliases.setdefault(canonical_id, []).extend(safe_aliases)
-    return {
-        canonical_id: list(dict.fromkeys(values))
-        for canonical_id, values in aliases.items()
-    }
-
-
-def _safe_provenance_artifact_key(file_path: str | None) -> str:
-    if not file_path:
-        return "output.json"
-    path = Path(file_path)
-    if path.is_absolute() or ".." in path.parts:
-        return path.name or "output.json"
-    return path.as_posix()
-
-
-def _provenance_workspace_root(config: DetectionConfig) -> Path:
-    configured = str(config.skill_trust_provenance_workspace_root or "").strip()
-    return Path(configured).expanduser() if configured else Path.cwd()
 
 
 def _trusted_gateway_observed(
@@ -2888,41 +2844,6 @@ class SupervisionGateway:
                     external_multiplier=external_multiplier,
                 ),
             )
-            provenance_findings: list[dict[str, Any]] = []
-            policy, policy_findings = load_provenance_policy_from_config(self._detection_config)
-            provenance_findings.extend(asdict(item) for item in policy_findings)
-            if policy is not None:
-                max_bytes = int(self._detection_config.skill_trust_provenance_max_artifact_bytes)
-                artifacts: dict[str, str] = {}
-                if output_text:
-                    artifact_key = _safe_provenance_artifact_key(file_path)
-                    if len(output_text.encode("utf-8")) > max_bytes:
-                        provenance_findings.append(asdict(ProvenanceFinding(
-                            finding_type="policy_not_applicable",
-                            severity="low",
-                            confidence="high",
-                            handling="artifact_too_large",
-                            artifact_path=artifact_key,
-                        )))
-                    artifacts[artifact_key] = output_text[:max_bytes]
-                file_artifacts, artifact_findings = collect_policy_artifacts(
-                    policy,
-                    workspace_root=_provenance_workspace_root(self._detection_config),
-                    max_artifact_bytes=max_bytes,
-                )
-                artifacts.update(file_artifacts)
-                provenance_findings.extend(asdict(item) for item in artifact_findings)
-                validation_findings = (
-                    validate_provenance_claims(
-                        policy,
-                        artifacts=artifacts,
-                        ledger_entries=self._skill_use_ledger_entries_for_session(session_id),
-                        approved_aliases=_gateway_owned_provenance_aliases(),
-                    )
-                    if artifacts
-                    else []
-                )
-                provenance_findings.extend(asdict(item) for item in validation_findings)
             self.session_registry.record_post_action_score(
                 session_id=session_id,
                 event_id=event_id,
@@ -2933,17 +2854,7 @@ class SupervisionGateway:
                 tool_name=tool_name,
                 source_framework=source_framework,
                 handling=finding_action,
-                provenance_findings=provenance_findings,
             )
-            if provenance_findings:
-                self.event_bus.broadcast({
-                    "type": "provenance_finding",
-                    "event_id": event_id,
-                    "session_id": session_id,
-                    "source_framework": source_framework,
-                    "findings": provenance_findings,
-                    "timestamp": occurred_at,
-                })
             if finding.tier.value != "log_only":
                 handling = finding_action
                 if session_id and handling in ("defer", "block"):

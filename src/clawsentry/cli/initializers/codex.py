@@ -5,9 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import tomllib
 from pathlib import Path
 from typing import Any
+
+from clawsentry import _tomllib as tomllib
 
 from .base import LOCAL_ENV_FILE_EXAMPLE, InitResult, SetupResult, merge_project_framework_config
 

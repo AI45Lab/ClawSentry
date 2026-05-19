@@ -18,6 +18,9 @@ from pathlib import Path
 from ..gateway.l3_runtime import infer_l3_reason_code
 
 _TRUE_VALUES = ("true", "1", "yes", "on")
+DEFAULT_L2_MAX_TOKENS = 10_000
+DEFAULT_L2_TIMEOUT_MS = 60_000
+DEFAULT_L3_TIMEOUT_MS = 300_000
 
 
 def _colorize(text: str, code: str, color: bool) -> str:
@@ -51,6 +54,17 @@ def _env_bool_from(runtime_env: dict[str, str], name: str, default: bool = False
     if not raw:
         return default
     return raw.lower() in _TRUE_VALUES
+
+
+def _env_int_from(runtime_env: dict[str, str], name: str, default: int) -> int:
+    raw = str(runtime_env.get(name, "")).strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return value if value > 0 else default
 
 
 def _resolve_runtime_env(env_file: Path | None = None) -> dict[str, str]:
@@ -176,7 +190,11 @@ def _format_l3_detail(result: object, trace: dict | None) -> str:
     return ", ".join(parts) if parts else _format_analysis_detail(result)
 
 
-async def _test_reachability(provider, timeout_ms: float = 10000) -> tuple[bool, float, str]:
+async def _test_reachability(
+    provider,
+    timeout_ms: float = DEFAULT_L2_TIMEOUT_MS,
+    max_tokens: int = 16,
+) -> tuple[bool, float, str]:
     """Test basic API reachability. Returns (ok, latency_ms, detail)."""
     start = time.monotonic()
     try:
@@ -184,7 +202,7 @@ async def _test_reachability(provider, timeout_ms: float = 10000) -> tuple[bool,
             system_prompt="You are a test probe. Reply with exactly: PONG",
             user_message="PING",
             timeout_ms=timeout_ms,
-            max_tokens=16,
+            max_tokens=max_tokens,
         )
         latency = (time.monotonic() - start) * 1000
         ok = "pong" in resp.lower()
@@ -197,11 +215,21 @@ async def _test_reachability(provider, timeout_ms: float = 10000) -> tuple[bool,
         return False, latency, str(e)[:120]
 
 
-async def _test_l2(provider, timeout_ms: float = 15000) -> tuple[bool, float, str]:
+async def _test_l2(
+    provider,
+    timeout_ms: float = DEFAULT_L2_TIMEOUT_MS,
+    max_tokens: int = DEFAULT_L2_MAX_TOKENS,
+) -> tuple[bool, float, str]:
     """Run a sample through L2 semantic analysis. Returns (ok, latency_ms, detail)."""
-    from ..gateway.semantic_analyzer import LLMAnalyzer
+    from ..gateway.semantic_analyzer import LLMAnalyzer, LLMAnalyzerConfig
 
-    analyzer = LLMAnalyzer(provider)
+    analyzer = LLMAnalyzer(
+        provider,
+        LLMAnalyzerConfig(
+            provider_timeout_ms=timeout_ms,
+            max_tokens=max_tokens,
+        ),
+    )
 
     # Create a sample suspicious event
     from ..gateway.models import (
@@ -243,7 +271,7 @@ async def _test_l2(provider, timeout_ms: float = 15000) -> tuple[bool, float, st
 
 async def _test_l3(
     provider,
-    timeout_ms: float = 30000,
+    timeout_ms: float = DEFAULT_L3_TIMEOUT_MS,
     runtime_env: dict[str, str] | None = None,
 ) -> tuple[bool, float, str]:
     """Run a sample through L3 agent review. Returns (ok, latency_ms, detail)."""
@@ -351,7 +379,8 @@ async def _run_tests(
     # --- Test 1: API Reachability ---
     if not json_mode:
         print(f"\n  [1/{'4' if not skip_l3 else '3'}] Testing API reachability ...", end="", flush=True)
-    ok, latency, detail = await _test_reachability(provider)
+    max_tokens = _env_int_from(runtime_env, "CS_LLM_MAX_TOKENS", DEFAULT_L2_MAX_TOKENS)
+    ok, latency, detail = await _test_reachability(provider, max_tokens=max(16, max_tokens))
     results.append({"test": "api_reachability", "ok": ok, "latency_ms": round(latency, 1), "detail": detail})
     if not json_mode:
         status = _green("PASS", color) if ok else _red("FAIL", color)
@@ -369,7 +398,11 @@ async def _run_tests(
     # --- Test 2: Single-call latency ---
     if not json_mode:
         print(f"  [2/{'4' if not skip_l3 else '3'}] Measuring single-call latency ...", end="", flush=True)
-    ok2, latency2, detail2 = await _test_reachability(provider, timeout_ms=15000)
+    ok2, latency2, detail2 = await _test_reachability(
+        provider,
+        timeout_ms=DEFAULT_L2_TIMEOUT_MS,
+        max_tokens=max(16, max_tokens),
+    )
     avg_latency = (latency + latency2) / 2
     results.append({"test": "latency", "ok": ok2, "latency_ms": round(latency2, 1), "avg_ms": round(avg_latency, 1), "detail": detail2})
     if not json_mode:
@@ -381,7 +414,16 @@ async def _run_tests(
     # --- Test 3: L2 Semantic Analysis ---
     if not json_mode:
         print(f"  [3/{'4' if not skip_l3 else '3'}] Testing L2 semantic analysis ...", end="", flush=True)
-    ok3, latency3, detail3 = await _test_l2(provider)
+    provider_timeout_ms = _env_int_from(
+        runtime_env,
+        "CS_LLM_PROVIDER_TIMEOUT_MS",
+        DEFAULT_L2_TIMEOUT_MS,
+    )
+    ok3, latency3, detail3 = await _test_l2(
+        provider,
+        timeout_ms=provider_timeout_ms,
+        max_tokens=max_tokens,
+    )
     results.append({"test": "l2_analysis", "ok": ok3, "latency_ms": round(latency3, 1), "detail": detail3})
     if not json_mode:
         status = _green("PASS", color) if ok3 else _red("FAIL", color)
