@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="为 L3 审查 Agent 编写和加载自定义 YAML 领域审查技能">
+        <meta name="description" content="Write and load custom YAML domain-review skills for the L3 review agent.">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>自定义 L3 Skills - ClawSentry</title>
+        <title>自定义 L3 技能 - ClawSentry</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#l3-skills" class="md-skip">
+        <a href="#l3" class="md-skip">
           跳转至
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              自定义 L3 Skills
+              自定义 L3 技能
             
           </span>
         </div>
@@ -170,6 +170,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -272,6 +279,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -291,6 +300,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -331,6 +342,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -350,6 +363,8 @@
         <a href="../../decision-layers/l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../rule-governance/" class="md-tabs__link">
+        <a href="../skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -948,6 +993,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1232,6 +1293,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1546,6 +1627,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1739,34 +1838,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decision-layers/sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../decision-layers/scope-restrictions/" class="md-nav__link">
         
   
@@ -1888,6 +1959,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1942,6 +2031,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../rule-governance/" class="md-nav__link">
         
   
@@ -1975,8 +2092,6 @@
       
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
-      
-        
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
@@ -2020,8 +2135,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2030,205 +2143,77 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#skill" class="md-nav__link">
+  <a href="#l3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        什么是 Skill
+        自定义 L3 审查技能
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="什么是 Skill">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#skill_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Skill 选择算法
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#skills" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        内置 Skills
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="内置 Skills">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#shell-audit-10" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        shell-audit (优先级: 10)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#credential-audit-10" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        credential-audit (优先级: 10)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#code-review-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        code-review (优先级: 8)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#file-system-audit-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        file-system-audit (优先级: 8)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#network-audit-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        network-audit (优先级: 8)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#general-review-0" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        general-review (优先级: 0)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#skill_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        创建自定义 Skill
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="创建自定义 Skill">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-yaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 1: 创建 YAML 文件
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-skill" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 2: 编写 Skill 定义
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 3: 设置环境变量
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-gateway" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 4: 重启 Gateway
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-clawsentry-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 5: 用 clawsentry rules 做作者期验证
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#skill-schema" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Skill Schema 完整参考
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Skill Schema 完整参考">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        字段详细说明
+        技能清单字段参考
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="技能清单字段参考">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心字段（所有 schema 版本适用）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v1-schema_version-clawsentryl3_skillv1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        清单 v1 专属字段（schema_version: clawsentry.l3_skill.v1）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#valid_l3_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        全局工具白名单（VALID_L3_TOOLS）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#required_evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        required_evidence 有效值
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field_notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        field_notes 有效键
       
     </span>
   </a>
@@ -2244,41 +2229,63 @@
   <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        加载机制详解
+        技能评分算法
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="加载机制详解">
+    <nav class="md-nav" aria-label="技能评分算法">
       <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#skillregistry" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SkillRegistry 初始化
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#load_additional" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        load_additional() 行为
-      
-    </span>
-  </a>
-  
-</li>
         
           <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        验证规则
+        技能评分与选择流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        得分组成
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        得分并列时的决胜规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        兜底规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        技能生命周期
       
     </span>
   </a>
@@ -2291,22 +2298,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#system_prompt_1" class="md-nav__link">
+  <a href="#_8" class="md-nav__link">
     <span class="md-ellipsis">
       
-        编写有效的 system_prompt
+        触发覆盖说明
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="编写有效的 system_prompt">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内置技能
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        带注释的示例技能
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        添加自定义技能
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="添加自定义技能">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1" class="md-nav__link">
+  <a href="#1-yaml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. 明确角色身份
+        1. 创建 YAML 文件
       
     </span>
   </a>
@@ -2317,7 +2357,7 @@
   <a href="#2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. 列出具体审查要点
+        2. 部署前先做校验
       
     </span>
   </a>
@@ -2325,10 +2365,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3_1" class="md-nav__link">
+  <a href="#3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. 提供双语支持
+        3. 将网关指向技能目录
       
     </span>
   </a>
@@ -2339,18 +2379,7 @@
   <a href="#4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. 严格约束输出格式
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. 避免过于宽泛
+        4. 了解名称冲突行为
       
     </span>
   </a>
@@ -2363,10 +2392,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#kubernetes-skill" class="md-nav__link">
+  <a href="#_12" class="md-nav__link">
     <span class="md-ellipsis">
       
-        完整示例：Kubernetes 审查 Skill
+        校验错误参考
       
     </span>
   </a>
@@ -2537,6 +2566,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2646,70 +2685,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2802,8 +2785,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2812,205 +2793,77 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#skill" class="md-nav__link">
+  <a href="#l3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        什么是 Skill
+        自定义 L3 审查技能
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="什么是 Skill">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#skill_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Skill 选择算法
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#skills" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        内置 Skills
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="内置 Skills">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#shell-audit-10" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        shell-audit (优先级: 10)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#credential-audit-10" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        credential-audit (优先级: 10)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#code-review-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        code-review (优先级: 8)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#file-system-audit-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        file-system-audit (优先级: 8)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#network-audit-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        network-audit (优先级: 8)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#general-review-0" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        general-review (优先级: 0)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#skill_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        创建自定义 Skill
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="创建自定义 Skill">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-yaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 1: 创建 YAML 文件
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-skill" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 2: 编写 Skill 定义
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 3: 设置环境变量
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-gateway" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 4: 重启 Gateway
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-clawsentry-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        步骤 5: 用 clawsentry rules 做作者期验证
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#skill-schema" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Skill Schema 完整参考
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Skill Schema 完整参考">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        字段详细说明
+        技能清单字段参考
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="技能清单字段参考">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心字段（所有 schema 版本适用）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v1-schema_version-clawsentryl3_skillv1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        清单 v1 专属字段（schema_version: clawsentry.l3_skill.v1）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#valid_l3_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        全局工具白名单（VALID_L3_TOOLS）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#required_evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        required_evidence 有效值
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field_notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        field_notes 有效键
       
     </span>
   </a>
@@ -3026,41 +2879,63 @@
   <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        加载机制详解
+        技能评分算法
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="加载机制详解">
+    <nav class="md-nav" aria-label="技能评分算法">
       <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#skillregistry" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SkillRegistry 初始化
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#load_additional" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        load_additional() 行为
-      
-    </span>
-  </a>
-  
-</li>
         
           <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        验证规则
+        技能评分与选择流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        得分组成
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        得分并列时的决胜规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        兜底规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        技能生命周期
       
     </span>
   </a>
@@ -3073,22 +2948,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#system_prompt_1" class="md-nav__link">
+  <a href="#_8" class="md-nav__link">
     <span class="md-ellipsis">
       
-        编写有效的 system_prompt
+        触发覆盖说明
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="编写有效的 system_prompt">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内置技能
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        带注释的示例技能
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        添加自定义技能
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="添加自定义技能">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1" class="md-nav__link">
+  <a href="#1-yaml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. 明确角色身份
+        1. 创建 YAML 文件
       
     </span>
   </a>
@@ -3099,7 +3007,7 @@
   <a href="#2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. 列出具体审查要点
+        2. 部署前先做校验
       
     </span>
   </a>
@@ -3107,10 +3015,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3_1" class="md-nav__link">
+  <a href="#3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. 提供双语支持
+        3. 将网关指向技能目录
       
     </span>
   </a>
@@ -3121,18 +3029,7 @@
   <a href="#4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. 严格约束输出格式
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. 避免过于宽泛
+        4. 了解名称冲突行为
       
     </span>
   </a>
@@ -3145,10 +3042,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#kubernetes-skill" class="md-nav__link">
+  <a href="#_12" class="md-nav__link">
     <span class="md-ellipsis">
       
-        完整示例：Kubernetes 审查 Skill
+        校验错误参考
       
     </span>
   </a>
@@ -3166,6 +3063,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../skill-trust/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    高级用法
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -3175,449 +3120,609 @@
   
 
 
-<h1 id="l3-skills">自定义 L3 Skills<a class="headerlink" href="#l3-skills" title="Permanent link">&para;</a></h1>
-<p>L3 审查 Agent 是 ClawSentry 三层决策模型的最深层。它通过多轮 LLM 工具调用对高风险事件进行深度安全审查。<strong>Skill</strong> 是 L3 Agent 的领域知识载体——每个 Skill 定义了一个特定安全领域的审查专长，包括触发条件、审查提示词和评估标准。</p>
-<p>本文介绍如何理解内置 Skills，以及如何编写和加载自定义 Skills 来扩展 L3 Agent 的审查能力。</p>
-<div class="admonition note">
-<p class="admonition-title">作用范围</p>
-<p>自定义 Skill 只影响<strong>同步 L3 审查 Agent</strong> 的技能选择和审查提示词。它不会改变 L1/L2 评分、不会写文件，也不会让 <a href="../../decision-layers/l3-advisory/">L3 咨询审查</a> 自动联网或自动执行 job。Advisory full-review 仍由 frozen snapshot/job/review 流程和独立 provider gates 控制。</p>
+  <h1>自定义 L3 Skills</h1>
+
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">高级功能 · L3 审查代理</div>
+<h2 id="l3">自定义 L3 审查技能<a class="headerlink" href="#l3" title="Permanent link">&para;</a></h2>
+<p>编写 YAML 技能清单，使用自定义触发条件、提示词和评估标准，扩展 L3 代理的领域安全专业知识。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">Skill Schema v1</span>
+<span class="cs-pill">SkillRegistry</span>
+<span class="cs-pill">自定义技能目录</span>
+<span class="cs-pill">规则检查</span></p>
 </div>
+</div>
+<p>L3 审查代理在运行时从注册表中选择最匹配的技能，并将其 <code>system_prompt</code> 和 <code>evaluation_criteria</code> 注入 LLM 调用。技能文件为纯 YAML 格式，无需编写任何 Python 代码。</p>
 <hr />
-<h2 id="skill">什么是 Skill<a class="headerlink" href="#skill" title="Permanent link">&para;</a></h2>
-<p>Skill 是以 <strong>YAML 文件</strong>定义的领域审查专长，由 <code>SkillRegistry</code> 加载和管理。每个 Skill 包含：</p>
-<ul>
-<li><strong>触发条件 (triggers)</strong> -- 决定何时激活该 Skill</li>
-<li><strong>系统提示词 (system_prompt)</strong> -- 提供给 LLM 的领域专家角色指令</li>
-<li><strong>评估标准 (evaluation_criteria)</strong> -- 定义该领域的安全评估维度</li>
-</ul>
-<p>当一个高风险事件需要 L3 审查时，<code>SkillRegistry</code> 会根据事件特征（工具名称、风险提示、payload 内容）<strong>自动选择</strong>最匹配的 Skill，确保 LLM 以正确的领域专家身份进行审查。</p>
-<h3 id="skill_1">Skill 选择算法<a class="headerlink" href="#skill_1" title="Permanent link">&para;</a></h3>
-<p>SkillRegistry 使用<strong>加权评分</strong>算法选择最佳 Skill：</p>
+<h2 id="_1">技能清单字段参考<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>以下为顶层 YAML 字段及其类型、约束条件和默认值。</p>
+<h3 id="schema">核心字段（所有 schema 版本适用）<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>匹配维度</th>
-<th>权重</th>
-<th>说明</th>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>默认值</th>
+<th>约束条件</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>risk_hints</code> 匹配</td>
-<td>每命中 1 个 +10 分</td>
-<td>事件的 risk_hints 与 Skill triggers 的交集</td>
+<td><code>name</code></td>
+<td><code>string</code></td>
+<td>是</td>
+<td>—</td>
+<td>非空；在内置技能与自定义技能中全局唯一。</td>
 </tr>
 <tr>
-<td><code>tool_names</code> 匹配</td>
-<td>命中 +5 分</td>
-<td>事件的 tool_name 是否在 Skill 的 tool_names 列表中</td>
+<td><code>description</code></td>
+<td><code>string</code></td>
+<td>是</td>
+<td>—</td>
+<td>非空的人类可读摘要。</td>
 </tr>
 <tr>
-<td><code>payload_patterns</code> 匹配</td>
-<td>每命中 1 个 +1 分</td>
-<td>payload 文本中是否包含 Skill 定义的模式子串</td>
+<td><code>system_prompt</code></td>
+<td><code>string</code></td>
+<td>是</td>
+<td>—</td>
+<td>非空；定义 LLM 审查员角色和输出格式。</td>
+</tr>
+<tr>
+<td><code>triggers</code></td>
+<td><code>dict</code></td>
+<td>否</td>
+<td><code>{}</code></td>
+<td>必须为 dict；包含三个可选子列表：<code>risk_hints</code>、<code>tool_names</code>、<code>payload_patterns</code>。</td>
+</tr>
+<tr>
+<td><code>evaluation_criteria</code></td>
+<td><code>list[dict]</code></td>
+<td>否</td>
+<td><code>[]</code></td>
+<td>每个条目必须包含 <code>name</code>、<code>description</code> 和 <code>severity</code>（<code>low</code>/<code>medium</code>/<code>high</code>/<code>critical</code>）。</td>
+</tr>
+<tr>
+<td><code>enabled</code></td>
+<td><code>bool</code></td>
+<td>否</td>
+<td><code>true</code></td>
+<td>设为 <code>false</code> 可禁用技能而不删除文件。</td>
+</tr>
+<tr>
+<td><code>priority</code></td>
+<td><code>int</code></td>
+<td>否</td>
+<td><code>0</code></td>
+<td>得分相同时的优先级决胜；值越高越优先。</td>
+</tr>
+<tr>
+<td><code>schema_version</code></td>
+<td><code>string</code></td>
+<td>否</td>
+<td><code>"legacy"</code></td>
+<td>设为 <code>clawsentry.l3_skill.v1</code> 可启用严格的 v1 校验。</td>
 </tr>
 </tbody>
 </table>
-<p>得分最高的 Skill 被选中。如果最高分 &lt;= 0（无任何匹配），则 fallback 到 <code>general-review</code> Skill。得分相同时，<code>priority</code> 值更高的 Skill 优先。</p>
+<h3 id="v1-schema_version-clawsentryl3_skillv1">清单 v1 专属字段（<code>schema_version: clawsentry.l3_skill.v1</code>）<a class="headerlink" href="#v1-schema_version-clawsentryl3_skillv1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>v1 是否必填</th>
+<th>默认值</th>
+<th>约束条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>allowed_tools</code></td>
+<td><code>list[string]</code></td>
+<td>否</td>
+<td>全部 <code>VALID_L3_TOOLS</code></td>
+<td>必须是全局工具白名单的子集（见下文）。</td>
+</tr>
+<tr>
+<td><code>required_evidence</code></td>
+<td><code>list[string]</code></td>
+<td><strong>是</strong></td>
+<td>—</td>
+<td>每个值必须在有效证据集内（见下文）。非空。</td>
+</tr>
+<tr>
+<td><code>recommended_tools</code></td>
+<td><code>list[dict]</code></td>
+<td>否</td>
+<td><code>[]</code></td>
+<td>每个条目格式为 <code>{name, reason}</code>；<code>name</code> 必须在全局工具白名单中。</td>
+</tr>
+<tr>
+<td><code>severity_rubric</code></td>
+<td><code>dict</code></td>
+<td><strong>是</strong></td>
+<td>—</td>
+<td>键：<code>low</code>/<code>medium</code>/<code>high</code>/<code>critical</code>；至少必须覆盖 <code>high</code> 或 <code>critical</code>。</td>
+</tr>
+<tr>
+<td><code>benign_exceptions</code></td>
+<td><code>list[string]</code></td>
+<td>否</td>
+<td><code>[]</code></td>
+<td>展示给审查员的自由文本例外说明。</td>
+</tr>
+<tr>
+<td><code>output_tags</code></td>
+<td><code>list[string]</code></td>
+<td><strong>是</strong></td>
+<td>—</td>
+<td>非空；不得重复；每个标签须匹配 <code>^[a-z][a-z0-9_]{1,63}$</code>。</td>
+</tr>
+<tr>
+<td><code>field_notes</code></td>
+<td><code>dict</code></td>
+<td>否</td>
+<td>—</td>
+<td>键限于有效的 field-notes 集合（见下文），值为字符串。</td>
+</tr>
+<tr>
+<td><code>example_policy</code></td>
+<td><code>dict</code></td>
+<td>否</td>
+<td>—</td>
+<td><code>{max_examples: int, max_chars_per_example: int（默认 900）}</code>。</td>
+</tr>
+<tr>
+<td><code>example_cases</code></td>
+<td><code>list[dict]</code></td>
+<td>否</td>
+<td><code>[]</code></td>
+<td>每个条目必须包含 <code>synthetic: true</code> 和 <code>not_current_case: true</code>，不得含真实路径或类密钥文本，长度受 <code>example_policy</code> 限制。</td>
+</tr>
+<tr>
+<td><code>max_tool_calls</code></td>
+<td><code>int</code></td>
+<td>否</td>
+<td>—</td>
+<td>加载时截断至 <code>[1, 20]</code>。</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition 警告">
+<p class="admonition-title">v1 比 legacy 更严格</p>
+<p>当设置 <code>schema_version: clawsentry.l3_skill.v1</code> 时，加载器会强制要求 <code>required_evidence</code>、<code>severity_rubric</code>（须覆盖 <code>high</code> 或 <code>critical</code>）以及 <code>output_tags</code> 均存在且非空。未设置 <code>schema_version</code> 或设为 <code>"legacy"</code> 的旧版技能跳过上述检查，但不能安全使用 v1 专属字段。</p>
+</div>
+<h3 id="valid_l3_tools">全局工具白名单（<code>VALID_L3_TOOLS</code>）<a class="headerlink" href="#valid_l3_tools" title="Permanent link">&para;</a></h3>
+<p><code>allowed_tools</code> 中的值必须来自以下集合，任何未列出的工具将在加载时抛出 <code>ValueError</code>。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>read_trajectory          read_trajectory_page     read_file
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>read_file_range          read_transcript          read_session_risk
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>read_l3_trace            search_codebase          query_git_diff
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>query_git_status         query_git_show           list_changed_files
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>list_directory           read_package_manifest
+</span></code></pre></div>
+<h3 id="required_evidence"><code>required_evidence</code> 有效值<a class="headerlink" href="#required_evidence" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>current_event    trigger          trajectory_summary    session_risk
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>workspace_context    l1_snapshot    prior_analysis    skill_trust
+</span></code></pre></div>
+<h3 id="field_notes"><code>field_notes</code> 有效键<a class="headerlink" href="#field_notes" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>event    trigger    local_evidence    rule_hits    effect_summary
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>taint_flow_summary    skill_trust_findings    session_scope_summary
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>mcp_summary    tool_evidence    prior_analysis
+</span></code></pre></div>
 <hr />
-<h2 id="skills">内置 Skills<a class="headerlink" href="#skills" title="Permanent link">&para;</a></h2>
-<p>ClawSentry 内置 6 个安全审查 Skill，覆盖主要安全领域。它们位于 <code>src/clawsentry/gateway/skills/</code> 目录：</p>
-<h3 id="shell-audit-10">shell-audit (优先级: 10)<a class="headerlink" href="#shell-audit-10" title="Permanent link">&para;</a></h3>
-<p><strong>Shell 命令安全审查</strong>，检测命令注入和权限升级。</p>
+<h2 id="_2">技能评分算法<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p><code>SkillRegistry._ranked_skills()</code> 为每个已启用的非 <code>general-review</code> 技能计算 <code>(score, priority, -insertion_order)</code> 三元组，然后降序排列。当所有已启用技能的得分均为 <code>0</code> 时，<code>_ranked_skills()</code> 会将 <code>general-review</code> 以 <code>0</code> 分注入排名列表，确保列表永不为空。随后 <code>select_skill()</code> 返回列表中的第一个结果。</p>
+<h3 id="_3">技能评分与选择流程<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>flowchart TD
+    A([收到事件]) --&gt; B{是否存在&lt;br/&gt;强制路由覆盖规则？}
+    B -- 是 --&gt; C[直接返回指定技能]
+    B -- 否 --&gt; D[遍历所有 enabled 且非 general-review 的技能]
+
+    D --&gt; E[计算每个技能的得分]
+
+    subgraph scoring ["评分计算（每个技能）"]
+        E1["检查 triggers.risk_hints&lt;br/&gt;事件 risk_hints 与技能列表取交集&lt;br/&gt;每命中 1 个 +10 分"]
+        E2["检查 triggers.tool_names&lt;br/&gt;event.tool_name.lower() 是否在列表中&lt;br/&gt;最多命中一次 +5 分"]
+        E3["检查 triggers.payload_patterns&lt;br/&gt;每个模式字符串作为子串匹配 payload&lt;br/&gt;每命中 1 个 +1 分"]
+        E1 --&gt; E2 --&gt; E3
+    end
+
+    E --&gt; scoring
+
+    E3 --&gt; F["按 (score DESC, priority DESC, insertion_order ASC) 排序"]
+    F --&gt; G{所有技能得分&lt;br/&gt;是否均为 0？}
+    G -- 是 --&gt; H["注入 general-review（score=0）作为兜底"]
+    G -- 否 --&gt; I[过滤掉得分为 0 的技能]
+    H --&gt; J[select_skill 取排名第一的技能]
+    I --&gt; J
+    J --&gt; K([返回选中技能])
+
+    style scoring fill:#f0f4ff,stroke:#6b7fc4
+    style C fill:#ffe4b5,stroke:#c4963b
+    style H fill:#ffe4e4,stroke:#c44b4b</code></pre>
+<h3 id="_4">得分组成<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>属性</th>
-<th>值</th>
+<th>来源</th>
+<th>每次命中得分</th>
+<th>匹配逻辑</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>触发 risk_hints</td>
-<td><code>privilege_escalation</code>, <code>sudo_usage</code>, <code>shell_injection</code>, <code>destructive_intent</code>, <code>shell_execution</code>, <code>destructive_pattern</code> 等</td>
+<td><code>triggers.risk_hints</code></td>
+<td><strong>+10</strong></td>
+<td>事件 <code>risk_hints</code>（小写）与技能 <code>risk_hints</code> 列表取交集。</td>
 </tr>
 <tr>
-<td>触发 tool_names</td>
-<td><code>bash</code>, <code>shell</code>, <code>exec</code>, <code>sudo</code>, <code>chmod</code>, <code>chown</code></td>
+<td><code>triggers.tool_names</code></td>
+<td><strong>+5</strong>（最多命中一次）</td>
+<td><code>event.tool_name.lower()</code> 是否在技能 <code>tool_names</code> 列表中。</td>
 </tr>
 <tr>
-<td>触发 payload_patterns</td>
-<td><code>sudo</code>, <code>chmod 777</code>, <code>rm -rf</code>, <code>dd if=</code>, <code>curl \| sh</code>, <code>wget \| sh</code> 等</td>
+<td><code>triggers.payload_patterns</code></td>
+<td><strong>+1</strong> 每个</td>
+<td>每个模式字符串（小写）作为子串匹配 <code>str(event.payload).lower()</code>。</td>
 </tr>
 </tbody>
 </table>
-<p>审查重点：命令注入风险、权限升级（sudo/chmod 777/setuid）、破坏性命令、代码下载执行、数据外传。</p>
-<h3 id="credential-audit-10">credential-audit (优先级: 10)<a class="headerlink" href="#credential-audit-10" title="Permanent link">&para;</a></h3>
-<p><strong>凭证安全审查</strong>，审查涉及凭证、密钥、令牌的操作。</p>
+<h3 id="_5">得分并列时的决胜规则<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<p>两个技能总分相同时，<code>priority</code> 字段值较高的技能获胜。若 <code>priority</code> 也相同，则按目录排序中较早出现的技能获胜（文件按字母顺序加载）。</p>
+<h3 id="_6">兜底规则<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<p>得分为 <code>0</code> 的非 <code>general-review</code> 技能不会进入排名池，但 <code>_ranked_skills()</code> 会在无其他技能得分时将 <code>general-review</code> 以 <code>0</code> 分注入，作为最终兜底。</p>
+<div class="admonition 警告">
+<p class="admonition-title"><code>general-review</code> 必须存在</p>
+<p>若内置技能目录加载完成后不存在名为 <code>general-review</code> 的技能，<code>SkillRegistry.__init__</code> 将抛出 <code>ValueError</code>。删除或重命名该文件将导致网关无法启动。</p>
+</div>
+<h3 id="_7">技能生命周期<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>flowchart LR
+    A([YAML 文件]) --&gt; B[加载\nload_from_dir / load_additional]
+    B --&gt; C{schema 校验}
+    C -- 通过 --&gt; D[注册到 SkillRegistry\n检查 name 冲突]
+    C -- 失败 --&gt; E([抛出 ValueError\n跳过该文件])
+    D --&gt; F{name 是否已存在？}
+    F -- 否 --&gt; G[加入注册表]
+    F -- 是 --&gt; H([WARNING 日志\n跳过不覆盖])
+    G --&gt; I[运行时评分\n_ranked_skills]
+    I --&gt; J[select_skill\n返回最高分技能]
+    J --&gt; K([注入 system_prompt\n+ evaluation_criteria\n到 LLM 调用])
+
+    style E fill:#ffe4e4,stroke:#c44b4b
+    style H fill:#fff3cd,stroke:#c4963b</code></pre>
+<hr />
+<h2 id="_8">触发覆盖说明<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h2>
+<p><code>select_skill()</code> 路径没有超越得分机制的覆盖手段。若要强制某个技能处理特定事件类型，需为其 <code>risk_hints</code> 设置足够高的特异性，使其他竞争技能无法匹配。<code>priority</code> 字段仅用于并列决胜，不会叠加到得分上。</p>
+<p>对于跨域事件，<code>secondary_criteria()</code> 从不同的非 <code>general-review</code> 技能中返回最多 <code>limit=2</code> 个接近匹配的评估标准，从而在单次 L3 调用中实现多域审查。</p>
+<hr />
+<h2 id="_9">内置技能<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h2>
+<p>所有内置技能位于 <code>src/clawsentry/gateway/skills/</code> 目录，均使用 <code>schema_version: clawsentry.l3_skill.v1</code>。</p>
 <table>
 <thead>
 <tr>
-<th>属性</th>
-<th>值</th>
+<th>技能</th>
+<th>优先级</th>
+<th>关键 <code>risk_hints</code> 触发器</th>
+<th>关键 <code>payload_patterns</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>触发 risk_hints</td>
-<td><code>credential_access</code>, <code>credential_exfiltration</code>, <code>secret_access</code>, <code>key_access</code>, <code>env_access</code>, <code>config_access</code> 等</td>
+<td><code>shell-audit</code></td>
+<td>10</td>
+<td><code>privilege_escalation</code>, <code>sudo_usage</code>, <code>shell_injection</code>, <code>destructive_intent</code></td>
+<td><code>sudo</code>, <code>rm -rf</code>, <code>curl \| sh</code>, <code>dd if=</code></td>
 </tr>
 <tr>
-<td>触发 tool_names</td>
-<td><code>read_file</code>, <code>bash</code>, <code>shell</code>, <code>exec</code></td>
+<td><code>credential-audit</code></td>
+<td>10</td>
+<td><code>credential_access</code>, <code>credential_exfiltration</code>, <code>secret_access</code>, <code>env_access</code></td>
+<td><code>password</code>, <code>secret</code>, <code>.ssh</code>, <code>.env</code>, <code>credentials.json</code></td>
 </tr>
 <tr>
-<td>触发 payload_patterns</td>
-<td><code>password</code>, <code>secret</code>, <code>token</code>, <code>api_key</code>, <code>.pem</code>, <code>.ssh</code>, <code>.env</code>, <code>credentials.json</code> 等</td>
+<td><code>skill-trust-audit</code></td>
+<td>10</td>
+<td><code>skill_trust</code>, <code>first_use_skill</code>, <code>provenance_conflict</code></td>
+<td><code>SKILL.md</code>, <code>skill trust</code></td>
 </tr>
-</tbody>
-</table>
-<p>审查重点：读取敏感凭证文件、凭证写入不安全位置、凭证外传、最小权限原则违反。</p>
-<h3 id="code-review-8">code-review (优先级: 8)<a class="headerlink" href="#code-review-8" title="Permanent link">&para;</a></h3>
-<p><strong>代码安全审查</strong>，检测安全漏洞和恶意代码注入。</p>
-<table>
-<thead>
 <tr>
-<th>属性</th>
-<th>值</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>触发 risk_hints</td>
+<td><code>code-review</code></td>
+<td>8</td>
 <td><code>code_injection</code>, <code>supply_chain_attack</code>, <code>malicious_code</code></td>
+<td><code>eval(</code>, <code>exec(</code>, <code>pickle.loads</code>, <code>subprocess</code></td>
 </tr>
 <tr>
-<td>触发 tool_names</td>
-<td><code>write_file</code>, <code>edit_file</code>, <code>create_file</code>, <code>edit</code>, <code>write</code></td>
+<td><code>file-system-audit</code></td>
+<td>8</td>
+<td><code>path_traversal</code>, <code>unauthorized_file_access</code>, <code>sensitive_file_write</code></td>
+<td><code>/etc/</code>, <code>/root/</code>, <code>../</code>, <code>authorized_keys</code>, <code>sudoers</code></td>
 </tr>
 <tr>
-<td>触发 payload_patterns</td>
-<td><code>eval(</code>, <code>exec(</code>, <code>__import__</code>, <code>subprocess</code>, <code>os.system</code>, <code>pickle.loads</code>, <code>base64.b64decode</code> 等</td>
-</tr>
-</tbody>
-</table>
-<p>审查重点：后门/恶意代码注入、危险函数调用（eval/exec/pickle）、供应链攻击、硬编码凭证。</p>
-<h3 id="file-system-audit-8">file-system-audit (优先级: 8)<a class="headerlink" href="#file-system-audit-8" title="Permanent link">&para;</a></h3>
-<p><strong>文件系统安全审查</strong>，检测越权访问和敏感文件修改。</p>
-<table>
-<thead>
-<tr>
-<th>属性</th>
-<th>值</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>触发 risk_hints</td>
-<td><code>path_traversal</code>, <code>unauthorized_file_access</code>, <code>sensitive_file_write</code>, <code>sensitive_file_read</code></td>
-</tr>
-<tr>
-<td>触发 tool_names</td>
-<td><code>read_file</code>, <code>write_file</code>, <code>edit_file</code>, <code>bash</code>, <code>shell</code></td>
-</tr>
-<tr>
-<td>触发 payload_patterns</td>
-<td><code>/etc/</code>, <code>/root/</code>, <code>/usr/</code>, <code>../</code>, <code>.ssh</code>, <code>authorized_keys</code>, <code>/proc/</code>, <code>sudoers</code>, <code>crontab</code> 等</td>
-</tr>
-</tbody>
-</table>
-<p>审查重点：路径遍历越权、系统敏感目录访问、SSH authorized_keys/sudoers 修改、cron 持久化。</p>
-<h3 id="network-audit-8">network-audit (优先级: 8)<a class="headerlink" href="#network-audit-8" title="Permanent link">&para;</a></h3>
-<p><strong>网络安全审查</strong>，检测数据外传和不安全连接。</p>
-<table>
-<thead>
-<tr>
-<th>属性</th>
-<th>值</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>触发 risk_hints</td>
+<td><code>network-audit</code></td>
+<td>8</td>
 <td><code>data_exfiltration</code>, <code>network_exfiltration</code>, <code>suspicious_network</code></td>
+<td><code>curl</code>, <code>wget</code>, <code>nc</code>, <code>socat</code>, <code>base64</code></td>
 </tr>
 <tr>
-<td>触发 tool_names</td>
-<td><code>http_request</code>, <code>fetch</code>, <code>web_fetch</code>, <code>bash</code>, <code>shell</code></td>
+<td><code>persistence-audit</code></td>
+<td>9</td>
+<td>persistence 相关 risk hints</td>
+<td>crontab, systemd, launchctl, authorized_keys, .bashrc</td>
 </tr>
 <tr>
-<td>触发 payload_patterns</td>
-<td><code>curl</code>, <code>wget</code>, <code>http://</code>, <code>https://</code>, <code>nc</code>, <code>ncat</code>, <code>socat</code>, <code>ftp://</code>, <code>scp</code>, <code>rsync</code>, <code>base64</code> 等</td>
+<td><code>prompt-injection-transcript-audit</code></td>
+<td>—</td>
+<td>提示词注入相关 transcript hints</td>
+<td>注入标记模式</td>
+</tr>
+<tr>
+<td><code>data-staging-exfil-chain-audit</code></td>
+<td>—</td>
+<td>数据暂存 + 外泄链路 hints</td>
+<td>先读后上传模式</td>
+</tr>
+<tr>
+<td><code>dependency-supply-chain-audit</code></td>
+<td>—</td>
+<td>供应链相关 hints</td>
+<td>pip/npm/cargo install 模式</td>
+</tr>
+<tr>
+<td><code>general-review</code></td>
+<td>0</td>
+<td><em>（无触发器——仅作兜底）</em></td>
+<td>—</td>
 </tr>
 </tbody>
 </table>
-<p>审查重点：敏感数据外传、可疑域名/IP 连接、DNS 隧道、远程代码下载执行。</p>
-<h3 id="general-review-0">general-review (优先级: 0)<a class="headerlink" href="#general-review-0" title="Permanent link">&para;</a></h3>
-<p><strong>通用 Fallback 审查</strong>，当无其他 Skill 匹配时使用。</p>
-<p>此 Skill 的 triggers 列表为空，不会通过匹配算法被选中，仅在所有其他 Skill 评分为 0 时作为兜底。</p>
-<p>审查重点：行为与意图一致性、异常操作序列、安全最佳实践违反、整体风险评估。</p>
-<div class="admonition warning">
-<p class="admonition-title"><code>general-review</code> 是必需的</p>
-<p><code>SkillRegistry</code> 初始化时会验证 <code>general-review</code> Skill 必须存在。如果缺失，将抛出 <code>ValueError</code> 异常。</p>
+<hr />
+<h2 id="_10">带注释的示例技能<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h2>
+<div class="language-yaml highlight"><span class="filename">kubernetes-audit.yaml</span><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Required: unique identifier across all loaded skills</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes-audit</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Required: schema version — enables strict v1 validation</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clawsentry.l3_skill.v1</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Required: human-readable summary shown in lint output and dashboards</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="no">Audit Kubernetes cluster operations for privilege escalation and</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="no">destructive changes.</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="c1"># Optional: set false to disable without deleting the file (default: true)</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="c1"># Optional: tie-breaker when two skills have equal scores (default: 0)</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="c1"># Trigger conditions — all comparison is lowercased</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="nt">triggers</span><span class="p">:</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">  </span><span class="nt">risk_hints</span><span class="p">:</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster_admin</span><span class="w">            </span><span class="c1"># +10 per match</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pod_security_bypass</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">namespace_deletion</span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="w">  </span><span class="nt">tool_names</span><span class="p">:</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bash</span><span class="w">                     </span><span class="c1"># +5 if event.tool_name matches any entry</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubectl</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="w">  </span><span class="nt">payload_patterns</span><span class="p">:</span>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubectl</span><span class="w">                  </span><span class="c1"># +1 per pattern found as substring in payload</span>
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;--privileged&quot;</span>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hostnetwork</span>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clusterrole</span>
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;create</span><span class="nv"> </span><span class="s">secret&quot;</span>
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;delete</span><span class="nv"> </span><span class="s">namespace&quot;</span>
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a><span class="c1"># Required (v1): at least &quot;high&quot; or &quot;critical&quot; must be present</span>
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a><span class="nt">severity_rubric</span><span class="p">:</span>
+</span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a><span class="w">  </span><span class="nt">high</span><span class="p">:</span>
+</span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Destructive cluster operations or privilege binding without justification</span>
+</span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a><span class="w">  </span><span class="nt">critical</span><span class="p">:</span>
+</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Confirmed cluster-admin grant, pod escape, or namespace destruction</span>
+</span><span id="__span-3-41"><a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a>
+</span><span id="__span-3-42"><a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a><span class="c1"># Required (v1): non-empty; values must be in the valid evidence set</span>
+</span><span id="__span-3-43"><a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a><span class="nt">required_evidence</span><span class="p">:</span>
+</span><span id="__span-3-44"><a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">current_event</span>
+</span><span id="__span-3-45"><a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">trigger</span>
+</span><span id="__span-3-46"><a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">trajectory_summary</span>
+</span><span id="__span-3-47"><a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a>
+</span><span id="__span-3-48"><a id="__codelineno-3-48" name="__codelineno-3-48" href="#__codelineno-3-48"></a><span class="c1"># Required (v1): non-empty; each tag matches ^[a-z][a-z0-9_]{1,63}$</span>
+</span><span id="__span-3-49"><a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a><span class="nt">output_tags</span><span class="p">:</span>
+</span><span id="__span-3-50"><a id="__codelineno-3-50" name="__codelineno-3-50" href="#__codelineno-3-50"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes</span>
+</span><span id="__span-3-51"><a id="__codelineno-3-51" name="__codelineno-3-51" href="#__codelineno-3-51"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">privilege</span>
+</span><span id="__span-3-52"><a id="__codelineno-3-52" name="__codelineno-3-52" href="#__codelineno-3-52"></a>
+</span><span id="__span-3-53"><a id="__codelineno-3-53" name="__codelineno-3-53" href="#__codelineno-3-53"></a><span class="c1"># Optional: restrict which L3 tools this skill may invoke</span>
+</span><span id="__span-3-54"><a id="__codelineno-3-54" name="__codelineno-3-54" href="#__codelineno-3-54"></a><span class="c1"># Default: all 14 VALID_L3_TOOLS</span>
+</span><span id="__span-3-55"><a id="__codelineno-3-55" name="__codelineno-3-55" href="#__codelineno-3-55"></a><span class="nt">allowed_tools</span><span class="p">:</span>
+</span><span id="__span-3-56"><a id="__codelineno-3-56" name="__codelineno-3-56" href="#__codelineno-3-56"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_trajectory</span>
+</span><span id="__span-3-57"><a id="__codelineno-3-57" name="__codelineno-3-57" href="#__codelineno-3-57"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_trajectory_page</span>
+</span><span id="__span-3-58"><a id="__codelineno-3-58" name="__codelineno-3-58" href="#__codelineno-3-58"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_session_risk</span>
+</span><span id="__span-3-59"><a id="__codelineno-3-59" name="__codelineno-3-59" href="#__codelineno-3-59"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">query_git_diff</span>
+</span><span id="__span-3-60"><a id="__codelineno-3-60" name="__codelineno-3-60" href="#__codelineno-3-60"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search_codebase</span>
+</span><span id="__span-3-61"><a id="__codelineno-3-61" name="__codelineno-3-61" href="#__codelineno-3-61"></a>
+</span><span id="__span-3-62"><a id="__codelineno-3-62" name="__codelineno-3-62" href="#__codelineno-3-62"></a><span class="c1"># Optional: advisory suggestions shown to the LLM (do not expand allowed_tools)</span>
+</span><span id="__span-3-63"><a id="__codelineno-3-63" name="__codelineno-3-63" href="#__codelineno-3-63"></a><span class="nt">recommended_tools</span><span class="p">:</span>
+</span><span id="__span-3-64"><a id="__codelineno-3-64" name="__codelineno-3-64" href="#__codelineno-3-64"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_trajectory_page</span>
+</span><span id="__span-3-65"><a id="__codelineno-3-65" name="__codelineno-3-65" href="#__codelineno-3-65"></a><span class="w">    </span><span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Page</span><span class="nv"> </span><span class="s">through</span><span class="nv"> </span><span class="s">tool</span><span class="nv"> </span><span class="s">calls</span><span class="nv"> </span><span class="s">looking</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">kubectl</span><span class="nv"> </span><span class="s">privilege</span><span class="nv"> </span><span class="s">operations.&quot;</span>
+</span><span id="__span-3-66"><a id="__codelineno-3-66" name="__codelineno-3-66" href="#__codelineno-3-66"></a>
+</span><span id="__span-3-67"><a id="__codelineno-3-67" name="__codelineno-3-67" href="#__codelineno-3-67"></a><span class="c1"># Optional: max concurrent tool calls (clamped to [1, 20])</span>
+</span><span id="__span-3-68"><a id="__codelineno-3-68" name="__codelineno-3-68" href="#__codelineno-3-68"></a><span class="nt">max_tool_calls</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+</span><span id="__span-3-69"><a id="__codelineno-3-69" name="__codelineno-3-69" href="#__codelineno-3-69"></a>
+</span><span id="__span-3-70"><a id="__codelineno-3-70" name="__codelineno-3-70" href="#__codelineno-3-70"></a><span class="c1"># Optional: domain hints for specific evidence capsule fields</span>
+</span><span id="__span-3-71"><a id="__codelineno-3-71" name="__codelineno-3-71" href="#__codelineno-3-71"></a><span class="nt">field_notes</span><span class="p">:</span>
+</span><span id="__span-3-72"><a id="__codelineno-3-72" name="__codelineno-3-72" href="#__codelineno-3-72"></a><span class="w">  </span><span class="nt">effect_summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Check</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">ClusterRoleBinding</span><span class="nv"> </span><span class="s">creates</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">namespace-level</span><span class="nv"> </span><span class="s">deletes.&quot;</span>
+</span><span id="__span-3-73"><a id="__codelineno-3-73" name="__codelineno-3-73" href="#__codelineno-3-73"></a><span class="w">  </span><span class="nt">taint_flow_summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Look</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">kubectl</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">secret</span><span class="nv"> </span><span class="s">piped</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">external</span><span class="nv"> </span><span class="s">network</span><span class="nv"> </span><span class="s">sinks.&quot;</span>
+</span><span id="__span-3-74"><a id="__codelineno-3-74" name="__codelineno-3-74" href="#__codelineno-3-74"></a>
+</span><span id="__span-3-75"><a id="__codelineno-3-75" name="__codelineno-3-75" href="#__codelineno-3-75"></a><span class="c1"># Optional: common benign cases to reduce false positives</span>
+</span><span id="__span-3-76"><a id="__codelineno-3-76" name="__codelineno-3-76" href="#__codelineno-3-76"></a><span class="nt">benign_exceptions</span><span class="p">:</span>
+</span><span id="__span-3-77"><a id="__codelineno-3-77" name="__codelineno-3-77" href="#__codelineno-3-77"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;kubectl</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">pods</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">dev</span><span class="nv"> </span><span class="s">namespace</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">an</span><span class="nv"> </span><span class="s">authorized</span><span class="nv"> </span><span class="s">CI</span><span class="nv"> </span><span class="s">identity&quot;</span>
+</span><span id="__span-3-78"><a id="__codelineno-3-78" name="__codelineno-3-78" href="#__codelineno-3-78"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;namespace</span><span class="nv"> </span><span class="s">delete</span><span class="nv"> </span><span class="s">during</span><span class="nv"> </span><span class="s">known</span><span class="nv"> </span><span class="s">teardown</span><span class="nv"> </span><span class="s">pipeline&quot;</span>
+</span><span id="__span-3-79"><a id="__codelineno-3-79" name="__codelineno-3-79" href="#__codelineno-3-79"></a>
+</span><span id="__span-3-80"><a id="__codelineno-3-80" name="__codelineno-3-80" href="#__codelineno-3-80"></a><span class="c1"># Optional: few-shot synthetic examples (never real cases)</span>
+</span><span id="__span-3-81"><a id="__codelineno-3-81" name="__codelineno-3-81" href="#__codelineno-3-81"></a><span class="nt">example_policy</span><span class="p">:</span>
+</span><span id="__span-3-82"><a id="__codelineno-3-82" name="__codelineno-3-82" href="#__codelineno-3-82"></a><span class="w">  </span><span class="nt">max_examples</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span id="__span-3-83"><a id="__codelineno-3-83" name="__codelineno-3-83" href="#__codelineno-3-83"></a><span class="w">  </span><span class="nt">max_chars_per_example</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">900</span>
+</span><span id="__span-3-84"><a id="__codelineno-3-84" name="__codelineno-3-84" href="#__codelineno-3-84"></a>
+</span><span id="__span-3-85"><a id="__codelineno-3-85" name="__codelineno-3-85" href="#__codelineno-3-85"></a><span class="nt">example_cases</span><span class="p">:</span>
+</span><span id="__span-3-86"><a id="__codelineno-3-86" name="__codelineno-3-86" href="#__codelineno-3-86"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">synthetic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-3-87"><a id="__codelineno-3-87" name="__codelineno-3-87" href="#__codelineno-3-87"></a><span class="w">    </span><span class="nt">not_current_case</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-3-88"><a id="__codelineno-3-88" name="__codelineno-3-88" href="#__codelineno-3-88"></a><span class="w">    </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high_privilege_binding</span>
+</span><span id="__span-3-89"><a id="__codelineno-3-89" name="__codelineno-3-89" href="#__codelineno-3-89"></a><span class="w">    </span><span class="nt">scenario</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Agent</span><span class="nv"> </span><span class="s">creates</span><span class="nv"> </span><span class="s">ClusterRoleBinding</span><span class="nv"> </span><span class="s">granting</span><span class="nv"> </span><span class="s">cluster-admin</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">unknown</span><span class="nv"> </span><span class="s">SA&quot;</span>
+</span><span id="__span-3-90"><a id="__codelineno-3-90" name="__codelineno-3-90" href="#__codelineno-3-90"></a><span class="w">    </span><span class="nt">expected_risk</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+</span><span id="__span-3-91"><a id="__codelineno-3-91" name="__codelineno-3-91" href="#__codelineno-3-91"></a>
+</span><span id="__span-3-92"><a id="__codelineno-3-92" name="__codelineno-3-92" href="#__codelineno-3-92"></a><span class="c1"># Required: LLM reviewer persona — must end with JSON output instruction</span>
+</span><span id="__span-3-93"><a id="__codelineno-3-93" name="__codelineno-3-93" href="#__codelineno-3-93"></a><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-3-94"><a id="__codelineno-3-94" name="__codelineno-3-94" href="#__codelineno-3-94"></a><span class="w">  </span><span class="no">You are a Kubernetes security auditor. Analyze the AI agent&#39;s cluster</span>
+</span><span id="__span-3-95"><a id="__codelineno-3-95" name="__codelineno-3-95" href="#__codelineno-3-95"></a><span class="w">  </span><span class="no">operations for:</span>
+</span><span id="__span-3-96"><a id="__codelineno-3-96" name="__codelineno-3-96" href="#__codelineno-3-96"></a><span class="w">  </span><span class="no">1. Privilege escalation (ClusterRoleBinding, cluster-admin grants)</span>
+</span><span id="__span-3-97"><a id="__codelineno-3-97" name="__codelineno-3-97" href="#__codelineno-3-97"></a><span class="w">  </span><span class="no">2. Pod Security bypass (privileged containers, hostNetwork, hostPID)</span>
+</span><span id="__span-3-98"><a id="__codelineno-3-98" name="__codelineno-3-98" href="#__codelineno-3-98"></a><span class="w">  </span><span class="no">3. Destructive operations (namespace deletion, force pod removal)</span>
+</span><span id="__span-3-99"><a id="__codelineno-3-99" name="__codelineno-3-99" href="#__codelineno-3-99"></a><span class="w">  </span><span class="no">4. Sensitive data access (get/describe secret, configmap with credentials)</span>
+</span><span id="__span-3-100"><a id="__codelineno-3-100" name="__codelineno-3-100" href="#__codelineno-3-100"></a><span class="w">  </span><span class="no">5. Insecure image sources (unknown registries, unverified images)</span>
+</span><span id="__span-3-101"><a id="__codelineno-3-101" name="__codelineno-3-101" href="#__codelineno-3-101"></a>
+</span><span id="__span-3-102"><a id="__codelineno-3-102" name="__codelineno-3-102" href="#__codelineno-3-102"></a><span class="w">  </span><span class="no">Respond ONLY with JSON:</span>
+</span><span id="__span-3-103"><a id="__codelineno-3-103" name="__codelineno-3-103" href="#__codelineno-3-103"></a><span class="w">  </span><span class="no">{&quot;risk_level&quot;: &quot;low|medium|high|critical&quot;, &quot;findings&quot;: [&quot;...&quot;], &quot;confidence&quot;: 0.0}</span>
+</span><span id="__span-3-104"><a id="__codelineno-3-104" name="__codelineno-3-104" href="#__codelineno-3-104"></a>
+</span><span id="__span-3-105"><a id="__codelineno-3-105" name="__codelineno-3-105" href="#__codelineno-3-105"></a><span class="c1"># Required: evaluation dimensions — severity in {low, medium, high, critical}</span>
+</span><span id="__span-3-106"><a id="__codelineno-3-106" name="__codelineno-3-106" href="#__codelineno-3-106"></a><span class="nt">evaluation_criteria</span><span class="p">:</span>
+</span><span id="__span-3-107"><a id="__codelineno-3-107" name="__codelineno-3-107" href="#__codelineno-3-107"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">privilege_escalation</span>
+</span><span id="__span-3-108"><a id="__codelineno-3-108" name="__codelineno-3-108" href="#__codelineno-3-108"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
+</span><span id="__span-3-109"><a id="__codelineno-3-109" name="__codelineno-3-109" href="#__codelineno-3-109"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterRoleBinding or cluster-admin grant</span>
+</span><span id="__span-3-110"><a id="__codelineno-3-110" name="__codelineno-3-110" href="#__codelineno-3-110"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pod_security_bypass</span>
+</span><span id="__span-3-111"><a id="__codelineno-3-111" name="__codelineno-3-111" href="#__codelineno-3-111"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
+</span><span id="__span-3-112"><a id="__codelineno-3-112" name="__codelineno-3-112" href="#__codelineno-3-112"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Privileged container, hostNetwork, or hostPID</span>
+</span><span id="__span-3-113"><a id="__codelineno-3-113" name="__codelineno-3-113" href="#__codelineno-3-113"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">destructive_cluster_ops</span>
+</span><span id="__span-3-114"><a id="__codelineno-3-114" name="__codelineno-3-114" href="#__codelineno-3-114"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+</span><span id="__span-3-115"><a id="__codelineno-3-115" name="__codelineno-3-115" href="#__codelineno-3-115"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Namespace deletion or forced pod removal</span>
+</span><span id="__span-3-116"><a id="__codelineno-3-116" name="__codelineno-3-116" href="#__codelineno-3-116"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret_exposure</span>
+</span><span id="__span-3-117"><a id="__codelineno-3-117" name="__codelineno-3-117" href="#__codelineno-3-117"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+</span><span id="__span-3-118"><a id="__codelineno-3-118" name="__codelineno-3-118" href="#__codelineno-3-118"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Kubernetes Secret accessed or exfiltrated</span>
+</span></code></pre></div>
+<hr />
+<h2 id="_11">添加自定义技能<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h2>
+<h3 id="1-yaml">1. 创建 YAML 文件<a class="headerlink" href="#1-yaml" title="Permanent link">&para;</a></h3>
+<p>将 <code>.yaml</code> 文件放置在任意目录中。文件名不影响技能名称——文件内的 <code>name:</code> 字段才是标识符。</p>
+<h3 id="2">2. 部署前先做校验<a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span>--skills-dir<span class="w"> </span>/path/to/my-skills<span class="w"> </span>--json
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--skills-dir<span class="w"> </span>/path/to/my-skills<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
+</span></code></pre></div>
+<p><code>rules lint</code> 检测以下问题：非法的 <code>allowed_tools</code> 条目、未知的 <code>required_evidence</code> 值、重复的 <code>output_tags</code>、非合成示例、超长示例、真实路径以及类密钥字符串。</p>
+<p><code>rules dry-run</code> 显示每个示例事件选中了哪个技能及其得分。</p>
+<h3 id="3">3. 将网关指向技能目录<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">AHP_SKILLS_DIR</span><span class="o">=</span><span class="s2">&quot;/path/to/my-skills&quot;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>clawsentry<span class="w"> </span>gateway
+</span></code></pre></div>
+<p>启动日志会确认加载数量：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>[ahp.llm-factory] Custom skills loaded from /path/to/my-skills (1 skills)
+</span></code></pre></div>
+<h3 id="4">4. 了解名称冲突行为<a class="headerlink" href="#4" title="Permanent link">&para;</a></h3>
+<p><code>load_additional()</code> 按字母顺序处理文件。若自定义技能的 <code>name</code> 与已加载技能（内置或先前加载的自定义技能）重复，该文件将被<strong>跳过并记录 WARNING 日志</strong>，不会覆盖已有技能。</p>
+<div class="admonition 注意">
+<p class="admonition-title">自定义技能无法替换内置技能</p>
+<p>内置技能目录优先加载。名为 <code>shell-audit.yaml</code> 的自定义文件将被静默跳过。若需修改内置技能的行为，请 fork 对应的内置技能文件并使用不同的 <code>name</code>。</p>
 </div>
 <hr />
-<h2 id="skill_2">创建自定义 Skill<a class="headerlink" href="#skill_2" title="Permanent link">&para;</a></h2>
-<h3 id="1-yaml">步骤 1: 创建 YAML 文件<a class="headerlink" href="#1-yaml" title="Permanent link">&para;</a></h3>
-<p>在你选择的目录下创建一个 <code>.yaml</code> 文件。建议使用描述性的文件名：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>/etc/clawsentry/skills
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>touch<span class="w"> </span>/etc/clawsentry/skills/database-audit.yaml
-</span></code></pre></div>
-<h3 id="2-skill">步骤 2: 编写 Skill 定义<a class="headerlink" href="#2-skill" title="Permanent link">&para;</a></h3>
-<p>以下是一个完整的 <strong>数据库安全审查</strong> Skill 示例：</p>
-<div class="language-yaml highlight"><span class="filename">database-audit.yaml</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">database-audit</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">审查数据库操作，检测未授权访问和数据泄露 / Audit database operations for unauthorized access and data leaks</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">triggers</span><span class="p">:</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">risk_hints</span><span class="p">:</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">database_access</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sql_injection</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data_leak</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unauthorized_query</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="nt">tool_names</span><span class="p">:</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bash</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shell</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exec</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">psql</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mysql</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sqlite3</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">  </span><span class="nt">payload_patterns</span><span class="p">:</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SELECT</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">INSERT</span>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UPDATE</span>
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DELETE</span>
-</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DROP TABLE</span>
-</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ALTER TABLE</span>
-</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GRANT</span>
-</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REVOKE</span>
-</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mysqldump</span>
-</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pg_dump</span>
-</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;INTO</span><span class="nv"> </span><span class="s">OUTFILE&quot;</span>
-</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LOAD DATA</span>
-</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
-</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">  </span><span class="no">你是一个数据库安全审查专家。分析 AI agent 的数据库操作，判断是否存在:</span>
-</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="w">  </span><span class="no">1. SQL 注入风险（用户输入未参数化，拼接 SQL 语句）</span>
-</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="w">  </span><span class="no">2. 未授权数据访问（查询敏感表：users, credentials, payments）</span>
-</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="w">  </span><span class="no">3. 数据外泄风险（SELECT INTO OUTFILE, mysqldump 到外部位置）</span>
-</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="w">  </span><span class="no">4. 破坏性 DDL 操作（DROP TABLE, TRUNCATE, ALTER 关键约束）</span>
-</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="w">  </span><span class="no">5. 权限升级（GRANT ALL, 修改 root 密码）</span>
-</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>
-</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="w">  </span><span class="no">You are a database security auditor. Analyze the AI agent&#39;s database operations for:</span>
-</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="w">  </span><span class="no">1. SQL injection risks (unsanitized user input, string concatenation in queries)</span>
-</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="w">  </span><span class="no">2. Unauthorized data access (queries on sensitive tables: users, credentials, payments)</span>
-</span><span id="__span-1-44"><a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="w">  </span><span class="no">3. Data exfiltration risks (SELECT INTO OUTFILE, mysqldump to external locations)</span>
-</span><span id="__span-1-45"><a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="w">  </span><span class="no">4. Destructive DDL operations (DROP TABLE, TRUNCATE, ALTER critical constraints)</span>
-</span><span id="__span-1-46"><a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="w">  </span><span class="no">5. Privilege escalation (GRANT ALL, modifying root password)</span>
-</span><span id="__span-1-47"><a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>
-</span><span id="__span-1-48"><a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="w">  </span><span class="no">Respond ONLY with JSON: {&quot;risk_level&quot;: &quot;low|medium|high|critical&quot;, &quot;findings&quot;: [&quot;...&quot;], &quot;confidence&quot;: 0.0}</span>
-</span><span id="__span-1-49"><a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a>
-</span><span id="__span-1-50"><a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="nt">evaluation_criteria</span><span class="p">:</span>
-</span><span id="__span-1-51"><a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sql_injection</span>
-</span><span id="__span-1-52"><a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
-</span><span id="__span-1-53"><a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SQL 注入风险 / SQL injection risk</span>
-</span><span id="__span-1-54"><a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unauthorized_data_access</span>
-</span><span id="__span-1-55"><a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
-</span><span id="__span-1-56"><a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">未授权数据访问 / Unauthorized data access</span>
-</span><span id="__span-1-57"><a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data_exfiltration</span>
-</span><span id="__span-1-58"><a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
-</span><span id="__span-1-59"><a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">数据外泄 / Data exfiltration via database tools</span>
-</span><span id="__span-1-60"><a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">destructive_ddl</span>
-</span><span id="__span-1-61"><a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
-</span><span id="__span-1-62"><a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">破坏性 DDL 操作 / Destructive DDL operations</span>
-</span></code></pre></div>
-<h3 id="3">步骤 3: 设置环境变量<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
-<p>通过 <code>AHP_SKILLS_DIR</code> 环境变量指向包含自定义 Skill 文件的目录：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">AHP_SKILLS_DIR</span><span class="o">=</span><span class="s2">&quot;/etc/clawsentry/skills&quot;</span>
-</span></code></pre></div>
-<h3 id="4-gateway">步骤 4: 重启 Gateway<a class="headerlink" href="#4-gateway" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>clawsentry<span class="w"> </span>gateway
-</span></code></pre></div>
-<p>启动时日志会显示加载的自定义 Skill 数量：</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>[ahp.llm-factory] Custom skills loaded from /etc/clawsentry/skills (1 skills)
-</span></code></pre></div>
-<h3 id="5-clawsentry-rules">步骤 5: 用 <code>clawsentry rules</code> 做作者期验证<a class="headerlink" href="#5-clawsentry-rules" title="Permanent link">&para;</a></h3>
-<p>在当前版本里，推荐把自定义 Skill 的作者期检查和 sample event 预演放在上线前做一遍：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span>--skills-dir<span class="w"> </span>/etc/clawsentry/skills<span class="w"> </span>--json
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--skills-dir<span class="w"> </span>/etc/clawsentry/skills<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
-</span></code></pre></div>
-<p><code>rules lint</code> 会报告重复 skill 名称、触发签名冲突、缺失 source 等问题；<code>rules dry-run</code> 会告诉你 sample canonical events 最终会选中哪个 skill。完整治理面说明见：<a href="../rule-governance/">规则治理</a>。</p>
-<hr />
-<h2 id="skill-schema">Skill Schema 完整参考<a class="headerlink" href="#skill-schema" title="Permanent link">&para;</a></h2>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># ===== 必需字段 =====</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">               </span><span class="c1"># Skill 的唯一标识符（不可与其他 Skill 重名）</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">         </span><span class="c1"># Skill 的人类可读描述</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">       </span><span class="c1"># LLM 的系统提示词（角色指令 + 审查要求 + 输出格式）</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># ===== 可选字段 =====</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bool</span><span class="w">               </span><span class="c1"># 是否启用此 Skill（默认 true）</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span><span class="w">               </span><span class="c1"># 优先级 0-10（默认 0，值越大优先级越高）</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="nt">triggers</span><span class="p">:</span><span class="w">                   </span><span class="c1"># 触发条件（所有子列表可选，为空则永不通过匹配被选中）</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span><span class="nt">risk_hints</span><span class="p">:</span><span class="w">               </span><span class="c1"># 匹配事件 risk_hints（小写比较）</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="nt">tool_names</span><span class="p">:</span><span class="w">               </span><span class="c1"># 匹配事件 tool_name（小写比较）</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">  </span><span class="nt">payload_patterns</span><span class="p">:</span><span class="w">         </span><span class="c1"># 匹配 payload 文本的子串（小写比较）</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
-</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="nt">evaluation_criteria</span><span class="p">:</span><span class="w">        </span><span class="c1"># 评估标准列表（可选但推荐）</span>
-</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">            </span><span class="c1"># 标准名称</span>
-</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">        </span><span class="c1"># 严重性: low / medium / high / critical</span>
-</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">     </span><span class="c1"># 标准描述</span>
-</span></code></pre></div>
-<h3 id="_1">字段详细说明<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
-<h4 id="name"><code>name</code> (必需)<a class="headerlink" href="#name" title="Permanent link">&para;</a></h4>
-<p>Skill 的唯一标识符。在整个系统中（内置 + 自定义）不能重复。如果自定义 Skill 的 name 与内置 Skill 冲突，自定义 Skill 将被跳过并打印警告日志。</p>
-<h4 id="description"><code>description</code> (必需)<a class="headerlink" href="#description" title="Permanent link">&para;</a></h4>
-<p>人类可读的描述文字。建议使用双语格式：中文 + 英文用 <code>/</code> 分隔。</p>
-<h4 id="system_prompt"><code>system_prompt</code> (必需)<a class="headerlink" href="#system_prompt" title="Permanent link">&para;</a></h4>
-<p>提供给 LLM 的系统提示词。这是 Skill 最核心的部分，决定了 L3 Agent 以何种专家身份进行审查。</p>
-<h4 id="enabled"><code>enabled</code><a class="headerlink" href="#enabled" title="Permanent link">&para;</a></h4>
-<p>布尔值，控制是否启用此 Skill。设为 <code>false</code> 可以在不删除文件的情况下临时禁用。默认 <code>true</code>。</p>
-<h4 id="priority"><code>priority</code><a class="headerlink" href="#priority" title="Permanent link">&para;</a></h4>
-<p>整数，取值 0-10。当两个 Skill 对同一事件的匹配得分相同时，priority 更高的 Skill 被选中。内置 Skill 的 priority 分配：</p>
-<ul>
-<li><code>shell-audit</code> / <code>credential-audit</code>: <strong>10</strong>（最高优先级，安全关键）</li>
-<li><code>code-review</code> / <code>file-system-audit</code> / <code>network-audit</code>: <strong>8</strong></li>
-<li><code>general-review</code>: <strong>0</strong>（最低优先级，兜底）</li>
-</ul>
-<h4 id="triggers"><code>triggers</code><a class="headerlink" href="#triggers" title="Permanent link">&para;</a></h4>
-<p>包含三个子列表，全部使用<strong>小写比较</strong>：</p>
-<ul>
-<li><code>risk_hints</code> -- 事件的 <code>risk_hints</code> 字段与此列表取交集，每命中一个加 10 分</li>
-<li><code>tool_names</code> -- 事件的 <code>tool_name</code> 是否在此列表中，命中加 5 分</li>
-<li><code>payload_patterns</code> -- 事件 payload 的文本表示中是否包含此列表中的子串，每命中一个加 1 分</li>
-</ul>
-<h4 id="evaluation_criteria"><code>evaluation_criteria</code><a class="headerlink" href="#evaluation_criteria" title="Permanent link">&para;</a></h4>
-<p>定义该领域关注的安全评估维度。每个标准包含：</p>
-<ul>
-<li><code>name</code> -- 标准标识符（如 <code>sql_injection</code>）</li>
-<li><code>severity</code> -- 严重性等级，必须是 <code>low</code> / <code>medium</code> / <code>high</code> / <code>critical</code> 之一</li>
-<li><code>description</code> -- 标准的人类可读描述</li>
-</ul>
-<hr />
-<h2 id="_2">加载机制详解<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<h3 id="skillregistry">SkillRegistry 初始化<a class="headerlink" href="#skillregistry" title="Permanent link">&para;</a></h3>
-<p>Gateway 启动时，<code>SkillRegistry</code> 按以下顺序加载 Skills：</p>
-<ol>
-<li><strong>加载内置 Skills</strong> -- 从 <code>src/clawsentry/gateway/skills/*.yaml</code> 目录加载所有 YAML 文件</li>
-<li><strong>验证 <code>general-review</code> 存在</strong> -- 缺失则抛出 <code>ValueError</code></li>
-<li><strong>加载自定义 Skills</strong> -- 如果设置了 <code>AHP_SKILLS_DIR</code> 环境变量，调用 <code>load_additional()</code> 加载外部 Skills</li>
-</ol>
-<h3 id="load_additional">load_additional() 行为<a class="headerlink" href="#load_additional" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">def</span> <span class="nf">load_additional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">skills_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;加载额外的 Skills。返回加载数量。&quot;&quot;&quot;</span>
-</span></code></pre></div>
-<ul>
-<li>遍历目录中所有 <code>.yaml</code> 文件（按文件名排序）</li>
-<li>每个文件经过完整的 schema 验证</li>
-<li><strong>重名 Skill 被跳过</strong> -- 不会覆盖内置 Skill，打印 WARNING 日志</li>
-<li>返回成功加载的 Skill 数量</li>
-</ul>
-<h3 id="_3">验证规则<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
-<p>加载每个 YAML 文件时，以下条件会导致 <code>ValueError</code>：</p>
-<ul>
-<li><code>name</code> 为空</li>
-<li><code>description</code> 为空</li>
-<li><code>system_prompt</code> 为空</li>
-<li><code>triggers</code> 不是字典类型</li>
-<li><code>evaluation_criteria</code> 不是列表类型</li>
-<li><code>evaluation_criteria</code> 中的条目缺少必需字段或 severity 值不合法</li>
-</ul>
-<hr />
-<h2 id="system_prompt_1">编写有效的 system_prompt<a class="headerlink" href="#system_prompt_1" title="Permanent link">&para;</a></h2>
-<p>system_prompt 是 Skill 的核心，直接决定 L3 审查的质量。以下是编写建议：</p>
-<h3 id="1">1. 明确角色身份<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="no">你是一个 [具体领域] 安全审查专家。</span>
-</span></code></pre></div>
-<h3 id="2">2. 列出具体审查要点<a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
-<p>使用编号列表，每个要点聚焦一个风险类别：</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="no">分析 AI agent 的操作，判断是否存在:</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="no">1. [风险类别 A]（具体描述 + 示例）</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="no">2. [风险类别 B]（具体描述 + 示例）</span>
-</span></code></pre></div>
-<h3 id="3_1">3. 提供双语支持<a class="headerlink" href="#3_1" title="Permanent link">&para;</a></h3>
-<p>内置 Skills 使用中英双语提示词，确保不同语言的 LLM 都能理解：</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="no">你是一个安全审查专家。...</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="no">You are a security auditor. ...</span>
-</span></code></pre></div>
-<h3 id="4">4. 严格约束输出格式<a class="headerlink" href="#4" title="Permanent link">&para;</a></h3>
-<p>L3 Agent 需要解析 LLM 的输出，务必指定 JSON 格式：</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="no">...</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="no">Respond ONLY with JSON: {&quot;risk_level&quot;: &quot;low|medium|high|critical&quot;, &quot;findings&quot;: [&quot;...&quot;], &quot;confidence&quot;: 0.0}</span>
-</span></code></pre></div>
-<h3 id="5">5. 避免过于宽泛<a class="headerlink" href="#5" title="Permanent link">&para;</a></h3>
-<p>不好的示例：<code>"检查所有安全问题"</code> -- 过于宽泛，LLM 容易分散注意力。</p>
-<p>好的示例：<code>"专注检查 SQL 注入、未授权数据访问和 DDL 破坏"</code> -- 聚焦具体领域。</p>
-<hr />
-<h2 id="kubernetes-skill">完整示例：Kubernetes 审查 Skill<a class="headerlink" href="#kubernetes-skill" title="Permanent link">&para;</a></h2>
-<div class="language-yaml highlight"><span class="filename">kubernetes-audit.yaml</span><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes-audit</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">审查 Kubernetes 集群操作，检测越权和破坏性变更 / Audit K8s cluster operations for privilege escalation and destructive changes</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="nt">triggers</span><span class="p">:</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">  </span><span class="nt">risk_hints</span><span class="p">:</span>
-</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster_admin</span>
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pod_security_bypass</span>
-</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">namespace_deletion</span>
-</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">  </span><span class="nt">tool_names</span><span class="p">:</span>
-</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bash</span>
-</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shell</span>
-</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exec</span>
-</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubectl</span>
-</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="w">  </span><span class="nt">payload_patterns</span><span class="p">:</span>
-</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubectl</span>
-</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;delete</span><span class="nv"> </span><span class="s">namespace&quot;</span>
-</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;delete</span><span class="nv"> </span><span class="s">pod&quot;</span>
-</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;--privileged&quot;</span>
-</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hostNetwork</span>
-</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hostPID</span>
-</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">securityContext</span>
-</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clusterrole</span>
-</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;create</span><span class="nv"> </span><span class="s">secret&quot;</span>
-</span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;get</span><span class="nv"> </span><span class="s">secret&quot;</span>
-</span><span id="__span-12-27"><a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a>
-</span><span id="__span-12-28"><a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-12-29"><a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a><span class="w">  </span><span class="no">你是一个 Kubernetes 安全审查专家。分析 AI agent 的集群操作，判断是否存在:</span>
-</span><span id="__span-12-30"><a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a><span class="w">  </span><span class="no">1. 权限升级（创建 ClusterRoleBinding、使用 cluster-admin）</span>
-</span><span id="__span-12-31"><a id="__codelineno-12-31" name="__codelineno-12-31" href="#__codelineno-12-31"></a><span class="w">  </span><span class="no">2. Pod 安全策略绕过（privileged 容器、hostNetwork、hostPID）</span>
-</span><span id="__span-12-32"><a id="__codelineno-12-32" name="__codelineno-12-32" href="#__codelineno-12-32"></a><span class="w">  </span><span class="no">3. 破坏性操作（删除 namespace、强制删除 Pod、清空 Deployment）</span>
-</span><span id="__span-12-33"><a id="__codelineno-12-33" name="__codelineno-12-33" href="#__codelineno-12-33"></a><span class="w">  </span><span class="no">4. 敏感信息访问（get secret、describe configmap 含凭证）</span>
-</span><span id="__span-12-34"><a id="__codelineno-12-34" name="__codelineno-12-34" href="#__codelineno-12-34"></a><span class="w">  </span><span class="no">5. 不安全的镜像来源（未知仓库、latest 标签、无签名验证）</span>
-</span><span id="__span-12-35"><a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a>
-</span><span id="__span-12-36"><a id="__codelineno-12-36" name="__codelineno-12-36" href="#__codelineno-12-36"></a><span class="w">  </span><span class="no">You are a Kubernetes security auditor. Analyze the AI agent&#39;s cluster operations for:</span>
-</span><span id="__span-12-37"><a id="__codelineno-12-37" name="__codelineno-12-37" href="#__codelineno-12-37"></a><span class="w">  </span><span class="no">1. Privilege escalation (creating ClusterRoleBinding, using cluster-admin)</span>
-</span><span id="__span-12-38"><a id="__codelineno-12-38" name="__codelineno-12-38" href="#__codelineno-12-38"></a><span class="w">  </span><span class="no">2. Pod Security bypass (privileged containers, hostNetwork, hostPID)</span>
-</span><span id="__span-12-39"><a id="__codelineno-12-39" name="__codelineno-12-39" href="#__codelineno-12-39"></a><span class="w">  </span><span class="no">3. Destructive operations (deleting namespaces, force-deleting pods)</span>
-</span><span id="__span-12-40"><a id="__codelineno-12-40" name="__codelineno-12-40" href="#__codelineno-12-40"></a><span class="w">  </span><span class="no">4. Sensitive data access (get secrets, describe configmaps with credentials)</span>
-</span><span id="__span-12-41"><a id="__codelineno-12-41" name="__codelineno-12-41" href="#__codelineno-12-41"></a><span class="w">  </span><span class="no">5. Insecure image sources (unknown registries, latest tags, no signature verification)</span>
-</span><span id="__span-12-42"><a id="__codelineno-12-42" name="__codelineno-12-42" href="#__codelineno-12-42"></a>
-</span><span id="__span-12-43"><a id="__codelineno-12-43" name="__codelineno-12-43" href="#__codelineno-12-43"></a><span class="w">  </span><span class="no">Respond ONLY with JSON: {&quot;risk_level&quot;: &quot;low|medium|high|critical&quot;, &quot;findings&quot;: [&quot;...&quot;], &quot;confidence&quot;: 0.0}</span>
-</span><span id="__span-12-44"><a id="__codelineno-12-44" name="__codelineno-12-44" href="#__codelineno-12-44"></a>
-</span><span id="__span-12-45"><a id="__codelineno-12-45" name="__codelineno-12-45" href="#__codelineno-12-45"></a><span class="nt">evaluation_criteria</span><span class="p">:</span>
-</span><span id="__span-12-46"><a id="__codelineno-12-46" name="__codelineno-12-46" href="#__codelineno-12-46"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">privilege_escalation</span>
-</span><span id="__span-12-47"><a id="__codelineno-12-47" name="__codelineno-12-47" href="#__codelineno-12-47"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
-</span><span id="__span-12-48"><a id="__codelineno-12-48" name="__codelineno-12-48" href="#__codelineno-12-48"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">集群权限升级 / Cluster privilege escalation</span>
-</span><span id="__span-12-49"><a id="__codelineno-12-49" name="__codelineno-12-49" href="#__codelineno-12-49"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pod_security_bypass</span>
-</span><span id="__span-12-50"><a id="__codelineno-12-50" name="__codelineno-12-50" href="#__codelineno-12-50"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
-</span><span id="__span-12-51"><a id="__codelineno-12-51" name="__codelineno-12-51" href="#__codelineno-12-51"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod 安全策略绕过 / Pod security policy bypass</span>
-</span><span id="__span-12-52"><a id="__codelineno-12-52" name="__codelineno-12-52" href="#__codelineno-12-52"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">destructive_cluster_ops</span>
-</span><span id="__span-12-53"><a id="__codelineno-12-53" name="__codelineno-12-53" href="#__codelineno-12-53"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
-</span><span id="__span-12-54"><a id="__codelineno-12-54" name="__codelineno-12-54" href="#__codelineno-12-54"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">破坏性集群操作 / Destructive cluster operations</span>
-</span><span id="__span-12-55"><a id="__codelineno-12-55" name="__codelineno-12-55" href="#__codelineno-12-55"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret_exposure</span>
-</span><span id="__span-12-56"><a id="__codelineno-12-56" name="__codelineno-12-56" href="#__codelineno-12-56"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
-</span><span id="__span-12-57"><a id="__codelineno-12-57" name="__codelineno-12-57" href="#__codelineno-12-57"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Kubernetes Secret 暴露 / Kubernetes secret exposure</span>
-</span></code></pre></div>
+<h2 id="_12">校验错误参考<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>触发条件</th>
+<th>错误信息</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code> 为空</td>
+<td><code>skill missing name</code></td>
+</tr>
+<tr>
+<td><code>description</code> 为空</td>
+<td><code>skill missing description</code></td>
+</tr>
+<tr>
+<td><code>system_prompt</code> 为空</td>
+<td><code>skill missing system_prompt</code></td>
+</tr>
+<tr>
+<td><code>triggers</code> 不是 dict</td>
+<td><code>skill triggers must be a dict</code></td>
+</tr>
+<tr>
+<td><code>evaluation_criteria</code> 不是 list</td>
+<td><code>skill evaluation_criteria must be a list</code></td>
+</tr>
+<tr>
+<td><code>evaluation_criteria[i].severity</code> 不在 <code>{low,medium,high,critical}</code> 中</td>
+<td><code>invalid evaluation_criteria[i]</code></td>
+</tr>
+<tr>
+<td><code>allowed_tools</code> 包含不在白名单的工具</td>
+<td><code>skill allowed_tools contain non-whitelisted tools</code></td>
+</tr>
+<tr>
+<td><code>required_evidence</code> 包含未知值</td>
+<td><code>skill required_evidence contains unknown values</code></td>
+</tr>
+<tr>
+<td><code>output_tags</code> 有重复值</td>
+<td><code>skill output_tags must not contain duplicates</code></td>
+</tr>
+<tr>
+<td><code>output_tags</code> 值不匹配 <code>^[a-z][a-z0-9_]{1,63}$</code></td>
+<td><code>skill output_tags contain invalid tags</code></td>
+</tr>
+<tr>
+<td><code>field_notes</code> 键不在有效集合中</td>
+<td><code>skill field_notes references unknown fields</code></td>
+</tr>
+<tr>
+<td><code>severity_rubric</code> 键不在 <code>{low,medium,high,critical}</code> 中</td>
+<td><code>skill severity_rubric has invalid severity</code></td>
+</tr>
+<tr>
+<td><code>example_cases[i]</code> 缺少 <code>synthetic: true</code> 或 <code>not_current_case: true</code></td>
+<td><code>skill example_cases[i] must be synthetic and not_current_case</code></td>
+</tr>
+<tr>
+<td><code>example_cases[i]</code> 包含真实路径或类密钥文本</td>
+<td><code>skill example_cases[i] contains real path or secret-like text</code></td>
+</tr>
+<tr>
+<td><code>example_cases</code> 数量超过 <code>example_policy.max_examples</code></td>
+<td><code>skill example_cases exceed example_policy.max_examples</code></td>
+</tr>
+<tr>
+<td><code>max_tool_calls</code> 不是整数</td>
+<td><code>skill max_tool_calls must be an integer</code></td>
+</tr>
+<tr>
+<td>同一目录中存在重复 <code>name</code></td>
+<td><code>duplicate skill name</code></td>
+</tr>
+<tr>
+<td><code>schema_version</code> 为 v1 且 <code>required_evidence</code> 为空</td>
+<td><code>skill required_evidence is required for clawsentry.l3_skill.v1</code></td>
+</tr>
+<tr>
+<td><code>schema_version</code> 为 v1 且 <code>severity_rubric</code> 未覆盖 <code>high</code> 或 <code>critical</code></td>
+<td><code>skill severity_rubric must cover high or critical</code></td>
+</tr>
+<tr>
+<td><code>schema_version</code> 为 v1 且 <code>output_tags</code> 为空</td>
+<td><code>skill output_tags is required for clawsentry.l3_skill.v1</code></td>
+</tr>
+<tr>
+<td><code>schema_version</code> 既非 <code>"legacy"</code> 也非 <code>clawsentry.l3_skill.v1</code></td>
+<td><code>unsupported skill schema_version</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition 警告">
+<p class="admonition-title"><code>example_cases</code> 不属于证据</p>
+<p>示例案例必须包含 <code>synthetic: true</code> 和 <code>not_current_case: true</code>，仅用于向 LLM 展示模式样例。它们不能出现在 L2/L3 <code>evidence_refs</code> 或 findings 输出中。</p>
+</div>
 
 
 
@@ -3640,7 +3745,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月26日 17:54:45 UTC">2026年4月26日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月17日 21:24:54 UTC">2026年5月17日</span>
   </span>
 
     
@@ -3763,11 +3868,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

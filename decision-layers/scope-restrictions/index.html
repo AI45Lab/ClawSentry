@@ -6,14 +6,14 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="安全决策引擎如何用 SessionScopeProfile 为单次任务限制工具、路径、域名和命令前缀">
+        <meta name="description" content="最小权限任务边界 — ClawSentry 如何评估并执行 SessionScopeProfile 及会话级风险累积。">
       
       
       
         <link rel="canonical" href="https://elroyper.github.io/ClawSentry/decision-layers/scope-restrictions/">
       
       
-        <link rel="prev" href="../sanitizer-capability/">
+        <link rel="prev" href="../post-action/">
       
       
         <link rel="next" href="../trajectory-analyzer/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Scope 限制 - ClawSentry</title>
+        <title>作用域限制 - ClawSentry</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#scope" class="md-skip">
+        <a href="#_1" class="md-skip">
           跳转至
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Scope 限制
+              作用域限制
             
           </span>
         </div>
@@ -170,6 +170,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -272,6 +279,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -291,6 +300,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -331,6 +342,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -352,6 +365,8 @@
         <a href="../l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../advanced/rule-governance/" class="md-tabs__link">
+        <a href="../../advanced/skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -948,6 +993,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1232,6 +1293,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1548,6 +1629,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1739,34 +1838,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1830,10 +1901,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        把“这次任务能碰什么”写进安全决策
+        一次配置，每次预操作自动执行
       
     </span>
   </a>
@@ -1841,44 +1912,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        适合解决什么问题
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="适合解决什么问题">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ssh-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        文档任务不该碰 SSH key
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bug" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        修 bug 不该外传数据
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        自动化脚本不该升级权限
+        限制类型
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="限制类型">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base_rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        base_rules — 硬性拒绝
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task_rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        task_rules — 允许与推迟
       
     </span>
   </a>
@@ -1894,58 +1954,41 @@
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        决策顺序
+        裁决与执行
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="决策顺序">
+    <nav class="md-nav" aria-label="裁决与执行">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verdict" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        四种 verdict 怎么读
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        最小示例：文档维护范围
+        四种裁决值
       
     </span>
   </a>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        自动收窄中的 MCP 边界
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        从预览到真实收紧
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="从预览到真实收紧">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-validate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Validate
+        强制执行模式与试运行模式
       
     </span>
   </a>
@@ -1953,79 +1996,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-preview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Preview
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-enforce" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Enforce
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#l1l2l3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        它和 L1/L2/L3 的关系
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="它和 L1/L2/L3 的关系">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scope_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope 不会降低风险
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope 只会收紧边界
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        代码级核查证据
+        纯能力拒绝例外
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2033,7 +2015,118 @@
   <a href="#_8" class="md-nav__link">
     <span class="md-ellipsis">
       
-        继续阅读
+        会话累积锁定策略
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="会话累积锁定策略">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        会话锁定生命周期
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        会话作用域配置文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置文件 JSON 字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        会话累积锁定策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        执行流程
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Watch 输出示例
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最小可用配置文件
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        另见
       
     </span>
   </a>
@@ -2147,6 +2240,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2192,6 +2303,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2404,6 +2543,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2513,70 +2662,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2679,10 +2772,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        把“这次任务能碰什么”写进安全决策
+        一次配置，每次预操作自动执行
       
     </span>
   </a>
@@ -2690,44 +2783,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        适合解决什么问题
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="适合解决什么问题">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ssh-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        文档任务不该碰 SSH key
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bug" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        修 bug 不该外传数据
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        自动化脚本不该升级权限
+        限制类型
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="限制类型">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base_rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        base_rules — 硬性拒绝
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task_rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        task_rules — 允许与推迟
       
     </span>
   </a>
@@ -2743,58 +2825,41 @@
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        决策顺序
+        裁决与执行
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="决策顺序">
+    <nav class="md-nav" aria-label="裁决与执行">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verdict" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        四种 verdict 怎么读
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        最小示例：文档维护范围
+        四种裁决值
       
     </span>
   </a>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        自动收窄中的 MCP 边界
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        从预览到真实收紧
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="从预览到真实收紧">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-validate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Validate
+        强制执行模式与试运行模式
       
     </span>
   </a>
@@ -2802,79 +2867,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-preview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Preview
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-enforce" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Enforce
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#l1l2l3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        它和 L1/L2/L3 的关系
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="它和 L1/L2/L3 的关系">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#scope_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope 不会降低风险
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope 只会收紧边界
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        代码级核查证据
+        纯能力拒绝例外
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2882,7 +2886,118 @@
   <a href="#_8" class="md-nav__link">
     <span class="md-ellipsis">
       
-        继续阅读
+        会话累积锁定策略
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="会话累积锁定策略">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        会话锁定生命周期
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        会话作用域配置文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置文件 JSON 字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        会话累积锁定策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        执行流程
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Watch 输出示例
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最小可用配置文件
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        另见
       
     </span>
   </a>
@@ -2900,6 +3015,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../l1-rules/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    安全决策引擎
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -2909,208 +3072,531 @@
   
 
 
-<h1 id="scope">Scope 限制<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h1>
+<h1 id="_1">作用域限制<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
 <div class="cs-doc-hero">
-<p class="cs-eyebrow">TASK-BOUNDARY ENFORCEMENT</p>
-<h2 id="_1">把“这次任务能碰什么”写进安全决策<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
-<p>Scope 限制让安全决策引擎不只回答“这个动作危险吗”，还回答：<strong>这个动作是否属于本次任务允许的工具、路径、域名和命令范围？</strong> 它是 L1/L2/L3 风险判断之外的任务边界层：高风险动作仍会被阻断；低风险动作如果越界，也可以被解释、延迟或阻断。</p>
+<p class="cs-eyebrow">决策引擎 · 作用域限制</p>
+<h2 id="_2">一次配置，每次预操作自动执行<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p>作用域限制允许你精确告知 ClawSentry，某个任务允许访问哪些工具、路径、域名、命令、技能和 MCP 服务器。两种独立机制共同执行这些边界：</p>
+<ul>
+<li><strong>会话作用域配置文件（Session Scope Profile）</strong> — 从 JSON 配置文件加载的每任务允许/拒绝列表</li>
+<li><strong>会话累积锁定策略</strong> — 当会话累积过多高风险事件后自动升级</li>
+</ul>
 <div class="cs-pill-row">
-<p><span class="cs-pill">工具 allow/deny</span>
-<span class="cs-pill">路径前缀</span>
-<span class="cs-pill">域名边界</span>
-<span class="cs-pill">命令前缀</span>
-<span class="cs-pill">dry-run → enforced</span></p>
+<p><span class="cs-pill">四种处置规则</span>
+<span class="cs-pill">强制拒绝 → 阻断</span>
+<span class="cs-pill">强制推迟 → 人工审核</span>
+<span class="cs-pill">累积风险阈值 → 会话锁定</span></p>
 </div>
 </div>
-<h2 id="_2">适合解决什么问题<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<div class="cs-card-grid">
-<div class="cs-card">
-<h3 id="ssh-key">文档任务不该碰 SSH key<a class="headerlink" href="#ssh-key" title="Permanent link">&para;</a></h3>
-<p>把 <code>site-docs/</code>、<code>docs/</code> 放进允许路径，把 <code>~/.ssh</code>、<code>.env</code> 放进底线禁止路径。即使读取命令本身低风险，也会因为越界被标记。</p>
-</div>
-<div class="cs-card">
-<h3 id="bug">修 bug 不该外传数据<a class="headerlink" href="#bug" title="Permanent link">&para;</a></h3>
-<p>为任务声明允许域名；未列入的域名访问会出现 <code>scope_defer:unknown_domain</code>，网络写入会出现 <code>scope_defer:network_write</code>。</p>
-</div>
-<div class="cs-card">
-<h3 id="_3">自动化脚本不该升级权限<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
-<p><code>sudo</code>、递归删除、格式化设备等 destructive command 会触发底线 deny，即使 profile 作者忘了手写对应 command prefix。</p>
-</div>
-</div>
-<h2 id="_4">决策顺序<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
-<div class="cs-flow">
-<p>CanonicalEvent + DecisionContext.session_scope_profile → deterministic evaluator → <code>allow</code> / <code>defer</code> / <code>deny</code> / <code>neutral</code> reason codes → policy engine 只在 confirmed 且非 dry-run 时收紧 ALLOW → 最终 decision 进入 watch/report/SSE</p>
-</div>
-<h3 id="verdict">四种 verdict 怎么读<a class="headerlink" href="#verdict" title="Permanent link">&para;</a></h3>
+<h2 id="_3">限制类型<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<p>每个预操作事件都会经过两层规则检查：<code>base_rules</code>（硬性拒绝，无法被任务规则覆盖）和 <code>task_rules</code>（任务级允许/推迟决策）。</p>
+<h3 id="base_rules">base_rules — 硬性拒绝<a class="headerlink" href="#base_rules" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>verdict</th>
-<th>典型 reason code</th>
-<th>对真实决策的影响</th>
+<th>类型</th>
+<th>配置字段</th>
+<th>匹配逻辑</th>
+<th>原因码</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>工具名称</td>
+<td><code>denied_tools</code></td>
+<td>不区分大小写精确匹配</td>
+<td><code>scope_deny:tool &lt;name&gt;</code></td>
+</tr>
+<tr>
+<td>命令前缀</td>
+<td><code>denied_command_prefixes</code></td>
+<td><code>command.startswith(prefix)</code>（不区分大小写）</td>
+<td><code>scope_deny:command_prefix &lt;prefix&gt;</code></td>
+</tr>
+<tr>
+<td>文件路径</td>
+<td><code>denied_paths</code></td>
+<td>规范化路径的前缀匹配或子串匹配</td>
+<td><code>scope_deny:path &lt;match&gt;</code></td>
+</tr>
+<tr>
+<td>域名</td>
+<td><code>denied_domains</code></td>
+<td>精确匹配或子域名后缀匹配</td>
+<td><code>scope_deny:domain &lt;match&gt;</code></td>
+</tr>
+<tr>
+<td>技能 ID</td>
+<td><code>denied_skill_ids</code></td>
+<td>不区分大小写精确匹配</td>
+<td><code>scope_deny:skill &lt;id&gt;</code></td>
+</tr>
+<tr>
+<td>技能信任状态</td>
+<td><code>denied_skill_trust_states</code></td>
+<td>不区分大小写精确匹配</td>
+<td><code>scope_deny:skill_trust_state &lt;state&gt;</code></td>
+</tr>
+<tr>
+<td>MCP 服务器</td>
+<td><code>denied_mcp_servers</code></td>
+<td>不区分大小写精确匹配</td>
+<td><code>scope_deny:mcp_server &lt;name&gt;</code></td>
+</tr>
+<tr>
+<td>MCP 工具</td>
+<td><code>denied_mcp_tools</code></td>
+<td>不区分大小写精确匹配</td>
+<td><code>scope_deny:mcp_tool &lt;name&gt;</code></td>
+</tr>
+<tr>
+<td>MCP 状态</td>
+<td><code>denied_mcp_statuses</code></td>
+<td>不区分大小写精确匹配</td>
+<td><code>scope_deny:mcp_status &lt;status&gt;</code></td>
+</tr>
+<tr>
+<td>MCP 信任级别</td>
+<td><code>denied_mcp_trust_levels</code></td>
+<td>不区分大小写精确匹配</td>
+<td><code>scope_deny:mcp_trust_level &lt;level&gt;</code></td>
+</tr>
+<tr>
+<td>能力</td>
+<td><code>denied_capabilities</code></td>
+<td>不区分大小写精确匹配</td>
+<td><code>scope_deny:capability &lt;cap&gt;</code></td>
+</tr>
+<tr>
+<td>破坏性命令</td>
+<td><em>(硬编码)</em></td>
+<td>正则：<code>rm -r*</code>、<code>sudo</code>、<code>dd of=/dev/</code>、<code>mkfs</code>、<code>chmod 777</code></td>
+<td><code>scope_deny:destructive_command</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">破坏性命令检测始终激活</p>
+<p>当配置文件的 <code>confirmed=true</code> 且 <code>dry_run=false</code> 时，破坏性命令正则会在任意配置文件上触发，即使 <code>denied_command_prefixes</code> 为空。这是基线不变量，无法禁用。</p>
+</div>
+<h3 id="task_rules">task_rules — 允许与推迟<a class="headerlink" href="#task_rules" title="Permanent link">&para;</a></h3>
+<p>当任务规则匹配时，动作产生 <code>scope_allow</code>。当任务规则列表非空但动作不在其中，或检测到特定不安全条件时（无论允许列表内容如何），动作产生 <code>scope_defer</code>。</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>允许条件</th>
+<th>推迟条件</th>
+<th>原因码</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>工具</td>
+<td><code>allowed_tools</code> 包含该工具</td>
+<td><code>allowed_tools</code> 非空且工具不在列表中</td>
+<td><code>scope_allow:tool</code> / <code>scope_defer:unknown_tool</code></td>
+</tr>
+<tr>
+<td>命令</td>
+<td><code>allowed_command_prefixes</code> 匹配</td>
+<td><code>allowed_command_prefixes</code> 非空且无匹配</td>
+<td><code>scope_allow:command_prefix</code> / <code>scope_defer:unknown_command</code></td>
+</tr>
+<tr>
+<td>路径</td>
+<td><code>allowed_path_prefixes</code> 匹配</td>
+<td><code>allowed_path_prefixes</code> 非空且路径不匹配</td>
+<td><code>scope_allow:path_prefix</code> / <code>scope_defer:unknown_path</code></td>
+</tr>
+<tr>
+<td>域名</td>
+<td><code>allowed_domains</code> 匹配</td>
+<td><code>allowed_domains</code> 非空且域名不匹配</td>
+<td><code>scope_allow:domain</code> / <code>scope_defer:unknown_domain</code></td>
+</tr>
+<tr>
+<td>技能 ID</td>
+<td><code>allowed_skill_ids</code> + 身份可信</td>
+<td>列表非空且（身份不可信，或 ID 不在列表中）</td>
+<td><code>scope_allow:skill</code> / <code>scope_defer:unknown_skill</code> 或 <code>scope_defer:untrusted_skill_identity</code></td>
+</tr>
+<tr>
+<td>技能信任状态</td>
+<td><code>allowed_skill_trust_states</code> 包含该状态且身份可信</td>
+<td>列表非空且（身份不可信，或状态不在列表中）</td>
+<td><code>scope_allow:skill_trust_state</code> / <code>scope_defer:skill_trust_state</code> 或 <code>scope_defer:untrusted_skill_trust_state</code></td>
+</tr>
+<tr>
+<td>MCP 服务器</td>
+<td><code>allowed_mcp_servers</code> 包含该名称</td>
+<td>列表非空且名称不在其中</td>
+<td><code>scope_allow:mcp_server</code> / <code>scope_defer:unknown_mcp_server</code></td>
+</tr>
+<tr>
+<td>MCP 工具</td>
+<td><code>allowed_mcp_tools</code> 包含该名称</td>
+<td>列表非空且名称不在其中</td>
+<td><code>scope_allow:mcp_tool</code> / <code>scope_defer:unknown_mcp_tool</code></td>
+</tr>
+<tr>
+<td>MCP 状态</td>
+<td><code>allowed_mcp_statuses</code> 包含该状态</td>
+<td>列表非空且状态不在其中</td>
+<td><code>scope_allow:mcp_status</code> / <code>scope_defer:mcp_status</code></td>
+</tr>
+<tr>
+<td>MCP 信任级别</td>
+<td><code>allowed_mcp_trust_levels</code> 包含该级别</td>
+<td>列表非空且级别不在其中</td>
+<td><code>scope_allow:mcp_trust_level</code> / <code>scope_defer:mcp_trust_level</code></td>
+</tr>
+<tr>
+<td>能力</td>
+<td><code>allowed_capabilities</code> 包含该能力</td>
+<td><code>allowed_capabilities</code> 非空且能力不在其中</td>
+<td><code>scope_allow:capability</code> / <code>scope_defer:unknown_capability</code></td>
+</tr>
+<tr>
+<td>排队能力</td>
+<td><em>(始终推迟)</em></td>
+<td>能力在 <code>queued_capabilities</code> 中</td>
+<td><code>scope_defer:queued_capability</code></td>
+</tr>
+<tr>
+<td>网络写操作</td>
+<td><em>(始终推迟)</em></td>
+<td><code>curl/wget/http/httpie</code> 带 <code>-d</code>、<code>--data</code>、<code>-F</code>、<code>--upload-file</code> 等参数</td>
+<td><code>scope_defer:network_write</code></td>
+</tr>
+<tr>
+<td>无范围网络</td>
+<td><em>(始终推迟)</em></td>
+<td>URL 存在、无 <code>allowed_domains</code>、且 <code>"network"</code> 不在 <code>queued_categories</code> 中</td>
+<td><code>scope_defer:network_unscoped</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="_4">裁决与执行<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<h3 id="_5">四种裁决值<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>裁决</th>
+<th>含义</th>
+<th>策略引擎执行时的处理</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>deny</code></td>
-<td><code>scope_deny:path ~/.ssh</code>、<code>scope_deny:domain pastebin.com</code>、<code>scope_deny:destructive_command</code></td>
-<td>enforced 时把动作收紧为 <code>block</code>。</td>
+<td>动作命中了 base_rules 拒绝列表</td>
+<td>将决策替换为 <code>block</code>（终态）</td>
 </tr>
 <tr>
 <td><code>defer</code></td>
-<td><code>scope_defer:unknown_path ...</code>、<code>scope_defer:unknown_domain ...</code>、<code>scope_defer:network_write</code></td>
-<td>enforced 且原决策不是 block/defer 时，收紧为 <code>defer</code>。</td>
+<td>动作超出任务作用域</td>
+<td>将决策升级为 <code>defer</code>，除非已经是 <code>block</code> 或 <code>defer</code></td>
 </tr>
 <tr>
 <td><code>allow</code></td>
-<td><code>scope_allow:path_prefix site-docs/</code>、<code>scope_allow:tool read_file</code></td>
-<td>只说明在任务范围内，仍需叠加 L1/L2/L3 风险判断。</td>
+<td>动作匹配了 task_rules 允许列表</td>
+<td>不变，继续传递给 L1/L2/L3 风险引擎</td>
 </tr>
 <tr>
 <td><code>neutral</code></td>
-<td><code>scope_neutral:no_applicable_rule</code></td>
-<td>没有适用 scope 规则，回到普通风险判断。</td>
+<td>未找到适用规则</td>
+<td>不变，继续传递给 L1/L2/L3 风险引擎</td>
 </tr>
 </tbody>
 </table>
-<div class="admonition tip">
-<p class="admonition-title">默认先 dry-run</p>
-<p>推荐先在 <code>dry_run: true</code> 下运行 <code>clawsentry scope validate/preview</code> 或 <code>POST /ahp/scope/preview</code>。只有 profile 被 operator 确认，并且 <code>dry_run: false</code> 后，scope 才会真实收紧 Gateway 决策。</p>
+<div class="admonition info">
+<p class="admonition-title">allow 和 neutral 不会绕过 L1/L2/L3</p>
+<p><code>scope_allow</code> 裁决仅表示该动作在任务作用域内。完整的风险引擎仍会运行，并可独立地进行阻断。</p>
 </div>
-<h2 id="_5">最小示例：文档维护范围<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;scope_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cs.session_scope.v1&quot;</span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;profile_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;docs-only&quot;</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;operator&quot;</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">&quot;confirmed&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">&quot;dry_run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">&quot;base_rules&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">&quot;denied_paths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;~/.ssh&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.env&quot;</span><span class="p">],</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">&quot;denied_domains&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;pastebin.com&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;file.io&quot;</span><span class="p">],</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">&quot;denied_command_prefixes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;sudo&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;rm -rf&quot;</span><span class="p">]</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="nt">&quot;task_rules&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">&quot;allowed_tools&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read_file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;write_file&quot;</span><span class="p">],</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">&quot;allowed_path_prefixes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;site-docs/&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;docs/&quot;</span><span class="p">],</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">&quot;allowed_domains&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;github.com&quot;</span><span class="p">],</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="nt">&quot;allowed_command_prefixes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;git status&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;python -m pytest&quot;</span><span class="p">],</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="nt">&quot;queued_categories&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="p">}</span>
-</span></code></pre></div>
-<p>预览一个访问 <code>~/.ssh/id_rsa</code> 的事件：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>clawsentry<span class="w"> </span>scope<span class="w"> </span>preview<span class="w"> </span>--profile<span class="w"> </span>scope.json<span class="w"> </span>--event<span class="w"> </span>event.json<span class="w"> </span>--json
-</span></code></pre></div>
-<p>典型结果：</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dry_run_only&quot;</span><span class="p">,</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;scope_evaluation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">&quot;profile_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;docs-only&quot;</span><span class="p">,</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">&quot;confirmed&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">&quot;dry_run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">&quot;enforced&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">&quot;verdict&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deny&quot;</span><span class="p">,</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">&quot;reason_codes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;scope_deny:path ~/.ssh&quot;</span><span class="p">]</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">}</span>
-</span></code></pre></div>
-<p>这说明 profile 的规则可以解释“如果正式启用会阻断什么”，但 dry-run 阶段不会真的 block/defer。</p>
-<h2 id="_6">从预览到真实收紧<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
-<div class="cs-operator-path">
-<div class="cs-path-option cs-path-option--recommended">
-<h3 id="1-validate">1. Validate<a class="headerlink" href="#1-validate" title="Permanent link">&para;</a></h3>
-<p>先校验 profile schema：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>clawsentry<span class="w"> </span>scope<span class="w"> </span>validate<span class="w"> </span>--profile<span class="w"> </span>scope.json
-</span></code></pre></div>
+<h3 id="mcp">自动收窄中的 MCP 边界<a class="headerlink" href="#mcp" title="Permanent link">&para;</a></h3>
+<p>启用 <code>CS_CAPABILITY_NARROWING_ENABLED</code> 后，Gateway 在高会话风险后生成
+SessionScopeProfile，而不是让 adapter 本地隐藏工具。MCP 自动收窄使用
+<code>CS_CAPABILITY_NARROWING_ALLOWED_MCP_*</code> 与
+<code>CS_CAPABILITY_NARROWING_DENIED_MCP_*</code> 映射到同名 <code>allowed_mcp_*</code> /
+<code>denied_mcp_*</code> 字段。MCP status 允许值为 <code>allowlist</code>、<code>greylist</code>、
+<code>blacklist</code>、<code>unlisted</code>、<code>revoked</code>、<code>disabled</code>；trust level 允许值为
+<code>trusted</code>、<code>local_unreviewed</code>、<code>unknown</code>、<code>untrusted</code>。
+Capability 自动收窄也可通过 <code>CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES</code>、
+<code>CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES</code> 与
+<code>CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES</code> 映射到 <code>allowed_capabilities</code>、
+<code>denied_capabilities</code> 与 <code>queued_capabilities</code>。常见 capability 包括
+<code>filesystem.write</code>、<code>network.fetch</code>、<code>future_execution.entrypoint</code>。</p>
+<h3 id="_6">强制执行模式与试运行模式<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<p>仅当 <code>confirmed=true</code> 且 <code>dry_run=false</code> 时，配置文件才处于<strong>强制执行</strong>状态。当配置文件未强制执行时：</p>
+<ul>
+<li>作用域裁决和原因码会附加到决策原因字符串中。</li>
+<li>策略引擎不执行任何收紧操作。</li>
+<li><code>watch --interactive</code> 会显示假设的裁决结果供审查。</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">从 dry_run=true 开始</p>
+<p>首次部署时，请设置 <code>confirmed=false</code> 且 <code>dry_run=true</code>。观察 <code>watch</code> 输出以验证原因码，然后再启用真实执行。仅在验证配置文件后，才将其切换为 <code>confirmed=true, dry_run=false</code>。</p>
 </div>
-<div class="cs-path-option">
-<h3 id="2-preview">2. Preview<a class="headerlink" href="#2-preview" title="Permanent link">&para;</a></h3>
-<p>用代表性事件调试 reason codes：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>clawsentry<span class="w"> </span>scope<span class="w"> </span>preview<span class="w"> </span>--profile<span class="w"> </span>scope.json<span class="w"> </span>--event<span class="w"> </span>event.json<span class="w"> </span>--json
-</span></code></pre></div>
+<h3 id="_7">纯能力拒绝例外<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
+<p>当所有拒绝原因码均为 <code>scope_deny:capability …</code>，且先前决策已经是 <code>defer</code> 时，策略引擎不会将其升级为 <code>block</code>。其他所有拒绝原因均会产生 <code>block</code>，与先前决策无关。</p>
+<h2 id="_8">会话累积锁定策略<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h2>
+<p>这是一个<strong>独立于作用域配置文件</strong>的机制 — 一旦会话累积了可配置数量的高风险事件，就会对该会话的所有后续决策进行升级。</p>
+<h3 id="_9">会话锁定生命周期<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>stateDiagram-v2
+    direction LR
+
+    [*] --&gt; 正常 : 会话创建
+
+    正常 --&gt; 正常 : 低风险事件\n(count &lt; threshold)
+    正常 --&gt; 累积中 : 高风险事件\n(count 递增)
+    累积中 --&gt; 累积中 : 继续高风险事件\n(count &lt; threshold)
+    累积中 --&gt; 强制锁定 : count &gt;= threshold\n(发出 session_enforcement_change)
+
+    强制锁定 --&gt; 强制锁定 : 所有 pre_action\n立即执行配置动作\n(defer / block / l3_require)
+    强制锁定 --&gt; 正常 : 冷却期超时\n(cooldown_seconds 无高风险事件)
+    强制锁定 --&gt; 正常 : 运维手动释放\n(DELETE /sessions/{id}/enforcement)</code></pre>
+<ol>
+<li>每次最终决策后，Gateway 检查会话的累积高风险计数。</li>
+<li>若 <code>count &gt;= threshold</code> 且执行已启用，会话进入 <code>enforced</code>（强制锁定）状态。</li>
+<li>该会话的所有后续 <code>pre_action</code> 请求立即升级为配置的动作（<code>defer</code>、<code>block</code> 或 <code>l3_require</code>）。</li>
+<li>自上次高风险事件起，经过 <code>cooldown_seconds</code> 的无活动时间后，会话自动释放。</li>
+<li>运维人员也可通过 API 手动释放会话（<code>DELETE /sessions/{id}/enforcement</code>）。</li>
+</ol>
+<div class="admonition info">
+<p class="admonition-title">会话锁定与作用域配置文件是叠加关系，而非替代关系</p>
+<p>即使未加载作用域配置文件，会话锁定执行也会触发。若两者同时激活，会话锁定优先，因为 Gateway 在应用作用域评估之前先检查会话锁定执行状态。</p>
 </div>
-<div class="cs-path-option">
-<h3 id="3-enforce">3. Enforce<a class="headerlink" href="#3-enforce" title="Permanent link">&para;</a></h3>
-<p>确认不会误伤后，把 profile 放进 AHP 决策上下文，且设置：</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span><span class="nt">&quot;confirmed&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dry_run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">}</span>
-</span></code></pre></div>
-</div>
-</div>
-<h2 id="l1l2l3">它和 L1/L2/L3 的关系<a class="headerlink" href="#l1l2l3" title="Permanent link">&para;</a></h2>
-<div class="cs-before-after">
-<div>
-<h3 id="scope_1">Scope 不会降低风险<a class="headerlink" href="#scope_1" title="Permanent link">&para;</a></h3>
-<p>如果 L1/L2/L3 已经因为 high/critical 风险决定 block，scope 不会把它改回 allow。</p>
-</div>
-<div>
-<h3 id="scope_2">Scope 只会收紧边界<a class="headerlink" href="#scope_2" title="Permanent link">&para;</a></h3>
-<p>当原决策允许动作继续时，enforced scope 的 <code>deny</code> 可收紧为 block，<code>defer</code> 可收紧为人工审批。</p>
-</div>
-</div>
-<h2 id="_7">代码级核查证据<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
+<h2 id="_10">配置<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h2>
+<h3 id="_11">会话作用域配置文件<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>结论</th>
-<th>代码证据</th>
+<th>配置字段</th>
+<th>环境变量</th>
+<th>默认值</th>
+<th>含义</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Profile schema 支持 base/task 两层规则</td>
-<td><code>src/clawsentry/gateway/models.py:201-246</code> 定义 <code>SessionScopeBaseRules</code>、<code>SessionScopeTaskRules</code>、<code>SessionScopeProfile</code>，字段包括 denied/allowed tools、paths、domains、command prefixes、<code>confirmed</code>、<code>dry_run</code>。</td>
+<td>配置文件路径</td>
+<td><code>CS_SESSION_SCOPE_PROFILE_FILE</code></td>
+<td><em>(无)</em></td>
+<td>指向 JSON 文件的路径，解析为 <code>SessionScopeProfile</code>。优先于内联环境变量。</td>
 </tr>
 <tr>
-<td>verdict 和报告摘要是固定模型</td>
-<td><code>src/clawsentry/gateway/models.py:83-93</code> 定义 source/verdict 枚举；<code>src/clawsentry/gateway/models.py:258-269</code> 定义 <code>SessionScopeEvaluationSummary</code>。</td>
-</tr>
-<tr>
-<td>evaluator 是 deterministic 且只读 context profile</td>
-<td><code>src/clawsentry/gateway/session_scope.py:75-116</code> 从 <code>DecisionContext.session_scope_profile</code> 读取 profile，返回 deny/defer/allow/neutral 和 reason codes。</td>
-</tr>
-<tr>
-<td>enforced 条件是 confirmed 且非 dry-run</td>
-<td><code>src/clawsentry/gateway/session_scope.py:43-56</code> 的 <code>enforced</code> 属性与 summary 输出使用 <code>confirmed and not dry_run</code>。</td>
-</tr>
-<tr>
-<td>base deny 覆盖工具、命令前缀、路径、域名与破坏性命令</td>
-<td><code>src/clawsentry/gateway/session_scope.py:153-178</code> 生成 <code>scope_deny:*</code> reason codes。</td>
-</tr>
-<tr>
-<td>task allow/defer 覆盖工具、命令前缀、路径、域名、网络写入/未声明网络</td>
-<td><code>src/clawsentry/gateway/session_scope.py:181-237</code> 生成 <code>scope_allow:*</code> 与 <code>scope_defer:*</code> reason codes。</td>
-</tr>
-<tr>
-<td>policy engine 只在 pre_action 上应用 scope</td>
-<td><code>src/clawsentry/gateway/policy_engine.py:324-336</code> 非 <code>pre_action</code> 直接返回原 decision。</td>
-</tr>
-<tr>
-<td>dry-run 只附加解释，不收紧决策</td>
-<td><code>src/clawsentry/gateway/policy_engine.py:338-352</code> 在 <code>enforced=false</code> 时只追加 <code>scope_evaluation</code> 与 reason suffix。</td>
-</tr>
-<tr>
-<td>enforced deny/defer 会收紧决策</td>
-<td><code>src/clawsentry/gateway/policy_engine.py:354-381</code> 将 <code>deny</code> 转成 <code>block</code>，将可收紧的 <code>defer</code> 转成人工审批。</td>
-</tr>
-<tr>
-<td>CLI preview/validate 已实现</td>
-<td><code>src/clawsentry/cli/scope_command.py:16-81</code> 提供 <code>scope validate</code> 与 <code>scope preview</code>，并输出 protection statement。</td>
-</tr>
-<tr>
-<td>HTTP preview endpoint 已实现</td>
-<td><code>src/clawsentry/gateway/server.py:3526-3565</code> 暴露 <code>POST /ahp/scope/preview</code>，支持 <code>confirm=true</code> 转 enforced preview。</td>
-</tr>
-<tr>
-<td>当前行为有测试锁定</td>
-<td><code>src/clawsentry/tests/test_scope_command.py:57-112</code> 验证 CLI dry-run/enforced preview；<code>src/clawsentry/tests/test_gateway.py:2444-2479</code> 验证 HTTP preview；<code>src/clawsentry/tests/test_watch_command.py:1493-1517</code> 验证 watch 展示 scope boundary。</td>
+<td>内联配置文件路径</td>
+<td><code>CS_SESSION_SCOPE_PROFILE</code></td>
+<td><em>(无)</em></td>
+<td>同上；当文件变量未设置时使用。</td>
 </tr>
 </tbody>
 </table>
-<h2 id="_8">继续阅读<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h2>
+<p>当两个变量均未设置时，不加载默认作用域配置文件；仅运行 L1/L2/L3 风险引擎。</p>
+<p>当请求已携带 <code>context.session_scope_profile</code> 时，默认配置文件不会被应用。</p>
+<h3 id="json">配置文件 JSON 字段<a class="headerlink" href="#json" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>默认值</th>
+<th>必填</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scope_version</code></td>
+<td>string</td>
+<td>—</td>
+<td>是</td>
+<td>必须为 <code>"cs.session_scope.v1"</code></td>
+</tr>
+<tr>
+<td><code>profile_id</code></td>
+<td>string</td>
+<td>—</td>
+<td>是</td>
+<td>非空标识符，出现在原因码和 watch 输出中</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>string</td>
+<td><code>"operator"</code></td>
+<td>否</td>
+<td>信息性字段；表示谁生成了此配置文件</td>
+</tr>
+<tr>
+<td><code>confirmed</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td>否</td>
+<td>必须为 <code>true</code> 才能真实执行</td>
+</tr>
+<tr>
+<td><code>dry_run</code></td>
+<td>bool</td>
+<td><code>true</code></td>
+<td>否</td>
+<td>必须为 <code>false</code> 才能真实执行</td>
+</tr>
+<tr>
+<td><code>base_rules</code></td>
+<td>object</td>
+<td><code>{}</code></td>
+<td>否</td>
+<td>所有 <code>denied_*</code> 列表（硬编码的破坏性命令检查始终适用）</td>
+</tr>
+<tr>
+<td><code>task_rules</code></td>
+<td>object</td>
+<td><code>{}</code></td>
+<td>否</td>
+<td>所有 <code>allowed_*</code>、<code>queued_capabilities</code> 和 <code>queued_categories</code> 列表</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_12">会话累积锁定策略<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>默认值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AHP_SESSION_ENFORCEMENT_ENABLED</code></td>
+<td><code>false</code></td>
+<td>启用会话累积锁定执行</td>
+</tr>
+<tr>
+<td><code>AHP_SESSION_ENFORCEMENT_THRESHOLD</code></td>
+<td><code>3</code></td>
+<td>会话被锁定前的高风险事件数量</td>
+</tr>
+<tr>
+<td><code>AHP_SESSION_ENFORCEMENT_ACTION</code></td>
+<td><code>defer</code></td>
+<td>对锁定会话应用的动作：<code>defer</code>、<code>block</code> 或 <code>l3_require</code></td>
+</tr>
+<tr>
+<td><code>AHP_SESSION_ENFORCEMENT_COOLDOWN_SECONDS</code></td>
+<td><code>600</code></td>
+<td>会话自动释放前的无活动秒数；0 表示不自动释放</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_13">执行流程<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    A([接收 pre_action 事件]) --&gt; B{累积锁定检查\nsession_enforcement.check}
+    B -- 会话处于锁定状态\n且冷却期未到期 --&gt; C[/"立即设为执行动作\n(defer / block / l3_require)"/]
+    C --&gt; Z([返回决策给适配器])
+
+    B -- 会话正常 --&gt; D[注入默认作用域配置文件\n_context_with_default_session_scope]
+    D --&gt; E[L1/L2/L3 风险评估\n生成初始决策]
+    E --&gt; F[提取事件属性\ntool / paths / domains / command\nskill_id / mcp_server / capabilities]
+
+    F --&gt; G{运行 _base_deny_reasons\n检查 base_rules}
+    G -- 任意匹配 --&gt; H[/"裁决 = DENY\n(短路，立即返回)"/]
+    H --&gt; I{配置文件是否强制执行?\nconfirmed=true &amp; dry_run=false}
+    I -- 是，且非纯能力拒绝 --&gt; J["决策升级为 block"]
+    I -- 否，或纯能力拒绝 --&gt; K["仅附加原因码\n决策不变"]
+
+    G -- 无匹配 --&gt; L{运行 _task_allow_reasons\n检查 task_rules allowlist}
+    L -- 任意匹配 --&gt; M[/"裁决 = ALLOW"/]
+    L -- 无匹配 --&gt; N{运行 _task_defer_reasons\n检查 defer 条件}
+    N -- 任意匹配 --&gt; O[/"裁决 = DEFER\n(覆盖 ALLOW)"/]
+    N -- 无匹配 --&gt; P[/"裁决 = NEUTRAL"/]
+
+    M --&gt; Q{配置文件是否强制执行?}
+    O --&gt; Q
+    P --&gt; Q
+    Q -- DEFER + 强制执行\n且先前决策非 block/defer --&gt; R["决策升级为 defer"]
+    Q -- ALLOW / NEUTRAL --&gt; S["决策不变\n继续传递给 L1/L2/L3"]
+    Q -- 未强制执行 --&gt; K
+
+    J --&gt; T{后置累积阈值检查\nsession_enforcement.evaluate_threshold}
+    R --&gt; T
+    S --&gt; T
+    K --&gt; T
+
+    T -- 最终决策为高风险\n且新达到阈值 --&gt; U["会话进入 enforced 状态\n发出 session_enforcement_change 事件"]
+    T -- 未触发阈值 --&gt; Z
+    U --&gt; Z</code></pre>
+<ol>
+<li>Agent 执行工具，适配器向 Gateway 发送 <code>pre_action</code> 事件。</li>
+<li><strong>累积锁定检查。</strong> Gateway 调用 <code>session_enforcement.check(session_id)</code>。若会话处于强制执行状态且冷却期未到期，决策立即设为执行动作，跳至步骤 8。</li>
+<li><strong>注入默认配置文件。</strong> 若 <code>context.session_scope_profile</code> 不存在，<code>_context_with_default_session_scope()</code> 会附加启动时从 <code>CS_SESSION_SCOPE_PROFILE_FILE</code> 加载的配置文件。</li>
+<li><strong>L1/L2/L3 风险评估。</strong> 策略引擎运行完整风险分析并生成初始决策。</li>
+<li><strong>作用域评估。</strong> <code>evaluate_session_scope(event, context)</code> 运行：
+   a. 从事件中提取 <code>tool</code>、<code>paths</code>、<code>domains</code>、<code>command</code>、<code>skill_id</code>、<code>mcp_server</code>、<code>mcp_tool</code>、<code>capabilities</code>。
+   b. 运行 <code>_base_deny_reasons()</code> — 任意匹配产生 <code>DENY</code>。
+   c. 运行 <code>_task_allow_reasons()</code> — 任意匹配产生 <code>ALLOW</code>。
+   d. 运行 <code>_task_defer_reasons()</code> — 任意匹配产生 <code>DEFER</code>；defer 裁决优先于 allow 裁决。
+   e. 无匹配 → <code>NEUTRAL</code>。</li>
+<li><strong>作用域收紧</strong>（<code>_with_scope_evaluation()</code>）：</li>
+<li>未强制执行：仅附加原因字符串；不改变决策。</li>
+<li><code>DENY</code> + 强制执行：将决策替换为 <code>block</code>（受纯能力例外约束）。</li>
+<li><code>DEFER</code> + 强制执行 + 先前决策非 <code>block</code>/<code>defer</code>：升级为 <code>defer</code>。</li>
+<li><code>ALLOW</code> 或 <code>NEUTRAL</code>：不变。</li>
+<li><strong>决策后累积阈值检查。</strong> 若最终决策为高风险，<code>session_enforcement.evaluate_threshold()</code> 递增会话计数。若阈值新达到，会话进入强制执行状态，并发出 <code>session_enforcement_change</code> 事件。</li>
+<li>决策返回给适配器。</li>
+</ol>
+<h2 id="watch">Watch 输出示例<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h2>
+<p>路径在拒绝列表中（强制执行模式）：
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Scope: enforced profile=docs-only verdict=deny
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Reasons: scope_deny:path ~/.ssh
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Decision: block
+</span></code></pre></div></p>
+<p>未知域名（强制执行模式）：
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Scope: enforced profile=docs-only verdict=defer
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Reasons: scope_defer:unknown_domain unknown.example
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Decision: defer
+</span></code></pre></div></p>
+<p>检测到网络写操作（试运行模式）：
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Scope: preview profile=docs-only verdict=defer dry_run=true
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Reasons: scope_defer:network_write
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Decision: allow  ← 因 dry_run=true 未收紧
+</span></code></pre></div></p>
+<p>会话累积锁定：
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>session_enforcement_change session_id=abc123 action=defer high_risk_count=3
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Decision: defer  ← 该会话所有后续 pre_action 事件均如此
+</span></code></pre></div></p>
+<h2 id="_14">最小可用配置文件<a class="headerlink" href="#_14" title="Permanent link">&para;</a></h2>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;scope_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cs.session_scope.v1&quot;</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;profile_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;docs-only&quot;</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;operator&quot;</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;confirmed&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">&quot;dry_run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">&quot;base_rules&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">&quot;denied_paths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;~/.ssh&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.env&quot;</span><span class="p">],</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">&quot;denied_domains&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;pastebin.com&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;file.io&quot;</span><span class="p">],</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">&quot;denied_command_prefixes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;sudo&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;rm -rf&quot;</span><span class="p">]</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="nt">&quot;task_rules&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">    </span><span class="nt">&quot;allowed_tools&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read_file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;write_file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bash&quot;</span><span class="p">],</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="nt">&quot;allowed_path_prefixes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;site-docs/&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;docs/&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;README.md&quot;</span><span class="p">],</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">    </span><span class="nt">&quot;allowed_domains&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;github.com&quot;</span><span class="p">],</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">    </span><span class="nt">&quot;allowed_command_prefixes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;git status&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;python -m pytest&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mkdocs build&quot;</span><span class="p">]</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>使用前先验证：
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>clawsentry<span class="w"> </span>scope<span class="w"> </span>validate<span class="w"> </span>--profile<span class="w"> </span>scope.json
+</span></code></pre></div></p>
+<p>使用配置文件启动 Gateway：
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">CS_SESSION_SCOPE_PROFILE_FILE</span><span class="o">=</span>scope.json<span class="w"> </span>clawsentry<span class="w"> </span>start<span class="w"> </span>--framework<span class="w"> </span>codex
+</span></code></pre></div></p>
+<h2 id="_15">另见<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h2>
 <ul>
-<li>配置字段与完整示例：<a href="../../configuration/session-scope/">Session scope 配置</a></li>
-<li>API 预览端点：<a href="../../api/decisions/#post-ahp-scope-preview">POST /ahp/scope/preview</a></li>
-<li>与 sanitizer 的边界：<a href="../sanitizer-capability/">Sanitizer 当前能力</a></li>
+<li>完整配置文件字段参考：<a href="../../configuration/session-scope/">会话作用域配置</a></li>
+<li>预览端点：<a href="../../api/decisions/#post-ahp-scope-preview">POST /ahp/scope/preview</a></li>
+<li>工具输出泄漏与作用域边界：<a href="../post-action/">后操作围栏</a></li>
 </ul>
 
 
@@ -3134,7 +3620,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月2日 10:46:30 UTC">2026年5月2日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月19日 10:51:34 UTC">2026年5月19日</span>
   </span>
 
     
@@ -3144,7 +3630,7 @@
     <span class="md-icon" title="创建日期">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月2日 10:46:30 UTC">2026年5月2日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月2日 15:37:18 UTC">2026年5月2日</span>
   </span>
 
     
@@ -3181,7 +3667,7 @@
       <nav class="md-footer__inner md-grid" aria-label="页脚" >
         
           
-          <a href="../sanitizer-capability/" class="md-footer__link md-footer__link--prev" aria-label="上一页: Sanitizer 当前能力">
+          <a href="../post-action/" class="md-footer__link md-footer__link--prev" aria-label="上一页: Post-action 围栏">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3191,7 +3677,7 @@
                 上一页
               </span>
               <div class="md-ellipsis">
-                Sanitizer 当前能力
+                Post-action 围栏
               </div>
             </div>
           </a>
@@ -3257,11 +3743,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

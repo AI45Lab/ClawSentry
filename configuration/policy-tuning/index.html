@@ -171,6 +171,11 @@
       </label>
       <nav class="md-search__options" aria-label="查找">
         
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -271,6 +278,8 @@
         <a href="../../integration/a3s-code/" class="md-tabs__link">
           
   
+  
+    
   
   集成接入
 
@@ -293,6 +302,8 @@
         <a href="../configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -333,6 +344,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -352,6 +365,8 @@
         <a href="../../decision-layers/l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../advanced/rule-governance/" class="md-tabs__link">
+        <a href="../../advanced/skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -951,6 +996,22 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1151,8 +1212,6 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
-        
-      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -1195,8 +1254,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1205,6 +1262,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        策略调优
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        策略调优
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="策略调优">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#l1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1217,7 +1297,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         事件类型与处理方式
@@ -1242,8 +1322,19 @@
     </nav>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-capability-narrowing-and-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        Skill Trust, capability narrowing, and feedback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#d1-d6" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1256,7 +1347,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         评分公式
@@ -1344,7 +1435,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
+  <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         评分示例
@@ -1358,9 +1449,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         会话执法策略
@@ -1372,7 +1463,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         工作流程
@@ -1383,7 +1474,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_7" class="md-nav__link">
+  <a href="#_8" class="md-nav__link">
     <span class="md-ellipsis">
       
         配置调优
@@ -1394,7 +1485,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_8" class="md-nav__link">
+  <a href="#_9" class="md-nav__link">
     <span class="md-ellipsis">
       
         三种措施对比
@@ -1408,9 +1499,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_9" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
     <span class="md-ellipsis">
       
         速率限制
@@ -1422,7 +1513,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_10" class="md-nav__link">
+  <a href="#_11" class="md-nav__link">
     <span class="md-ellipsis">
       
         配置
@@ -1433,7 +1524,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_11" class="md-nav__link">
+  <a href="#_12" class="md-nav__link">
     <span class="md-ellipsis">
       
         行为
@@ -1447,9 +1538,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_12" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
     <span class="md-ellipsis">
       
         重试预算
@@ -1461,7 +1552,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_13" class="md-nav__link">
+  <a href="#_14" class="md-nav__link">
     <span class="md-ellipsis">
       
         按风险等级的重试配置
@@ -1475,8 +1566,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#fail-safe" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1511,7 +1602,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_14" class="md-nav__link">
+  <a href="#_15" class="md-nav__link">
     <span class="md-ellipsis">
       
         维度缺失时的默认值
@@ -1525,9 +1616,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_15" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
     <span class="md-ellipsis">
       
         最佳实践
@@ -1539,7 +1630,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_16" class="md-nav__link">
+  <a href="#_17" class="md-nav__link">
     <span class="md-ellipsis">
       
         开发环境
@@ -1550,7 +1641,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_17" class="md-nav__link">
+  <a href="#_18" class="md-nav__link">
     <span class="md-ellipsis">
       
         预发布环境
@@ -1561,7 +1652,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_18" class="md-nav__link">
+  <a href="#_19" class="md-nav__link">
     <span class="md-ellipsis">
       
         生产环境
@@ -1575,9 +1666,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_19" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
     <span class="md-ellipsis">
       
         运行时检测器处理策略
@@ -1586,8 +1677,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#defer" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1600,7 +1691,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_20" class="md-nav__link">
+  <a href="#_21" class="md-nav__link">
     <span class="md-ellipsis">
       
         生命周期
@@ -1611,7 +1702,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_21" class="md-nav__link">
+  <a href="#_22" class="md-nav__link">
     <span class="md-ellipsis">
       
         触发条件
@@ -1644,7 +1735,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_22" class="md-nav__link">
+  <a href="#_23" class="md-nav__link">
     <span class="md-ellipsis">
       
         解决端点
@@ -1655,7 +1746,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_23" class="md-nav__link">
+  <a href="#_24" class="md-nav__link">
     <span class="md-ellipsis">
       
         配置
@@ -1666,7 +1757,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_24" class="md-nav__link">
+  <a href="#_25" class="md-nav__link">
     <span class="md-ellipsis">
       
         完整示例
@@ -1680,8 +1771,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#latch-hub" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1694,7 +1785,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_25" class="md-nav__link">
+  <a href="#_26" class="md-nav__link">
     <span class="md-ellipsis">
       
         架构
@@ -1705,7 +1796,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_26" class="md-nav__link">
+  <a href="#_27" class="md-nav__link">
     <span class="md-ellipsis">
       
         启动条件
@@ -1716,7 +1807,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_27" class="md-nav__link">
+  <a href="#_28" class="md-nav__link">
     <span class="md-ellipsis">
       
         事件格式化
@@ -1727,7 +1818,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_28" class="md-nav__link">
+  <a href="#_29" class="md-nav__link">
     <span class="md-ellipsis">
       
         配置
@@ -1738,13 +1829,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_29" class="md-nav__link">
+  <a href="#_30" class="md-nav__link">
     <span class="md-ellipsis">
       
         使用示例
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1831,6 +1927,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2145,6 +2261,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2338,34 +2472,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decision-layers/sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../decision-layers/scope-restrictions/" class="md-nav__link">
         
   
@@ -2485,6 +2591,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2530,6 +2654,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2742,6 +2894,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2851,70 +3013,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -3007,8 +3113,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -3017,6 +3121,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        策略调优
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        策略调优
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="策略调优">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#l1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3029,7 +3156,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         事件类型与处理方式
@@ -3054,8 +3181,19 @@
     </nav>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-capability-narrowing-and-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        Skill Trust, capability narrowing, and feedback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#d1-d6" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3068,7 +3206,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         评分公式
@@ -3156,7 +3294,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
+  <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         评分示例
@@ -3170,9 +3308,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         会话执法策略
@@ -3184,7 +3322,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         工作流程
@@ -3195,7 +3333,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_7" class="md-nav__link">
+  <a href="#_8" class="md-nav__link">
     <span class="md-ellipsis">
       
         配置调优
@@ -3206,7 +3344,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_8" class="md-nav__link">
+  <a href="#_9" class="md-nav__link">
     <span class="md-ellipsis">
       
         三种措施对比
@@ -3220,9 +3358,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_9" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
     <span class="md-ellipsis">
       
         速率限制
@@ -3234,7 +3372,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_10" class="md-nav__link">
+  <a href="#_11" class="md-nav__link">
     <span class="md-ellipsis">
       
         配置
@@ -3245,7 +3383,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_11" class="md-nav__link">
+  <a href="#_12" class="md-nav__link">
     <span class="md-ellipsis">
       
         行为
@@ -3259,9 +3397,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_12" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
     <span class="md-ellipsis">
       
         重试预算
@@ -3273,7 +3411,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_13" class="md-nav__link">
+  <a href="#_14" class="md-nav__link">
     <span class="md-ellipsis">
       
         按风险等级的重试配置
@@ -3287,8 +3425,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#fail-safe" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3323,7 +3461,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_14" class="md-nav__link">
+  <a href="#_15" class="md-nav__link">
     <span class="md-ellipsis">
       
         维度缺失时的默认值
@@ -3337,9 +3475,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_15" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
     <span class="md-ellipsis">
       
         最佳实践
@@ -3351,7 +3489,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_16" class="md-nav__link">
+  <a href="#_17" class="md-nav__link">
     <span class="md-ellipsis">
       
         开发环境
@@ -3362,7 +3500,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_17" class="md-nav__link">
+  <a href="#_18" class="md-nav__link">
     <span class="md-ellipsis">
       
         预发布环境
@@ -3373,7 +3511,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_18" class="md-nav__link">
+  <a href="#_19" class="md-nav__link">
     <span class="md-ellipsis">
       
         生产环境
@@ -3387,9 +3525,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#_19" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
     <span class="md-ellipsis">
       
         运行时检测器处理策略
@@ -3398,8 +3536,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#defer" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3412,7 +3550,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_20" class="md-nav__link">
+  <a href="#_21" class="md-nav__link">
     <span class="md-ellipsis">
       
         生命周期
@@ -3423,7 +3561,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_21" class="md-nav__link">
+  <a href="#_22" class="md-nav__link">
     <span class="md-ellipsis">
       
         触发条件
@@ -3456,7 +3594,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_22" class="md-nav__link">
+  <a href="#_23" class="md-nav__link">
     <span class="md-ellipsis">
       
         解决端点
@@ -3467,7 +3605,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_23" class="md-nav__link">
+  <a href="#_24" class="md-nav__link">
     <span class="md-ellipsis">
       
         配置
@@ -3478,7 +3616,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_24" class="md-nav__link">
+  <a href="#_25" class="md-nav__link">
     <span class="md-ellipsis">
       
         完整示例
@@ -3492,8 +3630,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#latch-hub" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3506,7 +3644,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_25" class="md-nav__link">
+  <a href="#_26" class="md-nav__link">
     <span class="md-ellipsis">
       
         架构
@@ -3517,7 +3655,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_26" class="md-nav__link">
+  <a href="#_27" class="md-nav__link">
     <span class="md-ellipsis">
       
         启动条件
@@ -3528,7 +3666,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_27" class="md-nav__link">
+  <a href="#_28" class="md-nav__link">
     <span class="md-ellipsis">
       
         事件格式化
@@ -3539,7 +3677,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_28" class="md-nav__link">
+  <a href="#_29" class="md-nav__link">
     <span class="md-ellipsis">
       
         配置
@@ -3550,13 +3688,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_29" class="md-nav__link">
+  <a href="#_30" class="md-nav__link">
     <span class="md-ellipsis">
       
         使用示例
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -3576,6 +3719,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../configuration-overview/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    配置参考
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -3585,12 +3776,23 @@
   
 
 
-<h1 id="_1">策略调优<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">Configuration</div>
+<h2 id="_1">策略调优<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>调整 L1/L2/L3 决策层行为、D1-D6 风险维度、会话执法策略和 DEFER 桥接，在安全性与可用性之间找到最优平衡。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">D1-D6 评分</span>
+<span class="cs-pill">会话执法</span>
+<span class="cs-pill">Skill Trust</span>
+<span class="cs-pill">DEFER 桥接</span></p>
+</div>
+</div>
+<h1 id="_2">策略调优<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h1>
 <p>ClawSentry 的三层决策模型提供了丰富的调优维度。本页详细介绍各层策略的工作原理和调优方法，帮助您在安全性和可用性之间找到最优平衡。</p>
 <hr />
 <h2 id="l1">L1 决策层：风险等级与判决映射<a class="headerlink" href="#l1" title="Permanent link">&para;</a></h2>
 <p>L1 是纯规则引擎，零延迟（&lt;1ms），零成本，处理所有事件的第一道关卡。</p>
-<h3 id="_2">事件类型与处理方式<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<h3 id="_3">事件类型与处理方式<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
 <p>不同事件类型有不同的默认处理策略：</p>
 <table>
 <thead>
@@ -3671,9 +3873,137 @@
 <p>当 <code>pre_action</code> 事件的 L1 风险等级为 <code>medium</code> 时，系统会自动触发 L2 语义分析。L2 只能<strong>升级</strong>风险等级（从 medium 升到 high/critical），永不降级。这意味着 L1 判定为 medium 的事件，可能在 L2 分析后被升级为 BLOCK。</p>
 </div>
 <hr />
+<h2 id="skill-trust-capability-narrowing-and-feedback">Skill Trust, capability narrowing, and feedback<a class="headerlink" href="#skill-trust-capability-narrowing-and-feedback" title="Permanent link">&para;</a></h2>
+<p>v0.8.0 将 Skill Trust runtime binding、capability narrowing 和 feedback 收口为 profile-aware 调优面：</p>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th style="text-align: right;">默认值</th>
+<th>调优入口</th>
+<th>行为边界</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Skill Trust first-use admission policy</td>
+<td style="text-align: right;"><code>audit_only</code> / benchmark <code>scan_sync</code> / strict <code>defer_for_review</code></td>
+<td><code>CS_SKILL_TRUST_FIRST_USE_*_POLICY</code></td>
+<td>可设 <code>audit_only</code>、<code>scan_sync</code>、<code>scan_async_defer</code>、<code>defer_for_review</code>、<code>block_until_reviewed</code>；依赖 registry/runtime metadata</td>
+</tr>
+<tr>
+<td>Runtime path disallowed action</td>
+<td style="text-align: right;">normal <code>defer</code> / strict <code>block</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_*_ACTION</code></td>
+<td>observed runtime root 不在 Gateway-owned source/mirror roots 时执行，并独立请求 runtime binding review tier</td>
+</tr>
+<tr>
+<td>Runtime source ambiguous action</td>
+<td style="text-align: right;">normal <code>defer</code> / strict <code>defer</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_*_ACTION</code></td>
+<td>同名或多来源候选无法唯一绑定时执行，并独立请求 runtime binding review tier</td>
+</tr>
+<tr>
+<td>Runtime path/name unverified action</td>
+<td style="text-align: right;"><code>audit</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_*_ACTION</code></td>
+<td>只有 name/path fragment 弱证据时不提升 trust，可按 profile 审计或升级</td>
+</tr>
+<tr>
+<td>Runtime content mismatch/unverified</td>
+<td style="text-align: right;">strict <code>block</code> / <code>defer</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_CONTENT_*_ACTION</code></td>
+<td>mirror 内容 hash 或 runner contract 不能证明时执行</td>
+</tr>
+<tr>
+<td>FSPR package review</td>
+<td style="text-align: right;"><code>false</code></td>
+<td><code>CS_SKILL_TRUST_FSPR_*</code></td>
+<td>首次使用包级审查；package role 只产出 evidence，Gateway 内置矩阵派生 policy action 和 review tier</td>
+</tr>
+<tr>
+<td>Capability narrowing</td>
+<td style="text-align: right;"><code>false</code></td>
+<td><code>CS_CAPABILITY_NARROWING_ENABLED</code></td>
+<td>高会话风险时收紧后续 SessionScopeProfile，不改写历史 decision</td>
+</tr>
+<tr>
+<td>Capability narrowing threshold</td>
+<td style="text-align: right;"><code>high</code></td>
+<td><code>CS_CAPABILITY_NARROWING_TRIGGER_RISK</code></td>
+<td>设置为 <code>critical</code> 时，只有 critical 历史风险会触发自动收窄</td>
+</tr>
+<tr>
+<td>Capability narrowing group policy</td>
+<td style="text-align: right;">read-only allow / write+network+admin deny</td>
+<td><code>CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS</code>, <code>CS_CAPABILITY_NARROWING_DENIED_TOOL_PERMISSION_GROUPS</code></td>
+<td>用权限组调整自动收窄后的工具边界</td>
+</tr>
+<tr>
+<td>Capability narrowing skill policy</td>
+<td style="text-align: right;">allowlist allow / blacklist+revoked deny</td>
+<td><code>CS_CAPABILITY_NARROWING_ALLOWED_SKILL_TRUST_STATES</code>, <code>CS_CAPABILITY_NARROWING_DENIED_SKILL_TRUST_STATES</code></td>
+<td>用 Skill Trust 状态调整自动收窄后的 skill 边界</td>
+</tr>
+<tr>
+<td>Capability narrowing MCP policy</td>
+<td style="text-align: right;">filesystem read allow / fetch and untrusted deny</td>
+<td><code>CS_CAPABILITY_NARROWING_ALLOWED_MCP_*</code>, <code>CS_CAPABILITY_NARROWING_DENIED_MCP_*</code></td>
+<td>用 MCP server/tool/status/trust-level 调整自动收窄后的 MCP 边界</td>
+</tr>
+<tr>
+<td>Capability narrowing capabilities</td>
+<td style="text-align: right;">empty</td>
+<td><code>CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES</code>, <code>CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES</code>, <code>CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES</code></td>
+<td>用 action-effect capability 调整自动收窄后的能力边界</td>
+</tr>
+<tr>
+<td>Capability narrowing audit</td>
+<td style="text-align: right;"><code>summary</code></td>
+<td><code>CS_CAPABILITY_NARROWING_AUDIT_VERBOSITY</code></td>
+<td>可设 <code>minimal</code>、<code>summary</code>、<code>verbose</code>；<code>verbose</code> 会在审计 metadata 中记录触发阈值和策略摘要</td>
+</tr>
+<tr>
+<td>Capability narrowing greylist policy</td>
+<td style="text-align: right;"><code>defer</code></td>
+<td><code>CS_CAPABILITY_NARROWING_GREYLIST_ACTION</code></td>
+<td>调整自动收窄中 greylist skill 的处理：<code>allow</code>、<code>defer</code>、<code>block</code></td>
+</tr>
+<tr>
+<td>Tool permission overrides</td>
+<td style="text-align: right;">empty</td>
+<td><code>CS_TOOL_PERMISSION_GROUP_OVERRIDES</code></td>
+<td>用 <code>tool=group[,group]</code> 为自定义宿主工具补充权限组；多组时按最严格组执行</td>
+</tr>
+<tr>
+<td>Agent safety feedback</td>
+<td style="text-align: right;"><code>false</code></td>
+<td><code>CS_AGENT_SAFETY_FEEDBACK_ENABLED</code></td>
+<td>critical block 后生成红线化提示；宿主 delivery 显式记录为 <code>response</code>、<code>audit_only</code> 或 <code>unsupported</code>，未验证前不声明 <code>prompt_injection</code></td>
+</tr>
+</tbody>
+</table>
+<p>Agent feedback 有两个分开的 envelope：critical block 使用
+<code>clawsentry.agent_safety_feedback.v1</code>；greylist Skill Trust 的 defer/block
+warning 使用 <code>clawsentry.agent_advisory_feedback.v1</code>，不会标记为 critical
+block。若 greylist policy 配成 <code>allow</code>，不会生成 advisory feedback。对支持
+response delivery 的宿主，同一 session 的同一 blocked surface 只返回一次
+agent-facing safety feedback；后续 retry 仍保留审计 metadata，并以
+<code>agent_safety_feedback_delivery_suppressed.reason=already_delivered_for_surface</code>
+说明未重复投递。</p>
+<p>推荐 rollout：</p>
+<ol>
+<li>用 <code>clawsentry skill-trust register-dir</code> 生成 registry 和 Gateway-owned runtime metadata。</li>
+<li>normal 模式先保持 runtime unverified / provenance / FSPR 为 <code>audit</code>，观察 <code>skill_trust</code>、<code>skill_use_ledger</code> 和 post-action findings。</li>
+<li>对无人值守测试或 strict profile，确认 disallowed / ambiguous / content mismatch 的 <code>defer</code> / <code>block</code> 策略与人工审批或 benchmark defer handling 匹配。</li>
+<li>启用 lifecycle mutation 前先要求 operator reason、expected snapshot id 和 idempotency key。</li>
+<li>启用 capability narrowing 前先验证 session scope profile 不会误伤常用只读工具。</li>
+</ol>
+<p>该路径用于通用 skill supply-chain / metadata trust 风险，不依赖固定场景字符串。</p>
+<hr />
 <h2 id="d1-d6">D1-D6 六维风险评分<a class="headerlink" href="#d1-d6" title="Permanent link">&para;</a></h2>
 <p>ClawSentry 使用六个独立维度对事件进行风险评估，D1-D5 产生整数分值，D6 为连续浮点值（注入乘数），最终由 v2 加权公式合成综合风险分数。</p>
-<h3 id="_3">评分公式<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<h3 id="_4">评分公式<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
 <div class="arithmatex">\[
 \text{base\_score} = 0.4 \times \max(D1, D2, D3) + 0.25 \times D4 + 0.15 \times D5
 \]</div>
@@ -3994,7 +4324,7 @@
 <p class="admonition-title">D6 最低保证</p>
 <p>当 D6 ≥ 2.0 且当前风险为 LOW 时，系统强制升级为 MEDIUM，防止高置信度注入因基础分低而被漏过。</p>
 </div>
-<h3 id="_4">评分示例<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<h3 id="_5">评分示例<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
 <p>以下是一些典型场景的评分演示：</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">安全读取</label><label for="__tabbed_1_2">删除系统文件</label><label for="__tabbed_1_3">安装包</label></div>
 <div class="tabbed-content">
@@ -4029,9 +4359,9 @@
 </div>
 </div>
 <hr />
-<h2 id="_5">会话执法策略<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<h2 id="_6">会话执法策略<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
 <p>会话执法是一种<strong>累积响应</strong>机制：当某个会话反复触发高危决策时，自动升级该会话的安全管控级别。</p>
-<h3 id="_6">工作流程<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<h3 id="_7">工作流程<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
 <pre class="mermaid"><code>graph TD
     A[事件到达] --&gt; B{会话已执法?}
     B --&gt;|是| C[执行强制措施]
@@ -4046,7 +4376,7 @@
     C --&gt; K{冷却期已过?}
     K --&gt;|是| L[自动释放]
     K --&gt;|否| M[返回强制判决]</code></pre>
-<h3 id="_7">配置调优<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
+<h3 id="_8">配置调优<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -4083,7 +4413,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="_8">三种措施对比<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h3>
+<h3 id="_9">三种措施对比<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -4119,9 +4449,9 @@
 </span></code></pre></div></p>
 </div>
 <hr />
-<h2 id="_9">速率限制<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h2>
+<h2 id="_10">速率限制<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h2>
 <p>速率限制保护 Gateway 免受过载攻击，基于滑动窗口算法实现。</p>
-<h3 id="_10">配置<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h3>
+<h3 id="_11">配置<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -4138,7 +4468,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="_11">行为<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h3>
+<h3 id="_12">行为<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h3>
 <ul>
 <li>当请求速率超过限制时，返回 <strong>HTTP 429 Too Many Requests</strong></li>
 <li>按客户端 IP 独立计数</li>
@@ -4149,9 +4479,9 @@
 <p>使用 60 秒滑动窗口统计请求次数，过期记录自动清理。这比固定窗口更平滑，避免窗口边界处的突发放行。</p>
 </div>
 <hr />
-<h2 id="_12">重试预算<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h2>
+<h2 id="_13">重试预算<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h2>
 <p>重试预算控制每个审批请求在超时/失败后的最大重试次数。不同风险等级的事件有不同的重试限额，体现"高危严控"原则。</p>
-<h3 id="_13">按风险等级的重试配置<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h3>
+<h3 id="_14">按风险等级的重试配置<a class="headerlink" href="#_14" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -4229,7 +4559,7 @@
 </ul>
 <p><strong>L2 只升不降</strong>：L2 分析只能将风险等级从低升高，永远不会将 L1 已标记的高风险降级为低风险。</p>
 </div>
-<h3 id="_14">维度缺失时的默认值<a class="headerlink" href="#_14" title="Permanent link">&para;</a></h3>
+<h3 id="_15">维度缺失时的默认值<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h3>
 <p>当无法计算某个评分维度时，采用保守默认值：</p>
 <table>
 <thead>
@@ -4268,8 +4598,8 @@
 </tbody>
 </table>
 <hr />
-<h2 id="_15">最佳实践<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h2>
-<h3 id="_16">开发环境<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h3>
+<h2 id="_16">最佳实践<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h2>
+<h3 id="_17">开发环境<a class="headerlink" href="#_17" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># 禁用速率限制，方便测试</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">CS_RATE_LIMIT_PER_MINUTE</span><span class="o">=</span><span class="m">0</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
@@ -4289,7 +4619,7 @@
 <p class="admonition-title">开发小技巧</p>
 <p>开发阶段建议保持纯 L1 模式（不设 <code>CS_LLM_PROVIDER</code>），这样所有决策都是确定性的且零延迟，便于编写测试和调试策略逻辑。</p>
 </div>
-<h3 id="_17">预发布环境<a class="headerlink" href="#_17" title="Permanent link">&para;</a></h3>
+<h3 id="_18">预发布环境<a class="headerlink" href="#_18" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># 启用认证</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">CS_AUTH_TOKEN</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>staging-token-xxx
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -4310,7 +4640,7 @@
 </span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="c1"># 持久化轨迹</span>
 </span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="nv">CS_TRAJECTORY_DB_PATH</span><span class="o">=</span>/data/clawsentry/trajectory.db
 </span></code></pre></div>
-<h3 id="_18">生产环境<a class="headerlink" href="#_18" title="Permanent link">&para;</a></h3>
+<h3 id="_19">生产环境<a class="headerlink" href="#_19" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># 强认证</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">CS_AUTH_TOKEN</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>prod-high-entropy-token-64chars
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
@@ -4352,7 +4682,7 @@
 </ul>
 </div>
 <hr />
-<h2 id="_19">运行时检测器处理策略<a class="headerlink" href="#_19" title="Permanent link">&para;</a></h2>
+<h2 id="_20">运行时检测器处理策略<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h2>
 <p>除 L1/L2/L3 的同步决策外，ClawSentry 还会产生运行时检测事件，例如：</p>
 <ul>
 <li><code>trajectory_alert</code>：多步轨迹检测器发现“读敏感文件后外传”等序列。</li>
@@ -4405,7 +4735,7 @@
 </div>
 <h2 id="defer">DEFER 审批桥接<a class="headerlink" href="#defer" title="Permanent link">&para;</a></h2>
 <p>当 L1/L2 决策为 DEFER 且 <code>defer_bridge_enabled=true</code> 时，Gateway 会将审批请求注册到 DeferManager，等待运维人员通过 CLI、Web UI 或移动端做出允许/拒绝决定。</p>
-<h3 id="_20">生命周期<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h3>
+<h3 id="_21">生命周期<a class="headerlink" href="#_21" title="Permanent link">&para;</a></h3>
 <pre class="mermaid"><code>sequenceDiagram
     participant Agent as AI Agent
     participant GW as Gateway
@@ -4432,7 +4762,7 @@
         DM-&gt;&gt;GW: timeout
         GW-&gt;&gt;Agent: defer_timeout_action (block/allow)
     end</code></pre>
-<h3 id="_21">触发条件<a class="headerlink" href="#_21" title="Permanent link">&para;</a></h3>
+<h3 id="_22">触发条件<a class="headerlink" href="#_22" title="Permanent link">&para;</a></h3>
 <p>DEFER 桥接在以下<strong>所有条件</strong>同时满足时激活：</p>
 <ol>
 <li><code>defer_bridge_enabled = true</code>（DetectionConfig / 项目预设）</li>
@@ -4489,7 +4819,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="_22">解决端点<a class="headerlink" href="#_22" title="Permanent link">&para;</a></h3>
+<h3 id="_23">解决端点<a class="headerlink" href="#_23" title="Permanent link">&para;</a></h3>
 <p><code>POST /ahp/resolve</code> 接受以下请求：</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&quot;approval_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;apr-xxx&quot;</span><span class="p">,</span>
@@ -4504,7 +4834,7 @@
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">}</span>
 </span></code></pre></div>
 <p><strong>双重检查</strong>：Gateway 在解决 DEFER 时会验证 approval_id 是否仍然有效（未超时、未重复解决）。</p>
-<h3 id="_23">配置<a class="headerlink" href="#_23" title="Permanent link">&para;</a></h3>
+<h3 id="_24">配置<a class="headerlink" href="#_24" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -4531,7 +4861,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="_24">完整示例<a class="headerlink" href="#_24" title="Permanent link">&para;</a></h3>
+<h3 id="_25">完整示例<a class="headerlink" href="#_25" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># 启用 DEFER 桥接</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nv">CS_DEFER_BRIDGE_ENABLED</span><span class="o">=</span><span class="nb">true</span>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="nv">CS_DEFER_TIMEOUT_S</span><span class="o">=</span><span class="m">86400</span><span class="w">        </span><span class="c1"># normal mode 24 小时软超时；CI 用 benchmark mode</span>
@@ -4552,7 +4882,7 @@
 <hr />
 <h2 id="latch-hub">Latch Hub 事件转发<a class="headerlink" href="#latch-hub" title="Permanent link">&para;</a></h2>
 <p>LatchHubBridge 将 Gateway 的 SSE 事件通过 HTTP 转发至 Latch Hub，实现移动端/远程运维人员的实时监控和 DEFER 推送审批。</p>
-<h3 id="_25">架构<a class="headerlink" href="#_25" title="Permanent link">&para;</a></h3>
+<h3 id="_26">架构<a class="headerlink" href="#_26" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Gateway EventBus
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    │
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    ├─ decision
@@ -4572,13 +4902,13 @@
 </span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>    Latch Hub CLI Session API
 </span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>    (推送到 Web / PWA / 移动端)
 </span></code></pre></div>
-<h3 id="_26">启动条件<a class="headerlink" href="#_26" title="Permanent link">&para;</a></h3>
+<h3 id="_27">启动条件<a class="headerlink" href="#_27" title="Permanent link">&para;</a></h3>
 <p>LatchHubBridge 在以下条件满足时自动启动：</p>
 <ul>
 <li><code>CS_HUB_BRIDGE_ENABLED=true</code>（或 <code>auto</code> 且检测到 Hub 运行）</li>
 <li>Hub 基础 URL 可达（<code>CS_LATCH_HUB_URL</code> 或 <code>http://127.0.0.1:{CS_LATCH_HUB_PORT}</code>）</li>
 </ul>
-<h3 id="_27">事件格式化<a class="headerlink" href="#_27" title="Permanent link">&para;</a></h3>
+<h3 id="_28">事件格式化<a class="headerlink" href="#_28" title="Permanent link">&para;</a></h3>
 <p>Bridge 将 ClawSentry 事件转换为人类可读的消息格式：</p>
 <table>
 <thead>
@@ -4614,7 +4944,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="_28">配置<a class="headerlink" href="#_28" title="Permanent link">&para;</a></h3>
+<h3 id="_29">配置<a class="headerlink" href="#_29" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -4641,7 +4971,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="_29">使用示例<a class="headerlink" href="#_29" title="Permanent link">&para;</a></h3>
+<h3 id="_30">使用示例<a class="headerlink" href="#_30" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># 启用 Hub 转发</span>
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="nv">CS_HUB_BRIDGE_ENABLED</span><span class="o">=</span><span class="nb">true</span>
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="nv">CS_LATCH_HUB_URL</span><span class="o">=</span>http://127.0.0.1:3006
@@ -4675,7 +5005,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月30日 06:50:49 UTC">2026年4月30日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月19日 20:55:18 UTC">2026年5月19日</span>
   </span>
 
     
@@ -4798,11 +5128,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

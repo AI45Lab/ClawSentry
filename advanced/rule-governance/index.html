@@ -6,14 +6,14 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="YAML 规则与技能的上线前治理：lint、dry-run、fingerprint 与 发布前检查">
+        <meta name="description" content="Pre-deployment governance for YAML attack patterns and review skills — lint, dry-run, fingerprint, and CI reporting.">
       
       
       
         <link rel="canonical" href="https://elroyper.github.io/ClawSentry/advanced/rule-governance/">
       
       
-        <link rel="prev" href="../../dashboard/">
+        <link rel="prev" href="../skill-trust/">
       
       
         <link rel="next" href="../custom-skills/">
@@ -171,6 +171,11 @@
       </label>
       <nav class="md-search__options" aria-label="查找">
         
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -272,6 +279,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -291,6 +300,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -331,6 +342,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -350,6 +363,8 @@
         <a href="../../decision-layers/l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -948,6 +993,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1232,6 +1293,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1546,6 +1627,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1739,34 +1838,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decision-layers/sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../decision-layers/scope-restrictions/" class="md-nav__link">
         
   
@@ -1888,6 +1959,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1939,6 +2028,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1947,8 +2064,6 @@
       
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
-      
-        
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
@@ -1992,8 +2107,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2002,10 +2115,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        规则上线前的验证与演练
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        作用边界
+        操作边界
       
     </span>
   </a>
@@ -2016,10 +2140,38 @@
   <a href="#rule-surfaces" class="md-nav__link">
     <span class="md-ellipsis">
       
-        规则面组成
+        规则面
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evolved-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        演进模式生命周期
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="演进模式生命周期">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        规则生命周期状态图
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2032,23 +2184,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="clawsentry rules lint">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        示例
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2059,23 +2194,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="clawsentry rules dry-run">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        支持的输入格式
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2095,18 +2213,7 @@
   <a href="#sample-events" class="md-nav__link">
     <span class="md-ellipsis">
       
-        内置 sample events 覆盖范围
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        示例
+        内置示例事件覆盖
       
     </span>
   </a>
@@ -2119,63 +2226,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflow" class="md-nav__link">
+  <a href="#skill-selection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        典型工作流
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="典型工作流">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#attack-patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        调整 attack patterns 后
+        技能选择逻辑
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#l3-skills" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#findings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        调整自定义 L3 skills 后
+        发现项参考
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#release-checklist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        与 release checklist 一起使用
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#policy-change-review-checklist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Policy-change review checklist
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2224,11 +2292,72 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#findings" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        findings
+        典型工作流
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="典型工作流">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        规则治理操作流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编辑攻击模式后
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编辑自定义 L3 技能后
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        发布检查清单
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#policy-change-review-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy-change review checklist / 策略变更审查清单
       
     </span>
   </a>
@@ -2241,10 +2370,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        与其他页面的关系
+        相关页面
       
     </span>
   </a>
@@ -2443,6 +2572,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2552,70 +2691,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2708,8 +2791,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2718,10 +2799,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        规则上线前的验证与演练
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        作用边界
+        操作边界
       
     </span>
   </a>
@@ -2732,10 +2824,38 @@
   <a href="#rule-surfaces" class="md-nav__link">
     <span class="md-ellipsis">
       
-        规则面组成
+        规则面
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evolved-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        演进模式生命周期
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="演进模式生命周期">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        规则生命周期状态图
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2748,23 +2868,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="clawsentry rules lint">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        示例
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2775,23 +2878,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="clawsentry rules dry-run">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        支持的输入格式
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2811,18 +2897,7 @@
   <a href="#sample-events" class="md-nav__link">
     <span class="md-ellipsis">
       
-        内置 sample events 覆盖范围
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        示例
+        内置示例事件覆盖
       
     </span>
   </a>
@@ -2835,63 +2910,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflow" class="md-nav__link">
+  <a href="#skill-selection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        典型工作流
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="典型工作流">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#attack-patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        调整 attack patterns 后
+        技能选择逻辑
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#l3-skills" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#findings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        调整自定义 L3 skills 后
+        发现项参考
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#release-checklist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        与 release checklist 一起使用
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#policy-change-review-checklist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Policy-change review checklist
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2940,11 +2976,72 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#findings" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        findings
+        典型工作流
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="典型工作流">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        规则治理操作流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编辑攻击模式后
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编辑自定义 L3 技能后
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        发布检查清单
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#policy-change-review-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy-change review checklist / 策略变更审查清单
       
     </span>
   </a>
@@ -2957,10 +3054,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        与其他页面的关系
+        相关页面
       
     </span>
   </a>
@@ -2978,6 +3075,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../skill-trust/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    高级用法
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -2987,275 +3132,682 @@
   
 
 
-<h1 id="_1">规则治理<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
-<p>规则治理功能的目标不是把 ClawSentry 重写成一个横跨 L1/L2/L3 的全局运行时 DSL，而是把现有 YAML 规则和技能的<strong>上线前治理</strong>补齐：在 发布或策略变更前检查规则是否能加载、是否有冲突，以及 sample events 在当前规则面上会命中什么。</p>
-<div class="admonition abstract">
-<p class="admonition-title">本页快速导航</p>
-<p><a href="#scope">边界</a> · <a href="#rule-surfaces">规则面组成</a> · <a href="#rules-lint">clawsentry rules lint</a> · <a href="#rules-dry-run">clawsentry rules dry-run</a> · <a href="#rules-report">clawsentry rules report</a> · <a href="#workflow">典型工作流</a> · <a href="#outputs">输出字段</a></p>
+  <h1>规则治理</h1>
+
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">高级 · 策略治理</div>
+<h2 id="_1">规则上线前的验证与演练<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>在规则上线前，对攻击模式和 L3 审查技能进行验证与演练。检查规则是否可以正常加载、检测冲突、预览哪些模式会匹配示例事件，并生成可供发布签收的确定性指纹。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">rules lint</span>
+<span class="cs-pill">rules dry-run</span>
+<span class="cs-pill">rules report</span>
+<span class="cs-pill">CI artifact</span></p>
 </div>
-<h2 id="scope">作用边界<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
-<p>当前版本的规则治理只管理以下规则资产：</p>
-<ul>
-<li>L2 attack patterns YAML</li>
-<li>可选 evolved patterns YAML</li>
-<li>L3 review skills YAML</li>
-</ul>
-<p>它<strong>不</strong>做这些事：</p>
-<ul>
-<li>不引入新的运行时 scheduler</li>
-<li>不替换 <code>PatternMatcher</code> / <code>SkillRegistry</code> / <code>L3TriggerPolicy</code></li>
-<li>不构造一个覆盖 L1/L2/L3 控制流的全局 DSL</li>
-</ul>
-<p>更准确的理解是：</p>
+</div>
+<div class="admonition abstract">
+<p class="admonition-title">快速导航</p>
+<p><a href="#scope">操作边界</a> · <a href="#rule-surfaces">规则面</a> · <a href="#rules-lint"><code>rules lint</code></a> · <a href="#rules-dry-run"><code>rules dry-run</code></a> · <a href="#rules-report"><code>rules report</code></a> · <a href="#skill-selection">技能选择逻辑</a> · <a href="#findings">发现项参考</a> · <a href="#outputs">输出字段</a> · <a href="#workflow">典型工作流</a></p>
+</div>
+<h2 id="scope">操作边界<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>规则治理是“规则作者在上线前自检和预演”的治理层，不是“运行时策略解释器”。</p>
+<p>规则治理是规则面的<strong>作者时自检与演练层</strong>，而非运行时策略解释器。</p>
 </blockquote>
-<h2 id="rule-surfaces">规则面组成<a class="headerlink" href="#rule-surfaces" title="Permanent link">&para;</a></h2>
+<p>其管理范围：</p>
+<ul>
+<li>L2 攻击模式 YAML</li>
+<li>演进模式 YAML（可选）</li>
+<li>L3 审查技能 YAML（内置与自定义）</li>
+</ul>
+<p>其<strong>不</strong>涵盖的内容：</p>
+<table>
+<thead>
+<tr>
+<th>范围之外</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>引入新的运行时调度器</td>
+<td>治理仅在作者时运行</td>
+</tr>
+<tr>
+<td>替换 <code>PatternMatcher</code>、<code>SkillRegistry</code> 或 <code>L3TriggerPolicy</code></td>
+<td>这些组件负责处理实时流量</td>
+</tr>
+<tr>
+<td>定义全局 L1/L2/L3 控制流 DSL</td>
+<td>不向请求路径添加任何新抽象</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rule-surfaces">规则面<a class="headerlink" href="#rule-surfaces" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>规则面</th>
-<th>主要文件</th>
+<th>位置</th>
 <th>作用</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Core attack patterns</td>
+<td>核心攻击模式</td>
 <td><code>src/clawsentry/gateway/attack_patterns.yaml</code></td>
-<td>L2 规则库主干</td>
+<td>主 L2 模式库</td>
 </tr>
 <tr>
-<td>Evolved patterns</td>
-<td><code>CS_EVOLVED_PATTERNS_PATH</code> 指向的 YAML</td>
-<td>E-5 提升后的 experimental / stable 模式</td>
+<td>演进模式</td>
+<td>来自 <code>--evolved-patterns</code> 标志的路径</td>
+<td>经过演进流水线提升的模式；只有 <code>experimental</code> 和 <code>stable</code> 状态为活跃</td>
 </tr>
 <tr>
-<td>Built-in review skills</td>
+<td>内置审查技能</td>
 <td><code>src/clawsentry/gateway/skills/*.yaml</code></td>
-<td>L3 内置审查技能</td>
+<td>随产品附带的 L3 审查技能</td>
 </tr>
 <tr>
-<td>Custom review skills</td>
-<td><code>--skills-dir</code> 指向的目录</td>
-<td>上线前追加的自定义 L3 技能</td>
+<td>自定义审查技能</td>
+<td>来自 <code>--skills-dir</code> 标志的目录</td>
+<td>项目特定的 L3 技能；叠加在内置技能之上，而非替换</td>
 </tr>
 </tbody>
 </table>
-<p>默认情况下：</p>
+<div class="admonition note">
+<p class="admonition-title">加载行为</p>
 <ul>
-<li>built-in review skills 总是加载</li>
-<li><code>--skills-dir</code> 会在 built-in 基础上叠加，而不是替换</li>
-<li><code>--evolved-patterns</code> 会把 active evolved patterns 纳入治理报告</li>
+<li>内置审查技能始终加载。</li>
+<li><code>--skills-dir</code> 追加到内置集合中，不替换内置集合。</li>
+<li><code>--evolved-patterns</code> 将活跃的演进模式（<code>experimental</code> 或 <code>stable</code> 状态）添加到治理报告；<code>candidate</code> 和 <code>deprecated</code> 模式会被统计但不纳入。</li>
 </ul>
-<h2 id="rules-lint"><code>clawsentry rules lint</code><a class="headerlink" href="#rules-lint" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span><span class="o">[</span>--attack-patterns<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--evolved-patterns<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--skills-dir<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
-</span></code></pre></div>
-<p><code>lint</code> 会输出当前规则面的治理报告，重点看：</p>
-<ul>
-<li>source 是否存在、是否可解析</li>
-<li>attack pattern 的 item-level schema 问题</li>
-<li>core/evolved 之间的重复 ID</li>
-<li>review skill 的重复名称与触发签名冲突</li>
-<li>当前规则集的 deterministic fingerprint</li>
-</ul>
-<h3 id="_2">示例<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span>--json
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--attack-patterns<span class="w"> </span>/opt/clawsentry/patterns.yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>--evolved-patterns<span class="w"> </span>/var/lib/clawsentry/evolved_patterns.yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span>--skills-dir<span class="w"> </span>/etc/clawsentry/skills<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span>--json
-</span></code></pre></div>
-<h2 id="rules-dry-run"><code>clawsentry rules dry-run</code><a class="headerlink" href="#rules-dry-run" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--events<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--attack-patterns<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--evolved-patterns<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--skills-dir<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
-</span></code></pre></div>
-<p><code>dry-run</code> 不会修改任何运行时状态，只会把 sample canonical events 放到当前规则面上预演：</p>
-<ul>
-<li>哪些 attack pattern 会命中</li>
-<li>最终会选中哪个 review skill</li>
-<li>当前输入是否存在 parse / schema 问题</li>
-</ul>
-<h3 id="_3">支持的输入格式<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
-<ul>
-<li>单个 JSON object</li>
-<li>JSON array</li>
-<li>JSONL</li>
-</ul>
-<p>仓库内置了一个最小 sample fixture：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
-</span></code></pre></div>
-<h2 id="rules-report"><code>clawsentry rules report</code><a class="headerlink" href="#rules-report" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>report<span class="w"> </span>--output<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--events<span class="w"> </span>FILE<span class="o">]</span><span class="w"> </span><span class="o">[</span>--summary-markdown<span class="w"> </span>FILE<span class="o">]</span><span class="w"> </span><span class="o">[</span>--attack-patterns<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--evolved-patterns<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--skills-dir<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
-</span></code></pre></div>
-<p><code>report</code> 面向 CI 与 release checklist：它把 <code>lint</code> 结果和可选
-<code>dry-run</code> 结果写入一个稳定 JSON 工件，包含：</p>
-<ul>
-<li>顶层 <code>status</code> / <code>exit_code</code></li>
-<li>deterministic <code>fingerprint</code></li>
-<li><code>checks.lint</code> 与 <code>checks.dry_run</code> 的状态、finding 数量和事件数量</li>
-<li>完整 <code>lint</code> payload</li>
-<li>可选的完整 <code>dry_run</code> payload</li>
-</ul>
-<p>如果传入 <code>--summary-markdown</code>，<code>report</code> 还会写出一份面向 release / 策略变更审阅的人类可读 dashboard，列出总体状态、finding 数、fingerprint
-以及 sample events 的 pattern / skill 覆盖情况。</p>
-<p>如果同时传入 <code>--json</code>，报告也会输出到 stdout，便于流水线直接解析。</p>
-<p>仓库还提供了可同步到公开仓库的 GitHub Actions 示例：
-<code>examples/ci/rules-governance.yml</code>。公开仓库可将它复制到
-<code>.github/workflows/rules-governance.yml</code> 后按需调整触发条件。模板会运行
-<code>rules lint</code>、<code>rules dry-run</code>、<code>rules report</code>，并上传 JSON/Markdown artifact，
-便于 reviewer 直接查看本次规则面是否可加载、样本是否按预期命中、fingerprint
-是否与审核材料一致。</p>
-<h3 id="sample-events">内置 sample events 覆盖范围<a class="headerlink" href="#sample-events" title="Permanent link">&para;</a></h3>
-<p>默认示例文件 <code>examples/sample-events.jsonl</code> 覆盖三类最小代表场景：</p>
+</div>
+<h2 id="evolved-lifecycle">演进模式生命周期<a class="headerlink" href="#evolved-lifecycle" title="Permanent link">&para;</a></h2>
+<p>演进模式携带 <code>status</code> 字段，控制其是否处于活跃状态：</p>
 <table>
 <thead>
 <tr>
-<th>样本类型</th>
-<th>用途</th>
+<th>状态</th>
+<th>在治理中活跃</th>
+<th>说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>safe read</td>
-<td>验证普通读取不会被规则面误判为高风险</td>
+<td><code>candidate</code></td>
+<td>否</td>
+<td>新晋升的模式；处于观察期</td>
 </tr>
 <tr>
-<td>credential upload</td>
-<td>验证凭证上传/外传类事件能命中预期 pattern</td>
+<td><code>experimental</code></td>
+<td>是</td>
+<td>已有足够置信度，可纳入实时匹配</td>
 </tr>
 <tr>
-<td>download and execute</td>
-<td>验证下载后执行类供应链风险能进入 dry-run/report 证据</td>
+<td><code>stable</code></td>
+<td>是</td>
+<td>已确认的高置信度模式</td>
+</tr>
+<tr>
+<td><code>deprecated</code></td>
+<td>否</td>
+<td>已从活跃使用中退役</td>
 </tr>
 </tbody>
 </table>
-<p>你可以把这些样本作为 CI readiness checks 的起点，再追加自己组织里的 benign、expected-match
-和 near-miss 事件。</p>
-<h3 id="_4">示例<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<h3 id="_2">规则生命周期状态图<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; candidate : 演进流水线提升
+
+    candidate --&gt; experimental : 观察期通过\n置信度达到阈值
+    candidate --&gt; deprecated : 直接放弃\n（质量不达标）
+
+    experimental --&gt; stable : 长期稳定运行\n高置信度确认
+    experimental --&gt; candidate : 回退\n（新发现问题）
+    experimental --&gt; deprecated : 直接退役\n（模式失效）
+
+    stable --&gt; deprecated : 场景退役\n或被更好模式替代
+    deprecated --&gt; [*]
+
+    note right of candidate
+        inactive：不纳入实时匹配
+        仅统计不激活
+    end note
+    note right of experimental
+        active：纳入治理报告
+        及实时匹配
+    end note
+    note right of stable
+        active：高优先级
+        生产推荐状态
+    end note
+    note right of deprecated
+        inactive：仅统计
+        可用于回滚参考
+    end note</code></pre>
+<h2 id="rules-lint"><code>clawsentry rules lint</code><a class="headerlink" href="#rules-lint" title="Permanent link">&para;</a></h2>
+<p>在不接触任何运行时状态的情况下，验证当前规则面。若无发现项则返回退出码 <code>0</code>，若存在发现项则返回 <code>1</code>。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>clawsentry rules lint
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  [--attack-patterns PATH]
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  [--evolved-patterns PATH]
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  [--skills-dir DIR]
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  [--json]
+</span></code></pre></div>
+<p><strong>检查内容：</strong></p>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>发现项类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>源文件存在且可解析为有效 YAML</td>
+<td><code>missing_*_source</code>、<code>invalid_*_yaml</code>、<code>invalid_*_shape</code></td>
+</tr>
+<tr>
+<td>每个攻击模式通过条目级 schema 验证</td>
+<td><code>invalid_attack_pattern_schema</code></td>
+</tr>
+<tr>
+<td>核心/演进源内部及跨源无重复模式 ID</td>
+<td><code>duplicate_attack_pattern_id</code></td>
+</tr>
+<tr>
+<td>无重复审查技能名称</td>
+<td><code>duplicate_review_skill_name</code></td>
+</tr>
+<tr>
+<td>无两个审查技能共享相同触发器签名</td>
+<td><code>review_skill_signature_conflict</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>示例：</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 仅对内置规则面执行 lint</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span>--json
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 使用自定义路径执行 lint</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span>--attack-patterns<span class="w"> </span>/opt/clawsentry/patterns.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span>--evolved-patterns<span class="w"> </span>/var/lib/clawsentry/evolved_patterns.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>--skills-dir<span class="w"> </span>/etc/clawsentry/skills<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span>--json
+</span></code></pre></div>
+<h2 id="rules-dry-run"><code>clawsentry rules dry-run</code><a class="headerlink" href="#rules-dry-run" title="Permanent link">&para;</a></h2>
+<p>在不修改任何运行时状态的情况下，将示例规范事件输入当前规则面运行。对于每个事件，报告哪些攻击模式匹配以及将选择哪个审查技能。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>clawsentry rules dry-run
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  --events FILE
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  [--attack-patterns PATH]
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  [--evolved-patterns PATH]
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  [--skills-dir DIR]
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  [--json]
+</span></code></pre></div>
+<p><strong>接受的事件输入格式：</strong></p>
+<table>
+<thead>
+<tr>
+<th>格式</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JSON 对象</td>
+<td>单个规范事件</td>
+</tr>
+<tr>
+<td>JSON 数组</td>
+<td>一个文件中的多个事件</td>
+</tr>
+<tr>
+<td>JSONL</td>
+<td>每行一个事件</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">无副作用</p>
+<p><code>dry-run</code> 不写入轨迹存储、不触发任何 L3 工作器、不产生审计日志条目。它仅读取规则面并评估所提供的事件。</p>
+</div>
+<p><strong>示例：</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
+</span></code></pre></div>
+<p>输出中的每个事件包含：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>event_id</code></td>
+<td>来自输入事件的标识符</td>
+</tr>
+<tr>
+<td><code>matched_pattern_ids</code></td>
+<td>匹配的模式 ID 排序列表</td>
+</tr>
+<tr>
+<td><code>selected_skill</code></td>
+<td>将处理此事件的审查技能名称</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rules-report"><code>clawsentry rules report</code><a class="headerlink" href="#rules-report" title="Permanent link">&para;</a></h2>
+<p>将 <code>lint</code> 和可选的 <code>dry-run</code> 合并为单个 JSON 制品，供 CI 流水线和发布检查清单使用。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>clawsentry rules report
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  --output FILE
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  [--events FILE]
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>  [--summary-markdown FILE]
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>  [--attack-patterns PATH]
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>  [--evolved-patterns PATH]
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  [--skills-dir DIR]
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>  [--json]
+</span></code></pre></div>
+<p><strong>退出码：</strong></p>
+<table>
+<thead>
+<tr>
+<th>退出码</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>lint 或 dry-run 中无发现项</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>lint 或 dry-run 中存在一个或多个发现项</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>输入错误（事件文件不可读或结构无效）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>JSON 制品内容：</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>report_schema_version</code></td>
+<td><code>cs-01.rule-governance.ci-report.v1</code></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>pass</code>、<code>fail</code> 或 <code>input_error</code></td>
+</tr>
+<tr>
+<td><code>exit_code</code></td>
+<td>数字退出码（0、1 或 2）</td>
+</tr>
+<tr>
+<td><code>fingerprint</code></td>
+<td>完整规则集的确定性 SHA-256 摘要</td>
+</tr>
+<tr>
+<td><code>checks.lint</code></td>
+<td>lint 阶段的状态和发现项数量</td>
+</tr>
+<tr>
+<td><code>checks.dry_run</code></td>
+<td>dry-run 阶段的状态、事件数量、发现项数量及任何输入错误</td>
+</tr>
+<tr>
+<td><code>lint</code></td>
+<td>完整 lint 有效载荷（源摘要、发现项、模式/技能列表）</td>
+</tr>
+<tr>
+<td><code>dry_run</code></td>
+<td>完整 dry-run 有效载荷（含匹配结果的事件），若省略则为 <code>null</code></td>
+</tr>
+</tbody>
+</table>
+<p>传入 <code>--summary-markdown</code> 还可同时写出人类可读的 Markdown 仪表板，适合 PR 审查或发布说明使用。</p>
+<p><strong>示例：</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>--output<span class="w"> </span>artifacts/rules-report.json<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--summary-markdown<span class="w"> </span>artifacts/rules-dashboard.md
 </span></code></pre></div>
+<h3 id="sample-events">内置示例事件覆盖<a class="headerlink" href="#sample-events" title="Permanent link">&para;</a></h3>
+<p>随产品附带的 <code>examples/sample-events.jsonl</code> 文件涵盖三个最小代表性场景：</p>
+<table>
+<thead>
+<tr>
+<th>示例类型</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>安全读取</td>
+<td>验证良性读取操作不会被标记为高风险</td>
+</tr>
+<tr>
+<td>凭据上传</td>
+<td>验证凭据外泄事件与预期模式匹配</td>
+</tr>
+<tr>
+<td>下载并执行</td>
+<td>验证供应链风险事件进入 dry-run 证据</td>
+</tr>
+</tbody>
+</table>
+<p>将这些作为基线，并为您的部署添加自定义的良性事件、预期匹配事件和近似误报事件。</p>
+<h2 id="skill-selection">技能选择逻辑<a class="headerlink" href="#skill-selection" title="Permanent link">&para;</a></h2>
+<p>治理 dry-run 使用与实时 L3 路径相同的技能选择算法：</p>
+<ol>
+<li>对每个已启用的非 <code>general-review</code> 技能按事件评分。</li>
+<li>各匹配类型的评分权重：</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>匹配类型</th>
+<th>分值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>每个 <code>risk_hints</code> 交集</td>
+<td>+10</td>
+</tr>
+<tr>
+<td><code>tool_name</code> 匹配</td>
+<td>+5</td>
+</tr>
+<tr>
+<td>每个 <code>payload_patterns</code> 子串匹配</td>
+<td>+1</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>得分最高的技能胜出；同分时以 <code>priority</code> 字段打破（值越高越优先）。</li>
+<li>若没有技能得分高于零，事件路由至 <code>general-review</code>。</li>
+</ol>
+<h2 id="findings">发现项参考<a class="headerlink" href="#findings" title="Permanent link">&para;</a></h2>
+<p>发现项在 lint 和 dry-run 报告的 <code>findings</code> 数组中返回，按 <code>(kind, item_id, message)</code> 排序。</p>
+<table>
+<thead>
+<tr>
+<th><code>kind</code></th>
+<th>严重性</th>
+<th>触发条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>missing_attack_patterns_source</code></td>
+<td>error</td>
+<td>攻击模式文件未找到</td>
+</tr>
+<tr>
+<td><code>missing_evolved_patterns_source</code></td>
+<td>error</td>
+<td>演进模式文件未找到</td>
+</tr>
+<tr>
+<td><code>missing_review_skills_source</code></td>
+<td>error</td>
+<td>技能目录未找到</td>
+</tr>
+<tr>
+<td><code>invalid_attack_patterns_yaml</code></td>
+<td>error</td>
+<td>攻击模式文件 YAML 解析失败</td>
+</tr>
+<tr>
+<td><code>invalid_evolved_patterns_yaml</code></td>
+<td>error</td>
+<td>演进模式文件 YAML 解析失败</td>
+</tr>
+<tr>
+<td><code>invalid_review_skill_yaml</code></td>
+<td>error</td>
+<td>技能文件 YAML 解析失败</td>
+</tr>
+<tr>
+<td><code>invalid_attack_patterns_shape</code></td>
+<td>error</td>
+<td>顶层文档不是映射</td>
+</tr>
+<tr>
+<td><code>invalid_evolved_patterns_shape</code></td>
+<td>error</td>
+<td>顶层文档不是映射</td>
+</tr>
+<tr>
+<td><code>invalid_review_skill_shape</code></td>
+<td>error</td>
+<td>技能文档不是映射</td>
+</tr>
+<tr>
+<td><code>invalid_attack_patterns_shape</code></td>
+<td>error</td>
+<td><code>patterns</code> 键不是列表</td>
+</tr>
+<tr>
+<td><code>invalid_attack_pattern_schema</code></td>
+<td>error</td>
+<td>某条模式条目未通过条目级验证</td>
+</tr>
+<tr>
+<td><code>duplicate_attack_pattern_id</code></td>
+<td>error</td>
+<td>两个模式共享相同 ID</td>
+</tr>
+<tr>
+<td><code>invalid_review_skill_schema</code></td>
+<td>error</td>
+<td>技能文件未通过 schema 验证</td>
+</tr>
+<tr>
+<td><code>duplicate_review_skill_name</code></td>
+<td>error</td>
+<td>两个技能文件共享相同 <code>name</code></td>
+</tr>
+<tr>
+<td><code>review_skill_signature_conflict</code></td>
+<td>error</td>
+<td>两个或多个技能共享相同触发器签名</td>
+</tr>
+<tr>
+<td><code>invalid_dry_run_event</code></td>
+<td>error</td>
+<td>示例事件无法解析或验证</td>
+</tr>
+</tbody>
+</table>
+<h2 id="outputs">输出字段<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
+<h3 id="fingerprint"><code>fingerprint</code><a class="headerlink" href="#fingerprint" title="Permanent link">&para;</a></h3>
+<p>整个活跃规则集的 SHA-256 摘要，涵盖核心攻击模式、活跃演进模式和所有已加载的审查技能。用于确认两次治理运行看到了相同的规则面。</p>
+<h3 id="source_summaries"><code>source_summaries</code><a class="headerlink" href="#source_summaries" title="Permanent link">&para;</a></h3>
+<p>规则源条目数组，每个已加载源一条：</p>
+<table>
+<thead>
+<tr>
+<th><code>source_kind</code></th>
+<th>出现时机</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>attack_patterns</code></td>
+<td>始终</td>
+</tr>
+<tr>
+<td><code>review_skills</code></td>
+<td>始终</td>
+</tr>
+<tr>
+<td><code>evolved_patterns</code></td>
+<td>提供 <code>--evolved-patterns</code> 时</td>
+</tr>
+<tr>
+<td><code>custom_review_skills</code></td>
+<td><code>--skills-dir</code> 与内置路径不同时</td>
+</tr>
+</tbody>
+</table>
+<p>每条条目包含 <code>source_name</code>、<code>version</code> 和 <code>item_count</code>。</p>
+<h3 id="version_summary"><code>version_summary</code><a class="headerlink" href="#version_summary" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>report_schema_version</code></td>
+<td><code>cs-01.rule-governance.v1</code></td>
+</tr>
+<tr>
+<td><code>attack_patterns_version</code></td>
+<td>攻击模式 YAML 中的版本字符串</td>
+</tr>
+<tr>
+<td><code>evolved_patterns_version</code></td>
+<td>演进模式 YAML 中的版本字符串，若无则为 <code>none</code></td>
+</tr>
+<tr>
+<td><code>review_skills_version</code></td>
+<td>所有已加载技能文档的 SHA-256 派生摘要</td>
+</tr>
+<tr>
+<td><code>attack_patterns_count</code></td>
+<td>活跃模式数量（核心 + 活跃演进）</td>
+</tr>
+<tr>
+<td><code>inactive_evolved_patterns_count</code></td>
+<td>因 <code>candidate</code> 或 <code>deprecated</code> 状态而被跳过的演进模式数量</td>
+</tr>
+<tr>
+<td><code>review_skills_count</code></td>
+<td>已加载的审查技能数量</td>
+</tr>
+</tbody>
+</table>
 <h2 id="workflow">典型工作流<a class="headerlink" href="#workflow" title="Permanent link">&para;</a></h2>
-<h3 id="attack-patterns">调整 attack patterns 后<a class="headerlink" href="#attack-patterns" title="Permanent link">&para;</a></h3>
+<h3 id="_3">规则治理操作流程<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>flowchart LR
+    A([开始]) --&gt; B{操作类型}
+
+    B --&gt;|编辑攻击模式| C[rules lint\n--attack-patterns]
+    B --&gt;|编辑 L3 技能| D[rules lint\n--skills-dir]
+    B --&gt;|发布前检查| E[rules lint]
+
+    C --&gt; F[rules dry-run\n--attack-patterns\n--events]
+    D --&gt; G[rules dry-run\n--skills-dir\n--events]
+    E --&gt; H[rules dry-run\n--events]
+
+    F --&gt; I{lint + dry-run\n通过?}
+    G --&gt; I
+    H --&gt; J[rules report\n--output\n--events\n--summary-markdown]
+
+    J --&gt; K{status == pass?}
+
+    I --&gt;|是| L([完成 ✓])
+    I --&gt;|否| M[修复发现项]
+    M --&gt; C
+
+    K --&gt;|pass| N[提交 PR\n记录指纹变更]
+    K --&gt;|fail / input_error| O[修复规则\n或说明风险]
+    O --&gt; E
+    N --&gt; L</code></pre>
+<h3 id="_4">编辑攻击模式后<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span>--attack-patterns<span class="w"> </span>/opt/clawsentry/patterns.yaml<span class="w"> </span>--json
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--attack-patterns<span class="w"> </span>/opt/clawsentry/patterns.yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--attack-patterns<span class="w"> </span>/opt/clawsentry/patterns.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
 </span></code></pre></div>
-<h3 id="l3-skills">调整自定义 L3 skills 后<a class="headerlink" href="#l3-skills" title="Permanent link">&para;</a></h3>
+<h3 id="l3">编辑自定义 L3 技能后<a class="headerlink" href="#l3" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span>--skills-dir<span class="w"> </span>/etc/clawsentry/skills<span class="w"> </span>--json
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--skills-dir<span class="w"> </span>/etc/clawsentry/skills<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--skills-dir<span class="w"> </span>/etc/clawsentry/skills<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
 </span></code></pre></div>
-<h3 id="release-checklist">与 release checklist 一起使用<a class="headerlink" href="#release-checklist" title="Permanent link">&para;</a></h3>
-<p>如果本次版本包含规则治理相关修改，发布前至少保留三条 readiness checks：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nv">PYTHONPATH</span><span class="o">=</span>src<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span>--json
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">PYTHONPATH</span><span class="o">=</span>src<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nv">PYTHONPATH</span><span class="o">=</span>src<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>clawsentry<span class="w"> </span>rules<span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
+<h3 id="_5">发布检查清单<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<p>在合并或部署任何规则面变更前，运行以下三条命令：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span>--json
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>--output<span class="w"> </span>artifacts/rules-report.json<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span>--summary-markdown<span class="w"> </span>artifacts/rules-dashboard.md
 </span></code></pre></div>
-<h3 id="policy-change-review-checklist">Policy-change review checklist<a class="headerlink" href="#policy-change-review-checklist" title="Permanent link">&para;</a></h3>
-<p>在合并或发布任何 attack patterns、evolved patterns 或 L3 review skills 变更前，建议把以下 checklist 作为变更说明的一部分保存。它面向规则作者和发布 reviewer，目标是让“规则为什么变、会影响什么、如何回滚”可审计。</p>
+<div class="admonition warning">
+<p class="admonition-title">发布门控</p>
+<p>若 <code>status</code> 不为 <code>pass</code>，或仪表板显示无法解释的 <code>FAIL</code> 发现项，请在发布前修复规则或记录风险说明。</p>
+</div>
+<h3 id="policy-change-review-checklist">Policy-change review checklist / 策略变更审查清单<a class="headerlink" href="#policy-change-review-checklist" title="Permanent link">&para;</a></h3>
+<p>在合并攻击模式、演进模式或审查技能的变更时，在 PR 或变更说明中记录以下内容：</p>
 <table>
 <thead>
 <tr>
-<th>检查项</th>
-<th>需要记录的内容</th>
-<th>推荐证据</th>
+<th>事项</th>
+<th>记录内容</th>
+<th>证据</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>变更意图</td>
-<td>新增、放宽、收紧还是删除规则；对应的风险场景</td>
-<td>PR/变更说明中的一句话目标</td>
+<td>添加、放宽、收紧或移除规则；关联的风险场景</td>
+<td>PR 说明中的一行目标描述</td>
 </tr>
 <tr>
 <td>规则范围</td>
-<td>影响 core attack pattern、evolved pattern、built-in skill 还是 custom skill</td>
-<td><code>clawsentry rules lint --json</code> 的 <code>source_summaries</code></td>
+<td>受影响的规则面：核心模式、演进模式、内置技能或自定义技能</td>
+<td><code>rules lint --json</code> 输出的 <code>source_summaries</code></td>
 </tr>
 <tr>
-<td>Fingerprint 变化</td>
-<td>变更前后 fingerprint，确认 reviewer 看到的是同一规则面</td>
-<td><code>clawsentry rules report --output ...</code></td>
+<td>指纹变化</td>
+<td>变更前后的指纹，供审查者确认看到的是相同规则集</td>
+<td><code>rules report --output ...</code></td>
 </tr>
 <tr>
-<td>样本覆盖</td>
-<td>至少一组 benign、一组 expected-match、一组 near-miss sample event</td>
-<td><code>clawsentry rules dry-run --events ... --json</code></td>
+<td>示例事件覆盖</td>
+<td>至少一个良性事件、一个预期匹配事件和一个近似误报事件</td>
+<td><code>rules dry-run --events ... --json</code></td>
 </tr>
 <tr>
 <td>冲突检查</td>
-<td>duplicate ID/name、skill signature conflict、schema finding 是否为 0 或已解释</td>
-<td><code>findings</code> 与 report dashboard</td>
+<td><code>duplicate_*</code>、<code>signature_conflict</code> 和 schema 发现项为零或已有说明</td>
+<td><code>findings</code> 数组和报告仪表板</td>
 </tr>
 <tr>
 <td>误报风险</td>
-<td>哪些正常操作可能被新规则影响，是否需要 allowlist / 文档说明</td>
-<td>dry-run 样本和 reviewer 备注</td>
+<td>新规则可能影响哪些正常操作；是否需要更新允许列表或文档</td>
+<td>dry-run 示例和审查者备注</td>
 </tr>
 <tr>
-<td>回滚方式</td>
-<td>回滚文件、关闭 evolved pattern、移除 custom skill 或恢复上一 fingerprint</td>
-<td>变更说明中的 rollback plan</td>
+<td>回滚方案</td>
+<td>如何回滚：还原文件、将演进模式设为 <code>deprecated</code>、移除自定义技能，或回退至最后已知指纹</td>
+<td>变更说明中的回滚章节</td>
 </tr>
 </tbody>
 </table>
-<p>最小 review 命令模板：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>report<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>--output<span class="w"> </span>artifacts/rules-report.json<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span>--summary-markdown<span class="w"> </span>artifacts/rules-dashboard.md
-</span></code></pre></div>
-<p>如果 <code>status</code> 不是 <code>pass</code>，或 dashboard 中出现未解释的 FAIL finding，应先修规则或补充风险说明，再进入发布或策略变更。</p>
-<h2 id="outputs">输出字段<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
-<h3 id="fingerprint"><code>fingerprint</code><a class="headerlink" href="#fingerprint" title="Permanent link">&para;</a></h3>
-<p>当前完整规则集的 deterministic digest。它会受以下内容影响：</p>
+<h2 id="_6">相关页面<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
 <ul>
-<li>core attack patterns</li>
-<li>active evolved patterns</li>
-<li>built-in + custom review skills</li>
-</ul>
-<p>这个值适合用于 rollout 记录和“当前实际规则面是不是同一版”的快速判断。</p>
-<h3 id="source_summaries"><code>source_summaries</code><a class="headerlink" href="#source_summaries" title="Permanent link">&para;</a></h3>
-<p>按 source 列出当前加载了哪些规则资产，例如：</p>
-<ul>
-<li><code>attack_patterns</code></li>
-<li><code>evolved_patterns</code></li>
-<li><code>review_skills</code></li>
-<li><code>custom_review_skills</code></li>
-</ul>
-<h3 id="version_summary"><code>version_summary</code><a class="headerlink" href="#version_summary" title="Permanent link">&para;</a></h3>
-<p>提供更适合记录的版本摘要，包括：</p>
-<ul>
-<li>attack patterns 版本</li>
-<li>evolved patterns 版本</li>
-<li>review skills 版本摘要</li>
-<li>active pattern / skill 数量</li>
-<li>inactive evolved pattern 数量</li>
-</ul>
-<h3 id="findings"><code>findings</code><a class="headerlink" href="#findings" title="Permanent link">&para;</a></h3>
-<p>结构化治理结果。当前常见的 findings 包括：</p>
-<ul>
-<li>source 缺失</li>
-<li>YAML 解析失败</li>
-<li>item-level schema 问题</li>
-<li>duplicate attack pattern id</li>
-<li>duplicate review skill name</li>
-<li>review skill signature conflict</li>
-<li>invalid dry-run event</li>
-</ul>
-<h2 id="_5">与其他页面的关系<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../../cli/">CLI 命令参考</a> — <code>rules</code> 命令语法与退出码</li>
-<li><a href="../attack-patterns/">攻击模式定制</a> — attack patterns YAML 结构</li>
-<li><a href="../custom-skills/">自定义 L3 Skills</a> — review skills YAML 结构</li>
-<li><a href="../pattern-evolution/">自进化模式库</a> — evolved patterns 来源</li>
+<li><a href="../../cli/">CLI 参考</a> — <code>rules</code> 命令语法和退出码</li>
+<li><a href="../attack-patterns/">攻击模式</a> — 攻击模式 YAML 结构</li>
+<li><a href="../custom-skills/">自定义技能</a> — 审查技能 YAML 结构</li>
+<li><a href="../pattern-evolution/">模式演进</a> — 演进模式来源与生命周期</li>
 </ul>
 
 
@@ -3279,7 +3831,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月22日 17:17:08 UTC">2026年4月22日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月19日 10:51:34 UTC">2026年5月19日</span>
   </span>
 
     
@@ -3326,7 +3878,7 @@
       <nav class="md-footer__inner md-grid" aria-label="页脚" >
         
           
-          <a href="../../dashboard/" class="md-footer__link md-footer__link--prev" aria-label="上一页: Web 仪表板">
+          <a href="../skill-trust/" class="md-footer__link md-footer__link--prev" aria-label="上一页: Skill Trust / Registry">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3336,7 +3888,7 @@
                 上一页
               </span>
               <div class="md-ellipsis">
-                Web 仪表板
+                Skill Trust / Registry
               </div>
             </div>
           </a>
@@ -3402,11 +3954,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

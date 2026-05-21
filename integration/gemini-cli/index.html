@@ -171,6 +171,11 @@
       </label>
       <nav class="md-search__options" aria-label="查找">
         
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -274,6 +281,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -293,6 +302,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -333,6 +344,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -352,6 +365,8 @@
         <a href="../../decision-layers/l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../advanced/rule-governance/" class="md-tabs__link">
+        <a href="../../advanced/skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -693,6 +722,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -892,6 +937,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#gemini-cli_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gemini CLI 安全集成
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -899,6 +955,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="安装与初始化">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#geminisettingsjson-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        .gemini/settings.json hook 格式
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1053,6 +1126,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1337,6 +1426,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1651,6 +1760,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1844,34 +1971,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decision-layers/sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../decision-layers/scope-restrictions/" class="md-nav__link">
         
   
@@ -1991,6 +2090,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2036,6 +2153,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2248,6 +2393,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2357,70 +2512,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2523,6 +2622,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#gemini-cli_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gemini CLI 安全集成
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2530,6 +2640,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="安装与初始化">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#geminisettingsjson-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        .gemini/settings.json hook 格式
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2588,6 +2715,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../a3s-code/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    集成接入
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -2598,6 +2773,16 @@
 
 
 <h1 id="gemini-cli">Gemini CLI 集成<a class="headerlink" href="#gemini-cli" title="Permanent link">&para;</a></h1>
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">Integration · Gemini CLI</div>
+<h2 id="gemini-cli_1">Gemini CLI 安全集成<a class="headerlink" href="#gemini-cli_1" title="Permanent link">&para;</a></h2>
+<p>ClawSentry 通过 native command hooks 接入 Gemini CLI，写入项目级 <code>.gemini/settings.json</code>，覆盖 session、prompt/model、tool preflight 和 tool result review 等阶段。v0.7.5 起 managed hook command 包含 Skill Trust runtime metadata 路径默认值。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">BeforeTool 同步阻断</span>
+<span class="cs-pill">项目级 settings.json</span>
+<span class="cs-pill">Skill Trust v0.7.5</span></p>
+</div>
+</div>
 <div class="admonition tip">
 <p class="admonition-title">支持范围</p>
 <p>Gemini CLI 通过 native command hooks 接入 ClawSentry。默认 setup 写入项目级 <code>.gemini/settings.json</code>，覆盖 session、prompt/model、tool preflight 和 tool result review 等阶段。自定义 provider 或代理前，请先确认它兼容 Gemini CLI 所需接口。</p>
@@ -2614,6 +2799,32 @@
 <p>如确实需要写某个用户级 Gemini 配置目录，必须显式传入路径：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>gemini-cli<span class="w"> </span>--setup<span class="w"> </span>--gemini-home<span class="w"> </span>/tmp/safe-gemini-home
 </span></code></pre></div>
+<h3 id="geminisettingsjson-hook"><code>.gemini/settings.json</code> hook 格式<a class="headerlink" href="#geminisettingsjson-hook" title="Permanent link">&para;</a></h3>
+<p><code>clawsentry init gemini-cli --setup</code> 生成的 managed hook 条目格式如下：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;hooks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">&quot;BeforeTool&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">      </span><span class="p">{</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">        </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;clawsentry harness --framework gemini-cli CS_SKILL_TRUST_REGISTRY_PATH=.clawsentry/skill-trust-registry.json CS_SKILL_TRUST_METADATA_PATH=.clawsentry/skill-trust-runtime.json&quot;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="p">}</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="p">],</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">&quot;AfterTool&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="p">{</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">        </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;clawsentry harness --framework gemini-cli&quot;</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">      </span><span class="p">}</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="p">],</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="nt">&quot;BeforeAgent&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">      </span><span class="p">{</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">        </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;clawsentry harness --framework gemini-cli&quot;</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">      </span><span class="p">}</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">    </span><span class="p">]</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="p">}</span>
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Skill Trust runtime metadata binding（v0.7.5）</p>
+<p><code>clawsentry init gemini-cli --setup</code> 生成的 managed hook command 现在包含 <code>CS_SKILL_TRUST_REGISTRY_PATH</code> 和 <code>CS_SKILL_TRUST_METADATA_PATH</code> 环境变量默认值。若 metadata 文件不存在，harness 会自动回退，按 Gemini hook payload 的 <code>cwd</code> 向上查找 <code>.clawsentry/skill-trust-runtime.json</code>。</p>
+</div>
 <h2 id="hook">Hook 覆盖范围<a class="headerlink" href="#hook" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -2676,6 +2887,7 @@
 </tbody>
 </table>
 <p>Gateway 不可达、fallback policy 生效，或 <code>clawsentry harness</code> 进程本身启动失败时，Gemini native hook 默认 fail-open，避免把开发工作流整体卡死。安装器生成的 managed command 会把 hook 诊断写入 <code>CS_HARNESS_DIAG_LOG</code>（未设置时丢弃），避免 Gemini CLI 把普通 stderr 文本误解析成 hook 输出。</p>
+<p>Skill Trust metadata 会优先读取 <code>CS_SKILL_TRUST_METADATA_PATH</code>，同时按 Gemini hook payload 的 <code>cwd</code> 向上查找项目 <code>.clawsentry/skill-trust-runtime.json</code> 作为 fallback。匹配到注册 skill 时，Gateway 可以使用真实 skill root path 执行 first-use scan；session replay 只保留 presented/canonical labels、framework/scope、metadata source 和 skill root hash。</p>
 <h2 id="gemini-shell-tool">Gemini shell tool 规范化<a class="headerlink" href="#gemini-shell-tool" title="Permanent link">&para;</a></h2>
 <p>真实 Gemini CLI 在 shell 执行前会把工具名上报为 <code>run_shell_command</code>。ClawSentry 在 Gemini adapter 中将已知 shell aliases 规范化为 policy-facing <code>bash</code>，并在 payload 中保留原始字段：</p>
 <ul>
@@ -2684,9 +2896,13 @@
 <li><code>payload._clawsentry_meta.raw_tool_name</code>: <code>run_shell_command</code></li>
 </ul>
 <p>这样既不会丢失 Gemini 原始审计信息，又能复用已有的 shell 风险评分、<code>rm -rf</code>/<code>sudo</code> 等阻断规则。</p>
+<div class="admonition note">
+<p class="admonition-title">自定义 provider 兼容性</p>
+<p>使用自定义 provider 或代理时，请确认它兼容 Gemini CLI 所需接口；ClawSentry 的 hook 集成与具体 LLM provider 无关，但 Gemini CLI 本身的 provider 配置需要单独验证。</p>
+</div>
 <h2 id="_2">诊断<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>clawsentry<span class="w"> </span>integrations<span class="w"> </span>status<span class="w"> </span>--json
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>clawsentry<span class="w"> </span>doctor
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>clawsentry<span class="w"> </span>integrations<span class="w"> </span>status<span class="w"> </span>--json
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>clawsentry<span class="w"> </span>doctor
 </span></code></pre></div>
 <p><code>doctor</code> 会检查：</p>
 <ul>
@@ -2695,7 +2911,7 @@
 </ul>
 <h2 id="_3">卸载<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
 <p>只移除 ClawSentry managed entries，保留用户自己的 Gemini hooks 和其他设置：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>gemini-cli<span class="w"> </span>--uninstall
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>clawsentry<span class="w"> </span>init<span class="w"> </span>gemini-cli<span class="w"> </span>--uninstall
 </span></code></pre></div>
 
 
@@ -2719,7 +2935,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月29日 07:17:53 UTC">2026年4月29日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月17日 21:24:54 UTC">2026年5月17日</span>
   </span>
 
     
@@ -2842,11 +3058,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

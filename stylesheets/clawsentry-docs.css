@@ -38,6 +38,14 @@
   --cs-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
 }
 
+[data-md-color-scheme="slate"] .md-typeset .hero .tagline {
+  color: #cbd5e1;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .hero .tagline-sub {
+  color: #94a3b8;
+}
+
 .md-typeset a:focus-visible,
 .md-typeset button:focus-visible,
 .md-typeset .md-button:focus-visible {
@@ -46,6 +54,8 @@
   border-radius: 0.35rem;
 }
 
+/* ── Hero & doc-hero ── */
+
 .md-typeset .hero,
 .md-typeset .cs-doc-hero {
   position: relative;
@@ -53,32 +63,96 @@
   border: 1px solid var(--cs-line);
   border-radius: calc(var(--cs-radius) + 6px);
   background:
-    radial-gradient(circle at 12% 12%, rgba(8, 145, 178, 0.20), transparent 34%),
-    radial-gradient(circle at 88% 24%, rgba(22, 163, 74, 0.14), transparent 30%),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.065), rgba(8, 145, 178, 0.035));
+    radial-gradient(circle at 20% 50%, rgba(8, 145, 178, 0.09), transparent 55%),
+    radial-gradient(circle at 80% 50%, rgba(22, 163, 74, 0.07), transparent 50%),
+    #f9fafb;
   box-shadow: var(--cs-shadow);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .hero,
+[data-md-color-scheme="slate"] .md-typeset .cs-doc-hero {
+  background:
+    radial-gradient(circle at 20% 50%, rgba(8, 145, 178, 0.13), transparent 55%),
+    radial-gradient(circle at 80% 50%, rgba(22, 163, 74, 0.10), transparent 50%),
+    rgba(15, 23, 42, 0.55);
 }
 
 .md-typeset .hero {
   padding: clamp(2.25rem, 5vw, 4.5rem) clamp(1.25rem, 4vw, 3rem) !important;
   margin: 0 0 2.4rem;
+  text-align: center;
 }
 
 .md-typeset .hero h2,
 .md-typeset .cs-doc-hero h2 {
+  font-size: clamp(1.75rem, 3.5vw, 2.2rem);
   letter-spacing: -0.045em;
   line-height: 1.04;
   color: var(--cs-ink);
 }
 
+.md-typeset .cs-doc-hero h2 {
+  margin-top: 0.2rem !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.md-typeset .cs-doc-hero > p {
+  margin-bottom: 0.55rem;
+}
+
+.md-typeset .hero h2 {
+  font-size: clamp(2.6rem, 5.5vw, 3.4rem);
+  letter-spacing: -0.06em;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.6rem;
+}
+
+.md-typeset .hero h2 .headerlink {
+  display: none;
+}
+
+.md-typeset .hero .cs-hero-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0.6rem;
+}
+
+.md-typeset .hero .cs-hero-brand .cs-hero-icon {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.md-typeset .hero .cs-hero-brand h2 {
+  margin: 0 !important;
+}
+
+.md-typeset .hero .cs-hero-icon {
+  margin-bottom: 0.6rem;
+}
+.md-typeset .hero .cs-hero-icon svg {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 6px 18px rgba(8, 145, 178, 0.35));
+}
+
 .md-typeset .hero .tagline {
   max-width: 58rem;
   margin-inline: auto;
-  color: var(--md-default-fg-color--light);
+  color: #334155;
+}
+
+.md-typeset .hero .tagline-sub {
+  max-width: 54rem;
+  margin-inline: auto;
+  color: #64748b;
+  font-size: 0.92em;
 }
 
 .md-typeset .cs-doc-hero {
-  padding: clamp(1.8rem, 4vw, 3.2rem);
+  padding: clamp(0.9rem, 2vw, 1.4rem) clamp(1rem, 2.5vw, 1.8rem);
   margin: 0 0 1.6rem;
 }
 
@@ -90,6 +164,8 @@
 .md-typeset .cs-api-example > :last-child {
   margin-bottom: 0;
 }
+
+/* ── Eyebrow / kicker ── */
 
 .md-typeset .cs-eyebrow,
 .md-typeset .section-kicker,
@@ -105,12 +181,15 @@
   text-transform: uppercase;
 }
 
+/* ── CTA button row ── */
+
 .md-typeset .cs-actions,
 .md-typeset .hero p:has(.md-button) {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
   margin-top: 1.25rem;
+  justify-content: center;
 }
 
 .md-typeset .cs-actions .md-button,
@@ -126,6 +205,8 @@
   transform: translateY(-2px);
 }
 
+/* ── Card grids ── */
+
 .md-typeset .grid-cards,
 .md-typeset .framework-cards,
 .md-typeset .cs-card-grid,
@@ -135,34 +216,29 @@
 }
 
 .md-typeset .grid-cards,
-.md-typeset .framework-cards,
 .md-typeset .cs-card-grid {
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.md-typeset .framework-cards {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 960px) {
+  .md-typeset .framework-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .md-typeset .framework-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 .md-typeset .cs-metric-grid {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   margin: 1.25rem 0 2rem;
-}
-
-.md-typeset .cs-pill-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0.85rem 0 0;
-}
-
-.md-typeset .cs-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.55rem;
-  border: 1px solid color-mix(in srgb, var(--cs-accent) 30%, var(--cs-line));
-  border-radius: 999px;
-  padding: 0.16rem 0.6rem;
-  background: var(--cs-panel);
-  color: var(--cs-ink);
-  font-size: 0.76rem;
-  font-weight: 700;
 }
 
 .md-typeset .card,
@@ -192,56 +268,6 @@
   padding: 1rem 1.1rem;
 }
 
-.md-typeset .cs-flow,
-.md-typeset .cs-operator-path,
-.md-typeset .cs-api-example {
-  border: 1px solid var(--cs-line);
-  border-radius: var(--cs-radius);
-  padding: 1rem 1.1rem;
-  margin: 1rem 0 1.5rem;
-  background: linear-gradient(135deg, var(--cs-panel), transparent 130%);
-}
-
-.md-typeset .cs-flow {
-  border-left: 4px solid var(--cs-accent);
-  font-weight: 650;
-}
-
-.md-typeset .cs-operator-path {
-  counter-reset: cs-step;
-}
-
-.md-typeset .cs-operator-path > ol {
-  margin: 0;
-}
-
-.md-typeset .cs-operator-path li::marker {
-  color: var(--cs-accent);
-  font-weight: 800;
-}
-
-.md-typeset .cs-before-after {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
-  margin: 1.25rem 0 1.6rem;
-}
-
-.md-typeset .cs-before-after > * {
-  border: 1px solid var(--cs-line);
-  border-radius: var(--cs-radius);
-  padding: 1rem 1.05rem;
-  background: var(--cs-panel);
-}
-
-.md-typeset .cs-api-example {
-  border-left: 4px solid var(--cs-accent-2);
-}
-
-.md-typeset .cs-note-muted {
-  color: var(--cs-muted);
-}
-
 .md-typeset .cs-metric span,
 .md-typeset .cs-metric small {
   display: block;
@@ -257,9 +283,75 @@
   color: var(--cs-ink);
 }
 
-.md-typeset .cs-reference-toolbar,
+/* ── Flow / operator-path / api-example ── */
+
+.md-typeset .cs-flow,
 .md-typeset .cs-operator-path,
 .md-typeset .cs-api-example {
+  border: 1px solid var(--cs-line);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0 1.5rem;
+  background: linear-gradient(90deg, var(--cs-panel), transparent 78%);
+}
+
+.md-typeset .cs-flow {
+  border-left: 4px solid var(--cs-accent);
+  font-weight: 650;
+}
+
+.md-typeset .cs-api-example {
+  border-left: 4px solid var(--cs-accent-2);
+}
+
+.md-typeset .cs-operator-path {
+  counter-reset: cs-step;
+  border-left: 4px solid var(--cs-accent);
+  background:
+    linear-gradient(90deg, rgba(8, 145, 178, 0.08), transparent 72%),
+    var(--md-default-bg-color);
+  padding: 1rem 1.15rem;
+}
+
+.md-typeset .cs-operator-path > ol {
+  margin: 0;
+}
+
+.md-typeset .cs-operator-path li::marker {
+  color: var(--cs-accent);
+  font-weight: 800;
+}
+
+/* ── Before/After comparison ── */
+
+.md-typeset .cs-before-after {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 1.6rem;
+}
+
+.md-typeset .cs-path-option,
+.md-typeset .cs-before-after > * {
+  border: 1px solid var(--cs-line);
+  border-radius: var(--cs-radius);
+  padding: 1rem 1.1rem;
+  background: linear-gradient(180deg, var(--cs-panel), transparent 140%);
+}
+
+.md-typeset .cs-path-option--recommended {
+  border-color: color-mix(in srgb, var(--cs-accent-2) 50%, var(--cs-line));
+  box-shadow: 0 12px 30px rgba(22, 163, 74, 0.10);
+}
+
+.md-typeset .cs-path-option h3,
+.md-typeset .cs-before-after h3 {
+  margin-top: 0;
+}
+
+/* ── Reference toolbar ── */
+
+.md-typeset .cs-reference-toolbar {
   padding: 0.2rem 1rem 0.05rem;
   margin: 1rem 0 1.4rem;
 }
@@ -268,11 +360,14 @@
   margin: 0.7rem 0;
 }
 
+/* ── Pill row ── */
+
 .md-typeset .cs-pill-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
   margin: 0.8rem 0 0;
+  justify-content: center;
 }
 
 .md-typeset .cs-pill {
@@ -288,6 +383,22 @@
   font-weight: 700;
 }
 
+.md-typeset .cs-version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--cs-accent) 40%, var(--cs-line));
+  border-radius: 999px;
+  padding: 0.22rem 0.75rem;
+  background: var(--cs-panel);
+  color: var(--cs-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* ── Flow strip ── */
+
 .md-typeset .cs-flow-strip {
   border-left: 4px solid var(--md-primary-fg-color);
   border-radius: 0.55rem;
@@ -296,35 +407,7 @@
   margin: 1rem 0 1.25rem;
 }
 
-.md-typeset .cs-operator-path {
-  border: 1px solid var(--cs-line);
-  border-radius: var(--cs-radius);
-  background:
-    linear-gradient(90deg, rgba(8, 145, 178, 0.08), transparent 72%),
-    var(--md-default-bg-color);
-  padding: 1rem 1.15rem;
-}
-
-.md-typeset .cs-before-after {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
-  margin: 1.25rem 0;
-}
-
-.md-typeset .cs-before-after > * {
-  border: 1px solid var(--cs-line);
-  border-radius: var(--cs-radius);
-  padding: 1rem 1.1rem;
-  background: var(--md-default-bg-color);
-}
-
-.md-typeset .cs-api-example {
-  border: 1px solid color-mix(in srgb, var(--cs-accent) 28%, var(--cs-line));
-  border-radius: var(--cs-radius);
-  background: linear-gradient(180deg, var(--cs-panel), transparent 140%);
-  padding: 1rem 1.15rem;
-}
+/* ── Tables ── */
 
 .md-typeset table:not([class]) th {
   background: var(--cs-panel-strong);
@@ -334,6 +417,8 @@
   white-space: nowrap;
 }
 
+/* ── Latch banner / callout ── */
+
 .md-typeset .latch-banner,
 .md-typeset .cs-callout {
   border: 1px solid color-mix(in srgb, var(--cs-accent) 36%, var(--cs-line));
@@ -341,6 +426,14 @@
   border-radius: var(--cs-radius) !important;
   background: linear-gradient(90deg, rgba(8, 145, 178, 0.10), transparent 70%) !important;
 }
+
+/* ── Note muted ── */
+
+.md-typeset .cs-note-muted {
+  color: var(--cs-muted);
+}
+
+/* ── API reference embed ── */
 
 .md-typeset #scalar-api-reference,
 .md-typeset #api-reference {
@@ -351,6 +444,91 @@
   overflow: hidden;
   background: var(--md-default-bg-color);
 }
+
+/* ── Mermaid diagrams ── */
+
+.md-typeset pre.mermaid svg,
+.md-typeset .mermaid svg {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* ── Composition spacing ── */
+
+.md-typeset .cs-card-grid + .cs-flow,
+.md-typeset .cs-operator-path + .admonition {
+  margin-top: 1rem;
+}
+
+/* ── Scenario / config-map / step-flow grids ── */
+
+.md-typeset .cs-scenario-grid,
+.md-typeset .cs-config-map,
+.md-typeset .cs-step-flow {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.1rem 0 1.5rem;
+}
+
+.md-typeset .cs-scenario-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.md-typeset .cs-config-map {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.md-typeset .cs-step-flow {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.md-typeset .cs-scenario,
+.md-typeset .cs-config-map > *,
+.md-typeset .cs-step-flow > * {
+  border: 1px solid var(--cs-line);
+  border-radius: 14px;
+  padding: 1rem 1.05rem;
+  background:
+    linear-gradient(180deg, var(--cs-panel), transparent 135%),
+    var(--md-default-bg-color);
+}
+
+.md-typeset .cs-step-flow > * {
+  min-height: 8rem;
+}
+
+.md-typeset .cs-step-flow span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  margin-bottom: 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cs-accent) 14%, var(--md-default-bg-color));
+  color: var(--cs-accent);
+  font-weight: 800;
+}
+
+.md-typeset .cs-step-flow strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--cs-ink);
+}
+
+.md-typeset .cs-card-title {
+  margin: 0 0 0.65rem !important;
+  color: var(--cs-ink);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.md-typeset .cs-scenario strong {
+  color: var(--cs-accent);
+}
+
+/* ── Responsive ── */
 
 @media (max-width: 42rem) {
   .md-typeset .cs-actions,
@@ -380,70 +558,4 @@
   .md-typeset .framework-card:hover {
     transform: none;
   }
-}
-
-/* Reusable docs component contract
- * Use .cs-doc-hero for page introductions, .cs-card-grid/.cs-card for scannable choices,
- * .cs-metric-grid/.cs-metric for numeric summaries, .cs-flow for ordered operator flows,
- * .cs-operator-path/.cs-path-option for quickstart path comparisons, and .cs-pill for compact state tags.
- * Avoid page-local <style> islands unless the component is truly one-off; prefer accessible text,
- * copyable code blocks, dark-mode-safe borders, responsive grids, and reduced-motion behavior.
- */
-.md-typeset .cs-pill-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0.8rem 0 0;
-}
-
-.md-typeset .cs-pill {
-  display: inline-block;
-  border: 1px solid color-mix(in srgb, var(--cs-accent) 35%, var(--cs-line));
-  border-radius: 999px;
-  padding: 0.16rem 0.58rem;
-  background: var(--md-code-bg-color);
-  color: var(--md-default-fg-color);
-  font-size: 0.78rem;
-  font-weight: 650;
-}
-
-.md-typeset .cs-flow,
-.md-typeset .cs-api-example {
-  border: 1px solid var(--cs-line);
-  border-left: 4px solid var(--cs-accent);
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
-  margin: 1rem 0;
-  background: linear-gradient(90deg, var(--cs-panel), transparent 78%);
-}
-
-.md-typeset .cs-operator-path,
-.md-typeset .cs-before-after {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-  gap: 1rem;
-  margin: 1.1rem 0 1.6rem;
-}
-
-.md-typeset .cs-path-option,
-.md-typeset .cs-before-after > * {
-  border: 1px solid var(--cs-line);
-  border-radius: var(--cs-radius);
-  padding: 1rem 1.1rem;
-  background: linear-gradient(180deg, var(--cs-panel), transparent 140%);
-}
-
-.md-typeset .cs-path-option--recommended {
-  border-color: color-mix(in srgb, var(--cs-accent-2) 50%, var(--cs-line));
-  box-shadow: 0 12px 30px rgba(22, 163, 74, 0.10);
-}
-
-.md-typeset .cs-path-option h3,
-.md-typeset .cs-before-after h3 {
-  margin-top: 0;
-}
-
-.md-typeset .cs-card-grid + .cs-flow,
-.md-typeset .cs-operator-path + .admonition {
-  margin-top: 1rem;
 }

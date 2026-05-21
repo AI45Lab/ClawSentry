@@ -1,0 +1,4305 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="管理 agent skill 供应链风险：admission scan、registry 生命周期、trust-list state、跨框架运行时绑定">
+      
+      
+      
+        <link rel="canonical" href="https://elroyper.github.io/ClawSentry/advanced/skill-trust/">
+      
+      
+        <link rel="prev" href="../../dashboard/">
+      
+      
+        <link rel="next" href="../rule-governance/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>技能信任与注册表 - ClawSentry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+SC:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Noto Sans SC";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/clawsentry-docs.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="ClawSentry" class="md-header__button md-logo" aria-label="ClawSentry" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ClawSentry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              技能信任与注册表
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="cyan"  aria-label="切换到浅色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="cyan"  aria-label="切换到深色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Elroyper/ClawSentry" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Elroyper/ClawSentry
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  首页
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  入门指南
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../integration/a3s-code/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  集成接入
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../configuration/configuration-overview/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  配置参考
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI 命令
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/overview/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  API 文档
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../decision-layers/l1-rules/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  安全决策引擎
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../dashboard/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Web 仪表板
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+    
+  
+  高级用法
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../operations/deployment/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  部署运维
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  更新日志
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ClawSentry" class="md-nav__button md-logo" aria-label="ClawSentry" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ClawSentry
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Elroyper/ClawSentry" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Elroyper/ClawSentry
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    入门指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    入门指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安装
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心概念
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    集成接入
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    集成接入
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/a3s-code/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    a3s-code 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/claude-code/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/codex/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Codex CLI 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/gemini-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gemini CLI 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/kimi-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kimi CLI 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/openclaw/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenClaw 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/latch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Latch 集成
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参考
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    配置参考
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/configuration-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置概览
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置模板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/env-vars/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    环境变量
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/session-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session scope 配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/detection-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    检测管线配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/policy-tuning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    策略调优
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/llm-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM 配置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI 命令
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 文档
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API 文档
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 概览
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    交互式 API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/validity-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 有效性报告
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/metric-dictionary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    指标字典
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    鉴权与安全
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    决策 / AHP 端点
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    报表 / SSE / L3 Advisory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/webhooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/models-errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    模型与错误码
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    安全决策引擎
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    安全决策引擎
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/l1-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    L1 规则引擎
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/l2-semantic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    L2 语义分析
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/l3-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    L3 审查 Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/l3-advisory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    L3 咨询审查
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/post-action/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-action 围栏
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/scope-restrictions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope 限制
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/trajectory-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    轨迹分析器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decision-layers/anti-bypass-guard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-bypass Guard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web 仪表板
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    高级用法
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    高级用法
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        技能信任与注册表
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        工作原理
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trust-list-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust-list 状态
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Trust-list 状态">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        允许的状态转换
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admission-scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admission Scan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#first-use-skill-package-review-fspr-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First-Use Skill Package Review (FSPR) Evidence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="First-Use Skill Package Review (FSPR) Evidence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contextual-recovery-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FSPR block 后的 contextual recovery routing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        运行时解析与 Invariant Violations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-binding-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime Binding 字段
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#first-use-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        首次使用准入策略
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#redaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        脱敏边界
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provenance-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance Evidence 字段
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capability-narrowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与 Capability Narrowing 的关系
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-cli-binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        跨框架运行时绑定
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#env-vars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        运行时环境变量
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI 参考
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI 参考">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skill-trust scan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-register" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skill-trust register
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-register-dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skill-trust register-dir
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operator-visible-grade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator-visible grade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator examples and boundaries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Operator examples and boundaries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#runtime-binding-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime binding examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fspr-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FSPR examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-narrowing-and-feedback-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability narrowing and feedback examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rule-governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    规则治理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义 L3 Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom-analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义 L2 Analyzer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义 Adapter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pattern-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自进化模式库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../attack-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    攻击模式定制
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../embedding-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    向量相似度接入 (D6)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    部署运维
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    部署运维
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    生产部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/benchmark-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark 模式
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/release-progress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    发布进度
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    故障排查
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    更新日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        技能信任与注册表
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        工作原理
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trust-list-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust-list 状态
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Trust-list 状态">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        允许的状态转换
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admission-scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admission Scan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#first-use-skill-package-review-fspr-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First-Use Skill Package Review (FSPR) Evidence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="First-Use Skill Package Review (FSPR) Evidence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contextual-recovery-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FSPR block 后的 contextual recovery routing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        运行时解析与 Invariant Violations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-binding-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime Binding 字段
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#first-use-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        首次使用准入策略
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#redaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        脱敏边界
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provenance-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance Evidence 字段
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capability-narrowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与 Capability Narrowing 的关系
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-cli-binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        跨框架运行时绑定
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#env-vars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        运行时环境变量
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI 参考
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI 参考">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skill-trust scan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-register" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skill-trust register
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-register-dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skill-trust register-dir
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operator-visible-grade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator-visible grade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator examples and boundaries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Operator examples and boundaries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#runtime-binding-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime binding examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fspr-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FSPR examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-narrowing-and-feedback-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability narrowing and feedback examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    高级用法
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Skill Trust / Registry</h1>
+
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">高级功能 · 技能供应链安全</div>
+<h2 id="_1">技能信任与注册表<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>Skill Trust 把本地 skill 包的身份、来源、hash、别名和 admission scan 结果接入 Gateway，变成可审计的运行时上下文。低信任 skill 不能仅凭文档声称自己是 canonical，也不能通过近名、改名或 provenance label 绕过策略。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">v0.8.3 contextual recovery</span>
+<span class="cs-pill">v0.8.0 runtime binding</span>
+<span class="cs-pill">六框架 surface acceptance</span>
+<span class="cs-pill">trust-mvp-v1 指纹</span>
+<span class="cs-pill">默认 audit-only</span></p>
+</div>
+</div>
+<h2 id="how-it-works">工作原理<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<div class="cs-step-flow">
+<div>
+<p><span>1</span>
+<strong>扫描（scan）</strong>
+对 skill 根目录运行 deterministic admission scan：生成 <code>SKILL.md</code>、<code>scripts</code>、<code>references</code>、<code>data</code> 的 content hash，提取 frontmatter identity 和 provenance labels，产出 <code>AdmissionReport</code>。</p>
+</div>
+<div>
+<p><span>2</span>
+<strong>注册（register）</strong>
+根据 admission risk 决定 list state，将 <code>SkillRegistryRecord</code> 写入 registry JSON；每次变更生成一条可审计的 <code>SkillTrustTransitionEvent</code>。</p>
+</div>
+<div>
+<p><span>3</span>
+<strong>运行时绑定</strong>
+Adapter / harness 只收集 native skill name、shell skill path、runtime root、runner contract 等 raw evidence；Gateway 用 Gateway-owned registry/runtime metadata 绑定为 <code>RuntimeSkillRef</code> 和显式 runtime status。</p>
+</div>
+<div>
+<p><span>4</span>
+<strong>策略决策</strong>
+Gateway 调用 <code>resolve_skill_trust()</code> 做 identity / lineage / hash / mirror / content 匹配，产出 <code>SkillTrustContext</code>；policy 按 runtime binding、trust-list state、FSPR/post-action session evidence 和 profile action 生成 canonical decision。</p>
+</div>
+<div>
+<p><span>5</span>
+<strong>Ledger 与事后证据</strong>
+每次 observed skill use 写入 replay-safe <code>skill_use_ledger</code>；FSPR 和 L2/L3 可以复用这些 bounded evidence。v0.8.2 起不再提供 artifact label 与 ledger 的 post-action provenance 对账器。</p>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">v0.8.0 验收边界</p>
+<p>六框架 surface acceptance 覆盖 Gateway UDS + adapter/harness 决策路径上的 <code>runtime_path_disallowed</code>、blocked ledger entry 和 agent-facing feedback。它不是外部 CLI binary harbor smoke，也不是 benchmark leaderboard 或 ASR/TSR/TFR 结论。</p>
+</div>
+<h2 id="trust-list-states">Trust-list 状态<a class="headerlink" href="#trust-list-states" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th><code>list_state</code></th>
+<th><code>trust_level</code></th>
+<th><code>status</code></th>
+<th>含义</th>
+<th>默认 Gateway 动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>allowlist</code></td>
+<td><code>trusted</code></td>
+<td><code>trusted</code></td>
+<td>已登记，经 policy 或 operator 认可</td>
+<td><code>audit</code></td>
+</tr>
+<tr>
+<td><code>greylist</code></td>
+<td><code>local_unreviewed</code></td>
+<td><code>local_unreviewed</code></td>
+<td>已知但需复核或更严格 profile</td>
+<td><code>force_l2</code></td>
+</tr>
+<tr>
+<td><code>blacklist</code></td>
+<td><code>untrusted</code></td>
+<td><code>quarantined</code></td>
+<td>明确禁用</td>
+<td><code>block</code></td>
+</tr>
+<tr>
+<td><code>revoked</code></td>
+<td><code>untrusted</code></td>
+<td><code>revoked</code></td>
+<td>曾可信，已撤销</td>
+<td><code>block</code></td>
+</tr>
+<tr>
+<td><code>disabled</code></td>
+<td>（保留原值）</td>
+<td><code>local_unreviewed</code></td>
+<td>临时禁用，不清除 trust 历史</td>
+<td>按 first-use 配置</td>
+</tr>
+<tr>
+<td><code>unlisted</code></td>
+<td><code>unknown</code></td>
+<td><code>unknown</code></td>
+<td>尚未注册</td>
+<td>按 first-use 配置</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">allowlist 升级条件</p>
+<p><code>allowlist</code> 仅接受以下三种 <code>reason_code</code>：<code>clean_admission_report</code>（admission risk = low）、<code>trusted_migration</code>（需 evidence hashes）、<code>operator_override</code>（需 actor_type = <code>operator</code> 或 <code>manual_migration</code>）。其他 reason_code 或高风险 scan 未带 operator_override 时，注册会报错拒绝。</p>
+</div>
+<h3 id="_2">允许的状态转换<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>起始状态</th>
+<th>可转移至</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unlisted</code></td>
+<td><code>greylist</code>、<code>allowlist</code>、<code>blacklist</code>、<code>disabled</code></td>
+</tr>
+<tr>
+<td><code>greylist</code></td>
+<td><code>allowlist</code>、<code>blacklist</code>、<code>revoked</code>、<code>disabled</code></td>
+</tr>
+<tr>
+<td><code>allowlist</code></td>
+<td><code>greylist</code>、<code>blacklist</code>、<code>revoked</code>、<code>disabled</code></td>
+</tr>
+<tr>
+<td><code>blacklist</code></td>
+<td><code>greylist</code>（需 operator）、<code>revoked</code>、<code>disabled</code></td>
+</tr>
+<tr>
+<td><code>revoked</code></td>
+<td><code>allowlist</code>、<code>greylist</code>（需 trusted_migration + operator）</td>
+</tr>
+<tr>
+<td><code>disabled</code></td>
+<td><code>allowlist</code>、<code>greylist</code>、<code>blacklist</code></td>
+</tr>
+</tbody>
+</table>
+<pre class="mermaid"><code>stateDiagram-v2
+    direction LR
+    [*] --&gt; unlisted
+
+    unlisted --&gt; greylist
+    unlisted --&gt; allowlist
+    unlisted --&gt; blacklist
+    unlisted --&gt; disabled
+
+    greylist --&gt; allowlist
+    greylist --&gt; blacklist
+    greylist --&gt; revoked
+    greylist --&gt; disabled
+
+    allowlist --&gt; greylist
+    allowlist --&gt; blacklist
+    allowlist --&gt; revoked
+    allowlist --&gt; disabled
+
+    blacklist --&gt; greylist : 需要 operator 授权
+    blacklist --&gt; revoked
+    blacklist --&gt; disabled
+
+    revoked --&gt; allowlist : 需要 trusted_migration\n+ operator
+    revoked --&gt; greylist : 需要 trusted_migration\n+ operator
+
+    disabled --&gt; allowlist
+    disabled --&gt; greylist
+    disabled --&gt; blacklist
+
+    note right of revoked
+        单向终态：无条件出口
+        恢复需要 trusted_migration
+        + operator 双重授权
+    end note</code></pre>
+<h2 id="admission-scan">Admission Scan<a class="headerlink" href="#admission-scan" title="Permanent link">&para;</a></h2>
+<p><code>AdmissionScanner</code> 对单个 skill 根目录运行以下检查，产出 <code>admission_risk</code>（<code>low</code> / <code>medium</code> / <code>high</code> / <code>critical</code> / <code>unknown</code>）：</p>
+<table>
+<thead>
+<tr>
+<th>检查族（<code>finding_family</code>）</th>
+<th>触发条件</th>
+<th>默认严重级别</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hash</code></td>
+<td>成功捕获 content hash（始终产生）</td>
+<td><code>low</code></td>
+</tr>
+<tr>
+<td><code>alias</code></td>
+<td>frontmatter alias 规范化后与 canonical name 近似，或跨 skill 近名重复</td>
+<td><code>medium</code>（跨 skill）、<code>low</code>（单 skill）</td>
+</tr>
+<tr>
+<td><code>control_language</code></td>
+<td>SKILL.md 包含 <code>canonical</code>、<code>renamed</code>、<code>deprecated</code>、<code>priority</code>、<code>prefer</code> 等路由语言</td>
+<td><code>medium</code></td>
+</tr>
+<tr>
+<td><code>provenance</code></td>
+<td>SKILL.md 包含 <code>tool_called</code>、<code>provenance</code>、<code>source label</code>、<code>registry label</code> 等</td>
+<td><code>medium</code></td>
+</tr>
+<tr>
+<td><code>description_consistency</code></td>
+<td>脚本入口未在 SKILL.md 中声明；输出 label 与声明名称不一致；有排序/过滤逻辑但未声明；读取 data/fixture 但未在 SKILL.md 中声明</td>
+<td><code>medium</code></td>
+</tr>
+<tr>
+<td><code>cross_skill_overlap</code></td>
+<td>多个 skill 共享同一 data 目录 hash</td>
+<td><code>medium</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>scan_many()</code> 还会跨 skill 根目录检测 hyphen/underscore 重复和 near-name 重复，并将额外 finding 注入各自的 report。</p>
+<h2 id="first-use-skill-package-review-fspr-evidence">First-Use Skill Package Review (FSPR) Evidence<a class="headerlink" href="#first-use-skill-package-review-fspr-evidence" title="Permanent link">&para;</a></h2>
+<p>FSPR 是 package-level evidence，不替代 runtime binding review。确定性 scanner 会把 finding 归一化到以下 <code>finding_family</code>：<code>semantic_integrity</code>、<code>supply_chain</code>、<code>secret_exposure</code>、<code>data_exfiltration</code>、<code>injection_resistance</code>、<code>permission_scope</code>、<code>destructive_potential</code>、<code>resource_discipline</code>、<code>persistence</code>。每条 finding 保留旧字段，同时补充 <code>rule_id</code>、<code>severity</code>、<code>confidence</code>、<code>language</code>、<code>evidence_refs</code>、<code>declared_capabilities</code>、<code>observed_capabilities</code>、<code>scanner_version</code> 和 <code>budget_truncated</code>。</p>
+<p>Provider-backed FSPR 复用 L2/L3 reviewer 的 <code>CS_LLM_PROVIDER</code>、<code>CS_LLM_MODEL</code>、<code>CS_LLM_BASE_URL</code> 和运行时 <code>CS_LLM_API_KEY</code>，但这些变量只是 provider 配置。执行 provider-backed FSPR 还必须显式设置 <code>CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED=true</code>；pre-use 同步 provider 路径还必须命中 <code>CS_SKILL_TRUST_FSPR_PROVIDER_SYNC_PROFILES</code>（默认 <code>strict,benchmark</code>）。Provider 输出中的 <code>recommended_action</code>、<code>recommended_policy_action</code> 和 <code>recommended_review_tier</code> 会降级并被 policy 忽略。</p>
+<p>ReadContentEvidence 复用 Content Evidence envelope，而不是创建第二套 schema。它只读取 Gateway-owned approved roots 中的 native read targets；请求侧 roots 和入站 <code>content_evidence</code> 都不能扩大读取边界。当前规则包括 <code>read_content_prompt_injection</code>、<code>read_content_hidden_html_instruction</code>、<code>read_content_zero_width_or_bidi</code>、<code>read_content_markdown_beacon</code>、<code>read_content_data_uri_or_base64_payload</code>、<code>sensitive_read_path</code>、<code>credential_read_content_skipped</code>、<code>read_content_execution_or_network_instruction</code>、<code>read_content_unsupported_binary</code> 和 <code>read_content_oversize</code>。敏感路径先按路径产生 finding，不读取正文。</p>
+<p>ToolSemanticRegistry 当前仅 shadow-mode 记录 native tool 语义，覆盖 Codex、Claude Code、A3S、Gemini、Kimi、OpenClaw 和 MCP 的初始映射。策略和 effect 归一化仍由既有实现生效；operator 配置的 <code>CS_TOOL_PERMISSION_GROUP_OVERRIDES</code> 继续优先于 registry defaults。</p>
+<h3 id="contextual-recovery-routing">FSPR block 后的 contextual recovery routing<a class="headerlink" href="#contextual-recovery-routing" title="Permanent link">&para;</a></h3>
+<p>v0.8.3 以后，FSPR 阻断 toxic 或 inconsistent skill package 后，Gateway 会把“安全恢复动作”和“继续使用被阻断 skill lineage”区分开处理。</p>
+<table>
+<thead>
+<tr>
+<th>情况</th>
+<th>Gateway 行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>继续读取、执行或复用被 FSPR 阻断的 skill package / lineage</td>
+<td>保持 <code>block</code>；blocked lineage 是硬边界</td>
+</tr>
+<tr>
+<td>对同一危险效果做 exact repeat、normalized repeat 或 denied-effect repeat</td>
+<td>保持 anti-bypass hard block</td>
+</tr>
+<tr>
+<td>创建与被阻断 skill 无关的安全 fallback artifact，且 effect 绑定到当前 workspace</td>
+<td>生成 <code>contextual_review</code> routing intent，允许 L2/L3 对该 effect 精确复核</td>
+</tr>
+<tr>
+<td>无 target、target 在 workspace 外、或仅靠 cwd 前缀伪装 workspace</td>
+<td>不进入 contextual clearance；按常规风险或 hard block 处理</td>
+</tr>
+</tbody>
+</table>
+<p><code>contextual_review</code> 只是一条 Gateway-owned routing intent，不是 allowlist，也不是对 FSPR verdict 的撤销。L2/L3 的 clearance 必须绑定到当前 action 的 normalized effect、target boundary 和 authority metadata；它不能清除 <code>fspr_package_review</code>、<code>runtime_binding_identity_conflict</code>、blocked lineage 或 anti-bypass denied-effect evidence。</p>
+<p>Replay 与 protected benchmark evidence 只保留 hash、状态、routing source、canonical decision 和脱敏摘要。原始 skill root path、host-only proxy secret、raw package body 和 L3 trace 不进入公开 replay payload。</p>
+<h2 id="runtime-resolution">运行时解析与 Invariant Violations<a class="headerlink" href="#runtime-resolution" title="Permanent link">&para;</a></h2>
+<p><code>resolve_skill_trust()</code> 将请求侧 raw metadata 解析为 <code>SkillTrustContext</code>。<code>registry_status</code> 取值：</p>
+<table>
+<thead>
+<tr>
+<th><code>registry_status</code></th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>matched</code></td>
+<td>唯一命中，且别名类型为 <code>exact</code> / <code>hyphen_underscore</code> / <code>singular_plural</code> / <code>near_name</code></td>
+</tr>
+<tr>
+<td><code>ambiguous</code></td>
+<td>多条 registry 记录命中</td>
+</tr>
+<tr>
+<td><code>hash_mismatch</code></td>
+<td>命中记录但 content hash 不一致</td>
+</tr>
+<tr>
+<td><code>unknown</code></td>
+<td>有 <code>presented_name</code> 但找不到记录</td>
+</tr>
+<tr>
+<td><code>unbound</code></td>
+<td>无 <code>presented_name</code>，无法绑定</td>
+</tr>
+</tbody>
+</table>
+<p>产出的 <code>invariant_violations</code> 列表可包含以下值：</p>
+<ul>
+<li><code>runtime_registry_claim_untrusted</code> — 请求侧 registry 记录不被 Gateway 信任</li>
+<li><code>request_skill_trust_raw_untrusted</code> — 请求侧 skill_trust_raw 字段不被信任</li>
+<li><code>provenance_label_conflict</code> — provenance claim 与 canonical name 不一致</li>
+<li><code>unknown_skill_provenance_rewrite</code> — 未知 skill 携带 canonical_name_claim 或 routing_claim</li>
+<li><code>ambiguous_skill_alias</code> — 多条 registry 记录匹配</li>
+<li><code>skill_hash_mismatch</code> — content hash 与 registry 不符</li>
+<li><code>blacklisted_skill_identity</code> — skill 在 blacklist</li>
+<li><code>revoked_skill_identity</code> — skill 已 revoked</li>
+<li><code>greylisted_skill_identity</code> — skill 在 greylist（admission_risk 最低升为 <code>medium</code>）</li>
+<li><code>low_trust_redefined_canonical_tool</code> — 低信任 skill 试图重新定义 canonical tool</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Hash mismatch 与 revoked 行为</p>
+<p><code>skill_hash_mismatch</code> 将 <code>admission_risk</code> 提升至 <code>high</code>；<code>revoked_skill_identity</code> 提升至 <code>critical</code>。两者均不会因缺少 hash 证据而单独触发（见下方脱敏边界）。</p>
+</div>
+<h2 id="runtime-binding-fields">Runtime Binding 字段<a class="headerlink" href="#runtime-binding-fields" title="Permanent link">&para;</a></h2>
+<p>Gateway 只用 Gateway-owned registry/runtime metadata 强化 Skill Trust。Adapter 观察到的 skill path/name 会先绑定成显式 <code>runtime_path_status</code>，再进入 risk snapshot、policy、ledger 和 replay。Replay-safe 字段包括：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>runtime_path_status</code></td>
+<td>运行时路径或名称绑定状态，例如 <code>verified_source</code>、<code>verified_mirror</code>、<code>verified_name</code>、<code>name_only_unverified</code>、<code>path_fragment_unverified</code>、<code>disallowed</code>、<code>ambiguous_runtime_source</code>、<code>absent</code></td>
+</tr>
+<tr>
+<td><code>runtime_root_path_hash</code></td>
+<td>规范化 runtime root path 的 SHA-256 路径哈希；这是路径身份，不是内容完整性哈希</td>
+</tr>
+<tr>
+<td><code>runtime_content_status</code></td>
+<td>mirror 内容或 runner 合同状态，例如 <code>content_verified</code>、<code>trusted_runner_immutable</code>、<code>content_unverified</code>、<code>content_mismatch</code>、<code>not_applicable</code></td>
+</tr>
+<tr>
+<td><code>metadata_record_id</code></td>
+<td>Gateway-owned metadata record 主键，用于 same-name multi-source disambiguation、ledger 和 provenance validation</td>
+</tr>
+<tr>
+<td><code>runtime_evidence_kind</code></td>
+<td>观测来源类别，例如 native skill call、shell skill path 或 path fragment</td>
+</tr>
+</tbody>
+</table>
+<p><code>verified_source</code> 表示 runtime root 与登记的 source root 一致；<code>verified_mirror</code> 还要求该 mirror root 在 Gateway-owned metadata 中显式列出，并通过内容验证或受信 runner contract。<code>ambiguous_runtime_source</code> 和 <code>disallowed</code> 是 decision-affecting evidence；<code>path_fragment_unverified</code> 和 <code>name_only_unverified</code> 只能提供不确定性证据，不能让请求侧 metadata 升级为 trusted。</p>
+<p>Controlled benchmark runners add explicit mirror parents while generating metadata. For Codex benchmark containers this includes <code>/workspace/.codex/skills/&lt;name&gt;</code>, <code>$CODEX_HOME/skills/&lt;name&gt;</code>, and <code>$HOME/.agents/skills/&lt;name&gt;</code>. The runner may mirror files into those roots, but Gateway still re-binds the observed runtime path and verifies content before treating a mirror as trusted.</p>
+<h2 id="first-use-policies">首次使用准入策略<a class="headerlink" href="#first-use-policies" title="Permanent link">&para;</a></h2>
+<p>当 skill 处于 <code>unlisted</code>、<code>disabled</code> 或 <code>unknown</code>/<code>unbound</code> 时，Gateway 按以下 profile 配置决定 admission lifecycle 策略：</p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>环境变量</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>normal</td>
+<td><code>CS_SKILL_TRUST_FIRST_USE_NORMAL_POLICY</code></td>
+<td><code>audit_only</code></td>
+</tr>
+<tr>
+<td>permissive</td>
+<td><code>CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_POLICY</code></td>
+<td><code>audit_only</code></td>
+</tr>
+<tr>
+<td>strict</td>
+<td><code>CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY</code></td>
+<td><code>defer_for_review</code></td>
+</tr>
+<tr>
+<td>benchmark</td>
+<td><code>CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY</code></td>
+<td><code>scan_sync</code></td>
+</tr>
+</tbody>
+</table>
+<p>Runtime binding violations use the same action vocabulary through a per-condition profile matrix. The profile-level fields below are retained for config compatibility and visibility, but condition-specific runtime evidence is enforced by the per-condition fields and cannot be downgraded by these legacy knobs:</p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>环境变量</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>normal</td>
+<td><code>CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION</code></td>
+<td><code>force_l3</code></td>
+</tr>
+<tr>
+<td>permissive</td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION</code></td>
+<td><code>audit</code></td>
+</tr>
+<tr>
+<td>strict</td>
+<td><code>CS_SKILL_TRUST_RUNTIME_STRICT_ACTION</code></td>
+<td><code>block</code></td>
+</tr>
+<tr>
+<td>benchmark</td>
+<td><code>CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION</code></td>
+<td><code>block</code></td>
+</tr>
+</tbody>
+</table>
+<p>Configure runtime binding through the per-condition action fields:</p>
+<table>
+<thead>
+<tr>
+<th>Runtime condition</th>
+<th>normal</th>
+<th>strict</th>
+<th>benchmark</th>
+<th>permissive</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>disallowed runtime path</td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION=defer</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_STRICT_ACTION=block</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_BENCHMARK_ACTION=block</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_PERMISSIVE_ACTION=audit</code></td>
+</tr>
+<tr>
+<td>ambiguous runtime source</td>
+<td><code>CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_NORMAL_ACTION=defer</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION=defer</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_BENCHMARK_ACTION=block</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_PERMISSIVE_ACTION=audit</code></td>
+</tr>
+<tr>
+<td>unverified runtime path/name</td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_NORMAL_ACTION=audit</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_STRICT_ACTION=defer</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_BENCHMARK_ACTION=audit</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_PATH_UNVERIFIED_PERMISSIVE_ACTION=audit</code></td>
+</tr>
+<tr>
+<td>unverified mirror content</td>
+<td><code>CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_NORMAL_ACTION=force_l3</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_STRICT_ACTION=defer</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_BENCHMARK_ACTION=defer</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_CONTENT_UNVERIFIED_PERMISSIVE_ACTION=audit</code></td>
+</tr>
+<tr>
+<td>mirror content mismatch</td>
+<td><code>CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION=defer</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_STRICT_ACTION=block</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_BENCHMARK_ACTION=block</code></td>
+<td><code>CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_PERMISSIVE_ACTION=audit</code></td>
+</tr>
+</tbody>
+</table>
+<p>Mirror content verification is Gateway-owned and bounded. Use <code>CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES</code>, <code>CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES</code>, and <code>CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS</code> to cap files, per-file bytes, and elapsed hashing time. If the budget is exhausted, the mirror becomes <code>content_unverified</code>; path membership alone never upgrades it to trusted.</p>
+<p>可配置动作：</p>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>audit</code></td>
+<td>记录 evidence，不改变当前判决</td>
+</tr>
+<tr>
+<td><code>force_l2</code></td>
+<td>要求语义分析参与复核</td>
+</tr>
+<tr>
+<td><code>force_l3</code></td>
+<td>要求 L3 review agent 参与（触发 <code>skill-trust-audit</code> skill）</td>
+</tr>
+<tr>
+<td><code>defer</code></td>
+<td>进入 operator approval / DEFER path</td>
+</tr>
+<tr>
+<td><code>block</code></td>
+<td>直接阻断首次或不可信 skill 使用</td>
+</tr>
+</tbody>
+</table>
+<p><code>FirstUseScanState.state</code> 可取值：<code>scan_not_started</code>、<code>scan_running_sync</code>、<code>scan_completed</code>、<code>scan_pending_budget_exhausted</code>、<code>scan_failed</code>。</p>
+<pre class="mermaid"><code>flowchart TD
+    A([触发首次使用]) --&gt; B[计算 skill_hash\ncontent hash + name]
+    B --&gt; C[在 registry 中查找]
+    C --&gt; D{registry_status}
+
+    D --&gt;|matched| E[命中唯一记录\nalias 类型匹配]
+    D --&gt;|ambiguous| F[多条记录命中\nambiguous_skill_alias violation]
+    D --&gt;|hash_mismatch| G[命中记录但\ncontent hash 不一致\nskill_hash_mismatch violation]
+    D --&gt;|unknown| H[有 presented_name\n但无 registry 记录]
+    D --&gt;|unbound| I[无 presented_name\n无法绑定]
+
+    E --&gt; J{trust_list_state}
+    J --&gt;|allowlist| K[admission_risk: low\n动作: audit]
+    J --&gt;|greylist| L[admission_risk: medium\n动作: force_l2\ngreylisted_skill_identity violation]
+    J --&gt;|blacklist| M[admission_risk: high\n动作: block\nblacklisted_skill_identity violation]
+    J --&gt;|revoked| N[admission_risk: critical\n动作: block\nrevoked_skill_identity violation]
+    J --&gt;|disabled / unlisted| O[admission_risk: 由 profile 决定\n动作: 按 first-use profile]
+
+    F --&gt; P[admission_risk: medium\n动作: 按 profile 配置]
+    G --&gt; Q[admission_risk 提升至 high\n动作: 按 profile 配置]
+
+    H --&gt; R[admission_risk: unknown\n动作: 按 first-use profile\nnormal/permissive → audit\nstrict → defer / benchmark → block]
+    I --&gt; S[admission_risk: unknown\n动作: 按 first-use profile\nnormal/permissive → audit\nstrict → defer / benchmark → block]</code></pre>
+<h2 id="redaction">脱敏边界<a class="headerlink" href="#redaction" title="Permanent link">&para;</a></h2>
+<p>Gateway 不信任请求侧的 raw skill metadata。以下字段被清洗或降级，不进入 operator-approved 路径：</p>
+<ul>
+<li>原始 skill root 路径及 path-like canonical 字段</li>
+<li>任意 raw package 内容</li>
+<li>framework / scope 注入值（仅用于审计，不参与 allowlist 决策）</li>
+<li><code>_registry_records_untrusted</code> 为 true 时，所有 runtime registry claim</li>
+</ul>
+<p>以下字段在清洗后保留用于审计：</p>
+<ul>
+<li><code>presented_name</code>、<code>framework</code>、<code>scope</code></li>
+<li><code>registry_status</code>、<code>trust_list_state</code>、<code>admission_risk</code></li>
+<li><code>invariant_violations</code>、<code>admission_scan_id</code></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Session replay 安全</p>
+<p>Session replay payload 只保留 replay-safe 的 identity labels 和 content hash；skill root 路径、path-like canonical fields、framework/scope 注入值不进入公开 replay payload。</p>
+</div>
+<h2 id="provenance-evidence">Provenance Evidence 字段<a class="headerlink" href="#provenance-evidence" title="Permanent link">&para;</a></h2>
+<p><code>SkillRegistryRecord</code> 中的 provenance 证据字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>content_hashes</code></td>
+<td><code>SKILL.md</code>、<code>scripts</code>、<code>references</code>、<code>data</code> 的 SHA-256 hash</td>
+</tr>
+<tr>
+<td><code>skill_root_hash</code></td>
+<td>整个 skill 根目录的递归 SHA-256 hash</td>
+</tr>
+<tr>
+<td><code>checksum_evidence</code></td>
+<td>供 L3 / 审计复用的 checksum 摘要</td>
+</tr>
+<tr>
+<td><code>sbom</code></td>
+<td>轻量组件清单，列出 skill 内容组件及 hash</td>
+</tr>
+<tr>
+<td><code>signature_evidence</code></td>
+<td>签名/验签状态；未配置时固定为 <code>{"state": "not_configured"}</code>，不伪造通过</td>
+</tr>
+<tr>
+<td><code>advisory_evidence</code></td>
+<td>未来接入 signed advisory feed 的有界证据列表</td>
+</tr>
+</tbody>
+</table>
+<p>符号链接文件不参与内容 hash，改为记录为 <code>symlink-skipped:&lt;name&gt;</code>。超过 1 MB 的文件记录为 <code>large-file-skipped:&lt;name&gt;:&lt;size&gt;</code>。</p>
+<h2 id="capability-narrowing">与 Capability Narrowing 的关系<a class="headerlink" href="#capability-narrowing" title="Permanent link">&para;</a></h2>
+<p>Skill Trust 是 <strong>identity / lineage evidence</strong>；Capability Narrowing 是基于风险的 <strong>能力收紧</strong>。两者独立工作，但风险信号可以联动：</p>
+<ul>
+<li><strong><code>CS_CAPABILITY_NARROWING_ENABLED=true</code></strong> 时，高 session 风险可自动应用更窄的 <code>SessionScopeProfile</code></li>
+<li>Skill Trust 的 <strong><code>trust_list_state</code></strong> 和 <strong><code>invariant_violations</code></strong> 可作为会话风险的输入，触发 MCP server/tool 或外部域名的范围限制</li>
+<li>Capability Narrowing 不会静默改写历史 canonical decision，也不会改变 skill registry 记录本身</li>
+</ul>
+<h2 id="cross-cli-binding">跨框架运行时绑定<a class="headerlink" href="#cross-cli-binding" title="Permanent link">&para;</a></h2>
+<p><code>init --setup</code> 命令将以下 env 注入各框架 hook：</p>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th><code>CS_SKILL_TRUST_REGISTRY_PATH</code></th>
+<th><code>CS_SKILL_TRUST_METADATA_PATH</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>codex</code></td>
+<td>写入</td>
+<td>写入</td>
+</tr>
+<tr>
+<td><code>claude-code</code></td>
+<td>写入</td>
+<td>写入</td>
+</tr>
+<tr>
+<td><code>kimi-cli</code></td>
+<td>写入（+ <code>CS_KIMI_SKILLS_DIR</code>）</td>
+<td>写入</td>
+</tr>
+<tr>
+<td><code>gemini-cli</code></td>
+<td>写入</td>
+<td>写入</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">兜底路径</p>
+<p>若 <code>CS_SKILL_TRUST_METADATA_PATH</code> 指向的文件不存在，harness 从当前 <code>cwd</code> 向上查找 <code>.clawsentry/skill-trust-runtime.json</code>。</p>
+</div>
+<h2 id="env-vars">运行时环境变量<a class="headerlink" href="#env-vars" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 文件路径</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">CS_SKILL_TRUST_REGISTRY_PATH</span><span class="o">=</span>.clawsentry/skill-trust-registry.json
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nv">CS_SKILL_TRUST_METADATA_PATH</span><span class="o">=</span>.clawsentry/skill-trust-runtime.json
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># First-use admission policy（可选值：audit_only | scan_sync | scan_async_defer | defer_for_review | block_until_reviewed）</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nv">CS_SKILL_TRUST_FIRST_USE_NORMAL_POLICY</span><span class="o">=</span>audit_only
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nv">CS_SKILL_TRUST_FIRST_USE_PERMISSIVE_POLICY</span><span class="o">=</span>audit_only
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nv">CS_SKILL_TRUST_FIRST_USE_STRICT_POLICY</span><span class="o">=</span>defer_for_review
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nv">CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY</span><span class="o">=</span>scan_sync
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># Runtime binding 动作（可选值：audit | force_l2 | force_l3 | defer | block）</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="nv">CS_SKILL_TRUST_RUNTIME_NORMAL_ACTION</span><span class="o">=</span>force_l3
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nv">CS_SKILL_TRUST_RUNTIME_PERMISSIVE_ACTION</span><span class="o">=</span>audit
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nv">CS_SKILL_TRUST_RUNTIME_STRICT_ACTION</span><span class="o">=</span>block
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="nv">CS_SKILL_TRUST_RUNTIME_BENCHMARK_ACTION</span><span class="o">=</span>block
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="nv">CS_SKILL_TRUST_RUNTIME_PATH_DISALLOWED_NORMAL_ACTION</span><span class="o">=</span>defer
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nv">CS_SKILL_TRUST_RUNTIME_SOURCE_AMBIGUOUS_STRICT_ACTION</span><span class="o">=</span>defer
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="nv">CS_SKILL_TRUST_RUNTIME_CONTENT_MISMATCH_NORMAL_ACTION</span><span class="o">=</span>defer
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="nv">CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES</span><span class="o">=</span><span class="m">200</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="nv">CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES</span><span class="o">=</span><span class="m">1048576</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="nv">CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS</span><span class="o">=</span><span class="m">1000</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="c1"># First-Use Skill Package Review（FSPR）</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="nv">CS_SKILL_TRUST_FSPR_ENABLED</span><span class="o">=</span><span class="nb">false</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="nv">CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED</span><span class="o">=</span><span class="nb">false</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="nv">CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED</span><span class="o">=</span><span class="nb">false</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="nv">CS_SKILL_TRUST_FSPR_ROLE_SET</span><span class="o">=</span>default
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="nv">CS_SKILL_TRUST_FSPR_TIMEOUT_MS</span><span class="o">=</span><span class="m">120000</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="nv">CS_SKILL_TRUST_FSPR_CACHE_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="nv">CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED</span><span class="o">=</span><span class="nb">false</span>
+</span></code></pre></div>
+<h2 id="cli-reference">CLI 参考<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h2>
+<h3 id="skill-trust-scan"><code>skill-trust scan</code><a class="headerlink" href="#skill-trust-scan" title="Permanent link">&para;</a></h3>
+<p>扫描单个 skill 根目录，产出 <code>AdmissionReport</code>。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>scan<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>--skill-root<span class="w"> </span>PATH<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="o">[</span>--output<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="o">[</span>--json<span class="o">]</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>必需</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--skill-root</code></td>
+<td>是</td>
+<td>包含 <code>SKILL.md</code> 的 skill 目录路径</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>否</td>
+<td>将报告写入指定 JSON 文件</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>否</td>
+<td>将结果以 JSON 格式打印到 stdout</td>
+</tr>
+</tbody>
+</table>
+<h3 id="skill-trust-register"><code>skill-trust register</code><a class="headerlink" href="#skill-trust-register" title="Permanent link">&para;</a></h3>
+<p>扫描并将单个 skill 写入 registry，生成 transition event。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>register<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--skill-root<span class="w"> </span>PATH<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--registry<span class="w"> </span>PATH<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="o">[</span>--framework<span class="w"> </span><span class="o">{</span>codex<span class="p">|</span>claude-code<span class="p">|</span>kimi-cli<span class="p">|</span>gemini-cli<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="o">[</span>--scope<span class="w"> </span><span class="o">{</span>workspace<span class="p">|</span>user_home<span class="p">|</span>project<span class="p">|</span>global<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="o">[</span>--list-state<span class="w"> </span><span class="o">{</span>auto<span class="p">|</span>allowlist<span class="p">|</span>greylist<span class="p">|</span>blacklist<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="o">[</span>--operator-override<span class="w"> </span>OVERRIDE_ID<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="o">[</span>--json<span class="o">]</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>必需</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--skill-root</code></td>
+<td>是</td>
+<td>—</td>
+<td>skill 目录路径</td>
+</tr>
+<tr>
+<td><code>--registry</code></td>
+<td>是</td>
+<td>—</td>
+<td>registry JSON 文件路径（不存在时自动创建）</td>
+</tr>
+<tr>
+<td><code>--framework</code></td>
+<td>否</td>
+<td><code>codex</code></td>
+<td>skill 所属框架</td>
+</tr>
+<tr>
+<td><code>--scope</code></td>
+<td>否</td>
+<td><code>workspace</code></td>
+<td>注册范围</td>
+</tr>
+<tr>
+<td><code>--list-state</code></td>
+<td>否</td>
+<td><code>auto</code></td>
+<td><code>auto</code> 时：admission risk = low → <code>allowlist</code>，否则 → <code>greylist</code></td>
+</tr>
+<tr>
+<td><code>--operator-override</code></td>
+<td>否</td>
+<td>—</td>
+<td>高风险 scan 强制 allowlist 时必须提供的 operator review ID</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>否</td>
+<td>—</td>
+<td>以 JSON 格式打印注册结果</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">高风险 scan 的 allowlist</p>
+<p>若 admission risk 不为 <code>low</code> 且未提供 <code>--operator-override</code>，<code>--list-state allowlist</code> 会报错退出（exit code 2）。</p>
+</div>
+<h3 id="skill-trust-register-dir"><code>skill-trust register-dir</code><a class="headerlink" href="#skill-trust-register-dir" title="Permanent link">&para;</a></h3>
+<p>扫描整个 skills 目录，批量写入 registry 并生成 runtime metadata 文件。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>register-dir<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>--skills-dir<span class="w"> </span>PATH<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--registry<span class="w"> </span>PATH<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--metadata<span class="w"> </span>PATH<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="o">[</span>--allowed-runtime-parent<span class="w"> </span>PATH<span class="w"> </span>...<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="o">[</span>--framework<span class="w"> </span><span class="o">{</span>codex<span class="p">|</span>claude-code<span class="p">|</span>kimi-cli<span class="p">|</span>gemini-cli<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="o">[</span>--scope<span class="w"> </span><span class="o">{</span>workspace<span class="p">|</span>user_home<span class="p">|</span>project<span class="p">|</span>global<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="o">[</span>--json<span class="o">]</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>必需</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--skills-dir</code></td>
+<td>是</td>
+<td>—</td>
+<td>包含多个 skill 子目录的父目录</td>
+</tr>
+<tr>
+<td><code>--registry</code></td>
+<td>是</td>
+<td>—</td>
+<td>registry JSON 文件路径</td>
+</tr>
+<tr>
+<td><code>--metadata</code></td>
+<td>是</td>
+<td>—</td>
+<td>runtime metadata JSON 文件路径（供 harness 运行时加载）</td>
+</tr>
+<tr>
+<td><code>--allowed-runtime-parent</code></td>
+<td>否</td>
+<td>—</td>
+<td>额外允许的 runtime mirror 父目录；metadata 会为每个 skill 写入 <code>&lt;parent&gt;/&lt;skill-dir&gt;</code></td>
+</tr>
+<tr>
+<td><code>--framework</code></td>
+<td>否</td>
+<td><code>codex</code></td>
+<td>框架标识</td>
+</tr>
+<tr>
+<td><code>--scope</code></td>
+<td>否</td>
+<td><code>workspace</code></td>
+<td>注册范围</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>否</td>
+<td>—</td>
+<td>以 JSON 格式打印汇总结果</td>
+</tr>
+</tbody>
+</table>
+<p><code>register-dir</code> 执行以下合并策略：</p>
+<ol>
+<li><code>blacklist</code> / <code>revoked</code> / <code>disabled</code> 的现有记录的 <code>trust_level</code>、<code>list_state</code>、<code>status</code> 不被覆盖</li>
+<li>新扫描结果更新 content hash、scan_id、skill_root_hash</li>
+<li>现有记录的 <code>previous_skill_root_hash</code> 写入 <code>source</code> 以供审计</li>
+<li>检测跨 skill 的 ambiguous alias（相同身份键的多个目录），写入 <code>preflight_actions</code></li>
+</ol>
+<p>Lifecycle shortcuts wrap the same audited transition helper as <code>skill-trust transition</code> while exposing the operator actions by name:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>allowlist<span class="w"> </span>--registry<span class="w"> </span>PATH<span class="w"> </span>--canonical-skill-id<span class="w"> </span>ID<span class="w"> </span>--expected-registry-snapshot-id<span class="w"> </span>SNAP<span class="w"> </span>--idempotency-key<span class="w"> </span>KEY
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>greylist<span class="w"> </span>--registry<span class="w"> </span>PATH<span class="w"> </span>--canonical-skill-id<span class="w"> </span>ID<span class="w"> </span>--expected-registry-snapshot-id<span class="w"> </span>SNAP<span class="w"> </span>--idempotency-key<span class="w"> </span>KEY
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>blacklist<span class="w"> </span>--registry<span class="w"> </span>PATH<span class="w"> </span>--canonical-skill-id<span class="w"> </span>ID<span class="w"> </span>--expected-registry-snapshot-id<span class="w"> </span>SNAP<span class="w"> </span>--idempotency-key<span class="w"> </span>KEY
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>revoke<span class="w"> </span>--registry<span class="w"> </span>PATH<span class="w"> </span>--canonical-skill-id<span class="w"> </span>ID<span class="w"> </span>--expected-registry-snapshot-id<span class="w"> </span>SNAP<span class="w"> </span>--idempotency-key<span class="w"> </span>KEY
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>disable<span class="w"> </span>--registry<span class="w"> </span>PATH<span class="w"> </span>--canonical-skill-id<span class="w"> </span>ID<span class="w"> </span>--expected-registry-snapshot-id<span class="w"> </span>SNAP<span class="w"> </span>--idempotency-key<span class="w"> </span>KEY
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>restore<span class="w"> </span>--registry<span class="w"> </span>PATH<span class="w"> </span>--canonical-skill-id<span class="w"> </span>ID<span class="w"> </span>--expected-registry-snapshot-id<span class="w"> </span>SNAP<span class="w"> </span>--idempotency-key<span class="w"> </span>KEY<span class="w"> </span><span class="o">[</span>--restore-target-state<span class="w"> </span>allowlist<span class="o">]</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>override<span class="w"> </span>--registry<span class="w"> </span>PATH<span class="w"> </span>--canonical-skill-id<span class="w"> </span>ID<span class="w"> </span>--expected-registry-snapshot-id<span class="w"> </span>SNAP<span class="w"> </span>--idempotency-key<span class="w"> </span>KEY<span class="w"> </span>--override-id<span class="w"> </span>REVIEW-ID
+</span></code></pre></div>
+<p>All shortcut commands accept <code>--operator-id-hash</code> and <code>--json</code>. <code>restore</code> uses the disabled record's previous active state unless <code>--restore-target-state</code> is supplied.</p>
+<h3 id="operator-visible-grade">Operator-visible grade<a class="headerlink" href="#operator-visible-grade" title="Permanent link">&para;</a></h3>
+<p>Registry records in CLI JSON output and <code>GET /skill-trust/registry</code> include <code>skill_trust_grade</code>. The grade is derived for operators; policy still consumes raw fields such as <code>list_state</code>, admission risk, runtime binding status, FSPR verdicts, and post-action session evidence.</p>
+<table>
+<thead>
+<tr>
+<th><code>skill_trust_grade</code></th>
+<th>Derived from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>trusted</code></td>
+<td><code>allowlist</code> without high-risk admission, runtime mismatch, FSPR inconsistency, or unresolved P2 evidence</td>
+</tr>
+<tr>
+<td><code>review</code></td>
+<td><code>greylist</code>/<code>unlisted</code>, medium or unknown admission, unverified runtime binding/content, or insufficient FSPR evidence</td>
+</tr>
+<tr>
+<td><code>restricted</code></td>
+<td>high/critical admission, disallowed or ambiguous runtime source, content mismatch, FSPR inconsistency, or unresolved P2 evidence</td>
+</tr>
+<tr>
+<td><code>blocked</code></td>
+<td><code>blacklist</code> or <code>revoked</code></td>
+</tr>
+<tr>
+<td><code>disabled</code></td>
+<td><code>disabled</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="operator-examples">Operator examples and boundaries<a class="headerlink" href="#operator-examples" title="Permanent link">&para;</a></h2>
+<p>These examples use the same field names as Gateway metadata, replay rows, CLI output, and API payloads.</p>
+<h3 id="runtime-binding-examples">Runtime binding examples<a class="headerlink" href="#runtime-binding-examples" title="Permanent link">&para;</a></h3>
+<p><strong>verified mirror example</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;runtime_path_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;verified_mirror&quot;</span><span class="p">,</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">&quot;runtime_content_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;content_verified&quot;</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">&quot;metadata_record_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;skillmeta:calendar-lookup:workspace&quot;</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">&quot;decision&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;allow&quot;</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Use this when the observed runtime root is under an explicitly configured <code>allowed_runtime_roots</code> entry and Gateway verifies content or a trusted runner contract. The mirror path itself remains internal; replay keeps <code>runtime_root_path_hash</code>.</p>
+<p><strong>disallowed same-name path example</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">&quot;presented_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;calendar-lookup&quot;</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">&quot;runtime_path_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;disallowed&quot;</span><span class="p">,</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">&quot;runtime_binding_reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;runtime_root_outside_allowed_roots&quot;</span><span class="p">,</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">&quot;decision&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;block&quot;</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>The same skill name under an unapproved root cannot inherit trusted source metadata. Strict and benchmark profiles block this before the action.</p>
+<p><strong>ambiguous name-only example</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;presented_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;calendar_lookup&quot;</span><span class="p">,</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;runtime_path_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ambiguous_runtime_source&quot;</span><span class="p">,</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">&quot;runtime_evidence_kind&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;native_skill_name&quot;</span><span class="p">,</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">&quot;decision&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;defer&quot;</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Name-only evidence can identify ambiguity, but it cannot verify path, content, or mirror integrity.</p>
+<h3 id="fspr-examples">FSPR examples<a class="headerlink" href="#fspr-examples" title="Permanent link">&para;</a></h3>
+<p><strong>FSPR evidence-only</strong></p>
+<p>First-Use Skill Package Review can inspect <code>SKILL.md</code>, scripts, references, data summaries, admission findings, and ledger entries. It is distinct from L3 runtime review and is optional by profile. FSPR cannot mutate allowlist, greylist, blacklist, revoked, disabled, or restore state; it emits bounded evidence and admission recommendations for Gateway/operator review.</p>
+<h3 id="lifecycle-examples">Lifecycle examples<a class="headerlink" href="#lifecycle-examples" title="Permanent link">&para;</a></h3>
+<p><strong>blacklist-to-greylist override example</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>clawsentry<span class="w"> </span>skill-trust<span class="w"> </span>transition<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>--registry<span class="w"> </span>.clawsentry/skill-trust-registry.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>--canonical-skill-id<span class="w"> </span>skill:calendar-lookup<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>--target-state<span class="w"> </span>greylist<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span>--reason-code<span class="w"> </span>operator_override<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span>--override-id<span class="w"> </span>review-2026-05-18<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span>--operator-id-hash<span class="w"> </span>sha256:...
+</span></code></pre></div>
+<p>Blacklisted skills require an operator override or trusted migration evidence before downgrade. The transition event keeps prior state, reason, actor, evidence refs, expiry, and policy fingerprint.</p>
+<p><strong>revoked-to-allowlist trusted migration example</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;target_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;allowlist&quot;</span><span class="p">,</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;reason_code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;trusted_migration&quot;</span><span class="p">,</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">&quot;evidence_refs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;admission:clean-v2&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;migration:approved-v2&quot;</span><span class="p">],</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">&quot;operator_id_hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:...&quot;</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Revoked skills cannot silently return to allowlist. A trusted migration plus operator metadata must be recorded.</p>
+<p><strong>disabled/restore example</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&quot;from_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;disabled&quot;</span><span class="p">,</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">&quot;to_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;greylist&quot;</span><span class="p">,</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="nt">&quot;restore_target_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;previous_active_state&quot;</span><span class="p">,</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="nt">&quot;previous_active_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;greylist&quot;</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Restore creates a new transition event. Expiry or restore never mutates visible state without an audit record.</p>
+<h3 id="capability-narrowing-and-feedback-examples">Capability narrowing and feedback examples<a class="headerlink" href="#capability-narrowing-and-feedback-examples" title="Permanent link">&para;</a></h3>
+<p><strong>critical capability narrowing example</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&quot;capability_narrowing&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">&quot;applied&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="nt">&quot;trigger_risk&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;critical&quot;</span><span class="p">,</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="nt">&quot;profile_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;clawsentry-critical-readonly&quot;</span><span class="p">,</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="nt">&quot;reason_code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;applied&quot;</span><span class="p">,</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="nt">&quot;allowed_tool_permission_groups&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read_only&quot;</span><span class="p">],</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span><span class="nt">&quot;denied_tool_permission_groups&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;write&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;network&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;credentialed&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;destructive&quot;</span><span class="p">]</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Capability narrowing is controlled by <code>CS_CAPABILITY_NARROWING_ENABLED</code>, trigger threshold, tool permission groups, Skill Trust state rules, MCP server/tool/status/trust rules, disabled capability equivalents, greylist action, and audit verbosity. If a host cannot enforce a UI change, Gateway still records the scope decision and reason in metadata.</p>
+<p><strong>unsupported-host feedback fallback example</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="p">{</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">&quot;agent_safety_feedback&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="nt">&quot;delivery&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;audit_only&quot;</span><span class="p">,</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="nt">&quot;reason_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Critical action blocked by Gateway policy.&quot;</span><span class="p">,</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="nt">&quot;redaction_policy_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;clawsentry.redaction.v1&quot;</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Agent-facing safety feedback is emitted only for capability-gated supported hosts. Unsupported hosts keep audit-only metadata and must not claim prompt injection. Response delivery is redacted, omits raw commands/secrets/thresholds, and is sent once per session surface to avoid retry loops.</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="最后更新">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月20日 14:22:57 UTC">2026年5月20日</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="创建日期">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月15日 21:28:47 UTC">2026年5月15日</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚" >
+        
+          
+          <a href="../../dashboard/" class="md-footer__link md-footer__link--prev" aria-label="上一页: Web 仪表板">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                Web 仪表板
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../rule-governance/" class="md-footer__link md-footer__link--next" aria-label="下一页: 规则治理">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                规则治理
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 ClawSentry Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Elroyper/ClawSentry" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

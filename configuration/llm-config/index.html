@@ -171,6 +171,11 @@
       </label>
       <nav class="md-search__options" aria-label="查找">
         
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -271,6 +278,8 @@
         <a href="../../integration/a3s-code/" class="md-tabs__link">
           
   
+  
+    
   
   集成接入
 
@@ -293,6 +302,8 @@
         <a href="../configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -333,6 +344,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -352,6 +365,8 @@
         <a href="../../decision-layers/l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../advanced/rule-governance/" class="md-tabs__link">
+        <a href="../../advanced/skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -951,6 +996,22 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1179,8 +1240,6 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
-        
-      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -1223,8 +1282,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1233,6 +1290,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#llm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM 配置
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llm_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM 配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LLM 配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#llm-l1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1242,8 +1322,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#anthropic-claude" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1292,8 +1372,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#openai-gpt" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1342,8 +1422,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#openai-api" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1403,8 +1483,19 @@
     </nav>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#api-key-config" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        API 密钥配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#l2" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1453,8 +1544,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#sync-vs-advisory-provider" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1464,8 +1555,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#l3-agent" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1536,8 +1627,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#llm-factory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1575,8 +1666,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#_13" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1614,8 +1705,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#_16" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1686,8 +1777,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#instrumentedprovider" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1747,8 +1838,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#llm-token" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1808,8 +1899,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#_23" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1829,6 +1920,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1887,6 +1983,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2201,6 +2317,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2394,34 +2528,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decision-layers/sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../decision-layers/scope-restrictions/" class="md-nav__link">
         
   
@@ -2541,6 +2647,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2586,6 +2710,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2798,6 +2950,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2907,70 +3069,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -3063,8 +3169,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -3073,6 +3177,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#llm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM 配置
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llm_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM 配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LLM 配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#llm-l1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3082,8 +3209,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#anthropic-claude" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3132,8 +3259,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#openai-gpt" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3182,8 +3309,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#openai-api" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3243,8 +3370,19 @@
     </nav>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#api-key-config" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        API 密钥配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#l2" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3293,8 +3431,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#sync-vs-advisory-provider" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3304,8 +3442,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#l3-agent" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3376,8 +3514,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#llm-factory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3415,8 +3553,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#_13" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3454,8 +3592,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#_16" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3526,8 +3664,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#instrumentedprovider" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3587,8 +3725,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#llm-token" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3648,8 +3786,8 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#_23" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3676,6 +3814,11 @@
     </nav>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
     </ul>
   
@@ -3688,6 +3831,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../configuration-overview/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    配置参考
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -3697,7 +3888,18 @@
   
 
 
-<h1 id="llm">LLM 配置<a class="headerlink" href="#llm" title="Permanent link">&para;</a></h1>
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">Configuration</div>
+<h2 id="llm">LLM 配置<a class="headerlink" href="#llm" title="Permanent link">&para;</a></h2>
+<p>配置 L2 语义分析和 L3 审查 Agent 所使用的 LLM 提供商：Anthropic Claude、OpenAI GPT 或任意 OpenAI 兼容本地端点。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">anthropic</span>
+<span class="cs-pill">openai</span>
+<span class="cs-pill">local / OpenAI-compatible</span>
+<span class="cs-pill">token budget</span></p>
+</div>
+</div>
+<h1 id="llm_1">LLM 配置<a class="headerlink" href="#llm_1" title="Permanent link">&para;</a></h1>
 <p>ClawSentry 的三层决策模型中，L2（语义分析）和 L3（审查 Agent）依赖 LLM 提供深度安全分析。本页介绍如何配置各种 LLM 提供商，以及各决策模式的特性和成本考量。</p>
 <hr />
 <h2 id="llm-l1">无 LLM 模式（纯 L1）<a class="headerlink" href="#llm-l1" title="Permanent link">&para;</a></h2>
@@ -3826,6 +4028,50 @@
 <p>返回格式必须包含 <code>choices[0].message.content</code>。</p>
 </div>
 <hr />
+<h2 id="api-key-config">API 密钥配置<a class="headerlink" href="#api-key-config" title="Permanent link">&para;</a></h2>
+<p>ClawSentry 支持多种 API 密钥注入方式，适合不同的 secret manager 集成场景：</p>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>-</td>
+<td>Anthropic API 密钥。<code>CS_LLM_PROVIDER=anthropic</code> 时使用</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>-</td>
+<td>OpenAI API 密钥。<code>CS_LLM_PROVIDER=openai</code> 时使用</td>
+</tr>
+<tr>
+<td><code>CS_LLM_API_KEY</code></td>
+<td>-</td>
+<td>通用 LLM API 密钥。作为 <code>ANTHROPIC_API_KEY</code> / <code>OPENAI_API_KEY</code> 的替代方案；<code>clawsentry doctor</code> 会检查此变量</td>
+</tr>
+<tr>
+<td><code>CS_LLM_API_KEY_ENV</code></td>
+<td><code>CS_LLM_API_KEY</code></td>
+<td>指向自定义 API key 环境变量名。适合 secret manager 注入：secret manager 把密钥注入到自定义变量名后，用此变量告知 ClawSentry 去哪里读取</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>CS_LLM_API_KEY_ENV</code> 使用示例（secret manager 场景）：</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># secret manager 把密钥注入到 MY_SECRET_LLM_KEY</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MY_SECRET_LLM_KEY</span><span class="o">=</span>sk-ant-xxx
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># 告知 ClawSentry 使用该变量</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CS_LLM_API_KEY_ENV</span><span class="o">=</span>MY_SECRET_LLM_KEY
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">密钥安全</p>
+<p>API 密钥属于敏感信息，建议通过进程/部署环境、密钥管理系统，或显式 <code>--env-file .clawsentry.env.local</code> 注入，切勿写入 <code>.clawsentry.env.example</code>、脚本或版本控制。</p>
+</div>
+<hr />
 <h2 id="l2">L2 语义分析器类型<a class="headerlink" href="#l2" title="Permanent link">&para;</a></h2>
 <p>ClawSentry 的 L2 层支持三种分析器实现，由 <code>build_analyzer_from_env()</code> 自动构建：</p>
 <h3 id="rulebasedanalyzer">RuleBasedAnalyzer（规则分析器）<a class="headerlink" href="#rulebasedanalyzer" title="Permanent link">&para;</a></h3>
@@ -3845,11 +4091,11 @@
 <ol>
 <li>构建包含事件详情的 prompt（工具名、payload、risk_hints、L1 评分结果）</li>
 <li>要求 LLM 返回 JSON 格式的风险评估：
-   <div class="language-json highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&quot;risk_assessment&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;low|medium|high|critical&quot;</span><span class="p">,</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">&quot;reasons&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;reason1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;reason2&quot;</span><span class="p">],</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.85</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="p">}</span>
+   <div class="language-json highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&quot;risk_assessment&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;low|medium|high|critical&quot;</span><span class="p">,</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">&quot;reasons&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;reason1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;reason2&quot;</span><span class="p">],</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.85</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">}</span>
 </span></code></pre></div></li>
 <li>解析响应并与 L1 结果合并（只升不降）</li>
 </ol>
@@ -3886,11 +4132,11 @@
 </div>
 <h3 id="compositeanalyzer">CompositeAnalyzer（组合分析器）<a class="headerlink" href="#compositeanalyzer" title="Permanent link">&para;</a></h3>
 <p>链式组合多个分析器，按层级递进执行，取最高风险结果。</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>CompositeAnalyzer
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>  ├── CompositeAnalyzer  (L2 聚合层)
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>  │   ├── RuleBasedAnalyzer  (规则引擎, &lt; 0.1ms)
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>  │   └── LLMAnalyzer        (LLM 语义分析, &lt; 3s)
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>  └── AgentAnalyzer          (L3 审查 Agent, &lt; 30s, 可选)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>CompositeAnalyzer
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>  ├── CompositeAnalyzer  (L2 聚合层)
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>  │   ├── RuleBasedAnalyzer  (规则引擎, &lt; 0.1ms)
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>  │   └── LLMAnalyzer        (LLM 语义分析, &lt; 3s)
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>  └── AgentAnalyzer          (L3 审查 Agent, &lt; 30s, 可选)
 </span></code></pre></div>
 <p><strong>合并策略</strong>：</p>
 <ol>
@@ -3945,12 +4191,12 @@
 <h2 id="l3-agent">L3 审查 Agent<a class="headerlink" href="#l3-agent" title="Permanent link">&para;</a></h2>
 <p>L3 是最高决策层，启用后可对高风险事件进行多轮工具调用的深度审查。</p>
 <h3 id="_8">启用条件<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># 必须先配置 LLM Provider</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>anthropic
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>sk-ant-xxx
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="c1"># 然后启用 L3</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="nv">CS_L3_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># 必须先配置 LLM Provider</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>anthropic
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>sk-ant-xxx
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1"># 然后启用 L3</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="nv">CS_L3_ENABLED</span><span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">L3 依赖 LLM Provider</p>
@@ -4025,7 +4271,7 @@
 </table>
 <h3 id="_11">自定义技能<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h3>
 <p>通过 <code>AHP_SKILLS_DIR</code> 环境变量指定自定义技能目录：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nv">AHP_SKILLS_DIR</span><span class="o">=</span>/etc/clawsentry/custom-skills/
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nv">AHP_SKILLS_DIR</span><span class="o">=</span>/etc/clawsentry/custom-skills/
 </span></code></pre></div>
 <p>自定义技能与内置技能合并加载。技能定义格式为 YAML 文件，包含 <code>name</code>、<code>priority</code>、<code>enabled</code>、<code>triggers</code>、<code>system_prompt</code> 等字段。</p>
 <h3 id="l3">L3 性能特征<a class="headerlink" href="#l3" title="Permanent link">&para;</a></h3>
@@ -4083,10 +4329,10 @@
     O --&gt;|成功| P["返回 CompositeAnalyzer([L2 aggregate, L3])"]
     O --&gt;|失败| Q["日志警告, 返回 CompositeAnalyzer(L1+L2)"]</code></pre>
 <h3 id="gateway">Gateway 集成<a class="headerlink" href="#gateway" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># stack.py 中的调用</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">analyzer</span> <span class="o">=</span> <span class="n">build_analyzer_from_env</span><span class="p">(</span><span class="n">trajectory_store</span><span class="o">=</span><span class="n">gateway</span><span class="o">.</span><span class="n">trajectory_store</span><span class="p">)</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="k">if</span> <span class="n">analyzer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">gateway</span><span class="o">.</span><span class="n">policy_engine</span> <span class="o">=</span> <span class="n">L1PolicyEngine</span><span class="p">(</span><span class="n">analyzer</span><span class="o">=</span><span class="n">analyzer</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># stack.py 中的调用</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">analyzer</span> <span class="o">=</span> <span class="n">build_analyzer_from_env</span><span class="p">(</span><span class="n">trajectory_store</span><span class="o">=</span><span class="n">gateway</span><span class="o">.</span><span class="n">trajectory_store</span><span class="p">)</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="k">if</span> <span class="n">analyzer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="n">gateway</span><span class="o">.</span><span class="n">policy_engine</span> <span class="o">=</span> <span class="n">L1PolicyEngine</span><span class="p">(</span><span class="n">analyzer</span><span class="o">=</span><span class="n">analyzer</span><span class="p">)</span>
 </span></code></pre></div>
 <p>当 <code>build_analyzer_from_env()</code> 返回非 <code>None</code> 时，<code>L1PolicyEngine</code> 在 <code>_should_run_l2()</code> 条件满足时会调用该 analyzer 进行 L2/L3 分析。</p>
 <hr />
@@ -4132,10 +4378,10 @@
 <ol>
 <li>
 <p><strong>使用本地模型</strong>：通过 Ollama + <code>CS_LLM_BASE_URL</code> 将 LLM 调用保持在本地，消除 API 成本</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="nv">CS_LLM_BASE_URL</span><span class="o">=</span>http://localhost:11434/v1
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>qwen2.5:7b
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>ollama
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="nv">CS_LLM_BASE_URL</span><span class="o">=</span>http://localhost:11434/v1
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>qwen2.5:7b
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>ollama
 </span></code></pre></div>
 </li>
 <li>
@@ -4177,45 +4423,45 @@
 <hr />
 <h2 id="_16">完整配置示例<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h2>
 <h3 id="_17">纯规则引擎（零成本）<a class="headerlink" href="#_17" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># 不设置 CS_LLM_PROVIDER</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="c1"># L1 规则引擎 + RuleBasedAnalyzer 语义规则</span>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># 不设置 CS_LLM_PROVIDER</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="c1"># L1 规则引擎 + RuleBasedAnalyzer 语义规则</span>
 </span></code></pre></div>
 <h3 id="anthropic-claude_1">Anthropic Claude 完整三层<a class="headerlink" href="#anthropic-claude_1" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>anthropic
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>sk-ant-api03-xxxxxxxxxxxxx
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>claude-sonnet-4-20250514
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="nv">CS_L3_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="nv">AHP_SKILLS_DIR</span><span class="o">=</span>/etc/clawsentry/custom-skills
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>anthropic
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>sk-ant-api03-xxxxxxxxxxxxx
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>claude-sonnet-4-20250514
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="nv">CS_L3_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="nv">AHP_SKILLS_DIR</span><span class="o">=</span>/etc/clawsentry/custom-skills
 </span></code></pre></div>
 <h3 id="openai-gpt-l2">OpenAI GPT 仅 L2<a class="headerlink" href="#openai-gpt-l2" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nv">OPENAI_API_KEY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>sk-proj-xxxxxxxxxxxxx
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>gpt-4o
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="c1"># CS_L3_ENABLED 保持默认 false</span>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nv">OPENAI_API_KEY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>sk-proj-xxxxxxxxxxxxx
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>gpt-4o
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="c1"># CS_L3_ENABLED 保持默认 false</span>
 </span></code></pre></div>
 <h3 id="ollama-api">Ollama 本地模型（零 API 成本）<a class="headerlink" href="#ollama-api" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>ollama
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="nv">CS_LLM_BASE_URL</span><span class="o">=</span>http://localhost:11434/v1
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>qwen2.5:7b
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="nv">CS_L3_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>ollama
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="nv">CS_LLM_BASE_URL</span><span class="o">=</span>http://localhost:11434/v1
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>qwen2.5:7b
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="nv">CS_L3_ENABLED</span><span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <h3 id="deepseek-api">DeepSeek API<a class="headerlink" href="#deepseek-api" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nv">OPENAI_API_KEY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>sk-deepseek-xxxxxxxxxxxxx
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="nv">CS_LLM_BASE_URL</span><span class="o">=</span>https://api.deepseek.com/v1
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>deepseek-chat
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="nv">OPENAI_API_KEY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>sk-deepseek-xxxxxxxxxxxxx
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="nv">CS_LLM_BASE_URL</span><span class="o">=</span>https://api.deepseek.com/v1
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>deepseek-chat
 </span></code></pre></div>
 <hr />
 <h2 id="instrumentedprovider">InstrumentedProvider 可观测性包装器<a class="headerlink" href="#instrumentedprovider" title="Permanent link">&para;</a></h2>
 <p>当安装 <code>clawsentry[metrics]</code> 依赖后，Gateway 会自动将所有 LLM Provider 包装为 <code>InstrumentedProvider</code>，在每次 LLM 调用后记录指标到 Prometheus。</p>
 <h3 id="llmusage">LLMUsage 数据模型<a class="headerlink" href="#llmusage" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="k">class</span> <span class="nc">LLMUsage</span><span class="p">:</span>
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>    <span class="n">input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>      <span class="c1"># 输入 token 数</span>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>    <span class="n">output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>     <span class="c1"># 输出 token 数</span>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>         <span class="c1"># 提供商标识（anthropic/openai）</span>
-</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>            <span class="c1"># 模型 ID</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="k">class</span> <span class="nc">LLMUsage</span><span class="p">:</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="n">input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>      <span class="c1"># 输入 token 数</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>    <span class="n">output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>     <span class="c1"># 输出 token 数</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>         <span class="c1"># 提供商标识（anthropic/openai）</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>            <span class="c1"># 模型 ID</span>
 </span></code></pre></div>
 <h3 id="_18">自动包装机制<a class="headerlink" href="#_18" title="Permanent link">&para;</a></h3>
 <p><code>InstrumentedProvider</code> 透明地包装 LLM Provider：</p>
@@ -4266,13 +4512,13 @@
 <h2 id="llm-token">LLM Token 预算控制<a class="headerlink" href="#llm-token" title="Permanent link">&para;</a></h2>
 <p>Token budget 使用 provider 返回的真实 <code>LLMUsage</code> 执法，避免把过期价格表或 OpenAI-compatible provider 估算误当作真实花费。</p>
 <h3 id="_20">配置<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># 按每日总 token 限制 L2/L3</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nv">CS_LLM_TOKEN_BUDGET_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="nv">CS_LLM_DAILY_TOKEN_BUDGET</span><span class="o">=</span><span class="m">200000</span>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="nv">CS_LLM_TOKEN_BUDGET_SCOPE</span><span class="o">=</span>total<span class="w">  </span><span class="c1"># total | input | output</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>
-</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="c1"># 旧字段仅用于迁移提示/估算 telemetry，新部署不要依赖它执法</span>
-</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="c1"># CS_LLM_DAILY_BUDGET_USD=5.0</span>
+<div class="language-bash highlight"><span class="filename">.clawsentry.env.local</span><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># 按每日总 token 限制 L2/L3</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="nv">CS_LLM_TOKEN_BUDGET_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="nv">CS_LLM_DAILY_TOKEN_BUDGET</span><span class="o">=</span><span class="m">200000</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="nv">CS_LLM_TOKEN_BUDGET_SCOPE</span><span class="o">=</span>total<span class="w">  </span><span class="c1"># total | input | output</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="c1"># 旧字段仅用于迁移提示/估算 telemetry，新部署不要依赖它执法</span>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="c1"># CS_LLM_DAILY_BUDGET_USD=5.0</span>
 </span></code></pre></div>
 <h3 id="_21">工作机制<a class="headerlink" href="#_21" title="Permanent link">&para;</a></h3>
 <ol>
@@ -4344,8 +4590,8 @@
 <details class="question">
 <summary>如何确认 LLM 分析器确实在工作?</summary>
 <p>检查 Gateway 启动日志：
-<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>INFO [ahp.llm-factory] LLM provider configured: openai (model=gpt-4o, base_url=(default))
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>INFO [ahp.llm-factory] L3 AgentAnalyzer enabled
+<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>INFO [ahp.llm-factory] LLM provider configured: openai (model=gpt-4o, base_url=(default))
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>INFO [ahp.llm-factory] L3 AgentAnalyzer enabled
 </span></code></pre></div>
 如果没有这些日志，说明 LLM 未正确配置。</p>
 <p>决策响应中的 <code>classified_by</code> 字段标识实际使用的决策层：</p>
@@ -4376,7 +4622,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月30日 06:50:49 UTC">2026年4月30日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月17日 21:24:54 UTC">2026年5月17日</span>
   </span>
 
     
@@ -4499,11 +4745,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="自定义 L2 检测规则库 — YAML 模式结构、OWASP ASI01-04、AND/OR 逻辑、误报过滤、热更新">
+        <meta name="description" content="L2 检测规则库 — 25 条内置 OWASP ASI01-05 模式、YAML 模式结构、AND/OR 触发逻辑、误报过滤、自定义模式">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>攻击模式定制（Attack Patterns） - ClawSentry</title>
+        <title>攻击模式 - ClawSentry</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#attack-patterns" class="md-skip">
+        <a href="#yaml-l2" class="md-skip">
           跳转至
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              攻击模式定制（Attack Patterns）
+              攻击模式
             
           </span>
         </div>
@@ -170,6 +170,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -272,6 +279,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -291,6 +300,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -331,6 +342,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -350,6 +363,8 @@
         <a href="../../decision-layers/l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../rule-governance/" class="md-tabs__link">
+        <a href="../skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -948,6 +993,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1232,6 +1293,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1546,6 +1627,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1739,34 +1838,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decision-layers/sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../decision-layers/scope-restrictions/" class="md-nav__link">
         
   
@@ -1888,6 +1959,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1934,6 +2023,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2088,8 +2205,6 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
-        
-      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -2132,8 +2247,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2142,10 +2255,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#yaml-l2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        概述
+        用 YAML 扩展 L2 攻击检测规则库
       
     </span>
   </a>
@@ -2161,91 +2274,46 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="内置模式总览">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#asi01-3" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#matching-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ASI01 — 提示词注入 / 目标劫持（3 条）
+        匹配流程
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#asi02-6" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ASI02 — 数据外传（6 条）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#asi03-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ASI03 — 代码执行 / 混淆（8 条）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#asi04-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ASI04 — 供应链 / 容器逃逸（8 条）
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#pattern-structure" class="md-nav__link">
+  <a href="#pattern-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        YAML 模式结构
+        AttackPattern 字段
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="YAML 模式结构">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#triggers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        triggers 触发条件详解
+        triggers 触发条件
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
-  
-</li>
       
         <li class="md-nav__item">
-  <a href="#custom-patterns" class="md-nav__link">
+  <a href="#detection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        添加自定义模式
+        detection 检测逻辑
       
     </span>
   </a>
@@ -2257,6 +2325,28 @@
     <span class="md-ellipsis">
       
         误报过滤
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自定义模式 YAML 格式
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hot-reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        热更新
       
     </span>
   </a>
@@ -2336,6 +2426,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2446,70 +2546,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2602,8 +2646,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2612,10 +2654,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#yaml-l2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        概述
+        用 YAML 扩展 L2 攻击检测规则库
       
     </span>
   </a>
@@ -2631,91 +2673,46 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="内置模式总览">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#asi01-3" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#matching-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ASI01 — 提示词注入 / 目标劫持（3 条）
+        匹配流程
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#asi02-6" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ASI02 — 数据外传（6 条）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#asi03-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ASI03 — 代码执行 / 混淆（8 条）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#asi04-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ASI04 — 供应链 / 容器逃逸（8 条）
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#pattern-structure" class="md-nav__link">
+  <a href="#pattern-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        YAML 模式结构
+        AttackPattern 字段
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="YAML 模式结构">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#triggers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        triggers 触发条件详解
+        triggers 触发条件
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
-  
-</li>
       
         <li class="md-nav__item">
-  <a href="#custom-patterns" class="md-nav__link">
+  <a href="#detection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        添加自定义模式
+        detection 检测逻辑
       
     </span>
   </a>
@@ -2727,6 +2724,28 @@
     <span class="md-ellipsis">
       
         误报过滤
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自定义模式 YAML 格式
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hot-reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        热更新
       
     </span>
   </a>
@@ -2766,6 +2785,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../skill-trust/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    高级用法
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -2775,225 +2842,400 @@
   
 
 
-<h1 id="attack-patterns">攻击模式定制（Attack Patterns）<a class="headerlink" href="#attack-patterns" title="Permanent link">&para;</a></h1>
+  <h1>攻击模式定制</h1>
+
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">高级功能 · L2 检测规则</div>
+<h2 id="yaml-l2">用 YAML 扩展 L2 攻击检测规则库<a class="headerlink" href="#yaml-l2" title="Permanent link">&para;</a></h2>
+<p>ClawSentry L2 规则引擎基于 YAML 驱动的攻击模式库对工具调用进行确定性正则检测，内置 25 条模式覆盖 OWASP Agentic AI Top 5（ASI01-05）。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">25 条内置模式</span>
+<span class="cs-pill">ASI01-05</span>
+<span class="cs-pill">可自定义规则路径</span>
+<span class="cs-pill">运行时热更新</span></p>
+</div>
+</div>
 <div class="admonition abstract">
 <p class="admonition-title">本页快速导航</p>
-<p><a href="#overview">概述</a> · <a href="#builtin-patterns">内置模式总览</a> · <a href="#pattern-structure">YAML 结构详解</a> · <a href="#custom-patterns">添加自定义模式</a> · <a href="#false-positives">误报过滤</a> · <a href="#source-code">代码位置</a></p>
-</div>
-<h2 id="overview">概述<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>ClawSentry 的 L2 <code>RuleBasedAnalyzer</code> 使用 YAML 格式的<strong>攻击模式库</strong>对工具调用内容进行确定性正则检测。内置库（<code>attack_patterns.yaml</code>）涵盖 <strong>25 条模式</strong>，覆盖 OWASP Agentic AI Top 5（ASI01-04）四大类别。</p>
-<pre class="mermaid"><code>graph LR
-    GW[Gateway] --&gt; L2[L2 RuleBasedAnalyzer]
-    L2 --&gt; PM[PatternMatcher]
-    PM --&gt; CORE["内置模式库\n(attack_patterns.yaml)\n25 条 ASI01-04"]
-    PM --&gt; CUSTOM["自定义模式库\n(CS_L2_ATTACK_PATTERNS_PATH)\n可选"]
-    CORE &amp; CUSTOM --&gt; RESULT[匹配结果 → 风险等级]</code></pre>
-<div class="admonition info">
-<p class="admonition-title">合并而非替换</p>
-<p>自定义模式文件与内置模式<strong>合并</strong>使用，最终生效 = 内置 25 条 + 自定义 N 条。</p>
+<p><a href="#builtin-patterns">内置模式总览</a> · <a href="#matching-pipeline">匹配流程</a> · <a href="#pattern-schema">AttackPattern 字段</a> · <a href="#custom-patterns">自定义模式 YAML 格式</a> · <a href="#triggers">triggers 触发条件</a> · <a href="#detection">detection 检测逻辑</a> · <a href="#false-positives">误报过滤</a> · <a href="#hot-reload">热更新</a></p>
 </div>
 <hr />
 <h2 id="builtin-patterns">内置模式总览<a class="headerlink" href="#builtin-patterns" title="Permanent link">&para;</a></h2>
-<p>共 25 条，分 4 大类别：</p>
+<p>内置库 <code>attack_patterns.yaml</code> 共 <strong>25 条</strong>，分 5 个 OWASP ASI 类别：</p>
 <table>
 <thead>
 <tr>
-<th>类别</th>
-<th>ID 前缀</th>
+<th>类别 (<code>category</code>)</th>
+<th>OWASP</th>
 <th style="text-align: center;">条数</th>
-<th>主要威胁类型</th>
+<th>检测方式</th>
+<th>典型指标</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>ASI01</strong></td>
-<td><code>ASI01-*</code></td>
-<td style="text-align: center;">3</td>
-<td>提示词注入 / 目标劫持</td>
+<td><code>goal_hijack</code></td>
+<td>ASI01</td>
+<td style="text-align: center;">5</td>
+<td>读取文件/HTTP 响应的内容正则</td>
+<td><code>ignore previous instructions</code>、HTML 注释注入、Unicode 零宽字符、SSTI 模板标记、Markdown 追踪像素</td>
 </tr>
 <tr>
-<td><strong>ASI02</strong></td>
-<td><code>ASI02-*</code></td>
+<td><code>tool_misuse</code></td>
+<td>ASI02</td>
+<td style="text-align: center;">7</td>
+<td>bash/exec 命令字符串正则</td>
+<td><code>curl -d @</code>、DNS/ICMP 隧道外传、反弹 shell、S3/GCS/Azure 云存储上传、可疑 pip/npm URL 安装</td>
+</tr>
+<tr>
+<td><code>privilege_abuse</code></td>
+<td>ASI03</td>
+<td style="text-align: center;">5</td>
+<td>文件读写路径 + 命令字符串正则</td>
+<td><code>../../../etc/passwd</code>、<code>sudo rm /etc</code>、Docker socket 挂载、<code>insmod</code>/<code>modprobe</code>、crontab 持久化</td>
+</tr>
+<tr>
+<td><code>supply_chain</code></td>
+<td>ASI04</td>
+<td style="text-align: center;">2</td>
+<td>bash 命令字符串正则</td>
+<td>pip/npm 常见错别字包名（typosquat）、<code>git clone … &amp;&amp; make install</code></td>
+</tr>
+<tr>
+<td><code>code_execution</code></td>
+<td>ASI05</td>
 <td style="text-align: center;">6</td>
-<td>数据外传 / 凭证泄露</td>
-</tr>
-<tr>
-<td><strong>ASI03</strong></td>
-<td><code>ASI03-*</code></td>
-<td style="text-align: center;">8</td>
-<td>代码执行 / 混淆</td>
-</tr>
-<tr>
-<td><strong>ASI04</strong></td>
-<td><code>ASI04-*</code></td>
-<td style="text-align: center;">8</td>
-<td>供应链攻击 / 容器逃逸</td>
+<td>bash/写入文件内容正则</td>
+<td><code>curl \| bash</code>、<code>base64 -d \| sh</code>、polyglot <code>-c</code> 一行脚本、<code>LD_PRELOAD=…</code>、<code>pickle.loads</code>、<code>eval(atob(…))</code></td>
 </tr>
 </tbody>
 </table>
-<h3 id="asi01-3">ASI01 — 提示词注入 / 目标劫持（3 条）<a class="headerlink" href="#asi01-3" title="Permanent link">&para;</a></h3>
+<hr />
+<h2 id="matching-pipeline">匹配流程<a class="headerlink" href="#matching-pipeline" title="Permanent link">&para;</a></h2>
+<p>每个工具调用事件依次经过三个阶段，三个阶段<strong>全部通过</strong>才计为命中：</p>
 <table>
 <thead>
 <tr>
-<th>模式 ID</th>
-<th>触发条件</th>
-<th>典型攻击场景</th>
+<th>阶段</th>
+<th>方法</th>
+<th>通过条件</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>ASI01-001</code></td>
-<td>读取 .md/.txt 文件，内容含 <code>ignore previous instructions</code> 类指令</td>
-<td>README 中隐藏的覆写指令</td>
+<td>1 — 触发过滤</td>
+<td><code>_triggers_match()</code></td>
+<td>事件满足 <code>triggers</code> 声明的工具名 / 路径 / 命令条件</td>
 </tr>
 <tr>
-<td><code>ASI01-002</code></td>
-<td>读取/请求 HTML/XML，含 <code>&lt;!--... execute ...--&gt;</code> 注释注入</td>
-<td>网页 HTML 注释劫持 Agent</td>
+<td>2 — 内容检测</td>
+<td><code>_detection_match()</code></td>
+<td>至少一条 <code>regex_patterns</code> 正则匹配内容（大于 100 KB 时截断）</td>
 </tr>
 <tr>
-<td><code>ASI01-003</code></td>
-<td>工具调用中含 Unicode 零宽字符 <code>\u200b \u200c \ufeff</code></td>
-<td>不可见字符注入，绕过视觉检查</td>
+<td>3 — 误报抑制</td>
+<td><code>_is_false_positive()</code></td>
+<td>目标路径<strong>不</strong>命中任何 <code>false_positive_filters</code> 白名单 glob</td>
 </tr>
 </tbody>
 </table>
-<h3 id="asi02-6">ASI02 — 数据外传（6 条）<a class="headerlink" href="#asi02-6" title="Permanent link">&para;</a></h3>
-<p><code>wget --post-data</code>、<code>curl -F 文件上传</code>、DNS 隐蔽外传、S3/GCS 对象上传、SSH 外传、Git remote 外传</p>
-<h3 id="asi03-8">ASI03 — 代码执行 / 混淆（8 条）<a class="headerlink" href="#asi03-8" title="Permanent link">&para;</a></h3>
-<p><code>eval+base64 一行脚本</code>、<code>chmod +x</code> 后即执行、Python subprocess shell=True、Node child_process、PowerShell -EncodedCommand、Perl exec、反弹 shell (<code>bash -i &gt;&amp; /dev/tcp/...</code>)、ICMP 隐蔽隧道</p>
-<h3 id="asi04-8">ASI04 — 供应链 / 容器逃逸（8 条）<a class="headerlink" href="#asi04-8" title="Permanent link">&para;</a></h3>
-<p>pip/npm/cargo 私有源替换劫持、容器 <code>nsenter --target 1</code>/<code>--privileged</code> 逃逸、<code>docker.sock</code> 挂载利用、内核模块强制加载、crontab 持久化驻留、systemd 服务安装、<code>LD_PRELOAD</code> 注入、<code>/proc/sys</code> 内核参数篡改</p>
+<p>命中结果为 <code>AttackPattern</code> 副本，<code>max_weight</code> 字段设为本次命中权重最高的正则权重值。</p>
+<pre class="mermaid"><code>graph LR
+    Event[工具调用事件] --&gt; T{触发过滤}
+    T -- 不匹配 --&gt; Skip[跳过]
+    T -- 匹配 --&gt; D{内容检测}
+    D -- 未命中 --&gt; Skip
+    D -- 命中 --&gt; FP{误报过滤}
+    FP -- 白名单路径 --&gt; Skip
+    FP -- 非白名单 --&gt; Hit[命中 → 返回 AttackPattern]</code></pre>
 <hr />
-<h2 id="pattern-structure">YAML 模式结构<a class="headerlink" href="#pattern-structure" title="Permanent link">&para;</a></h2>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0&quot;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">patterns</span><span class="p">:</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MY-001&quot;</span><span class="w">                   </span><span class="c1"># 全局唯一 ID（字符串）</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data_exfil&quot;</span><span class="w">         </span><span class="c1"># 分类标签（仅用于日志，不影响检测）</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;检测向未知域名上传文件&quot;</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">risk_level</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;high&quot;</span><span class="w">             </span><span class="c1"># low / medium / high / critical</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">triggers</span><span class="p">:</span><span class="w">                      </span><span class="c1"># 触发条件（决定&quot;什么情况下运行检测&quot;）</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">logic</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AND&quot;</span><span class="w">                 </span><span class="c1"># AND: 所有子条件同时满足</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">conditions</span><span class="p">:</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;bash&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;exec&quot;</span><span class="p p-Indicator">]</span><span class="w">      </span><span class="c1"># 工具名白名单（任一匹配即满足）</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">OR</span><span class="p">:</span><span class="w">                               </span><span class="c1"># OR: 子条件满足其一即可</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file_extensions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;.sh&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command_patterns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;upload&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="nt">detection</span><span class="p">:</span><span class="w">                     </span><span class="c1"># 检测内容（正则匹配）</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="nt">regex_patterns</span><span class="p">:</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;curl.*--upload-file&quot;</span><span class="w">   </span><span class="c1"># Python re 兼容正则</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">          </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9</span><span class="w">                         </span><span class="c1"># 权重 1-10，影响命中分数</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;multipart/form-data&quot;</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">          </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">    </span><span class="nt">false_positive_filters</span><span class="p">:</span><span class="w">        </span><span class="c1"># 白名单（匹配时跳过该模式检测）</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;whitelist_path&quot;</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">        </span><span class="nt">paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/tmp/test_*&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;*/fixtures/*&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">    </span><span class="nt">references</span><span class="p">:</span><span class="w">                    </span><span class="c1"># 可选：文献/CVE 溯源</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">      </span><span class="nt">papers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;owasp-aitop10-2025&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="w">      </span><span class="nt">incidents</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CVE-2024-XXXXX&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">    </span><span class="nt">mitre_attack</span><span class="p">:</span><span class="w">                  </span><span class="c1"># 可选：MITRE ATT&amp;CK 映射</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="w">      </span><span class="nt">tactics</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;TA0010&quot;</span><span class="p p-Indicator">]</span><span class="w">          </span><span class="c1"># Exfiltration</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">      </span><span class="nt">techniques</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;T1048&quot;</span><span class="p p-Indicator">]</span>
+<h2 id="pattern-schema">AttackPattern 字段<a class="headerlink" href="#pattern-schema" title="Permanent link">&para;</a></h2>
+<p><code>AttackPattern</code> 是 <code>pattern_matcher.py</code> 中的核心数据类：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th style="text-align: center;">必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td><code>str</code></td>
+<td style="text-align: center;">是</td>
+<td>全局唯一模式 ID（如 <code>ASI01-001</code>）</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td><code>str</code></td>
+<td style="text-align: center;">是</td>
+<td>分类标签，仅用于日志和过滤，不影响检测逻辑</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><code>str</code></td>
+<td style="text-align: center;">是</td>
+<td>人类可读描述</td>
+</tr>
+<tr>
+<td><code>risk_level</code></td>
+<td><code>RiskLevel</code></td>
+<td style="text-align: center;">是</td>
+<td><code>low</code> / <code>medium</code> / <code>high</code> / <code>critical</code></td>
+</tr>
+<tr>
+<td><code>triggers</code></td>
+<td><code>dict</code></td>
+<td style="text-align: center;">是</td>
+<td>触发条件（见 <a href="#triggers">triggers 详解</a>）</td>
+</tr>
+<tr>
+<td><code>detection</code></td>
+<td><code>dict</code></td>
+<td style="text-align: center;">是</td>
+<td>正则检测配置（见 <a href="#detection">detection 详解</a>）</td>
+</tr>
+<tr>
+<td><code>false_positive_filters</code></td>
+<td><code>list</code></td>
+<td style="text-align: center;">否</td>
+<td>误报白名单路径列表</td>
+</tr>
+<tr>
+<td><code>risk_escalation</code></td>
+<td><code>dict</code></td>
+<td style="text-align: center;">否</td>
+<td>风险等级覆写，格式 <code>{from: "medium", to: "high"}</code></td>
+</tr>
+<tr>
+<td><code>references</code></td>
+<td><code>dict</code></td>
+<td style="text-align: center;">否</td>
+<td>参考文献，含 <code>incidents</code> 和 <code>papers</code> 列表</td>
+</tr>
+<tr>
+<td><code>mitre_attack</code></td>
+<td><code>dict</code></td>
+<td style="text-align: center;">否</td>
+<td>MITRE ATT&amp;CK 映射，含 <code>tactics</code> 和 <code>techniques</code> 列表</td>
+</tr>
+<tr>
+<td><code>max_weight</code></td>
+<td><code>int</code></td>
+<td style="text-align: center;">—</td>
+<td>运行时填充：本次命中的最高正则权重（0 表示未命中）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="triggers">triggers 触发条件<a class="headerlink" href="#triggers" title="Permanent link">&para;</a></h2>
+<p><code>triggers</code> 决定"什么情况下对该事件运行检测"。支持以下字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>作用</th>
+<th>匹配方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tool_names</code></td>
+<td>工具名白名单</td>
+<td>大小写不敏感精确匹配（如 <code>bash</code>、<code>read_file</code>）</td>
+</tr>
+<tr>
+<td><code>file_extensions</code></td>
+<td>文件扩展名列表</td>
+<td><code>str.endswith()</code>（如 <code>.md</code>、<code>.pem</code>）</td>
+</tr>
+<tr>
+<td><code>file_patterns</code></td>
+<td>文件名 glob</td>
+<td><code>fnmatch</code> 匹配文件名 basename（如 <code>README*</code>）</td>
+</tr>
+<tr>
+<td><code>command_patterns</code></td>
+<td>命令字符串正则</td>
+<td>匹配 <code>payload["command"]</code>，加载时预编译</td>
+</tr>
+<tr>
+<td><code>path_patterns</code></td>
+<td>路径正则</td>
+<td>匹配 <code>payload["path"]</code> 或 <code>payload["file_path"]</code>，加载时预编译</td>
+</tr>
+<tr>
+<td><code>logic</code></td>
+<td>多条件逻辑</td>
+<td><code>"AND"</code>（默认 <code>"OR"</code>），与 <code>conditions</code> 配合使用</td>
+</tr>
+<tr>
+<td><code>conditions</code></td>
+<td>子条件列表</td>
+<td>每个子条件可嵌套 <code>OR</code> 列表</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">空 triggers 不匹配任何事件</p>
+<p>若 <code>triggers</code> 为空字典（<code>{}</code>），该模式<strong>不会</strong>对任何事件触发，不会产生全局兜底效果。</p>
+</div>
+<p><strong>单条件（直接列字段，逻辑 OR）：</strong></p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">triggers</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;bash&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;shell&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;exec&quot;</span><span class="p p-Indicator">]</span>
 </span></code></pre></div>
-<h3 id="triggers">triggers 触发条件详解<a class="headerlink" href="#triggers" title="Permanent link">&para;</a></h3>
-<p><strong>单工具过滤：</strong>
+<p><strong>AND 复合条件（所有子条件同时满足）：</strong></p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">triggers</span><span class="p">:</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;read_file&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;read&quot;</span><span class="p p-Indicator">]</span><span class="w">  </span><span class="c1"># 仅对 read_file/read 工具生效</span>
-</span></code></pre></div></p>
-<p><strong>AND 复合条件（所有必须满足）：</strong>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">logic</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AND&quot;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;read_file&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;read&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">OR</span><span class="p">:</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file_extensions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;.md&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;.txt&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;.rst&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file_patterns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;README*&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;CONTRIBUTING*&quot;</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<p><strong>结合路径正则（crontab 场景）：</strong></p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">triggers</span><span class="p">:</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">logic</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AND&quot;</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">logic</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;OR&quot;</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;bash&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">OR</span><span class="p">:</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file_extensions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;.pem&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;.key&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file_patterns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;id_rsa*&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;*.password&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command_patterns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;cat\\s+.*\\.env&quot;</span><span class="p p-Indicator">]</span>
-</span></code></pre></div></p>
-<p><strong>无 triggers</strong>（省略时对所有事件生效）：
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># triggers 省略 → 所有工具调用都会经过该模式检测</span>
-</span></code></pre></div></p>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;bash&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;shell&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;exec&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;write_file&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;write&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">path_patterns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;.*cron.*&quot;</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
 <hr />
-<h2 id="custom-patterns">添加自定义模式<a class="headerlink" href="#custom-patterns" title="Permanent link">&para;</a></h2>
-<p><strong>Step 1：创建自定义模式文件</strong></p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># /opt/clawsentry/my_patterns.yaml</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0&quot;</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nt">patterns</span><span class="p">:</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CORP-001&quot;</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;internal_exfil&quot;</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;检测向公司白名单外的</span><span class="nv"> </span><span class="s">S3</span><span class="nv"> </span><span class="s">桶上传数据&quot;</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">risk_level</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;high&quot;</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">triggers</span><span class="p">:</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">      </span><span class="nt">logic</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AND&quot;</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">      </span><span class="nt">conditions</span><span class="p">:</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;bash&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;exec&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">OR</span><span class="p">:</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command_patterns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;s3://(?!my-company-bucket)&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command_patterns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;aws</span><span class="nv"> </span><span class="s">s3</span><span class="nv"> </span><span class="s">cp.*s3://(?!my-company)&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">    </span><span class="nt">detection</span><span class="p">:</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">      </span><span class="nt">regex_patterns</span><span class="p">:</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;aws\\s+s3\\s+(cp|sync|mv).*s3://&quot;</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">          </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span><span class="nt">false_positive_filters</span><span class="p">:</span>
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;whitelist_path&quot;</span>
-</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">        </span><span class="nt">paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;*/test_*&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;*/mock_*&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>
-</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CORP-002&quot;</span>
-</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;secret_access&quot;</span>
-</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;检测访问公司</span><span class="nv"> </span><span class="s">Vault</span><span class="nv"> </span><span class="s">以外的密钥服务&quot;</span>
-</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">    </span><span class="nt">risk_level</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;critical&quot;</span>
-</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">    </span><span class="nt">triggers</span><span class="p">:</span>
-</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">      </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;http_request&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;web_fetch&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">    </span><span class="nt">detection</span><span class="p">:</span>
-</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="w">      </span><span class="nt">regex_patterns</span><span class="p">:</span>
-</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;secretsmanager\\.(?!amazonaws\\.com)&quot;</span>
-</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">          </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<h2 id="detection">detection 检测逻辑<a class="headerlink" href="#detection" title="Permanent link">&para;</a></h2>
+<p><code>detection.regex_patterns</code> 是一个正则列表，支持两种格式：</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">detection</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">regex_patterns</span><span class="p">:</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="c1"># 简写形式（默认权重 5）</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;curl.*--upload-file&quot;</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="c1"># 带权重形式（权重 1-10）</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;curl.*-F.*file=@&quot;</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9</span>
 </span></code></pre></div>
-<p><strong>Step 2：配置环境变量</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CS_L2_ATTACK_PATTERNS_PATH</span><span class="o">=</span>/opt/clawsentry/my_patterns.yaml
-</span></code></pre></div>
-<p>或在 <code>.env</code> 文件中：
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>CS_L2_ATTACK_PATTERNS_PATH=/opt/clawsentry/my_patterns.yaml
-</span></code></pre></div></p>
-<p><strong>Step 3：重启 Gateway 使配置生效</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># 若使用 clawsentry stack</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>clawsentry<span class="w"> </span>stack<span class="w">  </span><span class="c1"># Ctrl+C 后重新运行</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># 若单独运行 gateway</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>clawsentry<span class="w"> </span>gateway
-</span></code></pre></div>
-<p>启动日志中会显示已加载的模式数量：
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>INFO  PatternMatcher loaded 25 core + 2 custom patterns (total: 27)
-</span></code></pre></div></p>
-<p><strong>Step 4：上线前做作者期治理检查</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>lint<span class="w"> </span>--attack-patterns<span class="w"> </span>/opt/clawsentry/my_patterns.yaml<span class="w"> </span>--json
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>clawsentry<span class="w"> </span>rules<span class="w"> </span>dry-run<span class="w"> </span>--attack-patterns<span class="w"> </span>/opt/clawsentry/my_patterns.yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--events<span class="w"> </span>examples/sample-events.jsonl<span class="w"> </span>--json
-</span></code></pre></div>
-<p>这一步不会修改运行时行为，但会给出当前 pattern surface 的 fingerprint、source summary、重复/冲突 findings 和 sample event 命中结果。完整治理面说明见：<a href="../rule-governance/">规则治理</a>。</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pattern</code></td>
+<td>Python <code>re</code> 兼容正则；加载时经 <code>safe_regex</code> 编译，失败则跳过该条</td>
+</tr>
+<tr>
+<td><code>weight</code></td>
+<td>整数 1-10，未填写默认 5；命中时取所有命中正则中的最大值赋给 <code>max_weight</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">预编译与输入截断</p>
+<p>所有正则在 <strong><code>load_patterns()</code> 时预编译</strong>，不在每次调用时重复编译。输入内容超过 <strong>100 KB</strong> 时截断后再匹配，防止 ReDoS。</p>
+</div>
 <hr />
 <h2 id="false-positives">误报过滤<a class="headerlink" href="#false-positives" title="Permanent link">&para;</a></h2>
-<p><code>false_positive_filters</code> 允许为模式声明"已知安全"的路径，在这些路径下跳过该模式检测：</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">false_positive_filters</span><span class="p">:</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;whitelist_path&quot;</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">paths</span><span class="p">:</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/tmp/test_*&quot;</span><span class="w">          </span><span class="c1"># 临时测试文件</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*/node_modules/*&quot;</span><span class="w">     </span><span class="c1"># 依赖包目录</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*/test_fixtures/*&quot;</span><span class="w">    </span><span class="c1"># 测试夹具</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*/mock_data/*&quot;</span><span class="w">        </span><span class="c1"># 模拟数据目录</span>
+<p><code>false_positive_filters</code> 声明已知安全的路径，命中时该模式<strong>跳过检测</strong>（不计入风险评分）。</p>
+<p>目前支持的过滤类型：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>匹配字段</th>
+<th>匹配方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>whitelist_path</code></td>
+<td><code>payload["path"]</code> 或 <code>payload["file_path"]</code></td>
+<td><code>fnmatch</code> glob</td>
+</tr>
+</tbody>
+</table>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">false_positive_filters</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;whitelist_path&quot;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">paths</span><span class="p">:</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/tmp/test_*&quot;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*/node_modules/*&quot;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*/test_fixtures/*&quot;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*/ci/*&quot;</span>
 </span></code></pre></div>
-<p>当事件的目标路径匹配任意白名单 glob 模式时，该模式<strong>跳过检测</strong>（不计入风险分数）。</p>
 <div class="admonition tip">
-<p class="admonition-title">生产环境建议</p>
-<p>对于误报率较高的模式（如 ASI03-001 零宽字符），可在生产部署前先将其加入白名单，收集真实数据后再调整阈值，而非直接删除模式。</p>
+<p class="admonition-title">高误报模式的推荐做法</p>
+<p>对误报率较高的模式（如 ASI01-003 零宽字符），先通过白名单排除已知安全目录，收集一段时间真实数据后再收紧范围，而非直接删除模式。</p>
 </div>
+<hr />
+<h2 id="custom-patterns">自定义模式 YAML 格式<a class="headerlink" href="#custom-patterns" title="Permanent link">&para;</a></h2>
+<p>完整字段示例（所有可选字段均已注释）：</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.1&quot;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">patterns</span><span class="p">:</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CORP-001&quot;</span><span class="w">                    </span><span class="c1"># 必填：全局唯一字符串</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;internal_exfil&quot;</span><span class="w">        </span><span class="c1"># 必填：分类标签（自由定义，不影响逻辑）</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;检测向非授权</span><span class="nv"> </span><span class="s">S3</span><span class="nv"> </span><span class="s">桶上传数据&quot;</span><span class="w">  </span><span class="c1"># 必填</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">risk_level</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;high&quot;</span><span class="w">                </span><span class="c1"># 必填：low / medium / high / critical</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">triggers</span><span class="p">:</span><span class="w">                         </span><span class="c1"># 必填：触发条件</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">      </span><span class="nt">logic</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AND&quot;</span><span class="w">                    </span><span class="c1"># 可选：AND 或 OR（默认 OR）</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">      </span><span class="nt">conditions</span><span class="p">:</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tool_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;bash&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;exec&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">OR</span><span class="p">:</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command_patterns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;s3://(?!my-company-bucket)&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file_extensions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;.sh&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">    </span><span class="nt">detection</span><span class="p">:</span><span class="w">                        </span><span class="c1"># 必填：检测正则</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">      </span><span class="nt">regex_patterns</span><span class="p">:</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;aws\\s+s3\\s+(cp|sync|mv).*s3://&quot;</span>
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">          </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span><span class="w">                   </span><span class="c1"># 可选：1-10，默认 5</span>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">    </span><span class="nt">false_positive_filters</span><span class="p">:</span><span class="w">           </span><span class="c1"># 可选：已知安全路径白名单</span>
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;whitelist_path&quot;</span>
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">        </span><span class="nt">paths</span><span class="p">:</span>
+</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*/test_*&quot;</span>
+</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*/ci/*&quot;</span>
+</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>
+</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a><span class="w">    </span><span class="nt">risk_escalation</span><span class="p">:</span><span class="w">                  </span><span class="c1"># 可选：风险等级覆写</span>
+</span><span id="__span-5-29"><a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a><span class="w">      </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;medium&quot;</span>
+</span><span id="__span-5-30"><a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a><span class="w">      </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;high&quot;</span>
+</span><span id="__span-5-31"><a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a>
+</span><span id="__span-5-32"><a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a><span class="w">    </span><span class="nt">references</span><span class="p">:</span><span class="w">                       </span><span class="c1"># 可选：参考文献</span>
+</span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a><span class="w">      </span><span class="nt">incidents</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CVE-2025-XXXXX&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-34"><a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a><span class="w">      </span><span class="nt">papers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;owasp-aitop10-2025&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-35"><a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a>
+</span><span id="__span-5-36"><a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a><span class="w">    </span><span class="nt">mitre_attack</span><span class="p">:</span><span class="w">                     </span><span class="c1"># 可选：MITRE ATT&amp;CK 映射</span>
+</span><span id="__span-5-37"><a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a><span class="w">      </span><span class="nt">tactics</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;TA0010&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-38"><a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a><span class="w">      </span><span class="nt">techniques</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;T1537&quot;</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<p><strong>部署步骤：</strong></p>
+<ol>
+<li>将自定义模式保存到文件（如 <code>/opt/clawsentry/my_patterns.yaml</code>）</li>
+<li>设置环境变量：
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CS_L2_ATTACK_PATTERNS_PATH</span><span class="o">=</span>/opt/clawsentry/my_patterns.yaml
+</span></code></pre></div></li>
+<li>重启 Gateway（<code>clawsentry stack</code> 或 <code>clawsentry gateway</code>）</li>
+<li>验证启动日志中显示已加载的自定义模式数量：
+   <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>INFO  PatternMatcher loaded 25 core + N custom patterns (total: 25+N)
+</span></code></pre></div></li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">ID 冲突处理</p>
+<p>自定义模式的 <code>id</code> 若与内置模式重复，该自定义模式将被<strong>跳过</strong>并产生警告日志。自定义模式与内置模式合并使用，不会替换内置库。</p>
+</div>
+<hr />
+<h2 id="hot-reload">热更新<a class="headerlink" href="#hot-reload" title="Permanent link">&para;</a></h2>
+<p><code>PatternMatcher.reload()</code> 从磁盘重新加载模式（内置 + 自定义），<strong>无需重启进程</strong>：</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span> <span class="nn">clawsentry.gateway.pattern_matcher</span> <span class="kn">import</span> <span class="n">PatternMatcher</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">matcher</span> <span class="o">=</span> <span class="n">PatternMatcher</span><span class="p">(</span><span class="n">evolved_patterns_path</span><span class="o">=</span><span class="s2">&quot;/opt/cs/evolved.yaml&quot;</span><span class="p">)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># ... 运行时 ...</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">matcher</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>  <span class="c1"># 热更新：重新读取 YAML 文件</span>
+</span></code></pre></div>
+<p>进化模式（<code>EvolvedPattern</code>）额外字段包括 <code>status</code>（<code>candidate</code> / <code>experimental</code> / <code>stable</code>）、<code>confidence</code>（0.0-1.0）、<code>confirmed_count</code>、<code>false_positive_count</code> 等。只有状态为 <code>experimental</code> 或 <code>stable</code> 的进化模式会在 <code>reload()</code> 后生效。详见<a href="../pattern-evolution/">自进化模式库</a>。</p>
 <hr />
 <h2 id="source-code">代码位置<a class="headerlink" href="#source-code" title="Permanent link">&para;</a></h2>
 <table>
@@ -3006,22 +3248,22 @@
 </thead>
 <tbody>
 <tr>
-<td>PatternMatcher</td>
+<td><code>PatternMatcher</code> / <code>AttackPattern</code></td>
 <td><code>src/clawsentry/gateway/pattern_matcher.py</code></td>
-<td>加载 YAML、执行 AND/OR 触发逻辑、正则匹配</td>
+<td>YAML 加载、触发逻辑、正则匹配、误报过滤</td>
 </tr>
 <tr>
 <td>内置模式库</td>
 <td><code>src/clawsentry/gateway/attack_patterns.yaml</code></td>
-<td>25 条 ASI01-04 核心模式定义</td>
+<td>25 条 ASI01-05 核心模式定义</td>
 </tr>
 <tr>
-<td>RuleBasedAnalyzer</td>
+<td><code>RuleBasedAnalyzer</code></td>
 <td><code>src/clawsentry/gateway/semantic_analyzer.py</code></td>
-<td>集成 PatternMatcher，输出 L2 分析结果</td>
+<td>集成 <code>PatternMatcher</code>，输出 L2 分析结果</td>
 </tr>
 <tr>
-<td>DetectionConfig</td>
+<td><code>DetectionConfig</code></td>
 <td><code>src/clawsentry/gateway/detection_config.py</code></td>
 <td><code>patterns_path</code> 字段（自定义文件路径）</td>
 </tr>
@@ -3030,10 +3272,11 @@
 <hr />
 <h2 id="_1">相关页面<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../decision-layers/l2-semantic/">L2 语义分析</a> — PatternMatcher 的集成点与 RuleBasedAnalyzer 工作机制</li>
+<li><a href="../../decision-layers/l2-semantic/">L2 语义分析</a> — <code>PatternMatcher</code> 的集成点与 <code>RuleBasedAnalyzer</code> 工作机制</li>
 <li><a href="../pattern-evolution/">自进化模式库</a> — 从生产数据自动生成候选模式并晋升为稳定规则</li>
 <li><a href="../../configuration/detection-config/">检测管线配置</a> — <code>CS_L2_ATTACK_PATTERNS_PATH</code> 完整参数说明</li>
 <li><a href="../../configuration/env-vars/">环境变量参考</a> — 所有 <code>CS_*</code> 环境变量列表</li>
+<li><a href="../rule-governance/">规则治理</a> — 规则 lint、dry-run 与生产上线检查</li>
 </ul>
 
 
@@ -3057,7 +3300,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月15日 10:13:48 UTC">2026年4月15日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月17日 21:24:54 UTC">2026年5月17日</span>
   </span>
 
     
@@ -3180,11 +3423,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

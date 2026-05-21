@@ -1,31 +1,32 @@
 {
   "schema_version": "clawsentry-api-validity.v1",
-  "generated_at": "2026-05-02T02:08:28+00:00",
+  "generated_at": "2026-05-19T03:14:17+00:00",
   "source_artifacts": {
     "coverage": "site-docs/api/api-coverage.json",
     "openapi": "site-docs/api/openapi.json",
     "inventory_script": "scripts/docs_api_inventory.py"
   },
   "summary": {
-    "total_coverage_entries": 49,
-    "openapi_operations": 46,
+    "total_coverage_entries": 54,
+    "openapi_operations": 51,
     "status_counts": {
-      "enterprise": 9,
+      "enterprise": 10,
       "excluded": 3,
-      "public": 37
+      "public": 41
     },
     "group_counts": {
       "AHP 决策": 6,
-      "Enterprise 条件端点": 9,
+      "Enterprise 条件端点": 10,
       "Excluded": 3,
       "L3 Advisory": 13,
+      "Skill Trust": 3,
       "Webhook": 1,
       "告警与处置": 6,
-      "报表与监控": 7,
+      "报表与监控": 8,
       "规则与模式": 2,
       "运行状态": 2
     },
-    "docs_endpoint_mentions_matched": 140,
+    "docs_endpoint_mentions_matched": 146,
     "docs_endpoint_mentions_unmatched": 0,
     "valid": true
   },
@@ -40,7 +41,7 @@
     "matched": [
       {
         "page": "api/authentication.md",
-        "line": 54,
+        "line": 61,
         "method": "GET",
         "path": "/health",
         "rule": "duplicate-health:gateway-default",
@@ -48,7 +49,7 @@
       },
       {
         "page": "api/authentication.md",
-        "line": 65,
+        "line": 72,
         "method": "GET",
         "path": "/report/stream",
         "rule": "exact",
@@ -56,7 +57,7 @@
       },
       {
         "page": "api/decisions.md",
-        "line": 39,
+        "line": 49,
         "method": "POST",
         "path": "/ahp",
         "rule": "exact",
@@ -64,7 +65,7 @@
       },
       {
         "page": "api/decisions.md",
-        "line": 201,
+        "line": 215,
         "method": "POST",
         "path": "/ahp/a3s",
         "rule": "exact",
@@ -72,7 +73,7 @@
       },
       {
         "page": "api/decisions.md",
-        "line": 349,
+        "line": 363,
         "method": "POST",
         "path": "/ahp/codex",
         "rule": "exact",
@@ -80,7 +81,7 @@
       },
       {
         "page": "api/decisions.md",
-        "line": 428,
+        "line": 461,
         "method": "POST",
         "path": "/ahp/resolve",
         "rule": "exact",
@@ -88,7 +89,7 @@
       },
       {
         "page": "api/decisions.md",
-        "line": 720,
+        "line": 753,
         "method": "POST",
         "path": "/ahp/adapter-effect-result",
         "rule": "exact",
@@ -96,7 +97,7 @@
       },
       {
         "page": "api/decisions.md",
-        "line": 729,
+        "line": 762,
         "method": "GET",
         "path": "/report/session/{session_id}/quarantine",
         "rule": "exact",
@@ -104,7 +105,7 @@
       },
       {
         "page": "api/decisions.md",
-        "line": 729,
+        "line": 762,
         "method": "POST",
         "path": "/report/session/{session_id}/quarantine",
         "rule": "exact",
@@ -112,7 +113,7 @@
       },
       {
         "page": "api/decisions.md",
-        "line": 738,
+        "line": 771,
         "method": "POST",
         "path": "/ahp/adapter-effect-result",
         "rule": "exact",
@@ -120,7 +121,7 @@
       },
       {
         "page": "api/decisions.md",
-        "line": 771,
+        "line": 804,
         "method": "POST",
         "path": "/ahp/scope/preview",
         "rule": "exact",
@@ -128,7 +129,7 @@
       },
       {
         "page": "api/metric-dictionary.md",
-        "line": 65,
+        "line": 77,
         "method": "GET",
         "path": "/enterprise/report/live",
         "rule": "exact",
@@ -136,7 +137,7 @@
       },
       {
         "page": "api/metric-dictionary.md",
-        "line": 66,
+        "line": 78,
         "method": "GET",
         "path": "/enterprise/report/live",
         "rule": "exact",
@@ -144,7 +145,7 @@
       },
       {
         "page": "api/metric-dictionary.md",
-        "line": 67,
+        "line": 79,
         "method": "GET",
         "path": "/enterprise/report/summary",
         "rule": "exact",
@@ -152,7 +153,7 @@
       },
       {
         "page": "api/metric-dictionary.md",
-        "line": 68,
+        "line": 80,
         "method": "GET",
         "path": "/enterprise/report/summary",
         "rule": "exact",
@@ -160,7 +161,7 @@
       },
       {
         "page": "api/metric-dictionary.md",
-        "line": 69,
+        "line": 81,
         "method": "GET",
         "path": "/enterprise/report/session/{id}/risk",
         "rule": "parameter-alias",
@@ -168,7 +169,7 @@
       },
       {
         "page": "api/models-errors.md",
-        "line": 62,
+        "line": 71,
         "method": "GET",
         "path": "/health",
         "rule": "duplicate-health:gateway-default",
@@ -333,6 +334,14 @@
         "path": "/report/*",
         "rule": "group-alias:/report/*",
         "coverage_key": "gateway GET /report/summary"
+      },
+      {
+        "page": "api/overview.md",
+        "line": 77,
+        "method": "GET",
+        "path": "/report/*",
+        "rule": "group-alias:/report/*",
+        "coverage_key": "gateway GET /report/policy-drift"
       },
       {
         "page": "api/overview.md",
@@ -648,7 +657,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "GET",
         "path": "/health",
         "rule": "duplicate-health:gateway-default",
@@ -656,7 +665,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "GET",
         "path": "/metrics",
         "rule": "exact",
@@ -664,7 +673,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "GET",
         "path": "/report/summary",
         "rule": "exact",
@@ -672,7 +681,15 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
+        "method": "GET",
+        "path": "/report/policy-drift",
+        "rule": "exact",
+        "coverage_key": "gateway GET /report/policy-drift"
+      },
+      {
+        "page": "api/reporting.md",
+        "line": 21,
         "method": "GET",
         "path": "/report/sessions",
         "rule": "exact",
@@ -680,7 +697,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "GET",
         "path": "/report/session/{id}",
         "rule": "parameter-alias",
@@ -688,7 +705,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "GET",
         "path": "/report/session/{id}/risk",
         "rule": "parameter-alias",
@@ -696,7 +713,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "GET",
         "path": "/report/session/{id}/post-action",
         "rule": "parameter-alias",
@@ -704,7 +721,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "GET",
         "path": "/report/stream",
         "rule": "exact",
@@ -712,7 +729,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "GET",
         "path": "/report/alerts",
         "rule": "exact",
@@ -720,7 +737,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "POST",
         "path": "/report/alerts/{id}/ack",
         "rule": "endpoint-alias",
@@ -728,7 +745,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "GET",
         "path": "/ahp/patterns",
         "rule": "exact",
@@ -736,7 +753,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 11,
+        "line": 21,
         "method": "POST",
         "path": "/ahp/patterns/confirm",
         "rule": "exact",
@@ -744,7 +761,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 15,
+        "line": 25,
         "method": "GET",
         "path": "/health",
         "rule": "duplicate-health:gateway-default",
@@ -752,7 +769,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 53,
+        "line": 63,
         "method": "GET",
         "path": "/metrics",
         "rule": "exact",
@@ -760,7 +777,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 139,
+        "line": 149,
         "method": "GET",
         "path": "/report/summary",
         "rule": "exact",
@@ -768,7 +785,15 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 258,
+        "line": 268,
+        "method": "GET",
+        "path": "/report/policy-drift",
+        "rule": "exact",
+        "coverage_key": "gateway GET /report/policy-drift"
+      },
+      {
+        "page": "api/reporting.md",
+        "line": 338,
         "method": "GET",
         "path": "/report/sessions",
         "rule": "exact",
@@ -776,7 +801,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 400,
+        "line": 480,
         "method": "GET",
         "path": "/report/session/{id}",
         "rule": "parameter-alias",
@@ -784,7 +809,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 488,
+        "line": 568,
         "method": "GET",
         "path": "/report/session/{id}/risk",
         "rule": "parameter-alias",
@@ -792,7 +817,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 645,
+        "line": 725,
         "method": "GET",
         "path": "/report/session/{id}/post-action",
         "rule": "parameter-alias",
@@ -800,7 +825,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 737,
+        "line": 817,
         "method": "GET",
         "path": "/report/session/{id}/enforcement",
         "rule": "parameter-alias",
@@ -808,7 +833,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 784,
+        "line": 864,
         "method": "POST",
         "path": "/report/session/{id}/enforcement",
         "rule": "parameter-alias",
@@ -816,7 +841,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 834,
+        "line": 914,
         "method": "POST",
         "path": "/report/session/{id}/l3-advisory/snapshots",
         "rule": "parameter-alias",
@@ -824,7 +849,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 851,
+        "line": 931,
         "method": "POST",
         "path": "/report/l3-advisory/reviews",
         "rule": "exact",
@@ -832,7 +857,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 851,
+        "line": 931,
         "method": "PATCH",
         "path": "/report/l3-advisory/review/{review_id}",
         "rule": "exact",
@@ -840,7 +865,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 865,
+        "line": 945,
         "method": "POST",
         "path": "/report/l3-advisory/snapshot/{snapshot_id}/run-local-review",
         "rule": "exact",
@@ -848,7 +873,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 869,
+        "line": 949,
         "method": "POST",
         "path": "/report/l3-advisory/snapshot/{snapshot_id}/jobs",
         "rule": "exact",
@@ -856,7 +881,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 879,
+        "line": 959,
         "method": "GET",
         "path": "/report/l3-advisory/jobs",
         "rule": "exact",
@@ -864,7 +889,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 889,
+        "line": 969,
         "method": "POST",
         "path": "/report/l3-advisory/jobs/run-next",
         "rule": "exact",
@@ -872,7 +897,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 901,
+        "line": 981,
         "method": "POST",
         "path": "/report/l3-advisory/jobs/drain",
         "rule": "exact",
@@ -880,7 +905,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 913,
+        "line": 993,
         "method": "POST",
         "path": "/report/l3-advisory/job/{job_id}/run-local",
         "rule": "exact",
@@ -888,7 +913,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 917,
+        "line": 997,
         "method": "POST",
         "path": "/report/l3-advisory/job/{job_id}/run-worker",
         "rule": "exact",
@@ -896,7 +921,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 921,
+        "line": 1001,
         "method": "POST",
         "path": "/report/session/{id}/l3-advisory/full-review",
         "rule": "parameter-alias",
@@ -904,7 +929,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 960,
+        "line": 1040,
         "method": "GET",
         "path": "/report/session/{session_id}/l3-advisory/snapshots",
         "rule": "exact",
@@ -912,7 +937,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 961,
+        "line": 1041,
         "method": "GET",
         "path": "/report/l3-advisory/snapshot/{snapshot_id}",
         "rule": "exact",
@@ -920,7 +945,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 970,
+        "line": 1050,
         "method": "GET",
         "path": "/report/stream",
         "rule": "exact",
@@ -928,7 +953,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1244,
+        "line": 1324,
         "method": "GET",
         "path": "/report/alerts",
         "rule": "exact",
@@ -936,7 +961,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1305,
+        "line": 1385,
         "method": "POST",
         "path": "/report/alerts/{id}/acknowledge",
         "rule": "parameter-alias",
@@ -944,7 +969,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1357,
+        "line": 1437,
         "method": "GET",
         "path": "/ahp/patterns",
         "rule": "exact",
@@ -952,7 +977,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1415,
+        "line": 1495,
         "method": "POST",
         "path": "/ahp/patterns/confirm",
         "rule": "exact",
@@ -960,7 +985,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1473,
+        "line": 1553,
         "method": "GET",
         "path": "/ui",
         "rule": "exact",
@@ -968,7 +993,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1479,
+        "line": 1559,
         "method": "GET",
         "path": "/ui",
         "rule": "exact",
@@ -976,7 +1001,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1480,
+        "line": 1560,
         "method": "GET",
         "path": "/ui/{path}",
         "rule": "parameter-alias",
@@ -984,7 +1009,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1540,
+        "line": 1620,
         "method": "GET",
         "path": "/report/session/{id}/page",
         "rule": "parameter-alias",
@@ -992,7 +1017,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1567,
+        "line": 1647,
         "method": "GET",
         "path": "/enterprise/health",
         "rule": "exact",
@@ -1000,7 +1025,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1568,
+        "line": 1648,
         "method": "GET",
         "path": "/enterprise/report/summary",
         "rule": "exact",
@@ -1008,7 +1033,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1569,
+        "line": 1649,
         "method": "GET",
         "path": "/enterprise/report/live",
         "rule": "exact",
@@ -1016,7 +1041,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1570,
+        "line": 1650,
         "method": "GET",
         "path": "/enterprise/report/stream",
         "rule": "exact",
@@ -1024,7 +1049,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1571,
+        "line": 1651,
         "method": "GET",
         "path": "/enterprise/report/sessions",
         "rule": "exact",
@@ -1032,7 +1057,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1572,
+        "line": 1652,
         "method": "GET",
         "path": "/enterprise/report/session/{id}",
         "rule": "parameter-alias",
@@ -1040,7 +1065,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1573,
+        "line": 1653,
         "method": "GET",
         "path": "/enterprise/report/session/{id}/page",
         "rule": "parameter-alias",
@@ -1048,7 +1073,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1574,
+        "line": 1654,
         "method": "GET",
         "path": "/enterprise/report/session/{id}/risk",
         "rule": "parameter-alias",
@@ -1056,7 +1081,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1575,
+        "line": 1655,
         "method": "GET",
         "path": "/enterprise/report/alerts",
         "rule": "exact",
@@ -1064,7 +1089,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1586,
+        "line": 1666,
         "method": "GET",
         "path": "/enterprise/report/live",
         "rule": "exact",
@@ -1072,7 +1097,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1587,
+        "line": 1667,
         "method": "GET",
         "path": "/enterprise/report/summary",
         "rule": "exact",
@@ -1080,7 +1105,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1588,
+        "line": 1668,
         "method": "GET",
         "path": "/enterprise/report/sessions",
         "rule": "exact",
@@ -1088,7 +1113,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1589,
+        "line": 1669,
         "method": "GET",
         "path": "/enterprise/report/session/{id}/risk",
         "rule": "parameter-alias",
@@ -1096,7 +1121,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1590,
+        "line": 1670,
         "method": "GET",
         "path": "/enterprise/report/stream",
         "rule": "exact",
@@ -1104,7 +1129,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1712,
+        "line": 1792,
         "method": "GET",
         "path": "/enterprise/report/live",
         "rule": "exact",
@@ -1112,7 +1137,7 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1716,
+        "line": 1796,
         "method": "GET",
         "path": "/report/session/{id}/quarantine",
         "rule": "parameter-alias",
@@ -1120,27 +1145,43 @@
       },
       {
         "page": "api/reporting.md",
-        "line": 1741,
+        "line": 1821,
         "method": "POST",
         "path": "/report/session/{id}/quarantine",
         "rule": "parameter-alias",
         "coverage_key": "gateway POST /report/session/{session_id}/quarantine"
       },
       {
+        "page": "api/reporting.md",
+        "line": 1844,
+        "method": "GET",
+        "path": "/skill-trust/registry",
+        "rule": "exact",
+        "coverage_key": "gateway GET /skill-trust/registry"
+      },
+      {
+        "page": "api/reporting.md",
+        "line": 1846,
+        "method": "GET",
+        "path": "/skill-trust/transition/recommendations",
+        "rule": "exact",
+        "coverage_key": "gateway GET /skill-trust/transition/recommendations"
+      },
+      {
+        "page": "api/reporting.md",
+        "line": 1848,
+        "method": "POST",
+        "path": "/skill-trust/transition",
+        "rule": "exact",
+        "coverage_key": "gateway POST /skill-trust/transition"
+      },
+      {
         "page": "api/webhooks.md",
-        "line": 10,
+        "line": 19,
         "method": "POST",
         "path": "/webhook/openclaw",
         "rule": "exact",
         "coverage_key": "openclaw-webhook POST /webhook/openclaw"
-      },
-      {
-        "page": "api/webhooks.md",
-        "line": 71,
-        "method": "GET",
-        "path": "/health",
-        "rule": "duplicate-health:openclaw-webhook",
-        "coverage_key": "openclaw-webhook GET /health"
       },
       {
         "page": "api/webhooks.md",
@@ -1151,8 +1192,16 @@
         "coverage_key": "openclaw-webhook GET /health"
       },
       {
+        "page": "api/webhooks.md",
+        "line": 89,
+        "method": "GET",
+        "path": "/health",
+        "rule": "duplicate-health:openclaw-webhook",
+        "coverage_key": "openclaw-webhook GET /health"
+      },
+      {
         "page": "index.md",
-        "line": 307,
+        "line": 236,
         "method": "POST",
         "path": "/ahp/a3s",
         "rule": "exact",
@@ -1173,8 +1222,8 @@
       "audience": "developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.",
-      "source": "src/clawsentry/gateway/server.py:3476",
-      "source_line_current": "src/clawsentry/gateway/server.py:3476",
+      "source": "src/clawsentry/gateway/server.py:5008",
+      "source_line_current": "src/clawsentry/gateway/server.py:5008",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/decisions.md#post-ahp",
@@ -1184,7 +1233,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/decisions.md",
-          "line": 39,
+          "line": 49,
           "method": "POST",
           "path": "/ahp",
           "rule": "exact",
@@ -1233,8 +1282,8 @@
       "audience": "developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.",
-      "source": "src/clawsentry/gateway/server.py:3574",
-      "source_line_current": "src/clawsentry/gateway/server.py:3574",
+      "source": "src/clawsentry/gateway/server.py:5106",
+      "source_line_current": "src/clawsentry/gateway/server.py:5106",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/decisions.md#post-ahp-a3s",
@@ -1244,7 +1293,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/decisions.md",
-          "line": 201,
+          "line": 215,
           "method": "POST",
           "path": "/ahp/a3s",
           "rule": "exact",
@@ -1276,7 +1325,7 @@
         },
         {
           "page": "index.md",
-          "line": 307,
+          "line": 236,
           "method": "POST",
           "path": "/ahp/a3s",
           "rule": "exact",
@@ -1301,8 +1350,8 @@
       "audience": "developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth; production must set Bearer token.",
-      "source": "src/clawsentry/gateway/server.py:3608",
-      "source_line_current": "src/clawsentry/gateway/server.py:3608",
+      "source": "src/clawsentry/gateway/server.py:5140",
+      "source_line_current": "src/clawsentry/gateway/server.py:5140",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/decisions.md#post-ahp-codex",
@@ -1312,7 +1361,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/decisions.md",
-          "line": 349,
+          "line": 363,
           "method": "POST",
           "path": "/ahp/codex",
           "rule": "exact",
@@ -1353,8 +1402,8 @@
       "audience": "developer|operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth; native hook subprocesses should authenticate when token is configured.",
-      "source": "src/clawsentry/gateway/server.py:3497",
-      "source_line_current": "src/clawsentry/gateway/server.py:3497",
+      "source": "src/clawsentry/gateway/server.py:5029",
+      "source_line_current": "src/clawsentry/gateway/server.py:5029",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/decisions.md#post-ahp-adapter-effect-result",
@@ -1364,7 +1413,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/decisions.md",
-          "line": 720,
+          "line": 753,
           "method": "POST",
           "path": "/ahp/adapter-effect-result",
           "rule": "exact",
@@ -1372,7 +1421,7 @@
         },
         {
           "page": "api/decisions.md",
-          "line": 738,
+          "line": 771,
           "method": "POST",
           "path": "/ahp/adapter-effect-result",
           "rule": "exact",
@@ -1397,8 +1446,8 @@
       "audience": "developer|operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Scope preview is capability-honest: dry-run profiles explain what would happen but do not enforce until confirmed.",
-      "source": "src/clawsentry/gateway/server.py:3526",
-      "source_line_current": "src/clawsentry/gateway/server.py:3526",
+      "source": "src/clawsentry/gateway/server.py:5058",
+      "source_line_current": "src/clawsentry/gateway/server.py:5058",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/decisions.md#post-ahp-scope-preview",
@@ -1408,7 +1457,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/decisions.md",
-          "line": 771,
+          "line": 804,
           "method": "POST",
           "path": "/ahp/scope/preview",
           "rule": "exact",
@@ -1444,7 +1493,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/decisions.md",
-          "line": 428,
+          "line": 461,
           "method": "POST",
           "path": "/ahp/resolve",
           "rule": "exact",
@@ -1485,8 +1534,8 @@
       "audience": "operator",
       "auth": "none",
       "auth_note": "Gateway health endpoint is intentionally unauthenticated.",
-      "source": "src/clawsentry/gateway/server.py:3647",
-      "source_line_current": "src/clawsentry/gateway/server.py:3647",
+      "source": "src/clawsentry/gateway/server.py:5179",
+      "source_line_current": "src/clawsentry/gateway/server.py:5179",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-health",
@@ -1496,7 +1545,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/authentication.md",
-          "line": 54,
+          "line": 61,
           "method": "GET",
           "path": "/health",
           "rule": "duplicate-health:gateway-default",
@@ -1504,7 +1553,7 @@
         },
         {
           "page": "api/models-errors.md",
-          "line": 62,
+          "line": 71,
           "method": "GET",
           "path": "/health",
           "rule": "duplicate-health:gateway-default",
@@ -1552,7 +1601,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/health",
           "rule": "duplicate-health:gateway-default",
@@ -1560,7 +1609,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 15,
+          "line": 25,
           "method": "GET",
           "path": "/health",
           "rule": "duplicate-health:gateway-default",
@@ -1576,6 +1625,114 @@
       "notes": "Safe for local live smoke; report generation does not start services or claim a 2xx run."
     },
     {
+      "coverage_key": "gateway GET /skill-trust/registry",
+      "service": "gateway",
+      "method": "GET",
+      "path": "/skill-trust/registry",
+      "public_status": "public",
+      "group": "Skill Trust",
+      "audience": "operator",
+      "auth": "bearer-disabled-when-empty-token",
+      "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Reads the configured Gateway-owned Skill Trust registry.",
+      "source": "src/clawsentry/gateway/server.py:5183",
+      "source_line_current": "src/clawsentry/gateway/server.py:5183",
+      "source_route_present": true,
+      "source_line_valid": true,
+      "markdown_ref": "api/reporting.md#skill-trust-lifecycle",
+      "markdown_anchor_present": true,
+      "openapi_ref": "#/paths/~1skill-trust~1registry/get",
+      "openapi_operation_present": true,
+      "docs_endpoint_mentions": [
+        {
+          "page": "api/reporting.md",
+          "line": 1844,
+          "method": "GET",
+          "path": "/skill-trust/registry",
+          "rule": "exact",
+          "coverage_key": "gateway GET /skill-trust/registry"
+        }
+      ],
+      "docs_mention_rule": [
+        "exact"
+      ],
+      "example_status": "request/response/errors-present",
+      "runtime_check_kind": "contract-only",
+      "runtime_check_result": "contract-verified",
+      "notes": "Write/stateful/auth-dependent endpoint is not blindly invoked by the docs report."
+    },
+    {
+      "coverage_key": "gateway GET /skill-trust/transition/recommendations",
+      "service": "gateway",
+      "method": "GET",
+      "path": "/skill-trust/transition/recommendations",
+      "public_status": "public",
+      "group": "Skill Trust",
+      "audience": "operator",
+      "auth": "bearer-disabled-when-empty-token",
+      "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Lists FSPR/P2 transition recommendations without mutating registry state.",
+      "source": "src/clawsentry/gateway/server.py:5216",
+      "source_line_current": "src/clawsentry/gateway/server.py:5216",
+      "source_route_present": true,
+      "source_line_valid": true,
+      "markdown_ref": "api/reporting.md#skill-trust-lifecycle",
+      "markdown_anchor_present": true,
+      "openapi_ref": "#/paths/~1skill-trust~1transition~1recommendations/get",
+      "openapi_operation_present": true,
+      "docs_endpoint_mentions": [
+        {
+          "page": "api/reporting.md",
+          "line": 1846,
+          "method": "GET",
+          "path": "/skill-trust/transition/recommendations",
+          "rule": "exact",
+          "coverage_key": "gateway GET /skill-trust/transition/recommendations"
+        }
+      ],
+      "docs_mention_rule": [
+        "exact"
+      ],
+      "example_status": "request/response/errors-present",
+      "runtime_check_kind": "contract-only",
+      "runtime_check_result": "contract-verified",
+      "notes": "Write/stateful/auth-dependent endpoint is not blindly invoked by the docs report."
+    },
+    {
+      "coverage_key": "gateway POST /skill-trust/transition",
+      "service": "gateway",
+      "method": "POST",
+      "path": "/skill-trust/transition",
+      "public_status": "public",
+      "group": "Skill Trust",
+      "audience": "operator",
+      "auth": "bearer-disabled-when-empty-token",
+      "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Mutations require expected_registry_snapshot_id and idempotency_key.",
+      "source": "src/clawsentry/gateway/server.py:5270",
+      "source_line_current": "src/clawsentry/gateway/server.py:5270",
+      "source_route_present": true,
+      "source_line_valid": true,
+      "markdown_ref": "api/reporting.md#skill-trust-lifecycle",
+      "markdown_anchor_present": true,
+      "openapi_ref": "#/paths/~1skill-trust~1transition/post",
+      "openapi_operation_present": true,
+      "docs_endpoint_mentions": [
+        {
+          "page": "api/reporting.md",
+          "line": 1848,
+          "method": "POST",
+          "path": "/skill-trust/transition",
+          "rule": "exact",
+          "coverage_key": "gateway POST /skill-trust/transition"
+        }
+      ],
+      "docs_mention_rule": [
+        "exact"
+      ],
+      "example_status": "request/response/errors-present",
+      "runtime_check_kind": "contract-only",
+      "runtime_check_result": "contract-verified",
+      "notes": "Write/stateful/auth-dependent endpoint is not blindly invoked by the docs report."
+    },
+    {
       "coverage_key": "gateway GET /metrics",
       "service": "gateway",
       "method": "GET",
@@ -1585,8 +1742,8 @@
       "audience": "operator",
       "auth": "metrics-conditional",
       "auth_note": "CS_METRICS_AUTH=true requires Bearer token; false/empty exposes metrics without auth.",
-      "source": "src/clawsentry/gateway/server.py:3661",
-      "source_line_current": "src/clawsentry/gateway/server.py:3661",
+      "source": "src/clawsentry/gateway/server.py:5426",
+      "source_line_current": "src/clawsentry/gateway/server.py:5426",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-metrics",
@@ -1628,7 +1785,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/metrics",
           "rule": "exact",
@@ -1636,7 +1793,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 53,
+          "line": 63,
           "method": "GET",
           "path": "/metrics",
           "rule": "exact",
@@ -1661,8 +1818,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:3673",
-      "source_line_current": "src/clawsentry/gateway/server.py:3673",
+      "source": "src/clawsentry/gateway/server.py:5438",
+      "source_line_current": "src/clawsentry/gateway/server.py:5438",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-summary",
@@ -1704,7 +1861,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/report/summary",
           "rule": "exact",
@@ -1712,11 +1869,64 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 139,
+          "line": 149,
           "method": "GET",
           "path": "/report/summary",
           "rule": "exact",
           "coverage_key": "gateway GET /report/summary"
+        }
+      ],
+      "docs_mention_rule": [
+        "exact",
+        "group-alias:/report/*"
+      ],
+      "example_status": "request/response/errors-present",
+      "runtime_check_kind": "read-only-contract",
+      "runtime_check_result": "contract-verified",
+      "notes": "Read-only endpoint is verified by source/OpenAPI/docs trace; deterministic live empty-state is deployment-dependent."
+    },
+    {
+      "coverage_key": "gateway GET /report/policy-drift",
+      "service": "gateway",
+      "method": "GET",
+      "path": "/report/policy-drift",
+      "public_status": "public",
+      "group": "报表与监控",
+      "audience": "operator",
+      "auth": "bearer-disabled-when-empty-token",
+      "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
+      "source": "src/clawsentry/gateway/server.py:5451",
+      "source_line_current": "src/clawsentry/gateway/server.py:5451",
+      "source_route_present": true,
+      "source_line_valid": true,
+      "markdown_ref": "api/reporting.md#get-report-policy-drift",
+      "markdown_anchor_present": true,
+      "openapi_ref": "#/paths/~1report~1policy-drift/get",
+      "openapi_operation_present": true,
+      "docs_endpoint_mentions": [
+        {
+          "page": "api/overview.md",
+          "line": 77,
+          "method": "GET",
+          "path": "/report/*",
+          "rule": "group-alias:/report/*",
+          "coverage_key": "gateway GET /report/policy-drift"
+        },
+        {
+          "page": "api/reporting.md",
+          "line": 21,
+          "method": "GET",
+          "path": "/report/policy-drift",
+          "rule": "exact",
+          "coverage_key": "gateway GET /report/policy-drift"
+        },
+        {
+          "page": "api/reporting.md",
+          "line": 268,
+          "method": "GET",
+          "path": "/report/policy-drift",
+          "rule": "exact",
+          "coverage_key": "gateway GET /report/policy-drift"
         }
       ],
       "docs_mention_rule": [
@@ -1738,8 +1948,8 @@
       "audience": "developer",
       "auth": "query-token",
       "auth_note": "Accepts Bearer token and browser-friendly ?token= query auth; CS_AUTH_TOKEN empty disables auth.",
-      "source": "src/clawsentry/gateway/server.py:3715",
-      "source_line_current": "src/clawsentry/gateway/server.py:3715",
+      "source": "src/clawsentry/gateway/server.py:5520",
+      "source_line_current": "src/clawsentry/gateway/server.py:5520",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-stream",
@@ -1749,7 +1959,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/authentication.md",
-          "line": 65,
+          "line": 72,
           "method": "GET",
           "path": "/report/stream",
           "rule": "exact",
@@ -1805,7 +2015,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/report/stream",
           "rule": "exact",
@@ -1813,7 +2023,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 970,
+          "line": 1050,
           "method": "GET",
           "path": "/report/stream",
           "rule": "exact",
@@ -1839,8 +2049,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:3829",
-      "source_line_current": "src/clawsentry/gateway/server.py:3829",
+      "source": "src/clawsentry/gateway/server.py:5634",
+      "source_line_current": "src/clawsentry/gateway/server.py:5634",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-sessions",
@@ -1882,7 +2092,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/report/sessions",
           "rule": "exact",
@@ -1890,7 +2100,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 258,
+          "line": 338,
           "method": "GET",
           "path": "/report/sessions",
           "rule": "exact",
@@ -1916,8 +2126,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:3923",
-      "source_line_current": "src/clawsentry/gateway/server.py:3923",
+      "source": "src/clawsentry/gateway/server.py:5728",
+      "source_line_current": "src/clawsentry/gateway/server.py:5728",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-session-risk",
@@ -1935,7 +2145,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/report/session/{id}/risk",
           "rule": "parameter-alias",
@@ -1943,7 +2153,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 488,
+          "line": 568,
           "method": "GET",
           "path": "/report/session/{id}/risk",
           "rule": "parameter-alias",
@@ -1969,8 +2179,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:3946",
-      "source_line_current": "src/clawsentry/gateway/server.py:3946",
+      "source": "src/clawsentry/gateway/server.py:5751",
+      "source_line_current": "src/clawsentry/gateway/server.py:5751",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-session-post-action",
@@ -1988,7 +2198,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/report/session/{id}/post-action",
           "rule": "parameter-alias",
@@ -1996,7 +2206,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 645,
+          "line": 725,
           "method": "GET",
           "path": "/report/session/{id}/post-action",
           "rule": "parameter-alias",
@@ -2022,8 +2232,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4381",
-      "source_line_current": "src/clawsentry/gateway/server.py:4381",
+      "source": "src/clawsentry/gateway/server.py:6186",
+      "source_line_current": "src/clawsentry/gateway/server.py:6186",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-session",
@@ -2041,7 +2251,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/report/session/{id}",
           "rule": "parameter-alias",
@@ -2049,7 +2259,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 400,
+          "line": 480,
           "method": "GET",
           "path": "/report/session/{id}",
           "rule": "parameter-alias",
@@ -2075,8 +2285,8 @@
       "audience": "developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4429",
-      "source_line_current": "src/clawsentry/gateway/server.py:4429",
+      "source": "src/clawsentry/gateway/server.py:6234",
+      "source_line_current": "src/clawsentry/gateway/server.py:6234",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-session-page",
@@ -2118,7 +2328,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1540,
+          "line": 1620,
           "method": "GET",
           "path": "/report/session/{id}/page",
           "rule": "parameter-alias",
@@ -2145,8 +2355,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4493",
-      "source_line_current": "src/clawsentry/gateway/server.py:4493",
+      "source": "src/clawsentry/gateway/server.py:6298",
+      "source_line_current": "src/clawsentry/gateway/server.py:6298",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-alerts",
@@ -2172,7 +2382,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/report/alerts",
           "rule": "exact",
@@ -2180,7 +2390,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1244,
+          "line": 1324,
           "method": "GET",
           "path": "/report/alerts",
           "rule": "exact",
@@ -2206,8 +2416,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4576",
-      "source_line_current": "src/clawsentry/gateway/server.py:4576",
+      "source": "src/clawsentry/gateway/server.py:6381",
+      "source_line_current": "src/clawsentry/gateway/server.py:6381",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#post-report-alerts-acknowledge",
@@ -2225,7 +2435,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "POST",
           "path": "/report/alerts/{id}/ack",
           "rule": "endpoint-alias",
@@ -2233,7 +2443,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1305,
+          "line": 1385,
           "method": "POST",
           "path": "/report/alerts/{id}/acknowledge",
           "rule": "parameter-alias",
@@ -2260,8 +2470,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4600",
-      "source_line_current": "src/clawsentry/gateway/server.py:4600",
+      "source": "src/clawsentry/gateway/server.py:6405",
+      "source_line_current": "src/clawsentry/gateway/server.py:6405",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-session-enforcement",
@@ -2279,7 +2489,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 737,
+          "line": 817,
           "method": "GET",
           "path": "/report/session/{id}/enforcement",
           "rule": "parameter-alias",
@@ -2305,8 +2515,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4607",
-      "source_line_current": "src/clawsentry/gateway/server.py:4607",
+      "source": "src/clawsentry/gateway/server.py:6412",
+      "source_line_current": "src/clawsentry/gateway/server.py:6412",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#post-report-session-enforcement",
@@ -2316,7 +2526,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 784,
+          "line": 864,
           "method": "POST",
           "path": "/report/session/{id}/enforcement",
           "rule": "parameter-alias",
@@ -2341,8 +2551,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Quarantine is explicit session mark-blocked state, not guaranteed host termination.",
-      "source": "src/clawsentry/gateway/server.py:4644",
-      "source_line_current": "src/clawsentry/gateway/server.py:4644",
+      "source": "src/clawsentry/gateway/server.py:6449",
+      "source_line_current": "src/clawsentry/gateway/server.py:6449",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-report-session-quarantine",
@@ -2352,7 +2562,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/decisions.md",
-          "line": 729,
+          "line": 762,
           "method": "GET",
           "path": "/report/session/{session_id}/quarantine",
           "rule": "exact",
@@ -2368,7 +2578,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1716,
+          "line": 1796,
           "method": "GET",
           "path": "/report/session/{id}/quarantine",
           "rule": "parameter-alias",
@@ -2395,8 +2605,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. Release is explicit and audited separately from legacy enforcement cooldown.",
-      "source": "src/clawsentry/gateway/server.py:4654",
-      "source_line_current": "src/clawsentry/gateway/server.py:4654",
+      "source": "src/clawsentry/gateway/server.py:6459",
+      "source_line_current": "src/clawsentry/gateway/server.py:6459",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#post-report-session-quarantine",
@@ -2406,7 +2616,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/decisions.md",
-          "line": 729,
+          "line": 762,
           "method": "POST",
           "path": "/report/session/{session_id}/quarantine",
           "rule": "exact",
@@ -2414,7 +2624,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1741,
+          "line": 1821,
           "method": "POST",
           "path": "/report/session/{id}/quarantine",
           "rule": "parameter-alias",
@@ -2440,8 +2650,8 @@
       "audience": "developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4699",
-      "source_line_current": "src/clawsentry/gateway/server.py:4699",
+      "source": "src/clawsentry/gateway/server.py:6504",
+      "source_line_current": "src/clawsentry/gateway/server.py:6504",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#get-ahp-patterns",
@@ -2451,7 +2661,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "GET",
           "path": "/ahp/patterns",
           "rule": "exact",
@@ -2459,7 +2669,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1357,
+          "line": 1437,
           "method": "GET",
           "path": "/ahp/patterns",
           "rule": "exact",
@@ -2484,8 +2694,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4713",
-      "source_line_current": "src/clawsentry/gateway/server.py:4713",
+      "source": "src/clawsentry/gateway/server.py:6518",
+      "source_line_current": "src/clawsentry/gateway/server.py:6518",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#post-ahp-patterns-confirm",
@@ -2495,7 +2705,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 11,
+          "line": 21,
           "method": "POST",
           "path": "/ahp/patterns/confirm",
           "rule": "exact",
@@ -2503,7 +2713,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1415,
+          "line": 1495,
           "method": "POST",
           "path": "/ahp/patterns/confirm",
           "rule": "exact",
@@ -2563,7 +2773,7 @@
         },
         {
           "page": "api/webhooks.md",
-          "line": 10,
+          "line": 19,
           "method": "POST",
           "path": "/webhook/openclaw",
           "rule": "exact",
@@ -2588,8 +2798,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:3969",
-      "source_line_current": "src/clawsentry/gateway/server.py:3969",
+      "source": "src/clawsentry/gateway/server.py:5774",
+      "source_line_current": "src/clawsentry/gateway/server.py:5774",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2599,7 +2809,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 834,
+          "line": 914,
           "method": "POST",
           "path": "/report/session/{id}/l3-advisory/snapshots",
           "rule": "parameter-alias",
@@ -2624,8 +2834,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4009",
-      "source_line_current": "src/clawsentry/gateway/server.py:4009",
+      "source": "src/clawsentry/gateway/server.py:5814",
+      "source_line_current": "src/clawsentry/gateway/server.py:5814",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2643,7 +2853,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 960,
+          "line": 1040,
           "method": "GET",
           "path": "/report/session/{session_id}/l3-advisory/snapshots",
           "rule": "exact",
@@ -2669,8 +2879,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4022",
-      "source_line_current": "src/clawsentry/gateway/server.py:4022",
+      "source": "src/clawsentry/gateway/server.py:5827",
+      "source_line_current": "src/clawsentry/gateway/server.py:5827",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2688,7 +2898,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 961,
+          "line": 1041,
           "method": "GET",
           "path": "/report/l3-advisory/snapshot/{snapshot_id}",
           "rule": "exact",
@@ -2714,8 +2924,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4042",
-      "source_line_current": "src/clawsentry/gateway/server.py:4042",
+      "source": "src/clawsentry/gateway/server.py:5847",
+      "source_line_current": "src/clawsentry/gateway/server.py:5847",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2733,7 +2943,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 879,
+          "line": 959,
           "method": "GET",
           "path": "/report/l3-advisory/jobs",
           "rule": "exact",
@@ -2759,8 +2969,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4065",
-      "source_line_current": "src/clawsentry/gateway/server.py:4065",
+      "source": "src/clawsentry/gateway/server.py:5870",
+      "source_line_current": "src/clawsentry/gateway/server.py:5870",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2770,7 +2980,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 889,
+          "line": 969,
           "method": "POST",
           "path": "/report/l3-advisory/jobs/run-next",
           "rule": "exact",
@@ -2795,8 +3005,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4092",
-      "source_line_current": "src/clawsentry/gateway/server.py:4092",
+      "source": "src/clawsentry/gateway/server.py:5897",
+      "source_line_current": "src/clawsentry/gateway/server.py:5897",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2806,7 +3016,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 901,
+          "line": 981,
           "method": "POST",
           "path": "/report/l3-advisory/jobs/drain",
           "rule": "exact",
@@ -2831,8 +3041,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4120",
-      "source_line_current": "src/clawsentry/gateway/server.py:4120",
+      "source": "src/clawsentry/gateway/server.py:5925",
+      "source_line_current": "src/clawsentry/gateway/server.py:5925",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2842,7 +3052,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 869,
+          "line": 949,
           "method": "POST",
           "path": "/report/l3-advisory/snapshot/{snapshot_id}/jobs",
           "rule": "exact",
@@ -2867,8 +3077,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4143",
-      "source_line_current": "src/clawsentry/gateway/server.py:4143",
+      "source": "src/clawsentry/gateway/server.py:5948",
+      "source_line_current": "src/clawsentry/gateway/server.py:5948",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2878,7 +3088,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 851,
+          "line": 931,
           "method": "POST",
           "path": "/report/l3-advisory/reviews",
           "rule": "exact",
@@ -2903,8 +3113,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4192",
-      "source_line_current": "src/clawsentry/gateway/server.py:4192",
+      "source": "src/clawsentry/gateway/server.py:5997",
+      "source_line_current": "src/clawsentry/gateway/server.py:5997",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2914,7 +3124,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 851,
+          "line": 931,
           "method": "PATCH",
           "path": "/report/l3-advisory/review/{review_id}",
           "rule": "exact",
@@ -2939,8 +3149,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4249",
-      "source_line_current": "src/clawsentry/gateway/server.py:4249",
+      "source": "src/clawsentry/gateway/server.py:6054",
+      "source_line_current": "src/clawsentry/gateway/server.py:6054",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2950,7 +3160,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 865,
+          "line": 945,
           "method": "POST",
           "path": "/report/l3-advisory/snapshot/{snapshot_id}/run-local-review",
           "rule": "exact",
@@ -2975,8 +3185,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4268",
-      "source_line_current": "src/clawsentry/gateway/server.py:4268",
+      "source": "src/clawsentry/gateway/server.py:6073",
+      "source_line_current": "src/clawsentry/gateway/server.py:6073",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -2986,7 +3196,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 913,
+          "line": 993,
           "method": "POST",
           "path": "/report/l3-advisory/job/{job_id}/run-local",
           "rule": "exact",
@@ -3011,8 +3221,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4287",
-      "source_line_current": "src/clawsentry/gateway/server.py:4287",
+      "source": "src/clawsentry/gateway/server.py:6092",
+      "source_line_current": "src/clawsentry/gateway/server.py:6092",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -3022,7 +3232,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 917,
+          "line": 997,
           "method": "POST",
           "path": "/report/l3-advisory/job/{job_id}/run-worker",
           "rule": "exact",
@@ -3047,8 +3257,8 @@
       "audience": "operator|developer",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "CS_AUTH_TOKEN empty disables Gateway bearer auth. L3 advisory is advisory-only and does not mutate historical canonical decisions.",
-      "source": "src/clawsentry/gateway/server.py:4312",
-      "source_line_current": "src/clawsentry/gateway/server.py:4312",
+      "source": "src/clawsentry/gateway/server.py:6117",
+      "source_line_current": "src/clawsentry/gateway/server.py:6117",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#l3-advisory-endpoints",
@@ -3058,7 +3268,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 921,
+          "line": 1001,
           "method": "POST",
           "path": "/report/session/{id}/l3-advisory/full-review",
           "rule": "parameter-alias",
@@ -3083,8 +3293,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:3651",
-      "source_line_current": "src/clawsentry/gateway/server.py:3651",
+      "source": "src/clawsentry/gateway/server.py:5416",
+      "source_line_current": "src/clawsentry/gateway/server.py:5416",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#enterprise-endpoints",
@@ -3094,7 +3304,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 1567,
+          "line": 1647,
           "method": "GET",
           "path": "/enterprise/health",
           "rule": "exact",
@@ -3119,8 +3329,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:3686",
-      "source_line_current": "src/clawsentry/gateway/server.py:3686",
+      "source": "src/clawsentry/gateway/server.py:5471",
+      "source_line_current": "src/clawsentry/gateway/server.py:5471",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#enterprise-endpoints",
@@ -3130,7 +3340,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/metric-dictionary.md",
-          "line": 67,
+          "line": 79,
           "method": "GET",
           "path": "/enterprise/report/summary",
           "rule": "exact",
@@ -3138,7 +3348,7 @@
         },
         {
           "page": "api/metric-dictionary.md",
-          "line": 68,
+          "line": 80,
           "method": "GET",
           "path": "/enterprise/report/summary",
           "rule": "exact",
@@ -3170,7 +3380,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1568,
+          "line": 1648,
           "method": "GET",
           "path": "/enterprise/report/summary",
           "rule": "exact",
@@ -3178,7 +3388,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1587,
+          "line": 1667,
           "method": "GET",
           "path": "/enterprise/report/summary",
           "rule": "exact",
@@ -3194,6 +3404,31 @@
       "notes": "Route is conditionally registered when enterprise mode is enabled; no default live 2xx claim is made."
     },
     {
+      "coverage_key": "gateway-enterprise GET /enterprise/report/policy-drift",
+      "service": "gateway-enterprise",
+      "method": "GET",
+      "path": "/enterprise/report/policy-drift",
+      "public_status": "enterprise",
+      "group": "Enterprise 条件端点",
+      "audience": "operator",
+      "auth": "bearer-disabled-when-empty-token",
+      "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
+      "source": "src/clawsentry/gateway/server.py:5491",
+      "source_line_current": "src/clawsentry/gateway/server.py:5491",
+      "source_route_present": true,
+      "source_line_valid": true,
+      "markdown_ref": "api/reporting.md#enterprise-endpoints",
+      "markdown_anchor_present": true,
+      "openapi_ref": "#/paths/~1enterprise~1report~1policy-drift/get",
+      "openapi_operation_present": true,
+      "docs_endpoint_mentions": [],
+      "docs_mention_rule": [],
+      "example_status": "request/response/errors-present",
+      "runtime_check_kind": "enterprise-conditional",
+      "runtime_check_result": "contract-verified",
+      "notes": "Route is conditionally registered when enterprise mode is enabled; no default live 2xx claim is made."
+    },
+    {
       "coverage_key": "gateway-enterprise GET /enterprise/report/live",
       "service": "gateway-enterprise",
       "method": "GET",
@@ -3203,8 +3438,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:3706",
-      "source_line_current": "src/clawsentry/gateway/server.py:3706",
+      "source": "src/clawsentry/gateway/server.py:5511",
+      "source_line_current": "src/clawsentry/gateway/server.py:5511",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#enterprise-endpoints",
@@ -3214,7 +3449,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/metric-dictionary.md",
-          "line": 65,
+          "line": 77,
           "method": "GET",
           "path": "/enterprise/report/live",
           "rule": "exact",
@@ -3222,7 +3457,7 @@
         },
         {
           "page": "api/metric-dictionary.md",
-          "line": 66,
+          "line": 78,
           "method": "GET",
           "path": "/enterprise/report/live",
           "rule": "exact",
@@ -3254,7 +3489,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1569,
+          "line": 1649,
           "method": "GET",
           "path": "/enterprise/report/live",
           "rule": "exact",
@@ -3262,7 +3497,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1586,
+          "line": 1666,
           "method": "GET",
           "path": "/enterprise/report/live",
           "rule": "exact",
@@ -3270,7 +3505,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1712,
+          "line": 1792,
           "method": "GET",
           "path": "/enterprise/report/live",
           "rule": "exact",
@@ -3295,8 +3530,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:3773",
-      "source_line_current": "src/clawsentry/gateway/server.py:3773",
+      "source": "src/clawsentry/gateway/server.py:5578",
+      "source_line_current": "src/clawsentry/gateway/server.py:5578",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#enterprise-endpoints",
@@ -3306,7 +3541,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 1570,
+          "line": 1650,
           "method": "GET",
           "path": "/enterprise/report/stream",
           "rule": "exact",
@@ -3314,7 +3549,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1590,
+          "line": 1670,
           "method": "GET",
           "path": "/enterprise/report/stream",
           "rule": "exact",
@@ -3339,8 +3574,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:3874",
-      "source_line_current": "src/clawsentry/gateway/server.py:3874",
+      "source": "src/clawsentry/gateway/server.py:5679",
+      "source_line_current": "src/clawsentry/gateway/server.py:5679",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#enterprise-endpoints",
@@ -3350,7 +3585,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 1571,
+          "line": 1651,
           "method": "GET",
           "path": "/enterprise/report/sessions",
           "rule": "exact",
@@ -3358,7 +3593,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1588,
+          "line": 1668,
           "method": "GET",
           "path": "/enterprise/report/sessions",
           "rule": "exact",
@@ -3383,8 +3618,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4355",
-      "source_line_current": "src/clawsentry/gateway/server.py:4355",
+      "source": "src/clawsentry/gateway/server.py:6160",
+      "source_line_current": "src/clawsentry/gateway/server.py:6160",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#enterprise-endpoints",
@@ -3394,7 +3629,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/metric-dictionary.md",
-          "line": 69,
+          "line": 81,
           "method": "GET",
           "path": "/enterprise/report/session/{id}/risk",
           "rule": "parameter-alias",
@@ -3402,7 +3637,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1574,
+          "line": 1654,
           "method": "GET",
           "path": "/enterprise/report/session/{id}/risk",
           "rule": "parameter-alias",
@@ -3410,7 +3645,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1589,
+          "line": 1669,
           "method": "GET",
           "path": "/enterprise/report/session/{id}/risk",
           "rule": "parameter-alias",
@@ -3435,8 +3670,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4404",
-      "source_line_current": "src/clawsentry/gateway/server.py:4404",
+      "source": "src/clawsentry/gateway/server.py:6209",
+      "source_line_current": "src/clawsentry/gateway/server.py:6209",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#enterprise-endpoints",
@@ -3446,7 +3681,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 1572,
+          "line": 1652,
           "method": "GET",
           "path": "/enterprise/report/session/{id}",
           "rule": "parameter-alias",
@@ -3471,8 +3706,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4460",
-      "source_line_current": "src/clawsentry/gateway/server.py:4460",
+      "source": "src/clawsentry/gateway/server.py:6265",
+      "source_line_current": "src/clawsentry/gateway/server.py:6265",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#enterprise-endpoints",
@@ -3482,7 +3717,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 1573,
+          "line": 1653,
           "method": "GET",
           "path": "/enterprise/report/session/{id}/page",
           "rule": "parameter-alias",
@@ -3507,8 +3742,8 @@
       "audience": "operator",
       "auth": "bearer-disabled-when-empty-token",
       "auth_note": "Registered only when enterprise mode is enabled; CS_AUTH_TOKEN empty disables Gateway bearer auth.",
-      "source": "src/clawsentry/gateway/server.py:4533",
-      "source_line_current": "src/clawsentry/gateway/server.py:4533",
+      "source": "src/clawsentry/gateway/server.py:6338",
+      "source_line_current": "src/clawsentry/gateway/server.py:6338",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "api/reporting.md#enterprise-endpoints",
@@ -3518,7 +3753,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/reporting.md",
-          "line": 1575,
+          "line": 1655,
           "method": "GET",
           "path": "/enterprise/report/alerts",
           "rule": "exact",
@@ -3543,8 +3778,8 @@
       "audience": "operator",
       "auth": "none",
       "auth_note": "Not part of shared API Reference.",
-      "source": "src/clawsentry/gateway/server.py:4780",
-      "source_line_current": "src/clawsentry/gateway/server.py:4780",
+      "source": "src/clawsentry/gateway/server.py:6585",
+      "source_line_current": "src/clawsentry/gateway/server.py:6585",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "dashboard/index.md",
@@ -3562,7 +3797,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1473,
+          "line": 1553,
           "method": "GET",
           "path": "/ui",
           "rule": "exact",
@@ -3570,7 +3805,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1479,
+          "line": 1559,
           "method": "GET",
           "path": "/ui",
           "rule": "exact",
@@ -3595,8 +3830,8 @@
       "audience": "operator",
       "auth": "none",
       "auth_note": "Not part of shared API Reference.",
-      "source": "src/clawsentry/gateway/server.py:4769",
-      "source_line_current": "src/clawsentry/gateway/server.py:4769",
+      "source": "src/clawsentry/gateway/server.py:6574",
+      "source_line_current": "src/clawsentry/gateway/server.py:6574",
       "source_route_present": true,
       "source_line_valid": true,
       "markdown_ref": "dashboard/index.md",
@@ -3614,7 +3849,7 @@
         },
         {
           "page": "api/reporting.md",
-          "line": 1480,
+          "line": 1560,
           "method": "GET",
           "path": "/ui/{path}",
           "rule": "parameter-alias",
@@ -3651,7 +3886,7 @@
       "docs_endpoint_mentions": [
         {
           "page": "api/webhooks.md",
-          "line": 71,
+          "line": 80,
           "method": "GET",
           "path": "/health",
           "rule": "duplicate-health:openclaw-webhook",
@@ -3659,7 +3894,7 @@
         },
         {
           "page": "api/webhooks.md",
-          "line": 80,
+          "line": 89,
           "method": "GET",
           "path": "/health",
           "rule": "duplicate-health:openclaw-webhook",

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="跨事件多步攻击序列检测 — 5 种内置攻击链、滑动窗口匹配、SSE 实时告警">
+        <meta name="description" content="Multi-step attack-sequence detection across session events — 5 built-in attack chains, sliding-window matching, SSE real-time alerts">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>轨迹分析器（Trajectory Analyzer） - ClawSentry</title>
+        <title>轨迹分析器 - ClawSentry</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#trajectory-analyzer" class="md-skip">
+        <a href="#_1" class="md-skip">
           跳转至
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              轨迹分析器（Trajectory Analyzer）
+              轨迹分析器
             
           </span>
         </div>
@@ -170,6 +170,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -272,6 +279,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -291,6 +300,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -331,6 +342,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -352,6 +365,8 @@
         <a href="../l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../advanced/rule-governance/" class="md-tabs__link">
+        <a href="../../advanced/skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -948,6 +993,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1232,6 +1293,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1548,6 +1629,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1742,34 +1841,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../scope-restrictions/" class="md-nav__link">
         
   
@@ -1858,10 +1929,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        跨事件序列检测，识别隐蔽多步骤攻击链
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        概述
+        概览
       
     </span>
   </a>
@@ -1881,10 +1963,43 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        滑动窗口匹配
+        环形缓冲区构建
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        窗口过滤
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        匹配算法
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        去重逻辑
       
     </span>
   </a>
@@ -1905,14 +2020,47 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="5 种内置攻击序列">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-matchers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        步骤匹配逻辑
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="步骤匹配逻辑">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        敏感文件匹配范围
+        工具名集合
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        每步骤谓词
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risk_signalspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正则定义（来自 risk_signals.py）
       
     </span>
   </a>
@@ -1921,6 +2069,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        输出模式
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1936,10 +2095,21 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pipeline-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策流水线集成
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        配置
+        配置项
       
     </span>
   </a>
@@ -1947,10 +2117,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#source-code" class="md-nav__link">
+  <a href="#source-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        代码位置
+        源文件
       
     </span>
   </a>
@@ -1958,7 +2128,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_9" class="md-nav__link">
     <span class="md-ellipsis">
       
         相关页面
@@ -2047,6 +2217,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2092,6 +2280,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2304,6 +2520,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2413,70 +2639,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2579,10 +2749,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        跨事件序列检测，识别隐蔽多步骤攻击链
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        概述
+        概览
       
     </span>
   </a>
@@ -2602,10 +2783,43 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        滑动窗口匹配
+        环形缓冲区构建
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        窗口过滤
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        匹配算法
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        去重逻辑
       
     </span>
   </a>
@@ -2626,14 +2840,47 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="5 种内置攻击序列">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-matchers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        步骤匹配逻辑
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="步骤匹配逻辑">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        敏感文件匹配范围
+        工具名集合
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        每步骤谓词
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risk_signalspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正则定义（来自 risk_signals.py）
       
     </span>
   </a>
@@ -2642,6 +2889,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        输出模式
+      
+    </span>
+  </a>
   
 </li>
       
@@ -2657,10 +2915,21 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pipeline-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策流水线集成
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        配置
+        配置项
       
     </span>
   </a>
@@ -2668,10 +2937,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#source-code" class="md-nav__link">
+  <a href="#source-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        代码位置
+        源文件
       
     </span>
   </a>
@@ -2679,7 +2948,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_9" class="md-nav__link">
     <span class="md-ellipsis">
       
         相关页面
@@ -2700,6 +2969,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../l1-rules/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    安全决策引擎
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -2709,55 +3026,96 @@
   
 
 
-<h1 id="trajectory-analyzer">轨迹分析器（Trajectory Analyzer）<a class="headerlink" href="#trajectory-analyzer" title="Permanent link">&para;</a></h1>
-<div class="admonition abstract">
-<p class="admonition-title">本页快速导航</p>
-<p><a href="#overview">概述</a> · <a href="#how-it-works">工作原理</a> · <a href="#builtin-sequences">5 种内置攻击序列</a> · <a href="#sse-event">SSE 事件格式</a> · <a href="#configuration">配置</a> · <a href="#source-code">代码位置</a></p>
+<h1 id="_1">轨迹分析器<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">决策引擎 · 轨迹分析</div>
+<h2 id="_2">跨事件序列检测，识别隐蔽多步骤攻击链<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p><code>TrajectoryAnalyzer</code> 为每个会话维护一个滑动窗口事件缓冲区，在每次 L1/L2/L3 判决完成后，异步检查近期事件是否构成已知攻击链——例如先读取凭据文件再发起网络外传、先侦察再进行权限提升等。匹配成功时，它会发出 <code>trajectory_alert</code> SSE 事件，并根据配置将判决升级为 DEFER 或 BLOCK。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">异步、非阻塞</span>
+<span class="cs-pill">5 种内置攻击序列</span>
+<span class="cs-pill">SSE 实时告警</span>
+<span class="cs-pill">可配置判决升级</span></p>
 </div>
-<h2 id="overview">概述<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>单个事件的风险评分（D1-D6）只能捕捉"当前操作"的危险程度，但真实的 APT（高级持续威胁）往往表现为跨多个操作的<strong>有序攻击链</strong>——例如先读取凭证文件、再发起网络请求外传。每步孤立判断时可能都不触发高危，但将其作为整体序列分析时就能识别出完整的攻击意图。</p>
-<p><code>TrajectoryAnalyzer</code> 是 ClawSentry 的跨事件序列检测引擎。它为每个会话维护一个<strong>滑动窗口事件缓冲区</strong>，每当新事件被记录后，检查最近 N 个事件是否形成了已知攻击链。</p>
+</div>
+<div class="admonition abstract">
+<p class="admonition-title">快速导航</p>
+<p><a href="#overview">概览</a> · <a href="#how-it-works">工作原理</a> · <a href="#builtin-sequences">5 种内置序列</a> · <a href="#step-matchers">步骤匹配逻辑</a> · <a href="#output-schema">输出模式</a> · <a href="#sse-event">SSE 事件格式</a> · <a href="#pipeline-integration">决策流水线集成</a> · <a href="#configuration">配置项</a> · <a href="#source-files">源文件</a></p>
+</div>
+<h2 id="overview">概览<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>单事件风险分数（D1–D6）捕捉的是当前操作的危险程度。真实的 APT（高级持续性威胁）模式是跨多个操作的有序链——每个步骤单独看风险很低，但序列整体揭示了攻击意图。</p>
+<p><code>TrajectoryAnalyzer</code>（<code>src/clawsentry/gateway/trajectory_analyzer.py</code>）是 ClawSentry 的跨事件序列检测引擎。它在每个会话的环形缓冲区中存储每条记录事件的紧凑表示，并将每个新事件与五个内置攻击链定义进行比对。</p>
 <div class="admonition info">
-<p class="admonition-title">定位：异步、非阻塞</p>
-<p>TrajectoryAnalyzer <strong>不参与</strong> pre_action 的同步决策流程。它在事件被 L1/L2/L3 评估<strong>之后</strong>由 Gateway 异步调用。检测到攻击链时通过 SSE 广播 <code>trajectory_alert</code> 事件，不直接修改当前判决。</p>
+<p class="admonition-title">定位：异步且非阻塞</p>
+<p><code>TrajectoryAnalyzer</code> <strong>不</strong>参与同步的 <code>pre_action</code> 决策路径。Gateway 在 L1/L2/L3 评估完成<strong>之后</strong>调用 <code>trajectory_analyzer.record()</code>。默认情况下，结果以 <code>trajectory_alert</code> SSE 事件广播，不修改当前判决。可选的 <code>defer</code> 和 <code>block</code> 模式可针对 <code>pre_action</code> 事件上的 HIGH 及以上级别匹配升级判决。</p>
 </div>
 <hr />
 <h2 id="how-it-works">工作原理<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>sequenceDiagram
-    participant A as AI Agent
+    participant Agent as AI Agent
     participant GW as Gateway
     participant L1 as L1 PolicyEngine
     participant TA as TrajectoryAnalyzer
     participant EB as SSE EventBus
 
-    A-&gt;&gt;+GW: pre_action 事件
-    GW-&gt;&gt;L1: 同步评估
+    Agent-&gt;&gt;+GW: pre_action event
+    GW-&gt;&gt;L1: synchronous evaluation
     L1--&gt;&gt;GW: CanonicalDecision
-    GW--&gt;&gt;-A: 判决（ALLOW / BLOCK / DEFER）
+    GW--&gt;&gt;-Agent: verdict (ALLOW / BLOCK / DEFER)
 
-    GW-)TA: record(event)  [异步，不阻塞]
-    TA-&gt;&gt;TA: 加入会话滑动窗口
-    TA-&gt;&gt;TA: 遍历 5 种攻击序列定义
-    alt 序列匹配成功
+    GW-)TA: record(event)  [async, non-blocking]
+    TA-&gt;&gt;TA: append to session ring buffer
+    TA-&gt;&gt;TA: apply within_events + within_seconds window filter
+    TA-&gt;&gt;TA: run each of 5 sequence definitions
+    alt sequence matched (new match key)
         TA-)EB: trajectory_alert
-        EB--&gt;&gt;客户端: SSE 推送（watch CLI / Web UI）
+        EB--&gt;&gt;Clients: SSE push (watch CLI / Web UI)
     end</code></pre>
-<h3 id="_1">滑动窗口匹配<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
-<p>每个会话维护一个固定大小的<strong>环形事件缓冲区</strong>（默认 50 个事件）。<code>record()</code> 每次被调用时：</p>
+<h3 id="_3">环形缓冲区构建<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<p>每个会话拥有一个 <code>collections.deque(maxlen=max_events_per_session)</code>（默认 50）。调用 <code>record()</code> 时：</p>
 <ol>
-<li>将新事件压入缓冲区（满时自动淘汰最旧事件）</li>
-<li>对所有已注册的攻击序列逐一检查</li>
-<li>在 <code>within_events</code> 个最近事件和 <code>within_seconds</code> 时间窗口内寻找步骤匹配</li>
-<li>匹配成功 → 广播 SSE <code>trajectory_alert</code></li>
+<li>从原始事件字典中提取 <code>_BufferedEvent</code>——字段包括：<code>event_id</code>、<code>tool_name</code>、<code>path</code>（来自 <code>payload.path</code> 或 <code>payload.file_path</code>）、<code>command</code>（来自 <code>payload.command</code>）、<code>ts</code>（<code>occurred_at_ts</code> 或 <code>time.time()</code>）。</li>
+<li>追加事件；当队列满时，deque 自动丢弃最旧的条目。</li>
+<li>将该会话移至内部 <code>_buffers</code> 字典的末尾，以维护 LRU 顺序。</li>
+<li>如果总会话数超过 <code>max_sessions</code>（默认 10,000），则驱逐最旧的会话。</li>
+<li>对更新后的缓冲区运行所有已注册的序列检测。</li>
 </ol>
-<pre class="mermaid"><code>graph LR
-    E1[事件 N-4] --&gt; E2[事件 N-3]
-    E2 --&gt; E3[事件 N-2]
-    E3 --&gt; E4[事件 N-1]
-    E4 --&gt; E5[事件 N]
-    E5 --&gt; CHECK{序列匹配?}
-    CHECK --&gt;|命中 exfil-credential| ALERT[🚨 trajectory_alert]
-    CHECK --&gt;|未命中| DONE[继续等待]</code></pre>
+<h3 id="_4">窗口过滤<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<p>对于每个序列定义，分析器：</p>
+<ol>
+<li>从缓冲区中截取最后 <code>within_events</code> 个事件。</li>
+<li>丢弃 <code>ts &lt; current_event.ts − within_seconds</code> 的事件。</li>
+<li>过滤后要求至少保留 <code>len(seq.steps)</code> 个事件。</li>
+</ol>
+<h3 id="_5">匹配算法<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>序列类型</th>
+<th>算法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>有序多步骤（2 步）</td>
+<td><code>_match_ordered_steps</code> — 按顺序扫描窗口；每次当前步骤匹配时推进步骤索引；所有步骤均匹配时成功</td>
+</tr>
+<tr>
+<td>计数型（1 步 + <code>min_count</code>）</td>
+<td><code>_match_count_step</code> — 统计匹配该步骤谓词的事件数；计数 ≥ <code>min_count</code> 时成功</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_6">去重逻辑<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<p>每个会话跟踪已发出的 <code>(sequence_id, frozenset(matched_event_ids))</code> 元组。每个唯一事件 ID 组合只发出一次匹配。当去重集合超过 <code>max_events × max(len(sequences), 1)</code> 条时，将被清空以限制内存增长。</p>
+<pre class="mermaid"><code>flowchart TD
+    A[新序列匹配] --&gt; B{match_key 是否已在&lt;br/&gt;dedup 集合中？}
+    B -- 是 --&gt; C[跳过，不发出告警]
+    B -- 否 --&gt; D[添加 match_key 到 dedup 集合]
+    D --&gt; E{dedup 集合大小&lt;br/&gt;&gt; max_events × max(sequences,1)？}
+    E -- 是 --&gt; F[清空 dedup 集合]
+    E -- 否 --&gt; G[发出 trajectory_alert]
+    F --&gt; G</code></pre>
 <hr />
 <h2 id="builtin-sequences">5 种内置攻击序列<a class="headerlink" href="#builtin-sequences" title="Permanent link">&para;</a></h2>
 <table>
@@ -2765,100 +3123,401 @@
 <tr>
 <th>ID</th>
 <th>描述</th>
-<th>触发步骤</th>
-<th>窗口</th>
-<th>风险等级</th>
+<th>步骤 1</th>
+<th>步骤 2 / 计数</th>
+<th style="text-align: center;"><code>within_events</code></th>
+<th style="text-align: center;"><code>within_seconds</code></th>
+<th style="text-align: center;">风险级别</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>exfil-credential</strong></td>
+<td><code>exfil-credential</code></td>
 <td>读取敏感文件后发起网络请求</td>
-<td>① 读 <code>.env/.pem/.key/id_rsa</code> 等 → ② <code>http_request</code>/<code>curl</code>/<code>wget</code></td>
-<td>5 事件 / 60s</td>
-<td><code>CRITICAL</code></td>
+<td><code>sensitive_file_read</code></td>
+<td><code>network_request</code></td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">60</td>
+<td style="text-align: center;"><code>critical</code></td>
 </tr>
 <tr>
-<td><strong>backdoor-install</strong></td>
-<td>下载远程脚本后赋予执行权限或写入 Shell 配置</td>
-<td>① <code>curl/wget http(s)://...</code> → ② <code>chmod +x</code> 或写 <code>.bashrc/.zshrc</code> 等</td>
-<td>5 事件 / 60s</td>
-<td><code>CRITICAL</code></td>
+<td><code>backdoor-install</code></td>
+<td>下载远程脚本后使其可执行或写入 Shell 配置</td>
+<td><code>remote_download</code></td>
+<td><code>make_executable_or_shell_config</code></td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">60</td>
+<td style="text-align: center;"><code>critical</code></td>
 </tr>
 <tr>
-<td><strong>recon-then-exploit</strong></td>
-<td>系统侦查后跟随提权操作</td>
-<td>① <code>uname/id/whoami/hostname/cat /etc/os-release</code> → ② <code>sudo chmod/chown/useradd/passwd</code></td>
-<td>8 事件 / 120s</td>
-<td><code>CRITICAL</code></td>
+<td><code>recon-then-exploit</code></td>
+<td>系统枚举后进行权限提升</td>
+<td><code>recon_command</code></td>
+<td><code>privilege_escalation</code></td>
+<td style="text-align: center;">8</td>
+<td style="text-align: center;">120</td>
+<td style="text-align: center;"><code>critical</code></td>
 </tr>
 <tr>
-<td><strong>secret-harvest</strong></td>
-<td>短时间内多次读取凭证文件</td>
-<td>≥ 3 次读取 <code>.env/.key/.ssh/.aws/.p12</code> 等凭证文件</td>
-<td>10 事件 / 30s</td>
-<td><code>HIGH</code></td>
+<td><code>secret-harvest</code></td>
+<td>短时间内多次读取凭据文件</td>
+<td><code>credential_file_read</code>（×≥3）</td>
+<td>—</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">30</td>
+<td style="text-align: center;"><code>high</code></td>
 </tr>
 <tr>
-<td><strong>staged-exfil</strong></td>
-<td>写入临时目录后从临时目录外传</td>
-<td>① 写入 <code>/tmp/</code> 或 <code>/var/tmp/</code> → ② <code>curl/wget</code> 引用 <code>/tmp/</code> 路径</td>
-<td>10 事件 / 120s</td>
-<td><code>HIGH</code></td>
+<td><code>staged-exfil</code></td>
+<td>写入临时目录后从其中外传数据</td>
+<td><code>tmp_write</code></td>
+<td><code>tmp_exfil</code></td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">120</td>
+<td style="text-align: center;"><code>high</code></td>
 </tr>
 </tbody>
 </table>
-<h3 id="_2">敏感文件匹配范围<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
-<p><strong>exfil-credential</strong>（较窄，精度优先）：
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>\.env$  \.pem$  \.key$  id_rsa  id_ed25519  credentials  \.secret  \.token  \.password
-</span></code></pre></div></p>
-<p><strong>secret-harvest</strong>（较宽，覆盖优先，额外包含）：
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>\.p12$  \.pfx$  \.jks$  \.keystore$  .aws/  .ssh/
-</span></code></pre></div></p>
+<hr />
+<h2 id="step-matchers">步骤匹配逻辑<a class="headerlink" href="#step-matchers" title="Permanent link">&para;</a></h2>
+<p>每种步骤类型对应一个精确谓词，针对缓冲事件的 <code>tool_name</code>、<code>path</code> 和 <code>command</code> 字段进行评估。</p>
+<h3 id="_7">工具名集合<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>集合名称</th>
+<th>成员</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>READ_TOOLS</code></td>
+<td><code>read_file</code>, <code>read</code>, <code>cat</code>, <code>head</code>, <code>tail</code></td>
+</tr>
+<tr>
+<td><code>WRITE_TOOLS</code></td>
+<td><code>write_file</code>, <code>edit_file</code>, <code>create_file</code>, <code>write</code>, <code>edit</code>, <code>chmod</code>, <code>chown</code></td>
+</tr>
+<tr>
+<td><code>NETWORK_TOOLS</code></td>
+<td><code>http_request</code>, <code>fetch</code>, <code>web_fetch</code>, <code>curl</code>, <code>wget</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">每步骤谓词<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>步骤类型</th>
+<th>条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sensitive_file_read</code></td>
+<td><code>tool_name</code> ∈ <code>READ_TOOLS</code> <strong>且</strong> <code>path</code> 匹配 <code>_CREDENTIAL_PATH_RE</code></td>
+</tr>
+<tr>
+<td><code>network_request</code></td>
+<td><code>tool_name</code> ∈ <code>NETWORK_TOOLS</code> <strong>或</strong> <code>_NETWORK_COMMAND_RE</code> 匹配 path/command 的组合</td>
+</tr>
+<tr>
+<td><code>remote_download</code></td>
+<td><code>_DOWNLOAD_RE</code> 匹配 <code>command</code></td>
+</tr>
+<tr>
+<td><code>make_executable_or_shell_config</code></td>
+<td><code>_CHMOD_EXEC_RE</code> 匹配 <code>command</code> <strong>或</strong>（<code>tool_name</code> ∈ <code>{write_file,write,edit_file,edit}</code> 且 <code>_SHELL_CONFIG_RE</code> 匹配 <code>path</code>）</td>
+</tr>
+<tr>
+<td><code>recon_command</code></td>
+<td><code>_RECON_RE</code> 匹配 <code>command</code></td>
+</tr>
+<tr>
+<td><code>privilege_escalation</code></td>
+<td><code>_PRIVESC_RE</code> 匹配 <code>command</code></td>
+</tr>
+<tr>
+<td><code>credential_file_read</code></td>
+<td><code>tool_name</code> ∈ <code>READ_TOOLS</code> <strong>且</strong> <code>path</code> 匹配 <code>_CREDENTIAL_PATH_RE</code>（与 <code>sensitive_file_read</code> 相同）</td>
+</tr>
+<tr>
+<td><code>tmp_write</code></td>
+<td><code>tool_name</code> ∈ <code>WRITE_TOOLS</code> <strong>且</strong> <code>_TMP_PATH_RE</code> 匹配 <code>path</code></td>
+</tr>
+<tr>
+<td><code>tmp_exfil</code></td>
+<td><code>_TMP_PATH_RE</code> 匹配 <code>command</code> <strong>且</strong> <code>_NETWORK_COMMAND_RE</code> 匹配 <code>command</code></td>
+</tr>
+<tr>
+<td><code>tool_names</code>（自定义）</td>
+<td><code>tool_name</code> ∈ 用户提供的列表（大小写不敏感）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="risk_signalspy">正则定义（来自 risk_signals.py）<a class="headerlink" href="#risk_signalspy" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>正则常量</th>
+<th>模式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_CREDENTIAL_PATH_RE</code></td>
+<td><code>\.(env\|pem\|key\|p12\|pfx\|jks\|keystore)(?:$\|[^a-z0-9])\|id_rsa\|id_ed25519\|credentials\|\.secret\|\.token\|\.password\|\.aws/\|\.ssh/</code>（大小写不敏感）</td>
+</tr>
+<tr>
+<td><code>_DOWNLOAD_RE</code></td>
+<td><code>(curl\|wget)\s+.*https?://</code>（大小写不敏感）</td>
+</tr>
+<tr>
+<td><code>_CHMOD_EXEC_RE</code></td>
+<td><code>chmod\s+\+?[0-7]*x</code>（大小写不敏感）</td>
+</tr>
+<tr>
+<td><code>_SHELL_CONFIG_RE</code></td>
+<td><code>\.(bashrc\|bash_profile\|profile\|zshrc\|zprofile)$</code>（大小写不敏感）</td>
+</tr>
+<tr>
+<td><code>_RECON_RE</code></td>
+<td><code>\b(uname\|id\|whoami\|hostname\|cat\s+/etc/(os-release\|issue\|passwd)\|lsb_release\|arch)\b</code>（大小写不敏感）</td>
+</tr>
+<tr>
+<td><code>_PRIVESC_RE</code></td>
+<td><code>\bsudo\b.*\b(chmod\|chown\|rm\|mv\|cp\|useradd\|usermod\|visudo\|passwd\|install)\b</code>（大小写不敏感）</td>
+</tr>
+<tr>
+<td><code>_NETWORK_COMMAND_RE</code></td>
+<td><code>\b(curl\|wget\|scp\|rsync\|nc\|ncat\|socat)\b\|https?://</code>（大小写不敏感）</td>
+</tr>
+<tr>
+<td><code>_TMP_PATH_RE</code></td>
+<td><code>/tmp/\|/var/tmp/\|c:\\temp\\</code>（大小写不敏感）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="output-schema">输出模式<a class="headerlink" href="#output-schema" title="Permanent link">&para;</a></h2>
+<p><code>trajectory_analyzer.record()</code> 返回 <code>list[TrajectoryMatch]</code>。每个 <code>TrajectoryMatch</code> 是一个数据类：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sequence_id</code></td>
+<td><code>str</code></td>
+<td>匹配序列的 ID（如 <code>exfil-credential</code>）</td>
+</tr>
+<tr>
+<td><code>risk_level</code></td>
+<td><code>str</code></td>
+<td><code>low</code> / <code>medium</code> / <code>high</code> / <code>critical</code></td>
+</tr>
+<tr>
+<td><code>matched_event_ids</code></td>
+<td><code>list[str]</code></td>
+<td>满足每个步骤的事件 ID（有序多步骤），或前 <code>min_count</code> 个匹配事件的 ID（计数型）</td>
+</tr>
+<tr>
+<td><code>reason</code></td>
+<td><code>str</code></td>
+<td>人类可读的描述；计数型序列追加 <code>(N occurrences)</code></td>
+</tr>
+</tbody>
+</table>
 <hr />
 <h2 id="sse-event">SSE 事件格式<a class="headerlink" href="#sse-event" title="Permanent link">&para;</a></h2>
-<p>检测到攻击序列时，Gateway 通过 SSE 广播 <code>trajectory_alert</code> 事件：</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;trajectory_alert&quot;</span><span class="p">,</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;sequence_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;exfil-credential&quot;</span><span class="p">,</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;risk_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;critical&quot;</span><span class="p">,</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">&quot;matched_event_ids&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;evt-a1b2c3&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;evt-d4e5f6&quot;</span><span class="p">],</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sensitive file read followed by network request within 5 events&quot;</span><span class="p">,</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;session-001&quot;</span><span class="p">,</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent-main&quot;</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">}</span>
+<p>当 <code>trajectory_alert_action</code> 为 <code>broadcast</code>（或无论操作如何在匹配检测后），Gateway 发出 <code>trajectory_alert</code> SSE 事件：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;trajectory_alert&quot;</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;session-001&quot;</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;sequence_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;exfil-credential&quot;</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">&quot;risk_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;critical&quot;</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">&quot;matched_event_ids&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;evt-a1b2c3&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;evt-d4e5f6&quot;</span><span class="p">],</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Read sensitive file then make network request&quot;</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">&quot;handling&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;broadcast&quot;</span><span class="p">,</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-05-18T10:23:45.123Z&quot;</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>在 <code>clawsentry watch</code> 中，<code>trajectory_alert</code> 默认以 <code>ALERT</code> 类型显示（橙色高亮）。可通过 <code>--filter alert</code> 单独筛选。</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>始终为 <code>trajectory_alert</code></td>
+</tr>
+<tr>
+<td><code>session_id</code></td>
+<td>来自原始事件</td>
+</tr>
+<tr>
+<td><code>sequence_id</code></td>
+<td><code>TrajectoryMatch.sequence_id</code></td>
+</tr>
+<tr>
+<td><code>risk_level</code></td>
+<td><code>TrajectoryMatch.risk_level</code></td>
+</tr>
+<tr>
+<td><code>matched_event_ids</code></td>
+<td><code>TrajectoryMatch.matched_event_ids</code></td>
+</tr>
+<tr>
+<td><code>reason</code></td>
+<td><code>TrajectoryMatch.reason</code></td>
+</tr>
+<tr>
+<td><code>handling</code></td>
+<td>当前生效的 <code>trajectory_alert_action</code> 值（<code>broadcast</code> / <code>defer</code> / <code>block</code>）</td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td>事件中的 <code>occurred_at</code>，或 <code>utc_now_iso()</code></td>
+</tr>
+</tbody>
+</table>
+<p>在 <code>clawsentry watch</code> 中，<code>trajectory_alert</code> 事件以 <code>ALERT</code> 类型显示（橙色高亮）。使用 <code>--filter trajectory_alert</code> 可仅显示此类型。</p>
+<pre class="mermaid"><code>sequenceDiagram
+    participant GW as Gateway
+    participant TA as TrajectoryAnalyzer
+    participant EB as SSE EventBus
+    participant CLI as clawsentry watch
+    participant WUI as Web UI
+
+    GW-&gt;&gt;TA: record(traj_event)
+    TA--&gt;&gt;GW: list[TrajectoryMatch]
+    GW-&gt;&gt;GW: 添加到 pending_trajectory_alerts
+    GW-&gt;&gt;EB: broadcast trajectory_alert（请求处理结束时）
+    EB--&gt;&gt;CLI: SSE push → ALERT（橙色）
+    EB--&gt;&gt;WUI: SSE push → 实时告警面板</code></pre>
+<div class="admonition note">
+<p class="admonition-title">L3 异步触发</p>
+<p>风险级别为 <code>high</code> 或 <code>critical</code> 的 <code>trajectory_alert</code> 在 <code>CS_L3_ADVISORY_ASYNC_ENABLED=true</code> 时还会触发 L3 异步证据快照。L3 快照中的 <code>trigger_reason</code> 字段被设置为 <code>trajectory_alert</code>。</p>
+</div>
 <hr />
-<h2 id="configuration">配置<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<h2 id="pipeline-integration">决策流水线集成<a class="headerlink" href="#pipeline-integration" title="Permanent link">&para;</a></h2>
+<p><code>trajectory_alert_action</code> 字段控制匹配是否影响当前判决：</p>
+<ol>
+<li>Gateway 接收 <code>pre_action</code> 事件，同步调用 L1/L2/L3，获得 <code>CanonicalDecision</code>。</li>
+<li>Gateway 调用 <code>trajectory_analyzer.record(traj_event)</code>，返回 <code>list[TrajectoryMatch]</code>。</li>
+<li>对于每个匹配，将 <code>trajectory_alert</code> 字典添加到 <code>pending_trajectory_alerts</code>。</li>
+<li>满足以下所有条件时触发判决升级：<ul>
+<li><code>trajectory_alert_action</code> 为 <code>defer</code> 或 <code>block</code></li>
+<li>事件类型为 <code>PRE_ACTION</code></li>
+<li>尚未应用会话级强制执行动作</li>
+<li><code>TrajectoryMatch.risk_level</code> 为 <code>high</code> 或 <code>critical</code></li>
+</ul>
+</li>
+<li>若升级成功，判决被替换为 <code>DEFER</code> 或 <code>BLOCK</code>，并在 <code>meta_dict["trajectory_alert_decision_override"]</code> 中记录 <code>sequence_id</code>、<code>risk_level</code> 和 <code>handling</code>。</li>
+<li>所有 <code>pending_trajectory_alerts</code> 在请求处理器结束时以 SSE 事件广播。</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th><code>trajectory_alert_action</code></th>
+<th>对判决的影响</th>
+<th style="text-align: center;">是否发出 SSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>broadcast</code>（默认）</td>
+<td>无——判决不变</td>
+<td style="text-align: center;">是</td>
+</tr>
+<tr>
+<td><code>defer</code></td>
+<td>PRE_ACTION 上的 HIGH+ 匹配 → <code>DEFER</code></td>
+<td style="text-align: center;">是</td>
+</tr>
+<tr>
+<td><code>block</code></td>
+<td>PRE_ACTION 上的 HIGH+ 匹配 → <code>BLOCK</code></td>
+<td style="text-align: center;">是</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">升级条件</p>
+<p>判决升级仅适用于 <code>pre_action</code> 事件。后置动作事件会收到 SSE 告警，但判决不会因轨迹分析而被修改。</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">BLOCK 优先于 DEFER</p>
+<p>若现有判决已为 <code>BLOCK</code>，则 <code>defer</code> 升级将被静默跳过，以避免将更严格的决策降级。</p>
+</div>
+<hr />
+<h2 id="configuration">配置项<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>环境变量</th>
-<th>说明</th>
+<th><code>DetectionConfig</code> 字段</th>
 <th style="text-align: center;">默认值</th>
+<th>描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>CS_TRAJECTORY_MAX_EVENTS</code></td>
-<td>每会话缓冲区大小（事件数）</td>
+<td><code>trajectory_max_events</code></td>
 <td style="text-align: center;"><code>50</code></td>
+<td>每个会话的环形缓冲区大小（事件数）</td>
 </tr>
 <tr>
 <td><code>CS_TRAJECTORY_MAX_SESSIONS</code></td>
-<td>最大并发会话数（LRU 淘汰超额）</td>
+<td><code>trajectory_max_sessions</code></td>
 <td style="text-align: center;"><code>10000</code></td>
+<td>最大并发会话数；超出时按 LRU 驱逐最旧会话</td>
+</tr>
+<tr>
+<td><code>CS_TRAJECTORY_ALERT_ACTION</code></td>
+<td><code>trajectory_alert_action</code></td>
+<td style="text-align: center;"><code>broadcast</code></td>
+<td>轨迹匹配的响应行为：<code>broadcast</code>、<code>defer</code> 或 <code>block</code></td>
 </tr>
 </tbody>
 </table>
-<p>这两个参数也可通过 <code>DetectionConfig</code> 的对应字段在代码中配置，详见<a href="../../configuration/detection-config/">检测管线配置</a>。</p>
+<p>三个字段均可通过 <code>DetectionConfig</code> 编程设置。预设覆盖：</p>
+<table>
+<thead>
+<tr>
+<th>预设</th>
+<th><code>trajectory_alert_action</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>strict</code></td>
+<td><code>defer</code></td>
+</tr>
+<tr>
+<td><code>aggressive</code></td>
+<td><code>block</code></td>
+</tr>
+<tr>
+<td><code>normal</code>（默认）</td>
+<td><code>broadcast</code></td>
+</tr>
+</tbody>
+</table>
 <div class="admonition tip">
-<p class="admonition-title">始终启用，无开关</p>
-<p>TrajectoryAnalyzer 随 Gateway 自动启动，无需额外配置。若需完全禁用，将 <code>CS_TRAJECTORY_MAX_SESSIONS</code> 设为 <code>0</code>（不推荐）。</p>
+<p class="admonition-title">始终激活</p>
+<p><code>TrajectoryAnalyzer</code> 随 Gateway 自动启动，没有启用/禁用开关。若要有效禁用，可设置 <code>CS_TRAJECTORY_MAX_SESSIONS=0</code>（由于 <code>max(max_sessions, 1)</code> 保护机制，实际会保留 1 个会话的最小值——不建议使用此方式）。</p>
 </div>
 <hr />
-<h2 id="source-code">代码位置<a class="headerlink" href="#source-code" title="Permanent link">&para;</a></h2>
+<h2 id="source-files">源文件<a class="headerlink" href="#source-files" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -2869,29 +3528,34 @@
 </thead>
 <tbody>
 <tr>
-<td>TrajectoryAnalyzer</td>
+<td><code>TrajectoryAnalyzer</code></td>
 <td><code>src/clawsentry/gateway/trajectory_analyzer.py</code></td>
-<td>核心检测引擎、滑动窗口、攻击序列定义</td>
+<td>核心检测引擎、环形缓冲区、5 种内置序列定义、步骤匹配器</td>
+</tr>
+<tr>
+<td><code>risk_signals</code></td>
+<td><code>src/clawsentry/gateway/risk_signals.py</code></td>
+<td>共享正则常量和谓词函数（<code>is_credential_path</code>、<code>has_recon_command</code> 等）</td>
 </tr>
 <tr>
 <td>Gateway 集成</td>
 <td><code>src/clawsentry/gateway/server.py</code></td>
-<td>异步调用 <code>trajectory_analyzer.record()</code>、SSE 广播</td>
+<td>调用 <code>trajectory_analyzer.record()</code>、应用判决升级、广播 SSE</td>
 </tr>
 <tr>
-<td>DetectionConfig</td>
+<td><code>DetectionConfig</code></td>
 <td><code>src/clawsentry/gateway/detection_config.py</code></td>
-<td><code>trajectory_max_events</code> / <code>trajectory_max_sessions</code> 字段</td>
+<td><code>trajectory_max_events</code>、<code>trajectory_max_sessions</code>、<code>trajectory_alert_action</code> 字段及环境变量映射</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="_3">相关页面<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<h2 id="_9">相关页面<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../post-action/">Post-action 围栏</a> — 同样异步、检测工具输出中的即时威胁</li>
-<li><a href="../l2-semantic/">L2 语义分析</a> — 同步的语义理解层，可与轨迹分析互补</li>
-<li><a href="../../configuration/detection-config/">检测管线配置</a> — <code>CS_TRAJECTORY_*</code> 完整参数参考</li>
-<li><a href="../../api/reporting/#get-report-stream">报表与监控 → SSE</a> — <code>trajectory_alert</code> 事件的 SSE 订阅方式</li>
+<li><a href="../post-action/">后置动作分析器</a> — 同样异步；检测工具输出中的即时威胁</li>
+<li><a href="../l2-semantic/">L2 语义分析</a> — 同步语义层，与轨迹分析互补</li>
+<li><a href="../../configuration/detection-config/">检测流水线配置</a> — 完整 <code>CS_TRAJECTORY_*</code> 参数参考</li>
+<li><a href="../../api/reporting/#get-report-stream">报告与监控 → SSE</a> — 如何订阅 <code>trajectory_alert</code> 事件</li>
 </ul>
 
 
@@ -2915,7 +3579,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月30日 06:50:49 UTC">2026年4月30日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月17日 21:24:54 UTC">2026年5月17日</span>
   </span>
 
     
@@ -3038,11 +3702,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

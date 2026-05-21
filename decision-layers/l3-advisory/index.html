@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="用一份只读、可追溯、不改写历史判决的 L3 安全复盘报告，帮助 operator 处理高风险 session">
+        <meta name="description" content="基于冻结证据快照的只读复盘报告，帮助 operator 处理高风险 session">
       
       
       
@@ -171,6 +171,11 @@
       </label>
       <nav class="md-search__options" aria-label="查找">
         
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -272,6 +279,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -291,6 +300,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -331,6 +342,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -352,6 +365,8 @@
         <a href="../l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../advanced/rule-governance/" class="md-tabs__link">
+        <a href="../../advanced/skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -948,6 +993,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1232,6 +1293,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1548,6 +1629,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1746,32 +1845,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#session" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        高风险 session 的只读复盘报告
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        先看一个场景
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operator-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operator 合同：它会做什么、不会做什么
+        高风险会话的只读复盘报告
       
     </span>
   </a>
@@ -1782,60 +1859,32 @@
   <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        它解决什么问题？
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="它解决什么问题？">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. 证据固定
+        先看一个场景
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#2" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#advisory-vs-agent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. 结果可追溯
+        Advisory 与同步 L3 Agent 的区别
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#3" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#operator-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. 不改历史判决
+        Operator 安全边界
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. 可按需升级
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1855,7 +1904,7 @@
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        三个对象
+        三个核心对象
       
     </span>
   </a>
@@ -1868,13 +1917,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#web-ui" class="md-nav__link">
+  <a href="#output-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        在 Web UI 里怎么用
+        Review 输出字段
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Review 输出字段">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#degraded-reason-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Degraded reason codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1882,19 +1948,19 @@
   <a href="#cli" class="md-nav__link">
     <span class="md-ellipsis">
       
-        在 CLI 里怎么用
+        CLI 参考
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="在 CLI 里怎么用">
+    <nav class="md-nav" aria-label="CLI 参考">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#llm-backed" class="md-nav__link">
+  <a href="#full-review" class="md-nav__link">
     <span class="md-ellipsis">
       
-        默认：立即生成一份 LLM-backed 咨询报告
+        full-review（立即运行或仅排队）
       
     </span>
   </a>
@@ -1902,10 +1968,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#jobs-list" class="md-nav__link">
     <span class="md-ellipsis">
       
-        只排队，不运行
+        jobs list
       
     </span>
   </a>
@@ -1913,10 +1979,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#queued-jobs" class="md-nav__link">
+  <a href="#jobs-run-next-one-shot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        查看并有界执行 queued jobs
+        jobs run-next（有界 one-shot）
       
     </span>
   </a>
@@ -1924,21 +1990,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#heartbeat-idle-aggregate-queueing" class="md-nav__link">
+  <a href="#jobs-drain-one-shot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Heartbeat / idle aggregate queueing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        固定审查范围
+        jobs drain（批量有界 one-shot）
       
     </span>
   </a>
@@ -1951,22 +2006,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#runner" class="md-nav__link">
+  <a href="#runners" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Runner 怎么选？
+        Runner 配置
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Runner 怎么选？">
+    <nav class="md-nav" aria-label="Runner 配置">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#readiness-smoke" class="md-nav__link">
+  <a href="#llm_provider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        手动 readiness / smoke 验证
+        llm_provider 配置优先级
       
     </span>
   </a>
@@ -1975,6 +2030,39 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#heartbeat-idle-aggregate-queueing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Heartbeat / Idle 自动排队
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#web-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web UI 字段速查
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clawsentry-watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clawsentry watch 输出
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1987,13 +2075,41 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="API 速查">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#full-review_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full-review 端点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        其他端点
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#clawsentry-watch" class="md-nav__link">
+  <a href="#smoke" class="md-nav__link">
     <span class="md-ellipsis">
       
-        clawsentry watch 里会看到什么？
+        Provider smoke 验证
       
     </span>
   </a>
@@ -2001,10 +2117,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_7" class="md-nav__link">
+  <a href="#faq" class="md-nav__link">
     <span class="md-ellipsis">
       
-        边界与常见误解
+        常见误解
       
     </span>
   </a>
@@ -2012,21 +2128,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#l3-agent" class="md-nav__link">
+  <a href="#related-entrypoints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        和同步 L3 Agent 有什么区别？
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recent-feature-coverage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        最近功能覆盖状态
+        相关入口
       
     </span>
   </a>
@@ -2057,34 +2162,6 @@
     
   
     Post-action 围栏
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
   
 
     
@@ -2224,6 +2301,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2269,6 +2364,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2481,6 +2604,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2590,70 +2723,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2756,32 +2833,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#session" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        高风险 session 的只读复盘报告
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        先看一个场景
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operator-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operator 合同：它会做什么、不会做什么
+        高风险会话的只读复盘报告
       
     </span>
   </a>
@@ -2792,60 +2847,32 @@
   <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        它解决什么问题？
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="它解决什么问题？">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. 证据固定
+        先看一个场景
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#2" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#advisory-vs-agent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. 结果可追溯
+        Advisory 与同步 L3 Agent 的区别
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#3" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#operator-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. 不改历史判决
+        Operator 安全边界
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. 可按需升级
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2865,7 +2892,7 @@
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        三个对象
+        三个核心对象
       
     </span>
   </a>
@@ -2878,13 +2905,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#web-ui" class="md-nav__link">
+  <a href="#output-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        在 Web UI 里怎么用
+        Review 输出字段
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Review 输出字段">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#degraded-reason-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Degraded reason codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2892,19 +2936,19 @@
   <a href="#cli" class="md-nav__link">
     <span class="md-ellipsis">
       
-        在 CLI 里怎么用
+        CLI 参考
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="在 CLI 里怎么用">
+    <nav class="md-nav" aria-label="CLI 参考">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#llm-backed" class="md-nav__link">
+  <a href="#full-review" class="md-nav__link">
     <span class="md-ellipsis">
       
-        默认：立即生成一份 LLM-backed 咨询报告
+        full-review（立即运行或仅排队）
       
     </span>
   </a>
@@ -2912,10 +2956,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#jobs-list" class="md-nav__link">
     <span class="md-ellipsis">
       
-        只排队，不运行
+        jobs list
       
     </span>
   </a>
@@ -2923,10 +2967,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#queued-jobs" class="md-nav__link">
+  <a href="#jobs-run-next-one-shot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        查看并有界执行 queued jobs
+        jobs run-next（有界 one-shot）
       
     </span>
   </a>
@@ -2934,21 +2978,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#heartbeat-idle-aggregate-queueing" class="md-nav__link">
+  <a href="#jobs-drain-one-shot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Heartbeat / idle aggregate queueing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        固定审查范围
+        jobs drain（批量有界 one-shot）
       
     </span>
   </a>
@@ -2961,22 +2994,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#runner" class="md-nav__link">
+  <a href="#runners" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Runner 怎么选？
+        Runner 配置
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Runner 怎么选？">
+    <nav class="md-nav" aria-label="Runner 配置">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#readiness-smoke" class="md-nav__link">
+  <a href="#llm_provider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        手动 readiness / smoke 验证
+        llm_provider 配置优先级
       
     </span>
   </a>
@@ -2985,6 +3018,39 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#heartbeat-idle-aggregate-queueing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Heartbeat / Idle 自动排队
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#web-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web UI 字段速查
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clawsentry-watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clawsentry watch 输出
+      
+    </span>
+  </a>
   
 </li>
       
@@ -2997,13 +3063,41 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="API 速查">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#full-review_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full-review 端点
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        其他端点
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#clawsentry-watch" class="md-nav__link">
+  <a href="#smoke" class="md-nav__link">
     <span class="md-ellipsis">
       
-        clawsentry watch 里会看到什么？
+        Provider smoke 验证
       
     </span>
   </a>
@@ -3011,10 +3105,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_7" class="md-nav__link">
+  <a href="#faq" class="md-nav__link">
     <span class="md-ellipsis">
       
-        边界与常见误解
+        常见误解
       
     </span>
   </a>
@@ -3022,21 +3116,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#l3-agent" class="md-nav__link">
+  <a href="#related-entrypoints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        和同步 L3 Agent 有什么区别？
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recent-feature-coverage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        最近功能覆盖状态
+        相关入口
       
     </span>
   </a>
@@ -3054,6 +3137,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../l1-rules/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    安全决策引擎
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -3065,346 +3196,653 @@
 
 <h1 id="l3">L3 咨询审查<a class="headerlink" href="#l3" title="Permanent link">&para;</a></h1>
 <div class="cs-doc-hero">
-<h2 id="session">高风险 session 的只读复盘报告<a class="headerlink" href="#session" title="Permanent link">&para;</a></h2>
-<p>当 ClawSentry 发现一个 session 风险很高时，L3 咨询审查会把当时已记录的证据固定下来，生成只读复盘报告，帮助 operator 判断：<strong>发生了什么、风险为什么高、下一步该 inspect / escalate / pause 还是继续观察</strong>。</p>
-<p>它不是新的拦截器，也不会重判历史事件；它只是基于固定证据做一次可追溯复盘，辅助后续处置。</p>
+<div class="cs-eyebrow">决策引擎 · L3 咨询审查</div>
+<h2 id="_1">高风险会话的只读复盘报告<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>L3 咨询审查是一个<strong>拉取式（pull-based）</strong>后处理系统，消费固定 evidence snapshot 生成只读复盘报告。它不在实时决策链中运行，不启动后台 scheduler，也不修改任何 canonical 决策。</p>
+<div class="admonition note">
+<p class="admonition-title">FSPR 与 L3 Advisory</p>
+<p>FSPR 可以复用 provider/role orchestration 思路，但它是 Skill Trust package review evidence，不是人工审批式 L3 Advisory。FSPR findings 和 recommendations 需要通过 Gateway policy 或 lifecycle API 才能影响后续 trust-list 状态。</p>
+</div>
 <div class="cs-pill-row">
 <p><span class="cs-pill">只读复盘</span>
-<span class="cs-pill">不改写 allow/block/defer</span>
-<span class="cs-pill">可在 Web UI 点击触发</span>
-<span class="cs-pill">CLI / API 可自动化</span></p>
+<span class="cs-pill">不改写判决结果</span>
+<span class="cs-pill">Web UI 可触发</span>
+<span class="cs-pill">CLI / API 自动化</span></p>
 </div>
 </div>
 <hr />
-<h2 id="_1">先看一个场景<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h2 id="_2">先看一个场景<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <p>你在 Web UI 里看到一个 session 变成 <strong>high risk</strong>：</p>
 <ol>
-<li>这个 agent 先读取了 <code>.env</code> 或 SSH key；</li>
+<li>Agent 先读取了 <code>.env</code> 或 SSH key；</li>
 <li>后面又执行了 <code>curl</code> / <code>scp</code> / archive packaging；</li>
 <li>Dashboard 和 <code>clawsentry watch</code> 都提示风险升高；</li>
 <li>你想知道：这到底是正常部署，还是准备外传？</li>
 </ol>
-<p>这时可以在 Session Detail 点 <strong>Request L3 full review</strong>，也可以运行：</p>
+<p>在 Session Detail 点 <strong>Request L3 full review</strong>，或运行：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span>full-review<span class="w"> </span>--session<span class="w"> </span>sess-001<span class="w"> </span>--token<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$CS_AUTH_TOKEN</span><span class="s2">&quot;</span>
 </span></code></pre></div>
-<p>ClawSentry 会生成一份结果，例如：</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>review:   l3adv-... (completed, risk=high)
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>action:   inspect
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>boundary: advisory only; canonical decision unchanged
+<p>典型输出：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>L3 advisory full review requested
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>snapshot: l3snap-...
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>job:      l3job-... (completed)
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>review:   l3adv-... (completed, risk=high)
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>advisory_only: True
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>canonical_decision_mutated: False
 </span></code></pre></div>
-<p>意思是：系统已经基于固定证据做完复盘，建议 operator 进一步检查；但它没有把过去的判决改掉。</p>
 <hr />
-<h2 id="operator-contract">Operator 合同：它会做什么、不会做什么<a class="headerlink" href="#operator-contract" title="Permanent link">&para;</a></h2>
+<h2 id="advisory-vs-agent">Advisory 与同步 L3 Agent 的区别<a class="headerlink" href="#advisory-vs-agent" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>问题</th>
-<th>L3 咨询审查当前行为</th>
+<th>维度</th>
+<th>同步 L3 Agent</th>
+<th>L3 咨询审查</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>什么时候用</td>
-<td>你已经有一个值得复盘的 session：Web UI 手动 full-review、CLI/API 显式请求，或在 feature gate 下自动冻结 high/critical evidence delta。</td>
+<td>运行位置</td>
+<td>实时决策链中，由策略触发</td>
+<td>决策链之外，operator 显式触发或自动 snapshot</td>
 </tr>
 <tr>
-<td>输入是什么</td>
-<td>frozen trajectory record range。报告基于固定 records，不读取不断变化的 live workspace。</td>
+<td>输入</td>
+<td>当前事件 + bounded context（live）</td>
+<td>固定 evidence snapshot（frozen record range）</td>
 </tr>
 <tr>
-<td>输出是什么</td>
-<td><code>snapshot_id</code>、<code>job_id</code>、<code>review_id</code>、<code>risk_level</code>、recommended <code>Action</code>、可选 <code>analysis_summary</code> / <code>analysis_points</code> / <code>operator_next_steps</code>。</td>
+<td>输出</td>
+<td>决策路径中的 L3 结果 / trace</td>
+<td>advisory review + recommended operator action</td>
 </tr>
 <tr>
-<td>会不会重判 allow/block/defer</td>
-<td>不会。响应和 action payload 必须保持 <code>advisory_only=true</code>、<code>canonical_decision_mutated=false</code>。</td>
+<td>延迟模型</td>
+<td>同步路径预算内完成，超时则降级</td>
+<td>job/review 生命周期：queued → running → completed</td>
 </tr>
 <tr>
-<td>会不会自动联网</td>
-<td>默认 runner 是 <code>llm_provider</code>；配置了有效 <code>CS_LLM_*</code> 和 API key 时会执行真实 LLM 复盘。缺少配置时生成明确 <code>degraded</code> review，不静默 fallback 到本地 runner。</td>
+<td>执行方式</td>
+<td>同步调用，不可排队</td>
+<td>拉取式 worker，可 queue-only 后单独运行</td>
 </tr>
 <tr>
-<td>会不会后台扫所有 session</td>
-<td>不会。queued job drain 是有界 one-shot；heartbeat/idle aggregate 只自动冻结/排队，不启动 scheduler。</td>
+<td>是否修改 canonical 决策</td>
+<td>不适用（参与决策生成）</td>
+<td>明确不修改，<code>canonical_decision_mutated=false</code></td>
 </tr>
 <tr>
-<td>在哪里查询</td>
-<td>Web UI Session Detail、<code>clawsentry l3 full-review</code> / <code>l3 jobs</code>、<code>/report/*/l3-advisory/*</code>、SSE/watch、<a href="../../api/reporting/#l3-advisory-endpoints">报表 API</a>。</td>
+<td>LLM 配置</td>
+<td>继承同步 <code>CS_LLM_*</code></td>
+<td>同样继承 <code>CS_LLM_*</code>；无有效配置时写入 <code>degraded</code> review</td>
+</tr>
+<tr>
+<td>后台 scheduler</td>
+<td>不适用</td>
+<td>不启动；drain 是有界 one-shot</td>
 </tr>
 </tbody>
 </table>
-<h2 id="_2">它解决什么问题？<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<div class="cs-card-grid">
-<div class="cs-card">
-<h3 id="1">1. 证据固定<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
-<p>高风险 session 还在继续产生事件时，审查输入必须稳定。L3 咨询审查会冻结一段 record range，例如 <code>Records 4–8</code>。</p>
-</div>
-<div class="cs-card">
-<h3 id="2">2. 结果可追溯<a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
-<p>每次复盘都有 <code>snapshot_id</code>、<code>job_id</code>、<code>review_id</code>。你可以在 UI、SSE、API、日志里追踪同一份报告。</p>
-</div>
-<div class="cs-card">
-<h3 id="3">3. 不改历史判决<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
-<p>报告始终是 <code>advisory_only=true</code>。full-review 响应会明确返回 <code>canonical_decision_mutated=false</code>。</p>
-</div>
-<div class="cs-card">
-<h3 id="4">4. 可按需升级<a class="headerlink" href="#4" title="Permanent link">&para;</a></h3>
-<p>默认用本地确定性 runner；需要时才显式打开 provider runner。不会因为配置了同步 LLM 就自动联网。</p>
-</div>
-</div>
+<hr />
+<h2 id="operator-contract">Operator 安全边界<a class="headerlink" href="#operator-contract" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>实际行为（来自源码）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>触发方式</td>
+<td>Web UI 手动 full-review；CLI/API 显式请求；或 <code>CS_L3_ADVISORY_ASYNC_ENABLED</code>+<code>CS_L3_HEARTBEAT_REVIEW_ENABLED</code> 下的自动冻结</td>
+</tr>
+<tr>
+<td>输入</td>
+<td>固定 record range 的 frozen trajectory snapshot；不读取 live workspace</td>
+</tr>
+<tr>
+<td>输出</td>
+<td><code>snapshot_id</code>、<code>job_id</code>、<code>review_id</code>、<code>risk_level</code>、<code>recommended_operator_action</code>，以及可选 <code>analysis_summary</code> / <code>analysis_points</code> / <code>operator_next_steps</code></td>
+</tr>
+<tr>
+<td>是否重判 allow/block/defer</td>
+<td>不会；响应始终带 <code>advisory_only=true</code>、<code>canonical_decision_mutated=false</code></td>
+</tr>
+<tr>
+<td>是否自动联网</td>
+<td><code>llm_provider</code> runner 须有效 <code>CS_LLM_*</code> 配置；无配置时写入 <code>degraded</code> review，含明确的 reason code</td>
+</tr>
+<tr>
+<td>是否后台扫全量 session</td>
+<td>不会；<code>drain</code> 是有界 one-shot（max_jobs 上限 10）</td>
+</tr>
+</tbody>
+</table>
 <hr />
 <h2 id="_3">工作流程<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
-<div class="cs-flow-strip">
-<p><strong>高风险 session</strong> → <strong>冻结证据 Snapshot</strong> → <strong>排队 Job</strong> → <strong>运行 Runner</strong> → <strong>生成 Review</strong> → <strong>展示结果</strong></p>
-</div>
-<pre class="mermaid"><code>graph LR
-    A[High-risk session] --&gt; B[Freeze snapshot&lt;br/&gt;bounded records]
-    B --&gt; C[Queue advisory job]
-    C --&gt; D{Runner}
-    D --&gt;|default| E[llm_provider]
-    D --&gt;|explicit local support| F[deterministic_local]
-    D --&gt;|missing CS_LLM_*| G[degraded review]
-    E --&gt; H[Advisory review]
+<pre class="mermaid"><code>flowchart LR
+    A(["⚡ 高风险会话"]) --&gt; B["冻结 Snapshot\n锁定 record range"]
+    B --&gt; C["排队 Advisory Job"]
+    C --&gt; D{"选择 Runner"}
+
+    D --&gt;|"CS_LLM_* 已配置"| E["llm_provider"]
+    D --&gt;|"explicit runner"| F["deterministic_local"]
+    D --&gt;|"未配置 LLM"| G(["⚠ degraded review"]):::warn
+
+    E --&gt; H["Advisory Review\n输出咨询报告"]
     F --&gt; H
     G --&gt; H
-    H --&gt; I[UI / watch / API]
-    H --&gt; J[canonical decision unchanged]</code></pre>
-<h3 id="_4">三个对象<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+
+    H --&gt; I["🖥 UI / watch / API"]
+    H --&gt; J(["✅ canonical 判决不变"]):::note
+
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#78350f
+    classDef note fill:#f0f9ff,stroke:#0891b2,color:#0c4a6e</code></pre>
+<h3 id="_4">三个核心对象<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>对象</th>
-<th>普通理解</th>
+<th>职责</th>
 <th>典型 ID</th>
-<th>你会在哪里看到</th>
+<th>查询入口</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Snapshot</td>
-<td>固定下来的证据包</td>
+<td>固定 record range 的 frozen evidence 包</td>
 <td><code>l3snap-...</code></td>
-<td>Session Detail、SSE、API</td>
+<td>Session Detail / SSE / API</td>
 </tr>
 <tr>
 <td>Job</td>
-<td>这次复盘任务</td>
+<td>复盘任务，含 runner 和状态机</td>
 <td><code>l3job-...</code></td>
-<td><code>watch</code> 里的 queued/running/completed</td>
+<td><code>watch</code> queued/running/completed 行</td>
 </tr>
 <tr>
 <td>Review</td>
-<td>最终咨询报告</td>
+<td>最终咨询报告，含 risk_level 与 action</td>
 <td><code>l3adv-...</code></td>
-<td>Session Detail 的 L3 advisory review 卡片</td>
+<td>Session Detail L3 advisory review 卡片</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="web-ui">在 Web UI 里怎么用<a class="headerlink" href="#web-ui" title="Permanent link">&para;</a></h2>
-<ol>
-<li>打开 <strong>Sessions</strong>，进入一个 high / critical session；</li>
-<li>在 <strong>Session Detail</strong> 点击 <strong>Request L3 full review</strong>；</li>
-<li>等待状态从 queued / running 变成 completed；</li>
-<li>查看 L3 advisory review 卡片：</li>
-</ol>
+<h2 id="output-fields">Review 输出字段<a class="headerlink" href="#output-fields" title="Permanent link">&para;</a></h2>
+<p>来自 <code>parse_l3_advisory_worker_response</code>（<code>cs.l3_advisory.worker_response.v1</code>）：</p>
 <table>
 <thead>
 <tr>
 <th>字段</th>
-<th>你该怎么看</th>
+<th>类型</th>
+<th>说明</th>
+<th>约束</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>Risk</code></td>
-<td>复盘后的风险等级</td>
+<td><code>schema_version</code></td>
+<td>string</td>
+<td><code>cs.l3_advisory.worker_response.v1</code></td>
+<td>固定值</td>
 </tr>
 <tr>
-<td><code>Action</code></td>
-<td>建议动作：<code>Inspect</code> / <code>Escalate</code> / <code>Pause</code> / <code>None</code></td>
+<td><code>risk_level</code></td>
+<td>string</td>
+<td><code>low</code> / <code>medium</code> / <code>high</code> / <code>critical</code></td>
+<td>无效值强制为 <code>medium</code></td>
 </tr>
 <tr>
-<td><code>Runner</code></td>
-<td>这次报告由哪个 runner 生成</td>
+<td><code>findings</code></td>
+<td>string[]</td>
+<td>复盘依据列表</td>
+<td>非 list 时替换为 <code>["provider response missing findings"]</code></td>
 </tr>
 <tr>
-<td><code>Records 4–8</code></td>
-<td>本次复盘只看了这段固定证据</td>
+<td><code>confidence</code></td>
+<td>float | null</td>
+<td>置信度（0–1）</td>
+<td>非数值时置为 null</td>
 </tr>
 <tr>
-<td><code>Analysis summary</code></td>
-<td>可选自然语言摘要，帮助 operator 快速理解“为什么值得看”</td>
+<td><code>recommended_operator_action</code></td>
+<td>string</td>
+<td><code>none</code> / <code>inspect</code> / <code>escalate</code> / <code>configure_llm_provider</code></td>
+<td>critical→escalate；high/medium→inspect；low→none；degraded (misconfigured LLM provider)→configure_llm_provider</td>
 </tr>
 <tr>
-<td><code>Analysis points</code></td>
-<td>可选 2–5 条关键依据，来自 frozen evidence，不读取 live workspace</td>
+<td><code>l3_state</code></td>
+<td>string</td>
+<td><code>completed</code> / <code>failed</code> / <code>degraded</code></td>
+<td>非法值强制为 <code>degraded</code></td>
 </tr>
 <tr>
-<td><code>Next steps</code></td>
-<td>可选 1–3 条操作建议，例如 inspect / pause / escalate</td>
+<td><code>l3_reason_code</code></td>
+<td>string | null</td>
+<td>降级或失败的 reason code（见下表）</td>
+<td>可选</td>
 </tr>
 <tr>
-<td><code>canonical decision unchanged</code></td>
-<td>原始判决没有被修改</td>
+<td><code>analysis_summary</code></td>
+<td>string</td>
+<td>自然语言摘要</td>
+<td>最长 360 字符</td>
+</tr>
+<tr>
+<td><code>analysis_points</code></td>
+<td>string[]</td>
+<td>关键依据，2–5 条</td>
+<td>最多 5 条，每条最长 180 字符</td>
+</tr>
+<tr>
+<td><code>operator_next_steps</code></td>
+<td>string[]</td>
+<td>操作建议，1–3 条</td>
+<td>最多 3 条，每条最长 180 字符</td>
 </tr>
 </tbody>
 </table>
-<div class="admonition tip">
-<p class="admonition-title">建议的值守路径</p>
-<p>先看 <code>Action</code>，再看 frozen record boundary，最后根据 <code>review_id</code> 去 API / replay 里查细节。不要把 advisory review 当成新的 block/allow 判决。</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">v0.5.10 自然语言字段</p>
-<p><code>analysis_summary</code>、<code>analysis_points</code>、<code>operator_next_steps</code> 都是 review/action payload 的可选扩展字段。它们会经过长度和条数限制，用于解释和交接；它们不会改写 canonical decision，也不会触发新的 enforcement。</p>
+<h3 id="degraded-reason-codes">Degraded reason codes<a class="headerlink" href="#degraded-reason-codes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>reason_code</th>
+<th>触发条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>provider_disabled</code></td>
+<td><code>CS_LLM_PROVIDER</code> 未设置或 provider 被禁用</td>
+</tr>
+<tr>
+<td><code>provider_missing_key</code></td>
+<td>API key 为空</td>
+</tr>
+<tr>
+<td><code>provider_missing_model</code></td>
+<td><code>CS_LLM_MODEL</code> 为空</td>
+</tr>
+<tr>
+<td><code>provider_invalid_config</code></td>
+<td>其他配置校验失败</td>
+</tr>
+<tr>
+<td><code>provider_not_implemented</code></td>
+<td>provider shell 存在但未实现完成（dry_run 路径）</td>
+</tr>
+<tr>
+<td><code>provider_timeout</code></td>
+<td>LLM 调用超时</td>
+</tr>
+<tr>
+<td><code>provider_error</code></td>
+<td>LLM 调用抛出异常</td>
+</tr>
+<tr>
+<td><code>provider_response_invalid</code></td>
+<td>provider 返回不是合法 JSON 对象</td>
+</tr>
+<tr>
+<td><code>provider_unsupported</code></td>
+<td>provider 名称不在受支持列表内</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">配置缺失时会显式降级，不会静默 fallback</p>
+<p><code>llm_provider</code> runner 在 <code>CS_LLM_PROVIDER</code>、API key 或 <code>CS_LLM_MODEL</code> 任一缺失时，写入 <code>l3_state=degraded</code> review 并附 reason code，而不是静默改跑本地逻辑。</p>
 </div>
 <hr />
-<h2 id="cli">在 CLI 里怎么用<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h2>
-<h3 id="llm-backed">默认：立即生成一份 LLM-backed 咨询报告<a class="headerlink" href="#llm-backed" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span>full-review<span class="w"> </span>--session<span class="w"> </span>sess-001<span class="w"> </span>--token<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$CS_AUTH_TOKEN</span><span class="s2">&quot;</span>
+<h2 id="cli">CLI 参考<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h2>
+<h3 id="full-review">full-review（立即运行或仅排队）<a class="headerlink" href="#full-review" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span>full-review<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--session<span class="w"> </span>&lt;session_id&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="o">[</span>--token<span class="w"> </span>&lt;bearer_token&gt;<span class="o">]</span><span class="w">          </span><span class="c1"># 默认读 CS_AUTH_TOKEN</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="o">[</span>--gateway-url<span class="w"> </span>&lt;url&gt;<span class="o">]</span><span class="w">             </span><span class="c1"># 默认 http://127.0.0.1:$CS_HTTP_PORT</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="o">[</span>--runner<span class="w"> </span>llm_provider<span class="p">|</span>deterministic_local<span class="o">]</span><span class="w">  </span><span class="c1"># 默认 llm_provider</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="o">[</span>--from-record-id<span class="w"> </span>&lt;n&gt;<span class="o">]</span><span class="w">            </span><span class="c1"># 冻结范围起点</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="o">[</span>--to-record-id<span class="w"> </span>&lt;n&gt;<span class="o">]</span><span class="w">              </span><span class="c1"># 冻结范围终点</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="o">[</span>--max-records<span class="w"> </span>&lt;<span class="nv">n</span><span class="o">=</span><span class="m">100</span>&gt;<span class="o">]</span><span class="w">           </span><span class="c1"># 最大冻结记录数</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="o">[</span>--max-tool-calls<span class="w"> </span>&lt;<span class="nv">n</span><span class="o">=</span><span class="m">0</span>&gt;<span class="o">]</span><span class="w">          </span><span class="c1"># advisory evidence tool-call 预算</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="o">[</span>--trigger-event-id<span class="w"> </span>&lt;id&gt;<span class="o">]</span><span class="w">         </span><span class="c1"># operator 触发事件 ID</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="o">[</span>--trigger-detail<span class="w"> </span>&lt;str&gt;<span class="o">]</span><span class="w">          </span><span class="c1"># 触发备注</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span><span class="o">[</span>--queue-only<span class="o">]</span><span class="w">                    </span><span class="c1"># 只冻结 + 排队，不运行 worker</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">  </span><span class="o">[</span>--json<span class="o">]</span><span class="w">                          </span><span class="c1"># 输出原始 JSON</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">  </span><span class="o">[</span>--timeout<span class="w"> </span>&lt;<span class="nv">s</span><span class="o">=</span><span class="m">30</span>&gt;<span class="o">]</span><span class="w">                </span><span class="c1"># HTTP 超时秒数</span>
 </span></code></pre></div>
-<p>典型输出：</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>L3 advisory full review requested
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>snapshot: l3snap-...
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>job:      l3job-... (completed)
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>review:   l3adv-... (completed, risk=high)
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>advisory_only: true
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>canonical_decision_mutated: false
+<p>固定审查范围示例：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span>full-review<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>--session<span class="w"> </span>sess-001<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--from-record-id<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--to-record-id<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>--runner<span class="w"> </span>deterministic_local
 </span></code></pre></div>
-<p>如果 Gateway 没有解析到有效的 <code>CS_LLM_PROVIDER</code>、API key 或 <code>CS_LLM_MODEL</code>，命令仍会完成，但 review 会标记为 <code>l3_state=degraded</code>，并带 <code>provider_disabled</code> / <code>provider_missing_key</code> / <code>provider_missing_model</code> 等 reason code，提示补齐 LLM 配置。</p>
-<h3 id="_5">只排队，不运行<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<p>仅排队示例：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span>full-review<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>--session<span class="w"> </span>sess-001<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--queue-only<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>--json
 </span></code></pre></div>
-<p>适合先冻结证据，再由另一个流程决定何时运行 worker。</p>
-<h3 id="queued-jobs">查看并有界执行 queued jobs<a class="headerlink" href="#queued-jobs" title="Permanent link">&para;</a></h3>
-<p>这个能力提供 <strong>bounded one-shot execution</strong>，不是 daemon。你可以查看当前 queued jobs：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>list<span class="w"> </span>--state<span class="w"> </span>queued<span class="w"> </span>--json
+<h3 id="jobs-list">jobs list<a class="headerlink" href="#jobs-list" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>list<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="o">[</span>--state<span class="w"> </span>queued<span class="p">|</span>running<span class="p">|</span>completed<span class="p">|</span>failed<span class="o">]</span><span class="w">  </span><span class="c1"># 默认 queued</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="o">[</span>--runner<span class="w"> </span>llm_provider<span class="p">|</span>deterministic_local<span class="o">]</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="o">[</span>--session<span class="w"> </span>&lt;session_id&gt;<span class="o">]</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="o">[</span>--json<span class="o">]</span><span class="w"> </span><span class="o">[</span>--timeout<span class="w"> </span>&lt;<span class="nv">s</span><span class="o">=</span><span class="m">30</span>&gt;<span class="o">]</span>
 </span></code></pre></div>
-<p>执行最旧的一条 queued job：</p>
+<h3 id="jobs-run-next-one-shot">jobs run-next（有界 one-shot）<a class="headerlink" href="#jobs-run-next-one-shot" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>run-next<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>--runner<span class="w"> </span>deterministic_local<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--json
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="o">[</span>--session<span class="w"> </span>&lt;session_id&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--dry-run<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
 </span></code></pre></div>
-<p>或一次最多 drain N 条（硬上限 10）：</p>
+<p>只选择 <code>job_state=queued</code> 的最旧一条；<code>running</code> / <code>completed</code> / <code>failed</code> 不会被 rerun。</p>
+<h3 id="jobs-drain-one-shot">jobs drain（批量有界 one-shot）<a class="headerlink" href="#jobs-drain-one-shot" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>drain<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--runner<span class="w"> </span>deterministic_local<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--max-jobs<span class="w"> </span><span class="m">2</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--max-jobs<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="o">[</span>--session<span class="w"> </span>&lt;session_id&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--dry-run<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
 </span></code></pre></div>
-<p>这些命令只选择 <code>job_state=queued</code> 的 job；<code>running</code> / <code>completed</code> / <code>failed</code> 不会被 rerun。省略 <code>--runner</code> 时默认执行 <code>llm_provider</code>。</p>
-<h3 id="heartbeat-idle-aggregate-queueing">Heartbeat / idle aggregate queueing<a class="headerlink" href="#heartbeat-idle-aggregate-queueing" title="Permanent link">&para;</a></h3>
-<p>当同时启用：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nv">CS_L3_ADVISORY_ASYNC_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">CS_L3_HEARTBEAT_REVIEW_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span></code></pre></div>
-<p>并且同一 session 在最新 terminal heartbeat review 后出现新的 high/critical evidence delta 时，<code>heartbeat</code> / <code>idle</code> / <code>success</code> / <code>rate_limit</code> 兼容事件可以创建一份 <code>trigger_reason=heartbeat_aggregate</code> 的 frozen snapshot，并排队一个 advisory job。</p>
-<p>安全边界：</p>
-<ul>
-<li>不启动 background scheduler / daemon；</li>
-<li>不自动运行 job；</li>
-<li>同一 <code>(session_id, runner)</code> 同时最多一个 queued/running <code>heartbeat_aggregate</code> job；</li>
-<li>输出始终标记 <code>advisory_only=true</code> 和 <code>canonical_decision_mutated=false</code>。</li>
-</ul>
-<h3 id="_6">固定审查范围<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>clawsentry<span class="w"> </span>l3<span class="w"> </span>full-review<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>--session<span class="w"> </span>sess-001<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--from-record-id<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span>--to-record-id<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span>--runner<span class="w"> </span>deterministic_local
-</span></code></pre></div>
-<p>适合你已经看到关键事件，只想复盘那一段。</p>
+<div class="admonition note">
+<p class="admonition-title">drain 的硬上限</p>
+<p><code>max_jobs</code> 范围 1–10，超出范围会报错。<code>drain</code> 不是 daemon；它选出至多 max_jobs 条 queued job 后退出。</p>
+</div>
 <hr />
-<h2 id="runner">Runner 怎么选？<a class="headerlink" href="#runner" title="Permanent link">&para;</a></h2>
+<h2 id="runners">Runner 配置<a class="headerlink" href="#runners" title="Permanent link">&para;</a></h2>
+<p>公开支持的 runner（<code>PUBLIC_L3_ADVISORY_RUNNERS</code>）：</p>
 <table>
 <thead>
 <tr>
 <th>Runner</th>
+<th>默认</th>
 <th>是否联网</th>
-<th>适合谁</th>
-<th>说明</th>
+<th>适用场景</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>llm_provider</code></td>
-<td>是；使用共享 <code>CS_LLM_*</code> provider 配置</td>
-<td>默认 full-review / queued job</td>
-<td>继承 <code>CS_LLM_PROVIDER</code>、API key、<code>CS_LLM_MODEL</code>、<code>CS_LLM_BASE_URL</code>、<code>CS_LLM_TEMPERATURE</code>、<code>CS_LLM_PROVIDER_TIMEOUT_MS</code>；缺配置时写入 <code>degraded</code> review</td>
+<td>是</td>
+<td>是（须有效 <code>CS_LLM_*</code>）</td>
+<td>生产 full-review 与 queued job</td>
 </tr>
 <tr>
 <td><code>deterministic_local</code></td>
 <td>否</td>
+<td>否</td>
 <td>离线调试 / 审计管道验证</td>
-<td>只有显式传入 <code>runner=deterministic_local</code> 或 <code>--runner deterministic_local</code> 时运行</td>
 </tr>
 </tbody>
 </table>
-<div class="admonition warning">
-<p class="admonition-title">无 LLM 配置时会显式降级</p>
-<p><code>llm_provider</code> 不会静默改跑本地 deterministic review。没有有效 <code>CS_LLM_*</code> / API key 时，full-review 会生成 <code>degraded</code> review/action，并建议配置 LLM provider。</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">CS_LLM_PROVIDER</span><span class="o">=</span>openai<span class="w">        </span><span class="c1"># 或 anthropic</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nv">CS_LLM_MODEL</span><span class="o">=</span>&lt;model&gt;
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>&lt;key&gt;<span class="w">          </span><span class="c1"># 或 CS_LLM_API_KEY</span>
-</span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">fake_llm 是内部测试专用</p>
+<p><code>fake_llm</code> runner 仅供单元测试使用，不在公开 runner 列表中，生产环境请勿使用。</p>
 </div>
-<h3 id="readiness-smoke">手动 readiness / smoke 验证<a class="headerlink" href="#readiness-smoke" title="Permanent link">&para;</a></h3>
-<p>先用随包 devtools 模块验证 provider runner 配置，避免直接在真实 session 上试。
-它会构造 frozen snapshot、排队一个 <code>llm_provider</code> job、执行一次受闸门保护的 review，并输出 Markdown 证据。</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>python<span class="w"> </span>-m<span class="w"> </span>clawsentry.devtools.l3_advisory_provider_smoke<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>--output-report<span class="w"> </span>artifacts/l3-provider-smoke.md<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>--json
+<h3 id="llm_provider">llm_provider 配置优先级<a class="headerlink" href="#llm_provider" title="Permanent link">&para;</a></h3>
+<ol>
+<li>读取 <code>CS_LLM_PROVIDER</code>（主路径）：</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>说明</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CS_LLM_PROVIDER</code></td>
+<td><code>openai</code> 或 <code>anthropic</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>CS_LLM_MODEL</code></td>
+<td>模型名称</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>CS_LLM_API_KEY</code></td>
+<td>API key（或 <code>OPENAI_API_KEY</code> / <code>ANTHROPIC_API_KEY</code>）</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>CS_LLM_BASE_URL</code></td>
+<td>自定义 base URL</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>CS_LLM_TEMPERATURE</code></td>
+<td>生成温度</td>
+<td><code>0.0</code></td>
+</tr>
+<tr>
+<td><code>CS_LLM_PROVIDER_TIMEOUT_MS</code></td>
+<td>LLM 调用超时（ms）</td>
+<td><code>3000</code></td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>若无 <code>CS_LLM_PROVIDER</code>，回落到 legacy <code>CS_L3_ADVISORY_*</code> 变量（兼容旧配置）：</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CS_L3_ADVISORY_PROVIDER_ENABLED</code></td>
+<td><code>true</code> 启用 legacy 路径</td>
+</tr>
+<tr>
+<td><code>CS_L3_ADVISORY_PROVIDER</code></td>
+<td>provider 名称</td>
+</tr>
+<tr>
+<td><code>CS_L3_ADVISORY_MODEL</code></td>
+<td>模型名称</td>
+</tr>
+<tr>
+<td><code>CS_L3_ADVISORY_API_KEY</code></td>
+<td>API key（优先于 provider 专属 key）</td>
+</tr>
+<tr>
+<td><code>CS_L3_ADVISORY_BASE_URL</code></td>
+<td>自定义 base URL</td>
+</tr>
+<tr>
+<td><code>CS_L3_ADVISORY_PROVIDER_DRY_RUN</code></td>
+<td><code>false</code> 才真正调用（默认 <code>true</code>）</td>
+</tr>
+<tr>
+<td><code>CS_L3_ADVISORY_TEMPERATURE</code></td>
+<td>生成温度（默认 <code>1.0</code>）</td>
+</tr>
+<tr>
+<td><code>CS_L3_ADVISORY_DEADLINE_MS</code></td>
+<td>LLM 调用超时（默认 <code>30000</code> ms）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="heartbeat-idle-aggregate-queueing">Heartbeat / Idle 自动排队<a class="headerlink" href="#heartbeat-idle-aggregate-queueing" title="Permanent link">&para;</a></h2>
+<p>当同时开启：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nv">CS_L3_ADVISORY_ASYNC_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">CS_L3_HEARTBEAT_REVIEW_ENABLED</span><span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
-<p>预期边界：</p>
+<p>兼容事件（<code>heartbeat</code> / <code>idle</code> / <code>success</code> / <code>rate_limit</code>）在满足以下条件时，会自动冻结 snapshot 并排队一个 <code>trigger_reason=heartbeat_aggregate</code> 的 advisory job：</p>
 <ul>
-<li>缺少 <code>CS_LLM_PROVIDER</code>、API key 或 <code>CS_LLM_MODEL</code> 时，结果应安全降级为 <code>degraded</code>，并说明 provider/config 问题；</li>
-<li>需要把真实 provider smoke 作为发布 gate 时，再加 <code>--require-completed</code>，让未完成的 review 以失败退出；</li>
-<li>readiness check 不启动 scheduler，不修改 canonical decision，仍只写 <code>advisory_only=true</code> 的 review 证据。</li>
+<li>同一 session 在最新 terminal heartbeat review 后出现新的 high/critical evidence delta；</li>
+<li>同一 <code>(session_id, runner)</code> 当前无 queued/running 的 <code>heartbeat_aggregate</code> job。</li>
 </ul>
+<div class="admonition warning">
+<p class="admonition-title">不启动后台 scheduler</p>
+<p>自动 snapshot 只是冻结证据并排队 job；它不自动运行 worker，不启动 scheduler，也不修改 canonical decision。</p>
+</div>
+<hr />
+<h2 id="web-ui">Web UI 字段速查<a class="headerlink" href="#web-ui" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>卡片字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Risk</code></td>
+<td>复盘后的 risk_level</td>
+</tr>
+<tr>
+<td><code>Action</code></td>
+<td>recommended_operator_action：<code>Inspect</code> / <code>Escalate</code> / <code>None</code></td>
+</tr>
+<tr>
+<td><code>Runner</code></td>
+<td>生成此报告的 runner</td>
+</tr>
+<tr>
+<td><code>Records 4–8</code></td>
+<td>本次复盘固定的 record 范围</td>
+</tr>
+<tr>
+<td><code>Analysis summary</code></td>
+<td>analysis_summary（最长 360 字符）</td>
+</tr>
+<tr>
+<td><code>Analysis points</code></td>
+<td>analysis_points（最多 5 条，各 180 字符）</td>
+</tr>
+<tr>
+<td><code>Next steps</code></td>
+<td>operator_next_steps（最多 3 条）</td>
+</tr>
+<tr>
+<td><code>canonical decision unchanged</code></td>
+<td>原始判决未被修改</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">值守路径</p>
+<p>先看 <code>Action</code>，再看 frozen record boundary（确认证据范围），最后用 <code>review_id</code> 在 API / replay 里查细节。不要把 advisory review 当成新的 block/allow 判决。</p>
+</div>
+<hr />
+<h2 id="clawsentry-watch">clawsentry watch 输出<a class="headerlink" href="#clawsentry-watch" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>L3 ADVISORY SNAPSHOT  l3snap-...  Range=4-&gt;8
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>L3 ADVISORY JOB       l3job-...   State=Completed Runner=deterministic_local
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>L3 ADVISORY REVIEW    l3adv-...   State=Completed Action=Inspect
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>L3 ADVISORY ACTION    l3adv-...   Boundary: advisory only; canonical unchanged
+</span></code></pre></div>
 <hr />
 <h2 id="api">API 速查<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
-<p>最常用端点：</p>
-<div class="language-http highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="err">POST /report/session/{session_id}/l3-advisory/full-review</span>
+<h3 id="full-review_1">Full-review 端点<a class="headerlink" href="#full-review_1" title="Permanent link">&para;</a></h3>
+<div class="language-http highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="err">POST /report/session/{session_id}/l3-advisory/full-review</span>
 </span></code></pre></div>
-<p>请求：</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;trigger_detail&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;operator_requested_full_review&quot;</span><span class="p">,</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&quot;from_record_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">&quot;to_record_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span><span class="nt">&quot;max_records&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="nt">&quot;max_tool_calls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">  </span><span class="nt">&quot;runner&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;llm_provider&quot;</span><span class="p">,</span>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">  </span><span class="nt">&quot;run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="p">}</span>
+<p>请求体：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&quot;trigger_detail&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;operator_requested_full_review&quot;</span><span class="p">,</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">&quot;from_record_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="nt">&quot;to_record_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="nt">&quot;max_records&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="nt">&quot;max_tool_calls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span><span class="nt">&quot;runner&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;llm_provider&quot;</span><span class="p">,</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span><span class="nt">&quot;run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>响应：</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">{</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">&quot;snapshot&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;snapshot_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;l3snap-...&quot;</span><span class="p">},</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nt">&quot;job&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;job_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;l3job-...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;job_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">},</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="nt">&quot;review&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;review_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;l3adv-...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;l3_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">},</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span><span class="nt">&quot;advisory_only&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span><span class="nt">&quot;canonical_decision_mutated&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="p">}</span>
+<p>响应（始终包含 <code>advisory_only: true</code>、<code>canonical_decision_mutated: false</code>）：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="p">{</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">&quot;snapshot&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;snapshot_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;l3snap-...&quot;</span><span class="p">},</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nt">&quot;job&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;job_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;l3job-...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;job_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">},</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span><span class="nt">&quot;review&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;review_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;l3adv-...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;l3_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">},</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="nt">&quot;advisory_only&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span><span class="nt">&quot;canonical_decision_mutated&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>更多端点：</p>
-<ul>
-<li>创建 snapshot：<code>POST /report/session/{id}/l3-advisory/snapshots</code></li>
-<li>创建 job：<code>POST /report/l3-advisory/snapshot/{snapshot_id}/jobs</code></li>
-<li>运行本地 job：<code>POST /report/l3-advisory/job/{job_id}/run-local</code></li>
-<li>运行 worker：<code>POST /report/l3-advisory/job/{job_id}/run-worker</code></li>
-<li>更新 review lifecycle：<code>PATCH /report/l3-advisory/review/{review_id}</code></li>
-</ul>
+<h3 id="_5">其他端点<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>路径</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/report/session/{id}/l3-advisory/snapshots</code></td>
+<td>单独创建 snapshot</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/report/l3-advisory/snapshot/{snapshot_id}/jobs</code></td>
+<td>创建 job</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/report/l3-advisory/job/{job_id}/run-local</code></td>
+<td>以 deterministic_local 运行 job</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/report/l3-advisory/job/{job_id}/run-worker</code></td>
+<td>以 llm_provider 运行 job</td>
+</tr>
+<tr>
+<td><code>PATCH</code></td>
+<td><code>/report/l3-advisory/review/{review_id}</code></td>
+<td>更新 review lifecycle</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/report/l3-advisory/jobs</code></td>
+<td>列出 jobs（支持 state / runner / session_id 过滤）</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/report/l3-advisory/jobs/run-next</code></td>
+<td>运行最旧一条 queued job</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/report/l3-advisory/jobs/drain</code></td>
+<td>批量运行 queued jobs（max 10）</td>
+</tr>
+</tbody>
+</table>
 <p>完整字段见 <a href="../../api/reporting/#l3-advisory-endpoints">报表与监控端点</a>。</p>
 <hr />
-<h2 id="clawsentry-watch"><code>clawsentry watch</code> 里会看到什么？<a class="headerlink" href="#clawsentry-watch" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>L3 ADVISORY SNAPSHOT  l3snap-...  Range=4-&gt;8
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>L3 ADVISORY JOB       l3job-...   State=Completed Runner=Deterministic local
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>L3 ADVISORY REVIEW    l3adv-...   State=Completed Action=Inspect
+<h2 id="smoke">Provider smoke 验证<a class="headerlink" href="#smoke" title="Permanent link">&para;</a></h2>
+<p>在真实 session 上运行之前，可用随包 devtools 模块验证 provider runner 配置：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>python<span class="w"> </span>-m<span class="w"> </span>clawsentry.devtools.l3_advisory_provider_smoke<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>--output-report<span class="w"> </span>artifacts/l3-provider-smoke.md<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>--json
 </span></code></pre></div>
-<p>这三行对应：证据已冻结、任务已运行、报告已生成。</p>
+<p>步骤：</p>
+<ol>
+<li>构造 frozen snapshot；</li>
+<li>排队一个 <code>llm_provider</code> job；</li>
+<li>执行一次受闸门保护的 review；</li>
+<li>输出 Markdown 证据报告。</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">smoke 验证的边界</p>
+<ul>
+<li>缺少 <code>CS_LLM_PROVIDER</code> / API key / <code>CS_LLM_MODEL</code> 时，结果应安全降级为 <code>degraded</code>；</li>
+<li>加 <code>--require-completed</code> 可让未完成的 review 以非零退出，适合用作发布 gate；</li>
+<li>smoke 不启动 scheduler，不修改 canonical decision，只写 <code>advisory_only=true</code> 的 review。</li>
+</ul>
+</div>
 <hr />
-<h2 id="_7">边界与常见误解<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
+<h2 id="faq">常见误解<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -3414,78 +3852,31 @@
 </thead>
 <tbody>
 <tr>
-<td>“它会重新决定 allow/block 吗？”</td>
-<td>不会。它只生成 advisory review。</td>
+<td>"它会重判 allow/block 吗？"</td>
+<td>不会；它只生成 advisory review，<code>canonical_decision_mutated</code> 始终为 false</td>
 </tr>
 <tr>
-<td>“它会自动联网调用 LLM 吗？”</td>
-<td>不会。provider runner 默认 dry-run，必须显式打开。</td>
+<td>"它会自动联网调用 LLM 吗？"</td>
+<td>不会；<code>llm_provider</code> 须显式配置有效 <code>CS_LLM_*</code></td>
 </tr>
 <tr>
-<td>“它会一直后台扫描所有 session 吗？”</td>
-<td>不会。full review 是 operator 显式触发；自动 snapshot 也不会自动运行后台 review。</td>
+<td>"它会后台持续扫描所有 session 吗？"</td>
+<td>不会；full-review 是显式触发，drain 是有界 one-shot</td>
 </tr>
 <tr>
-<td>“它会读取最新 live 文件吗？”</td>
-<td>默认只读 frozen trajectory records；范围由 snapshot 固定。</td>
+<td>"它会读取最新 live 文件吗？"</td>
+<td>不会；只读 frozen trajectory records，范围由 snapshot 固定</td>
 </tr>
 <tr>
-<td>“失败会伪装成成功吗？”</td>
-<td>不会。配置缺失或 provider 不可用会显示 <code>degraded</code> / <code>failed</code>。</td>
+<td>"失败会伪装成成功吗？"</td>
+<td>不会；配置缺失或 provider 不可用会写入 <code>degraded</code> + 明确 reason code</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="l3-agent">和同步 L3 Agent 有什么区别？<a class="headerlink" href="#l3-agent" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>能力</th>
-<th>同步 L3 Agent</th>
-<th>L3 咨询审查</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>触发时机</td>
-<td>在实时决策链中按策略触发</td>
-<td>operator 手动触发，或只自动冻结 snapshot</td>
-</tr>
-<tr>
-<td>目标</td>
-<td>帮助当前事件得出安全评估</td>
-<td>对已记录 session 做复盘报告</td>
-</tr>
-<tr>
-<td>输入</td>
-<td>当前事件 + bounded context</td>
-<td>frozen trajectory record range</td>
-</tr>
-<tr>
-<td>输出</td>
-<td>决策路径中的 L3 结果 / trace</td>
-<td>advisory review / recommended operator action</td>
-</tr>
-<tr>
-<td>延迟模型</td>
-<td>同步路径预算内返回，超时/失败降级</td>
-<td>job/review 生命周期，可排队、手动 run-next/drain</td>
-</tr>
-<tr>
-<td>LLM 配置</td>
-<td>继承同步 L2/L3 provider：<code>CS_LLM_PROVIDER</code>、<code>CS_LLM_MODEL</code> 等</td>
-<td>同样继承 <code>CS_LLM_*</code>；无有效配置时 loud degraded</td>
-</tr>
-<tr>
-<td>是否改历史判决</td>
-<td>不适用</td>
-<td>明确不改，<code>canonical_decision_mutated=false</code></td>
-</tr>
-</tbody>
-</table>
-<h2 id="recent-feature-coverage">最近功能覆盖状态<a class="headerlink" href="#recent-feature-coverage" title="Permanent link">&para;</a></h2>
-<p>本页覆盖 L3 advisory jobs/full-review、heartbeat/idle aggregate queueing、provider smoke gates、Web UI L3 surfaces 与 action summary。完整跨页面覆盖矩阵见 <a href="../../operations/recent-feature-coverage/">最近功能文档覆盖矩阵</a>。</p>
+<h2 id="related-entrypoints">相关入口<a class="headerlink" href="#related-entrypoints" title="Permanent link">&para;</a></h2>
 <p>如果你想了解同步决策链里的 L3 审查器，继续看 <a href="../l3-agent/">L3 审查 Agent</a>。</p>
+<p>完整 API 字段见 <a href="../../api/overview/">API 概览</a>、<a href="../../api/reporting/#l3-advisory-endpoints">报表 API</a>。实时监控见 <a href="../../dashboard/">Web 仪表板</a>。</p>
 
 
 
@@ -3508,7 +3899,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年4月30日 15:25:44 UTC">2026年4月30日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月19日 10:51:34 UTC">2026年5月19日</span>
   </span>
 
     
@@ -3631,11 +4022,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

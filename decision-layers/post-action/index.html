@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="工具调用后的非阻塞安全分析 — 间接注入检测、数据外传识别、凭据暴露、混淆代码">
+        <meta name="description" content="工具输出的非阻塞分析 — 间接注入、数据外泄、凭据暴露、混淆代码">
       
       
       
@@ -16,7 +16,7 @@
         <link rel="prev" href="../l3-advisory/">
       
       
-        <link rel="next" href="../sanitizer-capability/">
+        <link rel="next" href="../scope-restrictions/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Post-action 安全围栏 - ClawSentry</title>
+        <title>后置动作安全层 - ClawSentry</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#post-action" class="md-skip">
+        <a href="#_1" class="md-skip">
           跳转至
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Post-action 安全围栏
+              后置动作安全层
             
           </span>
         </div>
@@ -170,6 +170,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
           
@@ -252,6 +257,8 @@
           
   
   
+    
+  
   入门指南
 
         </a>
@@ -272,6 +279,8 @@
           
   
   
+    
+  
   集成接入
 
         </a>
@@ -291,6 +300,8 @@
         <a href="../../configuration/configuration-overview/" class="md-tabs__link">
           
   
+  
+    
   
   配置参考
 
@@ -331,6 +342,8 @@
           
   
   
+    
+  
   API 文档
 
         </a>
@@ -352,6 +365,8 @@
         <a href="../l1-rules/" class="md-tabs__link">
           
   
+  
+    
   
   安全决策引擎
 
@@ -388,9 +403,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../advanced/rule-governance/" class="md-tabs__link">
+        <a href="../../advanced/skill-trust/" class="md-tabs__link">
           
   
+  
+    
   
   高级用法
 
@@ -411,6 +428,8 @@
         <a href="../../operations/deployment/" class="md-tabs__link">
           
   
+  
+    
   
   部署运维
 
@@ -518,6 +537,16 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -691,6 +720,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -948,6 +993,22 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1232,6 +1293,26 @@
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1548,6 +1629,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -1774,10 +1873,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        概述
+        工具输出的非阻塞安全分析
       
     </span>
   </a>
@@ -1788,7 +1887,35 @@
   <a href="#trigger" class="md-nav__link">
     <span class="md-ellipsis">
       
-        何时触发
+        触发条件
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="触发条件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill Trust boundary
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-diagram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        分析管道流程
       
     </span>
   </a>
@@ -1796,10 +1923,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tiers" class="md-nav__link">
+  <a href="#steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        四层响应等级
+        分析步骤
       
     </span>
   </a>
@@ -1810,19 +1937,19 @@
   <a href="#detectors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        检测器详解
+        检测器
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="检测器详解">
+    <nav class="md-nav" aria-label="检测器">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#indirect-injection" class="md-nav__link">
+  <a href="#detect_instructional_content" class="md-nav__link">
     <span class="md-ellipsis">
       
-        间接提示词注入检测
+        指令性内容检测（detect_instructional_content）
       
     </span>
   </a>
@@ -1830,10 +1957,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#exfiltration" class="md-nav__link">
+  <a href="#detect_exfiltration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        数据外传模式检测
+        数据外泄检测（detect_exfiltration）
       
     </span>
   </a>
@@ -1841,10 +1968,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#secret-exposure" class="md-nav__link">
+  <a href="#detect_secret_exposure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        凭据暴露检测
+        凭据暴露检测（detect_secret_exposure）
       
     </span>
   </a>
@@ -1852,10 +1979,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#obfuscation" class="md-nav__link">
+  <a href="#detect_obfuscation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        混淆代码检测
+        混淆代码检测（detect_obfuscation）
       
     </span>
   </a>
@@ -1871,7 +1998,7 @@
   <a href="#scoring" class="md-nav__link">
     <span class="md-ellipsis">
       
-        合成评分公式
+        评分公式
       
     </span>
   </a>
@@ -1879,10 +2006,66 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#sse-event" class="md-nav__link">
+  <a href="#tiers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SSE 事件格式
+        响应分级
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="响应分级">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#severity-floor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        严重性底线
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostActionFinding 输出结构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PostActionFinding 输出结构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sanitize_advisory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sanitize_advisory 子字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与前置动作层的对比
       
     </span>
   </a>
@@ -1893,7 +2076,7 @@
   <a href="#whitelist" class="md-nav__link">
     <span class="md-ellipsis">
       
-        白名单机制
+        白名单
       
     </span>
   </a>
@@ -1912,6 +2095,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostActionAnalyzer API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#code-locations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1923,7 +2117,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         相关页面
@@ -1937,34 +2131,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../sanitizer-capability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sanitizer 当前能力
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -2096,6 +2262,24 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2141,6 +2325,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/skill-trust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill Trust / Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2353,6 +2565,16 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
@@ -2462,70 +2684,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/docs-coverage-audit/" class="md-nav__link">
+      <a href="../../operations/release-progress/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    文档覆盖审计
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/docs-audit-2026-04-27/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    执行审计 2026-04-27
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../operations/recent-feature-coverage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    最近功能覆盖矩阵
+    发布进度
   
 
     
@@ -2628,10 +2794,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        概述
+        工具输出的非阻塞安全分析
       
     </span>
   </a>
@@ -2642,7 +2808,35 @@
   <a href="#trigger" class="md-nav__link">
     <span class="md-ellipsis">
       
-        何时触发
+        触发条件
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="触发条件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#skill-trust-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill Trust boundary
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-diagram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        分析管道流程
       
     </span>
   </a>
@@ -2650,10 +2844,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tiers" class="md-nav__link">
+  <a href="#steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        四层响应等级
+        分析步骤
       
     </span>
   </a>
@@ -2664,19 +2858,19 @@
   <a href="#detectors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        检测器详解
+        检测器
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="检测器详解">
+    <nav class="md-nav" aria-label="检测器">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#indirect-injection" class="md-nav__link">
+  <a href="#detect_instructional_content" class="md-nav__link">
     <span class="md-ellipsis">
       
-        间接提示词注入检测
+        指令性内容检测（detect_instructional_content）
       
     </span>
   </a>
@@ -2684,10 +2878,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#exfiltration" class="md-nav__link">
+  <a href="#detect_exfiltration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        数据外传模式检测
+        数据外泄检测（detect_exfiltration）
       
     </span>
   </a>
@@ -2695,10 +2889,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#secret-exposure" class="md-nav__link">
+  <a href="#detect_secret_exposure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        凭据暴露检测
+        凭据暴露检测（detect_secret_exposure）
       
     </span>
   </a>
@@ -2706,10 +2900,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#obfuscation" class="md-nav__link">
+  <a href="#detect_obfuscation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        混淆代码检测
+        混淆代码检测（detect_obfuscation）
       
     </span>
   </a>
@@ -2725,7 +2919,7 @@
   <a href="#scoring" class="md-nav__link">
     <span class="md-ellipsis">
       
-        合成评分公式
+        评分公式
       
     </span>
   </a>
@@ -2733,10 +2927,66 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#sse-event" class="md-nav__link">
+  <a href="#tiers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SSE 事件格式
+        响应分级
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="响应分级">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#severity-floor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        严重性底线
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostActionFinding 输出结构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PostActionFinding 输出结构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sanitize_advisory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sanitize_advisory 子字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与前置动作层的对比
       
     </span>
   </a>
@@ -2747,7 +2997,7 @@
   <a href="#whitelist" class="md-nav__link">
     <span class="md-ellipsis">
       
-        白名单机制
+        白名单
       
     </span>
   </a>
@@ -2766,6 +3016,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostActionAnalyzer API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#code-locations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2777,7 +3038,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         相关页面
@@ -2798,6 +3059,54 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    首页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../l1-rules/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    安全决策引擎
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -2807,735 +3116,839 @@
   
 
 
-<h1 id="post-action">Post-action 安全围栏<a class="headerlink" href="#post-action" title="Permanent link">&para;</a></h1>
-<h2 id="overview">概述<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>ClawSentry 的 L1/L2/L3 三层决策模型均在 Agent 工具调用<strong>执行之前</strong>或<strong>执行过程中</strong>介入，负责对调用意图进行评估和拦截。然而，某些威胁并不体现在调用意图上，而是<strong>隐藏在工具执行后返回的内容</strong>中——最典型的场景是间接提示词注入：攻击者在网页、文档或 API 响应中预埋指令，当 Agent 读取这些内容后，恶意指令可能被 Agent 当作合法任务执行。</p>
-<p>Post-action 安全围栏（<code>PostActionAnalyzer</code>）专门应对这类"事后威胁"，在工具调用返回结果后<strong>异步</strong>对输出内容执行四类安全检测，并根据风险评分触发分级响应。</p>
-<div class="admonition info">
-<p class="admonition-title">设计定位</p>
-<p>Post-action 分析器是<strong>非阻塞</strong>的。它不会延迟工具调用的主决策流，而是在工具输出到达后独立运行检测逻辑，通过 SSE 事件将发现异步广播给订阅方。这使其可以在不影响 Agent 吞吐量的前提下，为 L1/L2/L3 三层主动防御提供事后审计与补充告警能力。</p>
-<p><strong>四层防御分工一览：</strong></p>
-<table>
-<thead>
-<tr>
-<th>层级</th>
-<th>触发时机</th>
-<th>是否阻塞</th>
-<th>主要威胁面</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>L1 规则引擎</td>
-<td>调用前</td>
-<td>是</td>
-<td>高危命令、D1-D6 六维风险</td>
-</tr>
-<tr>
-<td>L2 语义分析</td>
-<td>调用前</td>
-<td>是</td>
-<td>意图语义、攻击模式匹配</td>
-</tr>
-<tr>
-<td>L3 审查 Agent</td>
-<td>调用前（可选）</td>
-<td>是</td>
-<td>复杂多步攻击链</td>
-</tr>
-<tr>
-<td><strong>Post-action</strong></td>
-<td><strong>调用后</strong></td>
-<td><strong>否</strong></td>
-<td><strong>间接注入、数据外传、凭据暴露、混淆</strong></td>
-</tr>
-</tbody>
-</table>
+<h1 id="_1">后置动作安全层<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<div class="cs-doc-hero">
+<div class="cs-eyebrow">决策层 · 执行后分析</div>
+<h2 id="_2">工具输出的非阻塞安全分析<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p>L1/L2/L3 在工具调用之前或期间进行拦截。后置动作层填补了这一盲区：工具返回结果后，四个检测器以异步方式对输出执行分析，并通过 SSE 发送分级 finding，不会延迟主决策管道。</p>
+<div class="cs-pill-row">
+<p><span class="cs-pill">异步 / 非阻塞</span>
+<span class="cs-pill">间接注入</span>
+<span class="cs-pill">数据外泄</span>
+<span class="cs-pill">凭据泄露</span>
+<span class="cs-pill">混淆代码</span>
+<span class="cs-pill">SSE 分级响应</span></p>
 </div>
-<pre class="mermaid"><code>graph TB
-    TA["🔧 ToolOutput\n工具执行结果"]
-
-    subgraph DETECTORS ["四层检测器（并行执行）"]
-        D1["🔗 间接注入检测\nIndirectInjectionDetector\n正则：隐藏指令 / 覆写信号"]
-        D2["📤 数据外传检测\nDataExfiltrationDetector\n10 种模式：curl/wget/S3/DNS/git 等"]
-        D3["🔑 凭证暴露检测\nCredentialExposureDetector\nAWS key/JWT/SSH private key/密码"]
-        D4["🔀 混淆代码检测\nObfuscationDetector\nBase64/eval/Shannon 熵值"]
-    end
-
-    RESP{{"响应等级\n(score: 0.0–3.0)"}}
-    LO["📝 LOG_ONLY\n仅写入日志"]
-    MON["📡 MONITOR\nSSE 广播 post_action_finding"]
-    ESC["⚠️ ESCALATE\n告警 + 提升后续事件警戒"]
-    EME["🚨 EMERGENCY\n立即告警 + 触发会话执法"]
-
-    TA --&gt; D1 &amp; D2 &amp; D3 &amp; D4
-    D1 &amp; D2 &amp; D3 &amp; D4 --&gt; RESP
-    RESP --&gt;|"score &lt; 0.3"| LO
-    RESP --&gt;|"0.3 – &lt;0.6"| MON
-    RESP --&gt;|"0.6 – &lt;0.9"| ESC
-    RESP --&gt;|"&gt;= 0.9"| EME</code></pre>
-<hr />
-<h2 id="trigger">何时触发<a class="headerlink" href="#trigger" title="Permanent link">&para;</a></h2>
-<p>每当一个受监控的工具调用成功返回输出时，Gateway 会<strong>异步</strong>调用 <code>PostActionAnalyzer.analyze()</code>，将工具输出内容交由分析器处理。整个分析过程在独立线程中完成，不会阻塞 Agent 收到工具响应的时间。</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Agent 请求工具调用
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>       │
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>       ▼
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  L1/L2/L3 决策（同步）──► 若 BLOCK/DEFER，调用被终止
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>       │
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>       ▼（ALLOW）
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  工具执行（Agent 侧）
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>       │
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>       ▼
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  工具返回输出
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>       │
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>       ├──► 输出交付 Agent（立即，不阻塞）
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>       │
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>       └──► PostActionAnalyzer.analyze()（异步）
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                 │
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>                 ▼
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>           4 类检测器并行运行
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>                 │
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>                 ▼
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>           合成评分 → 分级响应 → SSE post_action_finding 广播
-</span></code></pre></div>
-<p>触发条件：</p>
-<ul>
-<li>工具调用结果已到达（<code>tool_output</code> 非空）</li>
-<li>文件路径（如有）不在白名单中（参见<a href="#whitelist">白名单机制</a>）</li>
-<li>输入超过 <strong>64 KB（65536 字节）</strong> 时，自动截断至 65536 字节后再分析</li>
-</ul>
-<hr />
-<h2 id="tiers">四层响应等级<a class="headerlink" href="#tiers" title="Permanent link">&para;</a></h2>
-<p>分析完成后，综合评分（公开字段名为 <code>score</code>）和严重性 floor 共同决定响应等级。<code>score</code> 的合同范围是 <strong>0.0–3.0</strong>，并且实现中可实际取到 0、1、2、3 等边界/整数值：</p>
-<table>
-<thead>
-<tr>
-<th>等级</th>
-<th>分数范围</th>
-<th>CS_ 配置变量</th>
-<th>含义</th>
-<th>系统响应</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>LOG_ONLY</code></td>
-<td>&lt; <code>CS_POST_ACTION_MONITOR</code>（默认 &lt; 0.3）</td>
-<td><code>CS_POST_ACTION_MONITOR</code></td>
-<td>无明显威胁信号</td>
-<td>记录结构化日志，不触发告警</td>
-</tr>
-<tr>
-<td><code>MONITOR</code></td>
-<td>≥ 0.3，&lt; <code>CS_POST_ACTION_ESCALATE</code>（默认 0.6）</td>
-<td><code>CS_POST_ACTION_ESCALATE</code></td>
-<td>可疑模式，建议关注</td>
-<td>广播 SSE <code>post_action_finding</code> 事件</td>
-</tr>
-<tr>
-<td><code>ESCALATE</code></td>
-<td>≥ 0.6，&lt; <code>CS_POST_ACTION_EMERGENCY</code>（默认 0.9）</td>
-<td><code>CS_POST_ACTION_EMERGENCY</code></td>
-<td>高风险发现</td>
-<td>升级告警，通知安全团队</td>
-</tr>
-<tr>
-<td><code>EMERGENCY</code></td>
-<td>≥ 0.9</td>
-<td>—</td>
-<td>紧急威胁，置信度极高</td>
-<td>最高优先级响应</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition warning">
-<p class="admonition-title">阈值含义</p>
-<p>上表中的默认分数范围基于默认配置。实际阈值由 <code>DetectionConfig</code> 中的对应字段控制，可通过 <code>CS_POST_ACTION_*</code> 环境变量覆盖（参见<a href="#config">配置参考</a>）。此外，明显外传会至少进入 <code>ESCALATE</code>；私钥、云 token、Bearer、DB URL、GitHub/OpenAI/Slack token 等高价值秘密会至少进入 <code>EMERGENCY</code>；普通 password/API key 至少进入 <code>ESCALATE</code>；单独混淆默认至少 <code>MONITOR</code>，与外传或秘密组合时至少 <code>EMERGENCY</code>。</p>
 </div>
 <hr />
-<h2 id="detectors">检测器详解<a class="headerlink" href="#detectors" title="Permanent link">&para;</a></h2>
-<p><code>PostActionAnalyzer</code> 内置四个独立检测器，各自输出 0.0–1.0 的信号分数，最终经<a href="#scoring">合成评分公式</a>汇总为 0.0–3.0 的公开 <code>score</code>。</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">间接提示词注入</label><label for="__tabbed_1_2">数据外传</label><label for="__tabbed_1_3">凭据暴露</label><label for="__tabbed_1_4">混淆代码</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<h3 id="indirect-injection">间接提示词注入检测<a class="headerlink" href="#indirect-injection" title="Permanent link">&para;</a></h3>
-<p><strong>方法</strong>：<code>detect_instructional_content(text)</code> → <code>float</code>（0.0–1.0）</p>
-<p>当工具输出（如读取的文件、爬取的网页、API 响应）包含<strong>指令性/命令式语言</strong>时，往往是间接提示词注入的信号——攻击者通过外部内容向 Agent 下达指令。</p>
-<p>检测器使用 4 个正则标记，每命中 1 个得 +0.25（4 个均命中则为 1.0）：</p>
+<h2 id="trigger">触发条件<a class="headerlink" href="#trigger" title="Permanent link">&para;</a></h2>
+<p>每当被监控的工具调用返回输出时，Gateway 就会调用 <code>PostActionAnalyzer.analyze()</code>。</p>
+<h3 id="skill-trust-boundary">Skill Trust boundary<a class="headerlink" href="#skill-trust-boundary" title="Permanent link">&para;</a></h3>
+<p>v0.8.2 起，post-action 阶段不再运行 artifact label 与 <code>skill_use_ledger</code> 的 provenance 对账器。Skill Trust 的运行时身份、mirror 内容校验、first-use/FSPR evidence 和 replay-safe ledger 仍由 pre-action/runtime binding 路径维护。</p>
+<p><strong>前置条件（须全部满足）：</strong></p>
+<ol>
+<li><code>tool_output</code> 非空。</li>
+<li><code>file_path</code>（若提供）不匹配任何白名单模式。</li>
+<li>输入在分析前被截断至 <strong>65 536 字节</strong>；超出部分将被静默丢弃。</li>
+</ol>
+<p><strong>内容来源升级：</strong> 若 <code>content_origin == "external"</code>，综合得分在确定分级前将乘以 <code>external_content_post_action_multiplier</code>（默认值 <code>1.3</code>）。</p>
+<hr />
+<h2 id="pipeline-diagram">分析管道流程<a class="headerlink" href="#pipeline-diagram" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    A([工具调用返回输出]) --&gt; B{前置条件检查}
+    B -- "tool_output 为空" --&gt; Z1([返回 LOG_ONLY, score=0.0])
+    B -- "路径匹配白名单" --&gt; Z2([返回 LOG_ONLY, score=0.0\nwhitelisted=True])
+    B -- "通过，截断至 65 536 字节" --&gt; C[normalize_text 标准化输入]
+
+    C --&gt; D1[检测指令性内容\ndetect_instructional_content]
+    C --&gt; D2[检测数据外泄\ndetect_exfiltration]
+    C --&gt; D3[检测凭据暴露\ndetect_secret_exposure]
+    C --&gt; D4[检测混淆代码\ndetect_obfuscation]
+
+    D1 --&gt; E[汇总触发信号得分]
+    D2 --&gt; E
+    D3 --&gt; E
+    D4 --&gt; E
+
+    E --&gt; F["combined = min(Σ scores, 3.0)"]
+    F --&gt; G{content_origin == external\n且 multiplier &gt; 1.0?}
+    G -- 是 --&gt; H["combined = min(combined × multiplier, 3.0)"]
+    G -- 否 --&gt; I[基于得分确定 score_tier]
+    H --&gt; I
+
+    I --&gt; J[计算 severity_floor\n由信号类型强制最低分级]
+    J --&gt; K["final_tier = max(score_tier, severity_floor)"]
+    K --&gt; L{would_sanitize == True?}
+    L -- 是 --&gt; M[构建 sanitize_advisory\n脱敏输出并记录哈希]
+    L -- 否 --&gt; N
+    M --&gt; N([返回 PostActionFinding\ntier · score · patterns_matched · details])</code></pre>
+<hr />
+<h2 id="steps">分析步骤<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
+<p>各步骤相互独立；所有四个检测器对每个未被白名单放行的调用都会执行。</p>
+<ol>
+<li><strong>标准化输入</strong> — 每个检测器执行前均调用 <code>normalize_text()</code>。</li>
+<li><strong>检测指令性内容</strong> — 统计 4 个祈使语言标记中有多少匹配；得分 <code>= hits / 4</code>。当 <code>score &gt; 0.5</code> 时加入 <code>patterns_matched</code>。</li>
+<li><strong>检测数据外泄</strong> — 检查 10 个命令/URL 模式；得分 <code>= min(hits × 0.5, 1.0)</code>。当 <code>score &gt; 0.0</code> 时加入。</li>
+<li><strong>检测凭据暴露</strong> — 检查 12 个凭据模式；得分 <code>= min(hits × 0.5, 1.0)</code>。当 <code>score &gt; 0.0</code> 时加入。</li>
+<li><strong>检测混淆代码</strong> — 检查 8 个 <code>risk_signals</code> 函数 + 4 个正则模式（每次命中 <code>+0.3</code>）；当文本 &gt; 50 字节且熵值 &gt; 5.5 时附加 Shannon 熵奖励分。当 <code>score &gt; 0.1</code> 时加入。</li>
+<li><strong>计算综合得分</strong> — <code>score = min(sum(triggered_signal_scores), 3.0)</code>。</li>
+<li><strong>应用外部乘数</strong> — 若 <code>content_origin == "external"</code> 且乘数 &gt; 1.0：<code>combined = min(combined × multiplier, 3.0)</code>。</li>
+<li><strong>基于得分确定分级</strong> — 将综合得分与三个可配置阈值进行比较。</li>
+<li><strong>计算严重性底线</strong> — 由特定信号类型强制的分类最低分级（见 <a href="#severity-floor">严重性底线</a> 中的表格）。</li>
+<li><strong>确定最终分级</strong> — <code>tier = max(score_tier, severity_floor)</code>，排序为 <code>LOG_ONLY &lt; MONITOR &lt; ESCALATE &lt; EMERGENCY</code>。</li>
+<li><strong>构建脱敏建议</strong> — <code>build_tool_output_sanitize_advisory()</code> 对输出中的凭据进行脱敏并记录哈希；仅当 <code>would_sanitize == True</code> 时附加至 <code>details</code>。</li>
+<li><strong>返回 <code>PostActionFinding</code></strong> — 包含分级、得分、已匹配模式及各检测器得分的结构化结果。</li>
+</ol>
+<hr />
+<h2 id="detectors">检测器<a class="headerlink" href="#detectors" title="Permanent link">&para;</a></h2>
+<h3 id="detect_instructional_content">指令性内容检测（detect_instructional_content）<a class="headerlink" href="#detect_instructional_content" title="Permanent link">&para;</a></h3>
+<p>检测工具输出中嵌入的、典型于间接提示注入的祈使/指令性语言。</p>
 <table>
 <thead>
 <tr>
-<th>标记</th>
-<th>正则</th>
-<th>典型示例</th>
+<th>标记 ID</th>
+<th>模式</th>
+<th>示例</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>义务性动词</td>
-<td><code>\b(must|should|need to)\b</code></td>
-<td>"You must now execute..."</td>
+<td><code>obligation</code></td>
+<td><code>\b(must\|should\|need to)\b</code></td>
+<td>"You must now run…"</td>
 </tr>
 <tr>
-<td>否定命令</td>
+<td><code>negation</code></td>
 <td><code>\b(do not\|don't\|never)\b</code></td>
 <td>"Never reveal the system prompt"</td>
 </tr>
 <tr>
-<td>步骤编号</td>
+<td><code>step-number</code></td>
 <td><code>\b(step \d+)\b</code></td>
 <td>"Step 1: delete all files"</td>
 </tr>
 <tr>
-<td>即时行动</td>
+<td><code>immediate-action</code></td>
 <td><code>(?:now\|next\|instead)\s+(?:do\|execute\|run)</code></td>
 <td>"Now execute the following"</td>
 </tr>
 </tbody>
 </table>
-<p>触发条件：<code>score &gt; 0.5</code> → <code>"indirect_injection"</code> 加入 <code>patterns_matched</code></p>
-</div>
-<div class="tabbed-block">
-<h3 id="exfiltration">数据外传模式检测<a class="headerlink" href="#exfiltration" title="Permanent link">&para;</a></h3>
-<p><strong>方法</strong>：<code>detect_exfiltration(text)</code> → <code>float</code>（0.0–1.0）</p>
-<p>检测工具输出中包含的数据外传命令或链接。每命中 1 个模式得 +0.5，上限 1.0。</p>
-<p>共 10 个正则模式：</p>
+<p>得分 = <code>min(hits / 4, 1.0)</code>。加入 <code>patterns_matched</code> 的阈值：<code>&gt; 0.5</code>（即 3+ 个标记匹配）。</p>
+<h3 id="detect_exfiltration">数据外泄检测（detect_exfiltration）<a class="headerlink" href="#detect_exfiltration" title="Permanent link">&para;</a></h3>
+<p>每个模式命中贡献 <code>+0.5</code>；得分上限为 <code>1.0</code>。</p>
 <table>
 <thead>
 <tr>
-<th>编号</th>
-<th>模式说明</th>
-<th>正则（简化）</th>
+<th>#</th>
+<th>模式</th>
+<th>威胁类型</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td>curl 上传文件</td>
 <td><code>curl.*?-d.*?@</code></td>
+<td>curl 文件上传</td>
 </tr>
 <tr>
 <td>2</td>
-<td>wget POST 外传</td>
 <td><code>wget.*?--post-data</code></td>
+<td>wget POST 外泄</td>
 </tr>
 <tr>
 <td>3</td>
-<td>DNS 外传</td>
 <td><code>nslookup.*?\$\{</code></td>
+<td>通过变量进行 DNS 外泄</td>
 </tr>
 <tr>
 <td>4</td>
-<td>AWS S3 上传</td>
 <td><code>aws\s+s3\s+cp.*?s3://</code></td>
+<td>AWS S3 上传</td>
 </tr>
 <tr>
 <td>5</td>
-<td>ICMP 数据外传</td>
 <td><code>ping.*?-p\s+[0-9a-f]{32,}</code></td>
+<td>ICMP 数据外泄</td>
 </tr>
 <tr>
 <td>6</td>
-<td>SSH 反向隧道</td>
 <td><code>ssh.*?-R.*?:\d+:</code></td>
+<td>SSH 反向隧道</td>
 </tr>
 <tr>
 <td>7</td>
-<td>邮件外传</td>
 <td><code>(sendmail\|mail).*?&lt;.*?@</code></td>
+<td>邮件外泄</td>
 </tr>
 <tr>
 <td>8</td>
-<td>Tor 匿名外传</td>
 <td><code>torsocks.*?(curl\|wget)</code></td>
+<td>Tor 匿名传输</td>
 </tr>
 <tr>
 <td>9</td>
-<td>Markdown 图片外传</td>
-<td>匹配 Markdown 图片语法（排除 github.com、shields.io 等白名单域名）</td>
+<td>指向非白名单域名的 Markdown 图片语法</td>
+<td>像素追踪 / 数据外泄</td>
 </tr>
 <tr>
 <td>10</td>
-<td>git 携带凭据操作</td>
 <td><code>git\s+(clone\|push).*?http.*?@</code></td>
+<td>URL 中含 Git 凭据</td>
 </tr>
 </tbody>
 </table>
-<p>触发条件：<code>score &gt; 0.0</code> → <code>"exfiltration"</code> 加入 <code>patterns_matched</code></p>
+<div class="admonition note">
+<p class="admonition-title">Markdown 图片白名单</p>
+<p>模式 9 豁免 <code>github.com</code>、<code>raw.githubusercontent.com</code>、<code>img.shields.io</code>、<code>shields.io</code> 和 <code>badge.fury.io</code>，以避免在含有大量徽章的 README 输出中产生误报。</p>
 </div>
-<div class="tabbed-block">
-<h3 id="secret-exposure">凭据暴露检测<a class="headerlink" href="#secret-exposure" title="Permanent link">&para;</a></h3>
-<p><strong>方法</strong>：<code>detect_secret_exposure(text)</code> → <code>float</code>（0.0–1.0）</p>
-<p>检测工具输出中意外暴露的凭据、密钥或敏感配置。每命中 1 个模式得 +0.5，上限 1.0。</p>
-<p>共 15 个正则模式：</p>
+<h3 id="detect_secret_exposure">凭据暴露检测（detect_secret_exposure）<a class="headerlink" href="#detect_secret_exposure" title="Permanent link">&para;</a></h3>
+<p>每个模式命中贡献 <code>+0.5</code>；得分上限为 <code>1.0</code>。</p>
 <table>
 <thead>
 <tr>
-<th>编号</th>
-<th>类型</th>
+<th>#</th>
+<th>凭据类型</th>
 <th>检测条件</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td>AWS Access Key</td>
-<td><code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY = ...</code>（值 ≥ 16 字符）</td>
+<td>AWS 密钥对</td>
+<td><code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code> 且值长度 ≥ 16</td>
 </tr>
 <tr>
 <td>2</td>
-<td>GitHub Token</td>
-<td><code>ghp_</code> / <code>ghs_</code> / <code>ghu_</code> / <code>github_pat_</code> 开头（值 ≥ 36 字符）</td>
+<td>GitHub token</td>
+<td><code>ghp_</code> / <code>ghs_</code> / <code>ghu_</code> / <code>github_pat_</code> 前缀，值长度 ≥ 36</td>
 </tr>
 <tr>
 <td>3</td>
-<td>私钥文件头</td>
+<td>PEM 私钥头</td>
 <td><code>-----BEGIN (RSA\|EC\|OPENSSH\|DSA\|PGP) PRIVATE KEY-----</code></td>
 </tr>
 <tr>
 <td>4</td>
 <td>密码字段</td>
-<td><code>password</code> / <code>passwd</code> / <code>pwd = ...</code>（值 ≥ 8 字符）</td>
+<td><code>password</code> / <code>passwd</code> 赋值，值长度 ≥ 8</td>
 </tr>
 <tr>
 <td>5</td>
-<td>API 密钥字段</td>
-<td><code>api_key</code> / <code>secret_key</code> / <code>access_token = ...</code>（值 ≥ 16 字符）</td>
+<td>通用 API/密钥</td>
+<td><code>api_key</code> / <code>secret_key</code> / <code>access_token</code> 赋值，值长度 ≥ 16</td>
 </tr>
 <tr>
 <td>6</td>
-<td>Bearer Token</td>
-<td><code>Authorization: Bearer ...</code>（值 ≥ 20 字符）</td>
+<td>Bearer token</td>
+<td><code>Bearer &lt;token&gt;</code>，token 长度 ≥ 20（上下文受限）</td>
 </tr>
 <tr>
 <td>7</td>
-<td>数据库连接串</td>
-<td><code>DATABASE_URL = scheme://user:pass@</code></td>
+<td>数据库 URL</td>
+<td><code>DATABASE_URL = scheme://user:pass@host</code></td>
 </tr>
 <tr>
 <td>8</td>
-<td>OpenAI API Key</td>
-<td><code>OPENAI_API_KEY = sk-...</code>（值 ≥ 20 字符，含 sk-proj- 变体）</td>
+<td>OpenAI API 密钥</td>
+<td><code>OPENAI_API_KEY = sk-…</code> 值长度 ≥ 20</td>
 </tr>
 <tr>
 <td>9</td>
-<td>AWS IAM Key</td>
-<td><code>AKIA[0-9A-Z]{16}</code>（IAM 访问密钥格式）</td>
+<td>AWS IAM 访问密钥 ID</td>
+<td><code>AKIA[A-Z0-9]{16}</code></td>
 </tr>
 <tr>
 <td>10</td>
-<td>Slack Token</td>
-<td><code>xoxb-</code> / <code>xoxp-</code> / <code>xoxs-</code> 开头</td>
+<td>Slack token</td>
+<td><code>xox[bprs]-…</code> 前缀</td>
 </tr>
 <tr>
 <td>11</td>
-<td>Feishu/Lark Token</td>
-<td><code>t-[a-zA-Z0-9]{20,}</code> 飞书开放平台 Token</td>
+<td>飞书/Lark token</td>
+<td><code>(tenant\|user\|app)_access_token = t-…</code> 值长度 ≥ 20</td>
 </tr>
 <tr>
 <td>12</td>
-<td>Bearer Token (通用)</td>
-<td><code>bearer\s+[a-zA-Z0-9._-]{20,}</code>（需上下文约束避免误报）</td>
-</tr>
-<tr>
-<td>13</td>
-<td>Ethereum Private Key</td>
-<td><code>0x[0-9a-fA-F]{64}</code>（ETH 私钥格式）</td>
-</tr>
-<tr>
-<td>14</td>
-<td>sk- Secret Key</td>
-<td><code>sk-[a-zA-Z0-9]{20,}</code>（需上下文约束：<code>key/token/api_key/secret</code> 前缀）</td>
-</tr>
-<tr>
-<td>15</td>
-<td>私钥通用关键词</td>
-<td><code>private_key</code> / <code>priv_key</code> 赋值（值 ≥ 16 字符）</td>
+<td>以太坊私钥</td>
+<td><code>(?:private[_\s-]?key\|priv[_\s-]?key\|wallet[_\s-]?key)\s*[:=]\s*['\"]?0x[a-fA-F0-9]{64}</code></td>
 </tr>
 </tbody>
 </table>
-<p>触发条件：<code>score &gt; 0.0</code> → <code>"secret_exposure"</code> 加入 <code>patterns_matched</code></p>
+<div class="admonition warning">
+<p class="admonition-title">高严重性凭据 vs. 标准凭据</p>
+<p>模式 1–3、6–12 同时存在于 <code>_HIGH_SEVERITY_SECRET_PATTERNS</code> 中。匹配其中任何一个将<strong>强制严重性底线升至 EMERGENCY</strong>（见 <a href="#severity-floor">严重性底线</a>）。模式 4–5 仅匹配 <code>detect_secret_exposure</code>，强制底线升至 ESCALATE。</p>
 </div>
-<div class="tabbed-block">
-<h3 id="obfuscation">混淆代码检测<a class="headerlink" href="#obfuscation" title="Permanent link">&para;</a></h3>
-<p><strong>方法</strong>：<code>detect_obfuscation(text)</code> → <code>float</code>（0.0–1.0）</p>
-<p>检测工具输出中包含的混淆代码，攻击者常用混淆规避静态分析。</p>
-<p><strong>正则检测</strong>：13 个模式，每条命中 +0.3：</p>
+<h3 id="detect_obfuscation">混淆代码检测（detect_obfuscation）<a class="headerlink" href="#detect_obfuscation" title="Permanent link">&para;</a></h3>
+<p>每个触发的 <code>risk_signals</code> 检查或内联模式均向模式得分添加 <code>+0.3</code>。</p>
 <table>
 <thead>
 <tr>
-<th>模式</th>
-<th>说明</th>
+<th>检查项</th>
+<th>来源</th>
+<th>描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>base64-pipe-exec</td>
-<td><code>base64 -d \| bash/sh</code> — 典型 one-liner 混淆</td>
+<td><code>has_decode_pipe_exec_command</code></td>
+<td><code>risk_signals</code></td>
+<td><code>base64 -d \| bash/sh</code> 单行命令</td>
 </tr>
 <tr>
-<td>hex-pipe-exec</td>
-<td><code>xxd -r \| bash/sh</code> — 十六进制解码执行</td>
+<td><code>has_eval_decode_command</code></td>
+<td><code>risk_signals</code></td>
+<td><code>eval.*base64</code> 动态解码执行</td>
 </tr>
 <tr>
-<td>printf-pipe-exec</td>
-<td><code>printf \x... \| bash/sh</code> — printf 字节注入</td>
+<td><code>has_script_encoded_exec_command</code></td>
+<td><code>risk_signals</code></td>
+<td><code>python/perl/ruby -e … base64</code></td>
 </tr>
 <tr>
-<td>eval-decode</td>
-<td><code>eval.*base64</code> — 动态解码执行</td>
+<td><code>has_process_sub_remote_command</code></td>
+<td><code>risk_signals</code></td>
+<td><code>bash &lt;(curl/wget …)</code></td>
 </tr>
 <tr>
-<td>curl-pipe-shell</td>
-<td><code>curl \| bash</code> — 远程脚本执行（含安全域名白名单豁免）</td>
+<td><code>has_heredoc_exec_command</code></td>
+<td><code>risk_signals</code></td>
+<td><code>bash &lt;&lt;EOF</code> heredoc 注入</td>
 </tr>
 <tr>
-<td>process-sub-remote</td>
-<td><code>bash &lt;(curl/wget)</code> — 进程替换远程执行</td>
+<td><code>has_variable_expansion_command</code></td>
+<td><code>risk_signals</code></td>
+<td>变量拼接混淆</td>
 </tr>
 <tr>
-<td>heredoc-exec</td>
-<td><code>bash &lt;&lt;EOF</code> — heredoc 注入执行</td>
+<td><code>has_variable_exec_trigger_command</code></td>
+<td><code>risk_signals</code></td>
+<td>变量持有执行触发器</td>
 </tr>
 <tr>
-<td>octal-escape</td>
-<td><code>$'\123\456'</code> — 八进制转义隐藏命令</td>
+<td><code>has_remote_pipe_exec_command</code></td>
+<td><code>risk_signals</code></td>
+<td><code>curl \| bash</code>（豁免安全域名）</td>
 </tr>
 <tr>
-<td>hex-escape</td>
-<td><code>$'\x41\x42'</code> — 十六进制转义隐藏命令</td>
+<td><code>octal-escape</code></td>
+<td>内联正则</td>
+<td><code>$'\123\456'</code> 八进制字节序列</td>
 </tr>
 <tr>
-<td>script-exec-encoded</td>
-<td><code>python/perl/ruby -e ... base64</code> — 脚本语言编码执行</td>
+<td><code>hex-escape</code></td>
+<td>内联正则</td>
+<td><code>$'\x41\x42'</code> 十六进制字节序列</td>
 </tr>
 <tr>
-<td>var-expansion</td>
-<td>变量拼接混淆（需执行指示符 <code>\|</code>/<code>&gt;</code>/<code>;sh</code> 等）</td>
+<td><code>reverse-slice</code></td>
+<td>内联正则</td>
+<td><code>[::-1]</code> Python 反向执行</td>
 </tr>
 <tr>
-<td>reverse-slice</td>
-<td><code>[::-1]</code> — Python 风格反转执行</td>
-</tr>
-<tr>
-<td>hex-char</td>
-<td><code>\x[0-9a-f]{2}</code> — 字节级混淆</td>
+<td><code>hex-char</code></td>
+<td>内联正则</td>
+<td>裸 <code>\x[0-9a-f]{2}</code> 序列</td>
 </tr>
 </tbody>
 </table>
-<p><strong>curl-pipe-shell 安全域名白名单</strong>：对 <code>brew.sh</code>、<code>bun.sh</code>、<code>rustup.rs</code>、<code>deno.land</code>、<code>raw.githubusercontent.com</code> 等已知合法 curl-pipe-shell 安装脚本进行豁免，避免误报。</p>
-<p><strong>Shannon 熵检测</strong>（补充）：</p>
-<p>当文本长度 &gt; 50 字节且香农熵 &gt; 5.5 时，额外得分为：</p>
-<div class="arithmatex">\[
-\text{entropy\_score} = \min\left(\frac{\text{entropy} - 5.5}{2.5},\; 0.5\right)
-\]</div>
-<div class="admonition tip">
-<p class="admonition-title">为何使用香农熵</p>
-<p>正常代码和文本的香农熵通常低于 4.5。经过 Base64、XOR 或随机化混淆的内容熵值显著偏高（&gt;5.5），可有效识别密集混淆段落，同时避免对正常英文/中文内容产生误报。</p>
-</div>
-<p>触发条件：<code>score &gt; 0.1</code> → <code>"obfuscation"</code> 加入 <code>patterns_matched</code></p>
-</div>
-</div>
+<p><strong>Shannon 熵奖励</strong>（当 <code>len(text) &gt; 50</code> 且 <code>entropy &gt; 5.5</code> 时应用）：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>entropy_score = min((entropy - 5.5) / 2.5, 0.5)
+</span></code></pre></div>
+<p>最终得分：<code>min(pattern_score + entropy_score, 1.0)</code>。加入 <code>patterns_matched</code> 的阈值：<code>&gt; 0.1</code>。</p>
+<div class="admonition note">
+<p class="admonition-title">curl-pipe 安全域名</p>
+<p>当文本中唯一的 URL 属于已知安全安装域名时，<code>has_remote_pipe_exec_command</code> 检查被抑制：<code>brew.sh</code>、<code>raw.githubusercontent.com</code>、<code>get.pnpm.io</code>、<code>bun.sh</code>、<code>sh.rustup.rs</code>、<code>get.docker.com</code>、<code>install.python-poetry.org</code>。原始文本和标准化文本都必须通过此检查。</p>
 </div>
 <hr />
-<h2 id="scoring">合成评分公式<a class="headerlink" href="#scoring" title="Permanent link">&para;</a></h2>
-<p>四个检测器各自独立输出信号分数后，通过以下公式合成最终公开 <code>score</code>。该公式在 2026-04-27 核查后统一为“信号求和 + 3.0 封顶”，以保证文档声明的 0.0–3.0 范围不仅被类型校验允许，而且在真实检测路径中可达。</p>
-<div class="arithmatex">\[
-\text{score} = \min\left(\sum_i \text{signal}_i,\; 3.0\right)
-\]</div>
-<p>其中每个 <code>signal_i</code> 是已触发检测器的 0.0–1.0 分数；未触发检测器不参与求和。</p>
-<div class="admonition note">
-<p class="admonition-title">公式设计意图</p>
-<p>多信号同时出现（如"数据外传 + 凭据暴露"）意味着更高的威胁置信度，因此当前公式采用直接求和。单个检测器最高贡献 1.0；多个独立检测器同时强命中时可达到 2.0、3.0，并在 3.0 封顶，避免超过与 L1/L2 风险分一致的公开上界。</p>
-</div>
-<p><strong>示例：</strong></p>
+<h2 id="scoring">评分公式<a class="headerlink" href="#scoring" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>combined = min(sum(triggered_signal_scores), 3.0)
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a># 可选后续步骤：
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>if content_origin == &quot;external&quot; and multiplier &gt; 1.0:
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    combined = min(combined * multiplier, 3.0)
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>score = round(combined, 3)   # 存储于 PostActionFinding.score
+</span></code></pre></div>
+<p>得分示例：</p>
 <table>
 <thead>
 <tr>
-<th>场景</th>
+<th>触发信号</th>
 <th style="text-align: center;">instructional</th>
 <th style="text-align: center;">exfiltration</th>
-<th style="text-align: center;">secret_exposure</th>
+<th style="text-align: center;">secret</th>
 <th style="text-align: center;">obfuscation</th>
 <th style="text-align: center;">combined</th>
+<th style="text-align: center;">分级（默认值）</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>仅数据外传</td>
+<td>仅外泄</td>
 <td style="text-align: center;">0.0</td>
 <td style="text-align: center;">0.5</td>
 <td style="text-align: center;">0.0</td>
 <td style="text-align: center;">0.0</td>
-<td style="text-align: center;"><strong>0.50</strong> → ESCALATE（exfiltration floor）</td>
+<td style="text-align: center;">0.50</td>
+<td style="text-align: center;">ESCALATE（底线）</td>
 </tr>
 <tr>
-<td>凭据 + 外传</td>
+<td>凭据 + 外泄</td>
 <td style="text-align: center;">0.0</td>
 <td style="text-align: center;">0.5</td>
 <td style="text-align: center;">0.5</td>
 <td style="text-align: center;">0.0</td>
-<td style="text-align: center;"><strong>1.00</strong> → emergency</td>
+<td style="text-align: center;">1.00</td>
+<td style="text-align: center;">EMERGENCY（底线）</td>
 </tr>
 <tr>
-<td>三类同时命中</td>
+<td>指令 + 凭据 + 外泄</td>
 <td style="text-align: center;">0.75</td>
 <td style="text-align: center;">0.5</td>
 <td style="text-align: center;">1.0</td>
 <td style="text-align: center;">0.0</td>
-<td style="text-align: center;"><strong>2.25</strong> → EMERGENCY</td>
+<td style="text-align: center;">2.25</td>
+<td style="text-align: center;">EMERGENCY</td>
 </tr>
 <tr>
-<td>三类强命中</td>
+<td>四项全部最高</td>
 <td style="text-align: center;">1.0</td>
 <td style="text-align: center;">1.0</td>
 <td style="text-align: center;">1.0</td>
-<td style="text-align: center;">0.0</td>
-<td style="text-align: center;"><strong>3.00</strong> → EMERGENCY</td>
+<td style="text-align: center;">1.0</td>
+<td style="text-align: center;">3.00</td>
+<td style="text-align: center;">EMERGENCY</td>
 </tr>
 <tr>
-<td>低熵混淆</td>
+<td>混淆低于阈值</td>
 <td style="text-align: center;">0.0</td>
 <td style="text-align: center;">0.0</td>
 <td style="text-align: center;">0.0</td>
 <td style="text-align: center;">0.09</td>
-<td style="text-align: center;"><strong>0.09</strong>（未超 0.1 触发阈值）→ LOG_ONLY</td>
+<td style="text-align: center;">0.09</td>
+<td style="text-align: center;">LOG_ONLY</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="sse-event">SSE 事件格式<a class="headerlink" href="#sse-event" title="Permanent link">&para;</a></h2>
-<p>当分析结果等级达到 <code>MONITOR</code> 或以上时，Gateway 通过 SSE 广播 <code>post_action_finding</code> 事件。</p>
-<p><strong>事件类型</strong>：<code>post_action_finding</code></p>
-<p><strong>Payload 示例：</strong></p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;post_action_finding&quot;</span><span class="p">,</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sess-abc123&quot;</span><span class="p">,</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;evt-xyz789&quot;</span><span class="p">,</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;source_framework&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a3s-code&quot;</span><span class="p">,</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">&quot;tier&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;emergency&quot;</span><span class="p">,</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">&quot;patterns_matched&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;secret_exposure&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;exfiltration&quot;</span><span class="p">],</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">&quot;handling&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;broadcast&quot;</span><span class="p">,</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-23T10:05:00+00:00&quot;</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">}</span>
-</span></code></pre></div>
-<p><strong>字段说明：</strong></p>
+<h2 id="tiers">响应分级<a class="headerlink" href="#tiers" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>分级</th>
+<th>得分范围（默认值）</th>
+<th>配置变量</th>
+<th>系统动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LOG_ONLY</code></td>
+<td><code>&lt; 0.3</code></td>
+<td>—</td>
+<td>仅写入结构化日志</td>
+</tr>
+<tr>
+<td><code>MONITOR</code></td>
+<td><code>≥ 0.3</code> 且 <code>&lt; 0.6</code></td>
+<td><code>CS_POST_ACTION_MONITOR</code></td>
+<td>SSE 广播 <code>post_action_finding</code></td>
+</tr>
+<tr>
+<td><code>ESCALATE</code></td>
+<td><code>≥ 0.6</code> 且 <code>&lt; 0.9</code></td>
+<td><code>CS_POST_ACTION_ESCALATE</code></td>
+<td>提升告警级别；通知安全团队</td>
+</tr>
+<tr>
+<td><code>EMERGENCY</code></td>
+<td><code>≥ 0.9</code></td>
+<td><code>CS_POST_ACTION_EMERGENCY</code></td>
+<td>最高优先级响应；可触发会话强制措施</td>
+</tr>
+</tbody>
+</table>
+<h3 id="severity-floor">严重性底线<a class="headerlink" href="#severity-floor" title="Permanent link">&para;</a></h3>
+<p>基于得分的分级只能被严重性底线<strong>向上</strong>覆盖。底线取以下最高适用行：</p>
+<table>
+<thead>
+<tr>
+<th>条件</th>
+<th>强制最低分级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>仅 <code>obfuscation</code>（<code>obfusc_score &gt; 0.1</code>）</td>
+<td>MONITOR</td>
+</tr>
+<tr>
+<td>检测到 <code>exfiltration</code></td>
+<td>ESCALATE</td>
+</tr>
+<tr>
+<td><code>secret_exposure</code> 为标准凭据（模式 4–5）</td>
+<td>ESCALATE</td>
+</tr>
+<tr>
+<td><code>obfuscation</code> 与外泄或凭据共现</td>
+<td>EMERGENCY</td>
+</tr>
+<tr>
+<td><code>secret_exposure</code> 为高严重性凭据（模式 1–3、6–12）</td>
+<td>EMERGENCY</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_3">严重性判定流程图<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h4>
+<pre class="mermaid"><code>flowchart TD
+    S([开始严重性底线计算]) --&gt; A{obfusc_score &gt; 0.1?}
+    A -- 否 --&gt; B{检测到 exfiltration?}
+    A -- 是 --&gt; AF[候选底线: MONITOR]
+    AF --&gt; B
+
+    B -- 否 --&gt; C{secret_exposure\n为标准凭据?}
+    B -- 是 --&gt; BF[候选底线升至 ESCALATE]
+    BF --&gt; C
+
+    C -- 否 --&gt; D{obfuscation 与\nexfil 或 secret 共现?}
+    C -- 是 --&gt; CF[候选底线升至 ESCALATE]
+    CF --&gt; D
+
+    D -- 否 --&gt; E{secret_exposure\n为高严重性凭据?}
+    D -- 是 --&gt; DF[候选底线升至 EMERGENCY]
+    DF --&gt; E
+
+    E -- 否 --&gt; F[severity_floor = 当前候选底线]
+    E -- 是 --&gt; EF[候选底线升至 EMERGENCY]
+    EF --&gt; F
+
+    F --&gt; G["final_tier = max(score_tier, severity_floor)"]
+    G --&gt; Z([输出最终分级])</code></pre>
+<div class="admonition warning">
+<p class="admonition-title">底线覆盖得分</p>
+<p>较低的综合得分并不能阻止 ESCALATE 或 EMERGENCY，当严重性底线规则适用时依然生效。例如，单次外泄模式命中得分为 0.5（按得分映射至 ESCALATE），而底线<strong>独立地</strong>强制执行 ESCALATE — 因此即使乘数被降低，分级也不会降至 MONITOR。</p>
+</div>
+<hr />
+<h2 id="output-schema">PostActionFinding 输出结构<a class="headerlink" href="#output-schema" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>字段</th>
 <th>类型</th>
-<th>说明</th>
+<th>含义</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>type</code></td>
-<td><code>string</code></td>
-<td>固定为 <code>"post_action_finding"</code></td>
-</tr>
-<tr>
-<td><code>session_id</code></td>
-<td><code>string</code></td>
-<td>触发工具调用的会话 ID</td>
-</tr>
-<tr>
-<td><code>event_id</code></td>
-<td><code>string</code></td>
-<td>原始工具调用事件 ID</td>
-</tr>
-<tr>
 <td><code>tier</code></td>
-<td><code>string</code></td>
-<td>响应等级：<code>log_only</code> / <code>monitor</code> / <code>escalate</code> / <code>emergency</code></td>
-</tr>
-<tr>
-<td><code>score</code></td>
-<td><code>number</code></td>
-<td>合成评分（0.0–3.0）</td>
+<td><code>PostActionResponseTier</code></td>
+<td>最终响应分级：<code>log_only</code> / <code>monitor</code> / <code>escalate</code> / <code>emergency</code></td>
 </tr>
 <tr>
 <td><code>patterns_matched</code></td>
-<td><code>array&lt;string&gt;</code></td>
-<td>命中的检测器名称列表</td>
+<td><code>list[str]</code></td>
+<td>触发的检测器名称：<code>{"indirect_injection", "exfiltration", "secret_exposure", "obfuscation"}</code> 的子集</td>
 </tr>
 <tr>
-<td><code>source_framework</code></td>
-<td><code>string</code></td>
-<td>触发此次分析的框架来源</td>
+<td><code>score</code></td>
+<td><code>float</code></td>
+<td>综合得分，范围 <code>[0.0, 3.0]</code>；由 <code>__post_init__</code> 强制校验</td>
 </tr>
 <tr>
-<td><code>handling</code></td>
-<td><code>string</code></td>
-<td><code>broadcast</code> / <code>defer</code> / <code>block</code>；后两者表示后续同 session containment</td>
+<td><code>details.event_id</code></td>
+<td><code>str</code></td>
+<td>来源工具调用的事件 ID</td>
 </tr>
 <tr>
-<td><code>timestamp</code></td>
-<td><code>string</code></td>
-<td>原始 post-action 事件时间</td>
+<td><code>details.tool_name</code></td>
+<td><code>str</code></td>
+<td>被分析输出所属工具的名称</td>
+</tr>
+<tr>
+<td><code>details.instructional</code></td>
+<td><code>float</code></td>
+<td><code>detect_instructional_content</code> 的原始得分（保留 3 位小数）</td>
+</tr>
+<tr>
+<td><code>details.exfiltration</code></td>
+<td><code>float</code></td>
+<td><code>detect_exfiltration</code> 的原始得分</td>
+</tr>
+<tr>
+<td><code>details.secret_exposure</code></td>
+<td><code>float</code></td>
+<td><code>detect_secret_exposure</code> 的原始得分</td>
+</tr>
+<tr>
+<td><code>details.obfuscation</code></td>
+<td><code>float</code></td>
+<td><code>detect_obfuscation</code> 的原始得分</td>
+</tr>
+<tr>
+<td><code>details.severity_floor</code></td>
+<td><code>str</code></td>
+<td><code>max()</code> 之前计算得到的严重性底线分级值</td>
+</tr>
+<tr>
+<td><code>details.sanitize_advisory</code></td>
+<td><code>dict</code>（可选）</td>
+<td>仅当 <code>would_sanitize == True</code> 时存在；见下表</td>
+</tr>
+<tr>
+<td><code>details.whitelisted</code></td>
+<td><code>bool</code>（可选）</td>
+<td>路径匹配白名单时为 <code>True</code>；其他所有字段被省略</td>
 </tr>
 </tbody>
 </table>
-<p>使用 <code>clawsentry watch</code> 实时查看 post-action 事件：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>clawsentry<span class="w"> </span>watch<span class="w"> </span>--filter<span class="w"> </span>post_action_finding
-</span></code></pre></div>
+<h3 id="sanitize_advisory">sanitize_advisory 子字段<a class="headerlink" href="#sanitize_advisory" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>target</code></td>
+<td><code>str</code></td>
+<td>始终为 <code>"tool_output"</code></td>
+</tr>
+<tr>
+<td><code>would_sanitize</code></td>
+<td><code>bool</code></td>
+<td>此键存在时始终为 <code>True</code></td>
+</tr>
+<tr>
+<td><code>original_hash</code></td>
+<td><code>str</code></td>
+<td>未脱敏输出的 <code>sha256:&lt;hex&gt;</code></td>
+</tr>
+<tr>
+<td><code>sanitized_hash</code></td>
+<td><code>str</code></td>
+<td>已脱敏输出的 <code>sha256:&lt;hex&gt;</code></td>
+</tr>
+<tr>
+<td><code>original_preview_redacted</code></td>
+<td><code>str</code></td>
+<td>脱敏文本的前 160 个字符</td>
+</tr>
+<tr>
+<td><code>sanitized_preview_redacted</code></td>
+<td><code>str</code></td>
+<td>同上（当前实现）</td>
+</tr>
+<tr>
+<td><code>redaction_counts</code></td>
+<td><code>dict[str, int]</code></td>
+<td><code>{"secret": N}</code> — 每种类型的替换次数</td>
+</tr>
+<tr>
+<td><code>redaction_types</code></td>
+<td><code>list[str]</code></td>
+<td>排序后的脱敏分类列表</td>
+</tr>
+<tr>
+<td><code>adapter_outcome</code></td>
+<td><code>str</code></td>
+<td>始终为 <code>"would_sanitize"</code></td>
+</tr>
+<tr>
+<td><code>enforcement</code></td>
+<td><code>str</code></td>
+<td>始终为 <code>"advisory_only"</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">脱敏建议仅为观察性</p>
+<p><code>would_sanitize: true</code> 表示 ClawSentry <em>检测到</em>了它会脱敏的内容，<strong>并不</strong>意味着交付给 Agent 的工具输出已被修改。实际的内容强制措施由适配器层负责。</p>
+</div>
 <hr />
-<h2 id="whitelist">白名单机制<a class="headerlink" href="#whitelist" title="Permanent link">&para;</a></h2>
-<p>对于已知安全的文件路径（如内部配置文件、静态资源目录），可通过白名单跳过 post-action 分析。</p>
-<p><strong>环境变量</strong>：<code>CS_POST_ACTION_WHITELIST</code></p>
-<p><strong>格式</strong>：逗号分隔的正则表达式列表</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># 示例：跳过 /etc/app/ 目录下的所有文件和所有 .json 文件</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">CS_POST_ACTION_WHITELIST</span><span class="o">=</span><span class="s2">&quot;/etc/app/.*,.*\.json&quot;</span>
-</span></code></pre></div>
-<p><strong>匹配逻辑</strong>：</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># 使用 re.fullmatch — 整个路径必须完全匹配正则（不是搜索子串）</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">whitelist_patterns</span><span class="p">:</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">file_path</span><span class="p">):</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="k">return</span> <span class="n">PostActionFinding</span><span class="p">(</span><span class="n">tier</span><span class="o">=</span><span class="n">LOG_ONLY</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<h2 id="comparison">与前置动作层的对比<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>L1 规则引擎</th>
+<th>L2 语义层</th>
+<th>L3 审查 Agent</th>
+<th>后置动作层</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>时机</td>
+<td>工具调用前</td>
+<td>工具调用前</td>
+<td>工具调用前（可选）</td>
+<td>工具调用返回后</td>
+</tr>
+<tr>
+<td>是否阻塞</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+</tr>
+<tr>
+<td>分析输入</td>
+<td>工具调用意图/命令</td>
+<td>工具调用载荷</td>
+<td>完整调用上下文</td>
+<td>工具输出内容</td>
+</tr>
+<tr>
+<td>主要威胁</td>
+<td>高风险命令、D1–D6 风险</td>
+<td>意图语义、攻击模式</td>
+<td>多步攻击链</td>
+<td>间接注入、外泄、凭据泄露、混淆</td>
+</tr>
+<tr>
+<td>输出</td>
+<td><code>Decision</code>（ALLOW/BLOCK/…）</td>
+<td><code>Decision</code></td>
+<td><code>Decision</code></td>
+<td><code>PostActionFinding</code>（分级 + 得分）</td>
+</tr>
+<tr>
+<td>SSE 事件</td>
+<td><code>decision</code></td>
+<td><code>decision</code></td>
+<td><code>decision</code></td>
+<td><code>post_action_finding</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="whitelist">白名单<a class="headerlink" href="#whitelist" title="Permanent link">&para;</a></h2>
+<p>文件路径匹配白名单模式时，所有四个检测器均被跳过，立即返回 <code>PostActionFinding(tier=LOG_ONLY, score=0.0)</code>。</p>
+<ul>
+<li>匹配使用 <code>re.fullmatch(pattern, file_path)</code> — 模式必须覆盖<strong>完整</strong>路径字符串。</li>
+<li>无效的正则模式将被记录为警告并跳过。</li>
+</ul>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># 环境变量 — 逗号分隔的正则列表</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">CS_POST_ACTION_WHITELIST</span><span class="o">=</span><span class="s2">&quot;/etc/app/.*,.*\.json&quot;</span>
 </span></code></pre></div>
 <div class="admonition warning">
-<p class="admonition-title">fullmatch 与 search 的关键区别</p>
-<p>白名单使用 <code>re.fullmatch(pattern, file_path)</code> 而非 <code>re.search()</code>，这意味着<strong>正则必须匹配完整路径字符串</strong>。</p>
-<ul>
-<li><code>/etc/app/.*</code> — 正确：匹配 <code>/etc/app/config.yaml</code>、<code>/etc/app/db/settings.yaml</code></li>
-<li><code>/etc/app</code> — <strong>错误</strong>：不匹配 <code>/etc/app/config.yaml</code>（缺少末尾通配）</li>
-<li><code>.*\.json</code> — 正确：匹配任何以 <code>.json</code> 结尾的完整路径</li>
-<li><code>\.json</code> — <strong>错误</strong>：只能匹配字符串 <code>.json</code> 本身</li>
-</ul>
+<p class="admonition-title"><code>fullmatch</code> 与 <code>search</code> 的区别</p>
+<p><code>/etc/app</code> <strong>不</strong>匹配 <code>/etc/app/config.yaml</code>。使用 <code>/etc/app/.*</code> 才能覆盖子目录。同理，<code>\.json</code> 只匹配四字符字符串 <code>.json</code>；若需匹配任何以 <code>.json</code> 结尾的路径，应使用 <code>.*\.json</code>。</p>
 </div>
-<p><strong>白名单命中时的行为</strong>：直接返回 <code>PostActionFinding(tier=LOG_ONLY)</code>，四个检测器均不执行。</p>
 <hr />
 <h2 id="config">配置参考<a class="headerlink" href="#config" title="Permanent link">&para;</a></h2>
-<p>Post-action 分析器的四层响应阈值通过以下环境变量控制：</p>
 <table>
 <thead>
 <tr>
 <th>环境变量</th>
-<th>类型</th>
+<th><code>DetectionConfig</code> 字段</th>
 <th>默认值</th>
-<th>说明</th>
+<th>描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>CS_POST_ACTION_MONITOR</code></td>
-<td><code>float</code></td>
+<td><code>post_action_monitor</code></td>
 <td><code>0.3</code></td>
-<td>低于此分数为 <code>LOG_ONLY</code>，达到此分数进入 <code>MONITOR</code></td>
+<td>得分达到或超过此值时分级变为 MONITOR</td>
 </tr>
 <tr>
 <td><code>CS_POST_ACTION_ESCALATE</code></td>
-<td><code>float</code></td>
+<td><code>post_action_escalate</code></td>
 <td><code>0.6</code></td>
-<td>达到此分数进入 <code>ESCALATE</code></td>
+<td>得分达到或超过此值时分级变为 ESCALATE</td>
 </tr>
 <tr>
 <td><code>CS_POST_ACTION_EMERGENCY</code></td>
-<td><code>float</code></td>
+<td><code>post_action_emergency</code></td>
 <td><code>0.9</code></td>
-<td>达到此分数进入 <code>EMERGENCY</code></td>
+<td>得分达到或超过此值时分级变为 EMERGENCY</td>
 </tr>
 <tr>
 <td><code>CS_POST_ACTION_WHITELIST</code></td>
-<td><code>string</code></td>
+<td><code>post_action_whitelist</code></td>
 <td><code>""</code></td>
-<td>逗号分隔的文件路径白名单正则列表</td>
+<td>用于跳过路径的逗号分隔 <code>re.fullmatch</code> 模式</td>
+</tr>
+<tr>
+<td><code>CS_POST_ACTION_FINDING_ACTION</code></td>
+<td><code>post_action_finding_action</code></td>
+<td><code>"broadcast"</code></td>
+<td>finding 的处理方式：<code>broadcast</code>、<code>defer</code> 或 <code>block</code></td>
 </tr>
 <tr>
 <td><code>CS_EXTERNAL_CONTENT_POST_ACTION_MULTIPLIER</code></td>
-<td><code>float</code></td>
+<td><code>external_content_post_action_multiplier</code></td>
 <td><code>1.3</code></td>
-<td>当工具输出来源为外部内容时，综合评分乘以此系数</td>
+<td><code>content_origin == "external"</code> 时的得分乘数</td>
 </tr>
 </tbody>
 </table>
 <div class="admonition info">
-<p class="admonition-title">外部内容来源放大</p>
-<p>当工具调用的上下文被识别为来自<strong>外部内容</strong>（网页抓取、用户文件上传、外部 API 响应等）时，post-action 综合评分会额外乘以 <code>CS_EXTERNAL_CONTENT_POST_ACTION_MULTIPLIER</code>（默认 1.3），以更严格地对待潜在的间接注入风险。来源由 <code>infer_content_origin()</code> 根据工具名称和 payload 推断；同一外部来源事件在 L1 评分时还会触发 D6 +0.3（<code>CS_EXTERNAL_CONTENT_D6_BOOST</code>）。</p>
+<p class="admonition-title">顺序约束</p>
+<p><code>DetectionConfig.__post_init__</code> 强制要求 <code>post_action_monitor ≤ post_action_escalate ≤ post_action_emergency</code>。违反此约束将在启动时抛出 <code>ValueError</code>。</p>
 </div>
-<p><strong>示例：调低灵敏度（减少误报）：</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">CS_POST_ACTION_MONITOR</span><span class="o">=</span><span class="m">0</span>.5
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nv">CS_POST_ACTION_ESCALATE</span><span class="o">=</span><span class="m">0</span>.8
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nv">CS_POST_ACTION_EMERGENCY</span><span class="o">=</span><span class="m">1</span>.2
+<hr />
+<h2 id="api">PostActionAnalyzer API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span> <span class="nc">PostActionAnalyzer</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="n">whitelist_patterns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="n">tier_emergency</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="n">tier_escalate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span><span class="p">,</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="n">tier_monitor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="n">tool_output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="n">event_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        <span class="n">content_origin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>   <span class="c1"># &quot;external&quot; | &quot;user&quot; | &quot;unknown&quot; | None</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="n">external_multiplier</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PostActionFinding</span><span class="p">:</span> <span class="o">...</span>
 </span></code></pre></div>
-<p><strong>示例：提高灵敏度（高安全场景）：</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">CS_POST_ACTION_MONITOR</span><span class="o">=</span><span class="m">0</span>.2
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">CS_POST_ACTION_ESCALATE</span><span class="o">=</span><span class="m">0</span>.4
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nv">CS_POST_ACTION_EMERGENCY</span><span class="o">=</span><span class="m">0</span>.7
-</span></code></pre></div>
-<div class="admonition tip">
-<p class="admonition-title">与 DetectionConfig 的关系</p>
-<p>这四个变量由 <code>build_detection_config_from_env()</code> 工厂函数读取，并注入到 <code>DetectionConfig</code> dataclass 中。Gateway 启动时统一构建 <code>DetectionConfig</code> 实例，<code>PostActionAnalyzer</code> 在初始化时接收此配置对象，实现零硬编码。</p>
-</div>
 <hr />
 <h2 id="code-locations">代码位置<a class="headerlink" href="#code-locations" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>模块</th>
-<th>文件路径</th>
+<th>路径</th>
 <th>职责</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Post-action 分析器</td>
+<td>后置动作分析器</td>
 <td><code>src/clawsentry/gateway/post_action_analyzer.py</code></td>
-<td><code>PostActionAnalyzer</code> 类：4 个检测器、合成评分、分级响应逻辑</td>
+<td>四个检测器、评分、分级逻辑、脱敏建议</td>
 </tr>
 <tr>
 <td>数据模型</td>
 <td><code>src/clawsentry/gateway/models.py</code></td>
-<td><code>PostActionFinding</code>、<code>PostActionResponseTier</code> 枚举定义</td>
+<td><code>PostActionFinding</code>、<code>PostActionResponseTier</code>、<code>SanitizeTarget</code></td>
 </tr>
 <tr>
 <td>配置</td>
 <td><code>src/clawsentry/gateway/detection_config.py</code></td>
-<td><code>DetectionConfig</code> dataclass + <code>build_detection_config_from_env()</code> 工厂函数</td>
+<td><code>DetectionConfig</code> 数据类、<code>build_detection_config_from_env()</code></td>
+</tr>
+<tr>
+<td>风险信号</td>
+<td><code>src/clawsentry/gateway/risk_signals.py</code></td>
+<td>混淆检测器使用的 <code>has_*_command</code> 辅助函数</td>
+</tr>
+<tr>
+<td>文本工具</td>
+<td><code>src/clawsentry/gateway/text_utils.py</code></td>
+<td>所有检测器共用的 <code>normalize_text()</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>核心接口签名：</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">class</span> <span class="nc">PostActionAnalyzer</span><span class="p">:</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>        <span class="n">tool_output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>        <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="n">event_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="n">file_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PostActionFinding</span><span class="p">:</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="sd">        对工具输出执行 post-action 安全分析。</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="sd">        Args:</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="sd">            tool_output:  工具返回的原始输出字符串（超过 64KB 自动截断）</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="sd">            tool_name:    工具名称，用于日志和 SSE payload</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="sd">            event_id:     原始 AHP 事件 ID，用于关联溯源</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="sd">            file_path:    可选的文件路径，用于白名单匹配</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>
-</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="sd">        Returns:</span>
-</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="sd">            PostActionFinding(tier, patterns_matched, score, details)</span>
-</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="sd">        &quot;&quot;&quot;</span>
-</span></code></pre></div>
-<p><strong>返回结构：</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nd">@dataclass</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">class</span> <span class="nc">PostActionFinding</span><span class="p">:</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">tier</span><span class="p">:</span> <span class="n">PostActionResponseTier</span>      <span class="c1"># LOG_ONLY / MONITOR / ESCALATE / EMERGENCY</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="n">patterns_matched</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>       <span class="c1"># 命中的检测器名称列表</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">score</span><span class="p">:</span> <span class="nb">float</span>                      <span class="c1"># 合成评分（0.0–3.0）</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">details</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>         <span class="c1"># 各检测器原始得分</span>
-</span></code></pre></div>
 <hr />
-<h2 id="_1">相关页面<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h2 id="_4">相关页面<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../trajectory-analyzer/">轨迹分析器</a> — 同样异步，检测跨事件的多步攻击链</li>
-<li><a href="../l1-rules/#d6">L1 规则引擎 → D6</a> — 同步路径中的注入检测（Post-action 的前置层）</li>
-<li><a href="../../configuration/detection-config/">检测管线配置</a> — Post-action 检测等级的 CS_ 参数</li>
-<li><a href="../../api/reporting/">报表与监控 → SSE</a> — <code>post_action_finding</code> 事件的 SSE 订阅格式</li>
+<li><a href="../trajectory-analyzer/">轨迹分析器</a> — 异步跨事件多步攻击检测</li>
+<li><a href="../l1-rules/#d6">L1 规则引擎 → D6</a> — 同步注入信号（前置动作的补充）</li>
+<li><a href="../../configuration/detection-config/">检测配置</a> — 完整 <code>CS_*</code> 参数参考</li>
+<li><a href="../../api/reporting/">报告与监控 → SSE</a> — <code>post_action_finding</code> SSE 订阅格式</li>
 </ul>
-<hr />
-<p>更多 sanitizer 当前能力、<code>would_sanitize</code> 与 <code>advisory_only</code> 解释，见 <a href="../sanitizer-capability/">Sanitizer 当前能力</a>。</p>
 
 
 
@@ -3558,7 +3971,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月2日 09:50:49 UTC">2026年5月2日</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="2026年5月19日 20:55:18 UTC">2026年5月19日</span>
   </span>
 
     
@@ -3622,13 +4035,13 @@
         
         
           
-          <a href="../sanitizer-capability/" class="md-footer__link md-footer__link--next" aria-label="下一页: Sanitizer 当前能力">
+          <a href="../scope-restrictions/" class="md-footer__link md-footer__link--next" aria-label="下一页: Scope 限制">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 下一页
               </span>
               <div class="md-ellipsis">
-                Sanitizer 当前能力
+                Scope 限制
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -3681,11 +4094,13 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
     
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow", "navigation.instant", "navigation.instant.progress", "navigation.path", "navigation.tracking", "navigation.indexes", "content.tooltips", "search.share"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
