@@ -42,6 +42,7 @@ _VALID_REQUIRED_EVIDENCE = frozenset({
     "l1_snapshot",
     "prior_analysis",
     "skill_trust",
+    "content_evidence",
 })
 _VALID_FIELD_NOTES = frozenset({
     "event",
@@ -54,6 +55,7 @@ _VALID_FIELD_NOTES = frozenset({
     "session_scope_summary",
     "mcp_summary",
     "tool_evidence",
+    "content_evidence",
     "prior_analysis",
 })
 _OUTPUT_TAG_RE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")

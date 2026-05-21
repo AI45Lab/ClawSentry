@@ -8,6 +8,37 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.8.3] — 2026-05-21
+
+### 新增
+
+- **FSPR contextual recovery routing** — FSPR 阻断 toxic / inconsistent skill package 后，后续安全 fallback 写入、执行和验证动作会通过 `ReviewRoutingIntent(source="contextual_review")` 进入精确 L2/L3 effect review，避免被高会话风险粗粒度过拦。
+- **Authority-bound contextual clearance** — L2/L3 只能清除与当前 action normalized effect、workspace target boundary 和 authority metadata 精确绑定的上下文风险；不能清除 blocked skill lineage、FSPR package inconsistency、runtime binding violation 或 anti-bypass denied-effect repeat。
+- **Blocked skill lineage session boundary** — 被 FSPR 阻断的 skill lineage 会在 session 中保留为硬边界；继续读取、执行、复用同 lineage，或对同一危险效果做 exact / normalized / denied-effect repeat，仍会 hard block。
+
+### 改进
+
+- **Replay and protected evidence hardening** — protected runner 保存稳定 artifact snapshot、decision metadata、hash 和脱敏 protected evidence，不保存原始 skill root path，不依赖 host network。
+- **AHP replay fixture** — 新增 21-case contextual recovery / lineage / anti-bypass replay fixture，覆盖 decision/risk match、unsafe-pass proxy、overblock proxy、schema sync 和 metric-cell traceability。
+
+### 文档
+
+- 新增中文交接材料：`docs/materials/2026-05-21-skillsafety-fspr-contextual-recovery-routing-handoff-cn.md`。
+- 新增验证材料：`docs/validation/2026-05-21-skillsafety-fspr-contextual-recovery-routing.md`。
+- 在线文档首页、更新日志、Skill Trust、Benchmark 模式、配置发布状态和发布进度页更新到 v0.8.3 口径。
+
+### 测试与验证
+
+- Focused contextual recovery regression gate：`775 passed in 17.89s`。
+- AHP policy replay：21 cases，decision match `1.0`，risk match `1.0`，unsafe-pass proxy `0.0`，overblock proxy `0.0`，schema-sync coverage `1.0`，metric-cell traceability PASS。
+- SkillsSafety protected recovered E2E：2 cases，ASR `0.0`，TSR `1.0`，environment error `0.0`。
+- SKILL-INJECT contextual protected E2E：injection 7 / 13，ASR `0.0`，TECH `0`，protected evidence OK；injection 7 TSR `1.0`，injection 13 TSR 不适用。
+
+### 边界
+
+- 本版本发布 FSPR block 后安全 recovery 路由与证据边界，不发布新的全量 benchmark leaderboard。
+- 原始 `rerun3` 结果目录在当前工作树缺失；E2E case selection 来自已有项目交接材料，并通过新鲜 protected rerun 重建验证。
+
 ## [0.8.2] — 2026-05-20
 
 ### 移除
@@ -1715,6 +1746,7 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.8.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.3
 [0.8.2]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.2
 [0.8.1]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.1
 [0.8.0]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.0

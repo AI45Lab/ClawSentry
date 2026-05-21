@@ -143,6 +143,10 @@ v0.7.0 新增的 Skill Trust / capability narrowing / agent feedback surfaces �
 | `CS_SKILL_TRUST_FSPR_TIMEOUT_MS` | `120000` | FSPR 总超时预算 |
 | `CS_SKILL_TRUST_FSPR_CACHE_ENABLED` | `true` | 启用 FSPR cache |
 | `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED` | `false` | 允许使用配置的 provider-backed FSPR roles |
+| `CS_SKILL_TRUST_FSPR_PROVIDER_SYNC_PROFILES` | `strict,benchmark` | 允许 provider-backed FSPR 在 pre-use 同步路径运行的 profile；`CS_LLM_*` 只提供 provider 配置，不能单独启用 FSPR provider 执行 |
+| `CS_CONTENT_EVIDENCE_ENABLED` | `true` | 启用 request-local Content Evidence metadata；设为 `false` 时仍可收集 Gateway-owned metadata 并在 analyzer/report 持久化前剥离 raw body |
+| `CS_CONTENT_EVIDENCE_ANALYZER_BODY_ENABLED` | `true` | 是否允许 analyzer 看到 bounded content body；关闭时保留 hash/range/rule refs 并去除 `.content` refs |
+| `CS_CONTENT_EVIDENCE_DEBUG_PERSIST_BODY` | `false` | 调试时是否持久化 raw content body；默认禁止，replay/session/SSE 只保留摘要、hash、range、rule id 和 exact refs |
 | `CS_CAPABILITY_NARROWING_ENABLED` | `false` | 高会话风险时应用收窄的 SessionScopeProfile，不静默改写历史 canonical decision |
 | `CS_CAPABILITY_NARROWING_TRIGGER_RISK` | `high` | 自动收窄的历史 session risk 阈值：`low`、`medium`、`high`、`critical` |
 | `CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS` | `read_only` | 自动收窄后允许的工具权限组，逗号分隔 |
@@ -164,6 +168,8 @@ v0.7.0 新增的 Skill Trust / capability narrowing / agent feedback surfaces �
 | `CS_CAPABILITY_NARROWING_GREYLIST_ACTION` | `defer` | 自动收窄中 greylist skill 的处理：`allow`、`defer`、`block` |
 | `CS_TOOL_PERMISSION_GROUP_OVERRIDES` | (空) | `tool=group[,group]` 覆盖映射；合法 group 为 `read_only`、`write`、`network`、`credentialed`、`destructive`、`mcp_admin`、`unknown` |
 | `CS_AGENT_SAFETY_FEEDBACK_ENABLED` | `false` | critical `pre_action` block 时写入红线化 feedback；宿主 delivery 显式记录为 `response`、`audit_only` 或 `unsupported`，未验证前不声明 `prompt_injection`；response delivery 对同一 session/surface 只投递一次，后续 retry 保留审计 metadata |
+
+ReadContentEvidence 复用 `ContentEvidenceEnvelope`，只扫描 Gateway 默认或已确认 session scope 中的本地读目标。请求侧 roots 或入站 `content_evidence` 不能授权读取 body；`.env`、`.ssh`、PEM/private-key、credential/token 文件名等敏感路径只产生 path-first findings，不读取正文。当前 `ToolSemanticRegistry` 处于 shadow mode：它保留 Codex、Claude Code、A3S、Gemini、Kimi、OpenClaw 和 MCP 的 native tool 名称与候选语义，但 policy/effect 决策仍以既有路径为准，且 `CS_TOOL_PERMISSION_GROUP_OVERRIDES` 高于 registry defaults。
 
 完整用法见 [Skill Trust / Registry](../advanced/skill-trust.md)、[Session scope 配置](session-scope.md) 和 [策略调优](policy-tuning.md#skill-trust-capability-narrowing-and-feedback)。
 

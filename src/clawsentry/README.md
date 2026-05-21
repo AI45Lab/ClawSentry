@@ -6,7 +6,7 @@
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.8.2)**: Post-action artifact provenance validation has been removed. Skill Trust runtime binding, replay-safe `skill_use_ledger`, FSPR evidence-only review, and runtime mirror content verification remain available.
+**Current release highlight (v0.8.3)**: FSPR contextual recovery routing lets safe fallback actions enter exact L2/L3 effect review after a toxic or inconsistent skill package is blocked, while blocked skill lineage, runtime binding violations, and anti-bypass denied-effect repeats remain hard boundaries.
 
 ---
 

@@ -207,6 +207,22 @@ class TestMetricsEnabled:
         text = mc.generate_metrics_text()
         assert b"clawsentry_defers_pending 1.0" in text
 
+    def test_content_evidence_metrics_counters_are_recorded(self):
+        mc = self._make_collector()
+
+        mc.record_content_evidence(collected=True)
+        mc.record_content_evidence(incomplete=True)
+        mc.record_content_evidence(mismatch=True)
+        mc.record_content_evidence(execution_unverified=True)
+        mc.record_content_evidence(policy_not_allow=True)
+
+        text = mc.generate_metrics_text()
+        assert b"clawsentry_content_evidence_collected_total" in text
+        assert b"clawsentry_content_evidence_incomplete_total" in text
+        assert b"clawsentry_content_evidence_mismatch_total" in text
+        assert b"clawsentry_content_evidence_execution_unverified_total" in text
+        assert b"clawsentry_content_evidence_policy_not_allow_total" in text
+
     def test_multiple_decisions_accumulate(self):
         mc = self._make_collector()
         for _ in range(5):

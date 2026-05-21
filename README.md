@@ -35,6 +35,12 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
+## What's New in v0.8.3
+
+- **FSPR contextual recovery routing**: after a toxic or inconsistent skill package is blocked, safe fallback actions can enter `contextual_review` for exact effect review rather than being overblocked by coarse session risk.
+- **Hard safety boundaries retained**: blocked skill lineage, FSPR package inconsistency, runtime binding violations, and anti-bypass denied-effect repeats cannot be cleared by contextual L2/L3 review.
+- **Protected benchmark evidence**: focused validation covers 21 AHP replay cases, two recovered SkillsSafety protected cases, and two SKILL-INJECT contextual protected cases with ASR `0.0` and protected FSPR block evidence.
+
 ## What's New in v0.8.2
 
 - **Post-action provenance validator removed**: artifact label scanning and `CS_SKILL_TRUST_PROVENANCE_*` configuration have been removed from the runtime and docs.

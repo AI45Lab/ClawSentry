@@ -122,6 +122,13 @@ class TestDetectionConfigDefaults:
         assert c.l3_advisory_async_enabled is False
         assert c.l3_heartbeat_review_enabled is False
 
+    def test_content_evidence_rollout_defaults(self):
+        c = DetectionConfig()
+        assert c.content_evidence_enabled is True
+        assert c.content_evidence_analyzer_body_enabled is True
+        assert c.content_evidence_debug_persist_body is False
+        assert c.skill_trust_fspr_provider_sync_profiles == ("strict", "benchmark")
+
 
 # =========================================================================
 # 2. build_detection_config_from_env (~8 tests)
@@ -178,6 +185,21 @@ class TestBuildFromEnv:
             c = build_detection_config_from_env()
 
         assert c.skill_trust_first_use_normal_policy == "audit_only"
+
+    def test_content_evidence_rollout_env_parsing(self):
+        env = {
+            "CS_CONTENT_EVIDENCE_ENABLED": "false",
+            "CS_CONTENT_EVIDENCE_ANALYZER_BODY_ENABLED": "false",
+            "CS_CONTENT_EVIDENCE_DEBUG_PERSIST_BODY": "true",
+            "CS_SKILL_TRUST_FSPR_PROVIDER_SYNC_PROFILES": "strict,benchmark,normal",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            c = build_detection_config_from_env()
+
+        assert c.content_evidence_enabled is False
+        assert c.content_evidence_analyzer_body_enabled is False
+        assert c.content_evidence_debug_persist_body is True
+        assert c.skill_trust_fspr_provider_sync_profiles == ("strict", "benchmark", "normal")
         assert c.skill_trust_first_use_benchmark_policy == "scan_sync"
         assert c.skill_trust_first_use_strict_policy == "defer_for_review"
         assert c.skill_trust_first_use_permissive_policy == "audit_only"

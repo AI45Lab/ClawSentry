@@ -95,6 +95,8 @@ class PendingEffectHoldRecord:
     occurred_at: str
     recorded_at: str
     expires_at: str
+    hold_reason: str = "operator_review"
+    contextual_effect_hash: str | None = None
 
 
 @dataclass(frozen=True)
@@ -482,12 +484,14 @@ class AntiBypassGuard:
         record_id: int,
         config: DetectionConfig,
     ) -> None:
-        del snapshot, meta  # memory is intentionally compact and recomputed
+        del meta  # memory is intentionally compact and recomputed
         if not config.anti_bypass_guard_enabled:
             return
         if event.event_type != EventType.PRE_ACTION:
             return
         decision_value = str(getattr(decision.decision, "value", decision.decision))
+        summary = snapshot.l2_l3_summary if snapshot is not None else {}
+        contextual_status = str((summary or {}).get("status") or "")
         if getattr(decision, "final", None) is not True:
             if decision_value == "defer":
                 session_id = str(event.session_id or "")
@@ -501,6 +505,11 @@ class AntiBypassGuard:
                     recorded_at=_iso_from_ts(now),
                     expires_at=_iso_from_ts(now + float(config.anti_bypass_memory_ttl_s)),
                     config=config,
+                    hold_reason=(
+                        "contextual_review"
+                        if contextual_status == "contextual_review_deferred"
+                        else "operator_review"
+                    ),
                 )
             return
 
@@ -545,6 +554,8 @@ class AntiBypassGuard:
             records.popleft()
             self.memory_evictions += 1
         if decision_value == "block":
+            if contextual_status == "contextual_review_failed_closed":
+                return
             self._record_denied_effect(
                 event=event,
                 decision=decision,
@@ -661,6 +672,7 @@ class AntiBypassGuard:
         recorded_at: str,
         expires_at: str,
         config: DetectionConfig,
+        hold_reason: str = "operator_review",
     ) -> None:
         envelope = normalize_action_effect(event)
         effect_targets = tuple(target_hashes(envelope))
@@ -695,6 +707,12 @@ class AntiBypassGuard:
                     occurred_at=str(event.occurred_at or ""),
                     recorded_at=recorded_at,
                     expires_at=expires_at,
+                    hold_reason=hold_reason,
+                    contextual_effect_hash=(
+                        _contextual_pending_hash(envelope)
+                        if hold_reason == "contextual_review"
+                        else None
+                    ),
                 )
             )
         while len(records) > config.anti_bypass_memory_max_records_per_session:
@@ -779,6 +797,27 @@ class AntiBypassGuard:
         for prior in reversed(self._pending_effect_holds.get(session_id, ())):
             if prior.capability not in current_capabilities:
                 continue
+            if prior.hold_reason == "contextual_review":
+                current_hash = _contextual_pending_hash(current_effect)
+                if prior.contextual_effect_hash != current_hash:
+                    continue
+                return AntiBypassMatch(
+                    match_type="contextual_pending_effect_repeat",
+                    action="defer",
+                    prior_event_id=prior.event_id,
+                    prior_record_id=prior.record_id,
+                    prior_policy_id=prior.policy_id,
+                    prior_risk_level=prior.risk_level,
+                    raw_payload_hash=current_effect.raw_payload_hash or "",
+                    normalized_action_fingerprint=current_effect.canonical_argv_hash or "",
+                    destructive_intent_fingerprint=current_hash,
+                    destructive_intent_label=prior.capability,
+                    destructive_operation_category=prior.capability,
+                    match_reason="contextual_effect_hash",
+                    similarity_mode="contextual_pending_exact_effect",
+                    reason_codes=("contextual_pending_effect_repeat",),
+                    evidence_categories=(prior.capability,),
+                )
             target_match = bool(current_targets.intersection(prior.target_hashes))
             family_match = bool(current_families.intersection(prior.artifact_families))
             if not target_match and not family_match:
@@ -834,6 +873,22 @@ def _fingerprints_for_event(event: CanonicalEvent) -> _EventFingerprints:
         command_head_category=_command_head_category(normalized_text),
         target_scope_categories=frozenset(_scope_categories(normalized_text)),
     )
+
+
+def _contextual_pending_hash(envelope) -> str:
+    return _sha256_json({
+        "effect_hash": effect_hash(envelope),
+        "canonical_argv_hash": envelope.canonical_argv_hash,
+        "raw_payload_hash": envelope.raw_payload_hash,
+        "effects": list(envelope.effects),
+        "targets": [
+            {
+                "path_hash": target.path_hash,
+                "path_role": target.path_role,
+            }
+            for target in envelope.targets
+        ],
+    })
 
 
 def _canonical_payload_projection(payload: dict[str, Any]) -> Any:

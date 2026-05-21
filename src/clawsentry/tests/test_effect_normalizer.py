@@ -4,13 +4,16 @@ import json
 
 import pytest
 
-from clawsentry.gateway.effect_normalizer import normalize_action_effect
+from clawsentry.gateway.effect_normalizer import contextual_binding_parts, normalize_action_effect
 from clawsentry.gateway.models import (
     CanonicalEvent,
+    ContentEvidenceEnvelope,
+    ContentEvidenceItem,
     DecisionContext,
     EventType,
     SessionScopeBaseRules,
     SessionScopeProfile,
+    SessionScopeTaskRules,
 )
 
 
@@ -44,6 +47,129 @@ def _disabled_context(*capabilities: str) -> DecisionContext:
             ),
         )
     )
+
+
+def _scoped_context(root: str) -> DecisionContext:
+    return DecisionContext(
+        session_scope_profile=SessionScopeProfile(
+            profile_id="scope-script-binding",
+            confirmed=True,
+            dry_run=False,
+            task_rules=SessionScopeTaskRules(allowed_path_prefixes=[root]),
+        )
+    )
+
+
+def test_contextual_binding_parts_hashes_raw_paths_and_cwd():
+    event = CanonicalEvent(
+        event_id="evt-binding",
+        trace_id="trace-binding",
+        event_type="pre_action",
+        session_id="sess-binding",
+        agent_id="agent-binding",
+        source_framework="test",
+        occurred_at="2026-05-21T00:00:00+00:00",
+        tool_name="bash",
+        payload={
+            "command": "python3 scripts/verify.py > artifacts/out.json",
+            "cwd": "/workspace/private/project",
+        },
+    )
+
+    parts = contextual_binding_parts(event)
+    serialized = json.dumps(parts, sort_keys=True)
+
+    assert parts["effect_hash"].startswith("sha256:")
+    assert parts["cwd_hash"].startswith("sha256:")
+    assert "/workspace/private/project" not in serialized
+    assert "artifacts/out.json" not in serialized
+
+
+def test_contextual_binding_parts_hashes_script_content_when_available(tmp_path):
+    script = tmp_path / "scripts" / "verify.py"
+    script.parent.mkdir()
+    script.write_text("print('v1')\n", encoding="utf-8")
+    event = _event(
+        tool_name="bash",
+        payload={"command": "python3 scripts/verify.py", "cwd": str(tmp_path)},
+        event_id="evt-script-content-v1",
+    )
+
+    context = _scoped_context(str(tmp_path))
+
+    first = contextual_binding_parts(event, context)
+    script.write_text("print('v2')\n", encoding="utf-8")
+    second = contextual_binding_parts(event, context)
+
+    assert first["script_or_content_hash"].startswith("sha256:")
+    assert second["script_or_content_hash"].startswith("sha256:")
+    assert first["script_or_content_hash"] != second["script_or_content_hash"]
+    assert str(script) not in json.dumps(second, sort_keys=True)
+
+
+def test_contextual_binding_parts_does_not_hash_absolute_script_paths(tmp_path):
+    outside = tmp_path / "outside.py"
+    outside.write_text("print('outside')\n", encoding="utf-8")
+    event = _event(
+        tool_name="bash",
+        payload={"command": f"python3 {outside}", "cwd": str(tmp_path / "workspace")},
+        event_id="evt-script-absolute",
+    )
+
+    parts = contextual_binding_parts(event, _scoped_context(str(tmp_path / "workspace")))
+
+    assert parts["script_or_content_hash"] == parts["raw_payload_hash"]
+
+
+def test_contextual_binding_parts_does_not_hash_symlink_escape(tmp_path):
+    workspace = tmp_path / "workspace"
+    script = workspace / "scripts" / "verify.py"
+    outside = tmp_path / "outside.py"
+    script.parent.mkdir(parents=True)
+    outside.write_text("print('outside')\n", encoding="utf-8")
+    script.symlink_to(outside)
+    event = _event(
+        tool_name="bash",
+        payload={"command": "python3 scripts/verify.py", "cwd": str(workspace)},
+        event_id="evt-script-symlink",
+    )
+
+    parts = contextual_binding_parts(event, _scoped_context(str(workspace)))
+
+    assert parts["script_or_content_hash"] == parts["raw_payload_hash"]
+
+
+def test_contextual_binding_parts_does_not_hash_oversize_script(tmp_path):
+    script = tmp_path / "scripts" / "large.py"
+    script.parent.mkdir()
+    script.write_text("x = 1\n" * 200_000, encoding="utf-8")
+    event = _event(
+        tool_name="bash",
+        payload={"command": "python3 scripts/large.py", "cwd": str(tmp_path)},
+        event_id="evt-script-large",
+    )
+
+    parts = contextual_binding_parts(event, _scoped_context(str(tmp_path)))
+
+    assert parts["script_or_content_hash"] == parts["raw_payload_hash"]
+
+
+def test_contextual_binding_parts_does_not_hash_when_cwd_outside_allowed_scope(tmp_path):
+    workspace = tmp_path / "workspace"
+    outside = tmp_path / "outside"
+    script = outside / "scripts" / "verify.py"
+    script.parent.mkdir(parents=True)
+    workspace.mkdir()
+    script.write_text("print('outside')\n", encoding="utf-8")
+    event = _event(
+        tool_name="bash",
+        payload={"command": "python3 scripts/verify.py", "cwd": str(outside)},
+        event_id="evt-script-outside-scope",
+    )
+
+    parts = contextual_binding_parts(event, _scoped_context(str(workspace)))
+
+    assert parts["script_or_content_hash"] == parts["raw_payload_hash"]
 
 
 @pytest.mark.parametrize(
@@ -142,3 +268,34 @@ def test_unsupported_semantic_wrapper_is_explicit_not_silent_allow():
 
     assert envelope.analysis_state == "unsupported"
     assert "wrapper_chain_unresolved" in envelope.evidence_rules
+
+
+def test_content_evidence_upload_adds_network_upload_effect():
+    context = DecisionContext(
+        content_evidence=ContentEvidenceEnvelope(
+            items=[
+                ContentEvidenceItem(
+                    canonical_evidence_id="ce_001",
+                    kind="skill_script",
+                    source="gateway_resolved_path",
+                    path_trust="gateway_resolved_workspace",
+                    resolver_status="resolved_static_local_path",
+                    derived_rules=[
+                        {"rule_id": "associated_script_network_sink", "severity": "high"},
+                        {"rule_id": "document_input_to_network_sink", "severity": "high"},
+                    ],
+                )
+            ]
+        )
+    )
+
+    envelope = normalize_action_effect(
+        _event(tool_name="bash", payload={"command": "python file_backup.py Q4_financial_report.pptx"}),
+        context=context,
+    )
+    summary = envelope.to_summary()
+
+    assert "network.upload" in summary["effects"]
+    assert "associated_script_network_sink" in summary["evidence_rules"]
+    assert "document_input_to_network_sink" in summary["evidence_rules"]
+    assert {target["path_role"] for target in summary["targets"]} >= {"executed_script", "document_input"}

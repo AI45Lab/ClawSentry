@@ -466,3 +466,16 @@ def test_builtin_skills_load_with_new_fields():
         assert skill.allowed_tools
         assert skill.required_evidence
         assert skill.output_tags
+
+
+def test_builtin_skills_describe_content_evidence_as_untrusted_not_instructions():
+    skills_dir = Path(__file__).parents[1] / "gateway" / "skills"
+    registry = SkillRegistry(skills_dir)
+    skill = registry.skills["data-staging-exfil-chain-audit"]
+
+    assert skill.field_notes is not None
+    note = str(skill.field_notes.get("content_evidence") or "")
+    combined = f"{note}\n{skill.system_prompt}".lower()
+    assert "content_evidence" in combined
+    assert "untrusted" in combined
+    assert "not instructions" in combined

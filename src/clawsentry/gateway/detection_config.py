@@ -247,6 +247,10 @@ class DetectionConfig:
     skill_trust_fspr_timeout_ms: int = 120_000
     skill_trust_fspr_cache_enabled: bool = True
     skill_trust_fspr_provider_enabled: bool = False
+    skill_trust_fspr_provider_sync_profiles: tuple[str, ...] = ("strict", "benchmark")
+    content_evidence_enabled: bool = True
+    content_evidence_analyzer_body_enabled: bool = True
+    content_evidence_debug_persist_body: bool = False
 
     # --- E-5: Self-evolving pattern repository ---
     evolving_enabled: bool = False
@@ -261,6 +265,12 @@ class DetectionConfig:
                 self,
                 "anti_bypass_prior_verdicts",
                 tuple(self.anti_bypass_prior_verdicts),
+            )
+        if isinstance(self.skill_trust_fspr_provider_sync_profiles, list):
+            object.__setattr__(
+                self,
+                "skill_trust_fspr_provider_sync_profiles",
+                tuple(self.skill_trust_fspr_provider_sync_profiles),
             )
         if isinstance(self.capability_narrowing_allowed_tool_permission_groups, list):
             object.__setattr__(
@@ -557,6 +567,23 @@ class DetectionConfig:
             object.__setattr__(self, "anti_bypass_prior_verdicts", ("block", "defer"))
         else:
             object.__setattr__(self, "anti_bypass_prior_verdicts", prior_verdicts)
+        sync_profiles = tuple(
+            str(profile).strip().lower()
+            for profile in self.skill_trust_fspr_provider_sync_profiles
+            if str(profile).strip()
+        )
+        invalid_sync_profiles = tuple(
+            profile
+            for profile in sync_profiles
+            if profile not in ("normal", "strict", "permissive", "benchmark")
+        )
+        if invalid_sync_profiles or not sync_profiles:
+            logger.warning(
+                "Invalid skill_trust_fspr_provider_sync_profiles=%r, falling back to ('strict', 'benchmark')",
+                self.skill_trust_fspr_provider_sync_profiles,
+            )
+            sync_profiles = ("strict", "benchmark")
+        object.__setattr__(self, "skill_trust_fspr_provider_sync_profiles", sync_profiles)
         repeat_actions = {"observe", "force_l2", "force_l3", "defer", "block"}
         for field_name, fallback in (
             ("anti_bypass_exact_repeat_action", "block"),
@@ -830,6 +857,7 @@ _ENV_LIST_MAP: list[tuple[str, str]] = [
     ("CS_CAPABILITY_NARROWING_ALLOWED_CAPABILITIES", "capability_narrowing_allowed_capabilities"),
     ("CS_CAPABILITY_NARROWING_DENIED_CAPABILITIES", "capability_narrowing_denied_capabilities"),
     ("CS_CAPABILITY_NARROWING_QUEUED_CAPABILITIES", "capability_narrowing_queued_capabilities"),
+    ("CS_SKILL_TRUST_FSPR_PROVIDER_SYNC_PROFILES", "skill_trust_fspr_provider_sync_profiles"),
 ]
 
 
@@ -923,6 +951,9 @@ def build_detection_config_from_env() -> DetectionConfig:
     _parse_bool_env("CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED", "skill_trust_fspr_post_action_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_CACHE_ENABLED", "skill_trust_fspr_cache_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED", "skill_trust_fspr_provider_enabled")
+    _parse_bool_env("CS_CONTENT_EVIDENCE_ENABLED", "content_evidence_enabled")
+    _parse_bool_env("CS_CONTENT_EVIDENCE_ANALYZER_BODY_ENABLED", "content_evidence_analyzer_body_enabled")
+    _parse_bool_env("CS_CONTENT_EVIDENCE_DEBUG_PERSIST_BODY", "content_evidence_debug_persist_body")
     explicit_anti_bypass_llm = _parse_bool_env(
         "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED",
         "anti_bypass_llm_recognition_enabled",
@@ -1100,6 +1131,9 @@ def build_detection_config_with_preset(
     _parse_bool_env("CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED", "skill_trust_fspr_post_action_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_CACHE_ENABLED", "skill_trust_fspr_cache_enabled")
     _parse_bool_env("CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED", "skill_trust_fspr_provider_enabled")
+    _parse_bool_env("CS_CONTENT_EVIDENCE_ENABLED", "content_evidence_enabled")
+    _parse_bool_env("CS_CONTENT_EVIDENCE_ANALYZER_BODY_ENABLED", "content_evidence_analyzer_body_enabled")
+    _parse_bool_env("CS_CONTENT_EVIDENCE_DEBUG_PERSIST_BODY", "content_evidence_debug_persist_body")
     explicit_anti_bypass_llm = _parse_bool_env(
         "CS_ANTI_BYPASS_LLM_RECOGNITION_ENABLED",
         "anti_bypass_llm_recognition_enabled",

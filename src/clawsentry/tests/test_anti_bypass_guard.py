@@ -11,10 +11,13 @@ from clawsentry.gateway.detection_config import DetectionConfig, build_detection
 from clawsentry.gateway.models import (
     CanonicalDecision,
     CanonicalEvent,
+    ClassifiedBy,
     DecisionSource,
     DecisionVerdict,
     EventType,
+    RiskDimensions,
     RiskLevel,
+    RiskSnapshot,
 )
 from clawsentry.gateway.server import SupervisionGateway
 
@@ -496,6 +499,117 @@ class TestAntiBypassMemory:
         assert match.action == "defer"
         assert "pending_effect_equivalent" in match.reason_codes
         assert "denied_effect_repeat" not in match.reason_codes
+
+    def test_contextual_fail_closed_block_does_not_record_denied_effect(self):
+        guard = AntiBypassGuard()
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        snapshot = RiskSnapshot(
+            risk_level=RiskLevel.HIGH,
+            composite_score=8.0,
+            dimensions=RiskDimensions(d1=2, d2=1, d3=0, d4=2, d5=1, d6=0.0),
+            classified_by=ClassifiedBy.L1,
+            classified_at="2026-05-21T00:00:00+00:00",
+            l2_l3_summary={"status": "contextual_review_failed_closed"},
+        )
+
+        guard.record_final_decision(
+            _event(event_id="evt-contextual", payload={"command": "python3 verify.py > out.json"}),
+            _decision(verdict="block"),
+            snapshot,
+            {},
+            1,
+            cfg,
+        )
+
+        assert guard.denied_effect_records_for_session("sess-anti-bypass") == []
+
+    def test_contextual_pending_hold_does_not_match_revised_safe_script_hash(self):
+        guard = AntiBypassGuard()
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        pending_snapshot = RiskSnapshot(
+            risk_level=RiskLevel.HIGH,
+            composite_score=8.0,
+            dimensions=RiskDimensions(d1=2, d2=1, d3=0, d4=2, d5=1, d6=0.0),
+            classified_by=ClassifiedBy.L1,
+            classified_at="2026-05-21T00:00:00+00:00",
+            l2_l3_summary={"status": "contextual_review_deferred"},
+        )
+
+        guard.record_final_decision(
+            _event(event_id="evt-contextual-pending", payload={"command": "python3 verify.py > out.json"}),
+            CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason="contextual pending",
+                policy_id="L1-rule-engine",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.POLICY,
+                final=False,
+            ),
+            pending_snapshot,
+            {},
+            1,
+            cfg,
+        )
+
+        match = guard.match_pre_action(
+            _event(event_id="evt-contextual-revised", payload={"command": "python3 verify_v2.py > out.json"}),
+            None,
+            cfg,
+        )
+
+        assert match is None
+
+    def test_contextual_pending_hold_matches_exact_repeat_as_contextual_repeat_only(self):
+        guard = AntiBypassGuard()
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        pending_snapshot = RiskSnapshot(
+            risk_level=RiskLevel.HIGH,
+            composite_score=8.0,
+            dimensions=RiskDimensions(d1=2, d2=1, d3=0, d4=2, d5=1, d6=0.0),
+            classified_by=ClassifiedBy.L1,
+            classified_at="2026-05-21T00:00:00+00:00",
+            l2_l3_summary={"status": "contextual_review_deferred"},
+        )
+        event = _event(event_id="evt-contextual-pending", payload={"command": "python3 verify.py > out.json"})
+
+        guard.record_final_decision(
+            event,
+            CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason="contextual pending",
+                policy_id="L1-rule-engine",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.POLICY,
+                final=False,
+            ),
+            pending_snapshot,
+            {},
+            1,
+            cfg,
+        )
+        match = guard.match_pre_action(event, None, cfg)
+
+        assert match.match_type == "contextual_pending_effect_repeat"
+        assert match.reason_codes == ("contextual_pending_effect_repeat",)
+        assert "denied_effect_repeat" not in match.reason_codes
+
+    def test_contextual_reviewer_block_records_denied_effect_repeat(self):
+        guard = AntiBypassGuard()
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        snapshot = RiskSnapshot(
+            risk_level=RiskLevel.HIGH,
+            composite_score=8.0,
+            dimensions=RiskDimensions(d1=2, d2=1, d3=0, d4=2, d5=1, d6=0.0),
+            classified_by=ClassifiedBy.L1,
+            classified_at="2026-05-21T00:00:00+00:00",
+            l2_l3_summary={"status": "contextual_review_blocked"},
+        )
+        event = _event(event_id="evt-contextual-terminal-block", payload={"command": "python3 verify.py > out.json"})
+
+        guard.record_final_decision(event, _decision(verdict="block"), snapshot, {}, 1, cfg)
+        match = guard.match_pre_action(event, None, cfg)
+
+        assert match.match_type == "denied_effect_repeat"
 
     def test_resolved_pending_effect_allow_clears_review_hold(self):
         cfg = DetectionConfig(anti_bypass_guard_enabled=True)

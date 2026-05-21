@@ -164,6 +164,36 @@ class MetricsCollector:
             registry=self._registry,
         )
 
+        self._content_evidence_collected_total = Counter(
+            "clawsentry_content_evidence_collected_total",
+            "Total content evidence collection attempts that produced an envelope",
+            registry=self._registry,
+        )
+
+        self._content_evidence_incomplete_total = Counter(
+            "clawsentry_content_evidence_incomplete_total",
+            "Total content evidence envelopes with incomplete content",
+            registry=self._registry,
+        )
+
+        self._content_evidence_mismatch_total = Counter(
+            "clawsentry_content_evidence_mismatch_total",
+            "Total content evidence collection mismatches",
+            registry=self._registry,
+        )
+
+        self._content_evidence_execution_unverified_total = Counter(
+            "clawsentry_content_evidence_execution_unverified_total",
+            "Total content evidence execution verification failures",
+            registry=self._registry,
+        )
+
+        self._content_evidence_policy_not_allow_total = Counter(
+            "clawsentry_content_evidence_policy_not_allow_total",
+            "Total decisions where content evidence contributed to a non-allow policy outcome",
+            registry=self._registry,
+        )
+
         # --- Histograms ---
         self._decision_latency = Histogram(
             "clawsentry_decision_latency_seconds",
@@ -388,6 +418,29 @@ class MetricsCollector:
         if not self.enabled:
             return
         self._defers_pending.dec()
+
+    def record_content_evidence(
+        self,
+        *,
+        collected: bool = False,
+        incomplete: bool = False,
+        mismatch: bool = False,
+        execution_unverified: bool = False,
+        policy_not_allow: bool = False,
+    ) -> None:
+        """Record content evidence rollout counters."""
+        if not self.enabled:
+            return
+        if collected:
+            self._content_evidence_collected_total.inc()
+        if incomplete:
+            self._content_evidence_incomplete_total.inc()
+        if mismatch:
+            self._content_evidence_mismatch_total.inc()
+        if execution_unverified:
+            self._content_evidence_execution_unverified_total.inc()
+        if policy_not_allow:
+            self._content_evidence_policy_not_allow_total.inc()
 
     # ------------------------------------------------------------------
     # Output

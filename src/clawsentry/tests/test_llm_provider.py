@@ -197,6 +197,57 @@ class TestOpenAIProvider:
         )
         assert "risk_assessment" in result
         mock_client.chat.completions.create.assert_awaited_once()
+        call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert call_kwargs["extra_body"] is None
+
+    def test_complete_uses_kimi_instant_mode_extra_body(self):
+        p = self._make_provider(model="kimi-k2.5")
+        mock_response = MagicMock()
+        mock_choice = MagicMock()
+        mock_choice.message.content = '{"risk_assessment":"low","reasons":[],"confidence":0.8}'
+        mock_response.choices = [mock_choice]
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        p._client = mock_client
+
+        asyncio.run(p.complete("system", "user msg", timeout_ms=3000))
+        call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert call_kwargs["extra_body"] == {
+            "thinking": {"type": "disabled"},
+            "chat_template_kwargs": {"thinking": False},
+        }
+
+    def test_complete_uses_deepseek_reasoning_payload(self):
+        p = self._make_provider(model="deepseek-v4-pro")
+        mock_response = MagicMock()
+        mock_choice = MagicMock()
+        mock_choice.message.content = '{"risk_assessment":"low","reasons":[],"confidence":0.8}'
+        mock_response.choices = [mock_choice]
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        p._client = mock_client
+
+        asyncio.run(p.complete("system", "user msg", timeout_ms=3000))
+        call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert call_kwargs["reasoning_effort"] == "high"
+        assert call_kwargs["extra_body"] == {"thinking": {"type": "enabled"}}
+
+    def test_complete_falls_back_to_kimi_reasoning_content(self):
+        p = self._make_provider(model="kimi-k2.5")
+        mock_response = MagicMock()
+        mock_choice = MagicMock()
+        mock_choice.message.content = None
+        mock_choice.message.reasoning = '{"risk_assessment":"low","reasons":[],"confidence":0.8}'
+        mock_response.choices = [mock_choice]
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        p._client = mock_client
+
+        result = asyncio.run(p.complete("system", "user msg", timeout_ms=3000))
+        assert "risk_assessment" in result
 
     def test_custom_base_url(self):
         """OpenAIProvider stores custom base_url for Ollama/local models."""

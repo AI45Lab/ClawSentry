@@ -11,10 +11,11 @@ import hashlib
 import re
 import shlex
 from collections import deque
+from pathlib import Path
 from typing import Any, Optional
 
 from .detection_config import DetectionConfig
-from .effect_normalizer import normalize_action_effect
+from .effect_normalizer import contextual_binding_parts, normalize_action_effect
 from .injection_detector import score_layer1
 from .models import (
     AgentTrustLevel,
@@ -22,6 +23,7 @@ from .models import (
     ClassifiedBy,
     DecisionContext,
     EventType,
+    L1AuthorityClass,
     RISK_LEVEL_ORDER,
     RiskDimensions,
     RiskLevel,
@@ -88,6 +90,53 @@ _FSPR_ALLOWED_VERDICTS = frozenset({
     "insufficient_evidence",
 })
 _FSPR_ALLOWED_TIMING_MODES = frozenset({"pre_use_gate", "post_action_incremental_evidence"})
+
+_HARD_BLOCK_RULE_HITS = frozenset({
+    "runtime_path_disallowed",
+    "runtime_content_mismatch",
+    "blocked_skill_lineage_match",
+    "denied_effect_repeat",
+    "credential_source_to_network_sink",
+    "document_input_to_network_sink",
+    "document_input_encoded_to_network_sink",
+    "subprocess_file_transfer",
+    "remote_fetch_to_interpreter",
+    "persistence_entrypoint_write",
+    "password_protected_archive_creation",
+    "encrypted_artifact_creation",
+    "wrapper_chain_unresolved",
+})
+
+_NON_CLEARABLE_EFFECTS = frozenset({
+    "network.fetch",
+    "network.upload",
+    "package.install",
+    "future_execution.entrypoint",
+    "encoded_payload.materialization",
+    "delegated_effect_request",
+})
+
+_REVIEWABLE_CONTEXTUAL_EFFECTS = frozenset({
+    "command.exec",
+    "filesystem.write",
+    "future_execution.artifact",
+})
+
+_CONTEXTUAL_DISQUALIFYING_RULE_FRAGMENTS = (
+    "credential",
+    "network",
+    "package",
+    "destructive",
+    "persistence",
+    "system_path",
+    "system-write",
+    "wrapper",
+    "encoded_payload",
+    "encoded-payload",
+    "disabled_capability",
+    "disabled-capability",
+    "blocked_skill_lineage",
+)
 
 # System paths that elevate bash from D1=2 to D1=3
 _SYSTEM_PATHS = re.compile(
@@ -630,6 +679,11 @@ _INTERPRETER_COMMANDS = frozenset({
     "node",
     "source",
 })
+_TAINT_SEGMENT_SPLIT_RE = re.compile(r"\s*(?:&&|\|\||;)\s*")
+_TAINT_ARCHIVE_DELETE_RE = re.compile(
+    r"(?:^|[;&]\s*)(?:rm|shred|srm)\s+-?[^;&|]*\b|find\b[^;&|]*\s-delete\b",
+    re.IGNORECASE,
+)
 
 # ---------------------------------------------------------------------------
 # E-4: New composite scoring with D6 injection multiplier
@@ -778,6 +832,89 @@ def _archive_extract_then_execute(command: str) -> bool:
     return False
 
 
+def _taint_shell_segments(command: str) -> list[list[str]]:
+    segments: list[list[str]] = []
+    for part in _TAINT_SEGMENT_SPLIT_RE.split(command):
+        stripped = part.strip()
+        if not stripped:
+            continue
+        try:
+            tokens = shlex.split(stripped)
+        except ValueError:
+            tokens = stripped.split()
+        if tokens:
+            segments.append(tokens)
+    return segments
+
+
+def _taint_zip_password_creation(tokens: list[str]) -> bool:
+    if not tokens or Path(tokens[0]).name.lower() != "zip":
+        return False
+    if any(token in {"--test", "-T", "--show-files", "-sf", "-h", "--help", "-v", "--version"} for token in tokens[1:]):
+        return False
+    return any(
+        token in {"-P", "--password", "-e", "--encrypt"}
+        or token.startswith("-P")
+        or (token.startswith("-") and not token.startswith("--") and "e" in token[1:])
+        for token in tokens[1:]
+    )
+
+
+def _taint_7z_password_creation(tokens: list[str]) -> bool:
+    return (
+        len(tokens) >= 3
+        and Path(tokens[0]).name.lower() in {"7z", "7za", "7zr"}
+        and tokens[1].lower() in {"a", "u"}
+        and any(token == "-p" or token.startswith("-p") for token in tokens[2:])
+    )
+
+
+def _taint_encrypted_artifact_creation(tokens: list[str]) -> bool:
+    name = Path(tokens[0]).name.lower() if tokens else ""
+    if name in {"gpg", "gpg2"}:
+        if any(token in {"--decrypt", "-d", "--verify", "--list-packets", "--list-keys"} for token in tokens[1:]):
+            return False
+        return any(token in {"-c", "--symmetric"} for token in tokens[1:])
+    if name == "openssl" and "enc" in tokens[1:]:
+        if "-d" in tokens or "-decrypt" in tokens:
+            return False
+        return "-out" in tokens or any(token.startswith("-out=") for token in tokens)
+    return False
+
+
+def _taint_archive_encrypt_pipeline(command: str) -> bool:
+    if "|" not in command:
+        return False
+    left, right = command.split("|", 1)
+    try:
+        left_tokens = shlex.split(left.strip())
+        right_tokens = shlex.split(right.strip())
+    except ValueError:
+        left_tokens = left.strip().split()
+        right_tokens = right.strip().split()
+    return (
+        bool(left_tokens)
+        and Path(left_tokens[0]).name.lower() == "tar"
+        and _taint_encrypted_artifact_creation(right_tokens)
+    )
+
+
+def _encrypted_archive_taint_rule_ids(command: str) -> list[str]:
+    rule_ids: list[str] = []
+    for tokens in _taint_shell_segments(command):
+        if _taint_zip_password_creation(tokens) or _taint_7z_password_creation(tokens):
+            if "password_protected_archive_creation" not in rule_ids:
+                rule_ids.append("password_protected_archive_creation")
+        elif _taint_encrypted_artifact_creation(tokens):
+            if "encrypted_artifact_creation" not in rule_ids:
+                rule_ids.append("encrypted_artifact_creation")
+    if _taint_archive_encrypt_pipeline(command) and "archive_encrypt_pipeline" not in rule_ids:
+        rule_ids.append("archive_encrypt_pipeline")
+    if rule_ids and _TAINT_ARCHIVE_DELETE_RE.search(command):
+        rule_ids.append("encrypted_archive_then_delete_original")
+    return rule_ids
+
+
 def _command_writes_persistence_entrypoint(command: str) -> bool:
     for segment in _split_shell_segments(command):
         tokens = _shell_tokens(segment)
@@ -850,6 +987,23 @@ def _taint_flow_summary(event: CanonicalEvent) -> dict[str, object] | None:
             "sink": "interpreter",
         })
 
+    if command:
+        for rule_id in _encrypted_archive_taint_rule_ids(command):
+            if rule_id == "encrypted_archive_then_delete_original":
+                rules.append({
+                    "rule_id": rule_id,
+                    "severity": "critical",
+                    "source": "workspace_artifact",
+                    "sink": "destructive_lock_in",
+                })
+            else:
+                rules.append({
+                    "rule_id": rule_id,
+                    "severity": "high",
+                    "source": "workspace_artifact",
+                    "sink": "encrypted_archive",
+                })
+
     if command and _TAINT_BULK_DESTRUCTIVE.search(command):
         rules.append({
             "rule_id": "bulk_destructive_sequence",
@@ -899,6 +1053,79 @@ def _taint_flow_summary(event: CanonicalEvent) -> dict[str, object] | None:
         "rule_ids": rule_ids,
         "chain_count": len(rules),
         "command_hash": "sha256:" + hashlib.sha256(command.encode("utf-8")).hexdigest() if command else None,
+        "redaction_policy_version": "cs.taint_flow_summary.v1",
+    }
+
+
+def _content_evidence_rule_ids(context: DecisionContext | None) -> list[str]:
+    envelope = getattr(context, "content_evidence", None) if context is not None else None
+    if envelope is None:
+        return []
+    rule_ids: list[str] = []
+    for item in getattr(envelope, "items", []) or []:
+        for rule in getattr(item, "derived_rules", []) or []:
+            if not isinstance(rule, dict):
+                continue
+            rule_id = str(rule.get("rule_id") or "")
+            if rule_id and rule_id not in rule_ids:
+                rule_ids.append(rule_id)
+    return rule_ids
+
+
+def _content_evidence_taint_summary(
+    context: DecisionContext | None,
+    existing: dict[str, object] | None,
+) -> dict[str, object] | None:
+    rule_ids = _content_evidence_rule_ids(context)
+    content_rules: list[dict[str, object]] = []
+    if "document_input_to_network_sink" in rule_ids:
+        content_rules.append({
+            "rule_id": "document_input_to_network_sink",
+            "severity": "high",
+            "source": "document_input",
+            "sink": "network_upload",
+        })
+    if "document_input_encoded_to_network_sink" in rule_ids:
+        content_rules.append({
+            "rule_id": "document_input_encoded_to_network_sink",
+            "severity": "high",
+            "source": "document_input",
+            "sink": "encoded_network_upload",
+        })
+    if "credential_source_to_network_sink" in rule_ids:
+        content_rules.append({
+            "rule_id": "credential_source_to_network_sink",
+            "severity": "critical",
+            "source": "credential_source",
+            "sink": "network_upload",
+        })
+    if "subprocess_file_transfer" in rule_ids:
+        content_rules.append({
+            "rule_id": "subprocess_file_transfer",
+            "severity": "high",
+            "source": "workspace_file",
+            "sink": "subprocess_file_transfer",
+        })
+    if not content_rules:
+        return existing
+
+    if existing is None:
+        rules = content_rules
+        command_hash = None
+    else:
+        rules = list(existing.get("rules", [])) + content_rules
+        command_hash = existing.get("command_hash")
+    merged_rule_ids: list[str] = []
+    for rule in rules:
+        if isinstance(rule, dict):
+            rule_id = str(rule.get("rule_id") or "")
+            if rule_id and rule_id not in merged_rule_ids:
+                merged_rule_ids.append(rule_id)
+    return {
+        "rules": rules,
+        "rule_ids": merged_rule_ids,
+        "chain_count": len(rules),
+        "command_hash": command_hash,
         "redaction_policy_version": "cs.taint_flow_summary.v1",
     }
 
@@ -1263,6 +1490,104 @@ def build_skill_trust_routing_intents(skill_trust, config: DetectionConfig) -> l
     return intents
 
 
+def build_content_evidence_routing_intents(
+    context: DecisionContext | None,
+    config: DetectionConfig,
+) -> list[ReviewRoutingIntent]:
+    """Build Gateway-owned routing intents from request-local content evidence."""
+
+    rule_ids = set(_content_evidence_rule_ids(context))
+    if not rule_ids:
+        return []
+    envelope = getattr(context, "content_evidence", None) if context is not None else None
+    source_metadata = {"rule_ids": sorted(rule_ids), "mode": ""}
+    exact_refs = list(getattr(envelope, "exact_ref_allowlist", []) or []) if envelope is not None else []
+    mode = str(config.mode or "normal").strip().lower()
+    if mode not in {"normal", "benchmark", "strict", "permissive"}:
+        mode = "normal"
+    source_metadata["mode"] = mode
+    if exact_refs:
+        source_metadata["exact_ref_allowlist"] = exact_refs
+
+    intents: list[ReviewRoutingIntent] = []
+    high_confidence_exfil = bool(rule_ids.intersection({
+        "document_input_to_network_sink",
+        "document_input_encoded_to_network_sink",
+        "credential_source_to_network_sink",
+        "subprocess_file_transfer",
+    }))
+    incomplete_with_network = (
+        "content_evidence_incomplete" in rule_ids
+        and bool(rule_ids.intersection({
+            "associated_script_network_sink",
+            "document_input_to_network_sink",
+            "possible_document_input_to_network_sink",
+        }))
+    )
+    read_content_signal = bool(rule_ids.intersection({
+        "read_content_prompt_injection",
+        "read_content_hidden_html_instruction",
+        "read_content_zero_width_or_bidi",
+        "read_content_markdown_beacon",
+        "read_content_data_uri_or_base64_payload",
+        "sensitive_read_path",
+        "credential_read_content_skipped",
+        "read_content_execution_or_network_instruction",
+        "read_content_unsupported_binary",
+        "read_content_oversize",
+    }))
+
+    if high_confidence_exfil:
+        policy_action = {
+            "benchmark": "block",
+            "strict": "defer",
+            "normal": "defer",
+            "permissive": "audit",
+        }[mode]
+        intents.append(ReviewRoutingIntent(
+            source="content_evidence",
+            recommended_tier="l3" if mode == "normal" else "none",
+            policy_action=policy_action,
+            reason="document_input_to_network_sink",
+            source_metadata=dict(source_metadata),
+            routing_affecting=mode == "normal",
+            decision_affecting=policy_action in {"defer", "block"},
+        ))
+    elif incomplete_with_network:
+        policy_action = {
+            "benchmark": "block",
+            "strict": "defer",
+            "normal": "defer",
+            "permissive": "audit",
+        }[mode]
+        intents.append(ReviewRoutingIntent(
+            source="content_evidence",
+            recommended_tier="l3" if mode in {"normal", "strict"} else "none",
+            policy_action=policy_action,
+            reason="content_evidence_incomplete",
+            source_metadata=dict(source_metadata),
+            routing_affecting=mode in {"normal", "strict"},
+            decision_affecting=policy_action in {"defer", "block"},
+        ))
+    elif read_content_signal:
+        policy_action = {
+            "benchmark": "defer",
+            "strict": "defer",
+            "normal": "audit",
+            "permissive": "audit",
+        }[mode]
+        intents.append(ReviewRoutingIntent(
+            source="content_evidence",
+            recommended_tier="l3" if mode == "normal" else "none",
+            policy_action=policy_action,
+            reason="read_content_evidence",
+            source_metadata=dict(source_metadata),
+            routing_affecting=mode == "normal",
+            decision_affecting=policy_action in {"defer", "block"},
+        ))
+    return intents
+
+
 def _skill_trust_routing_intents_for_context(
     context: Optional[DecisionContext],
     config: DetectionConfig,
@@ -1451,6 +1776,24 @@ def _skill_trust_evidence(
             })
         findings.append(finding)
 
+    fspr_summary = getattr(skill_trust, "fspr_review_summary", None)
+    if isinstance(fspr_summary, dict):
+        findings.append({
+            "rule_id": "fspr_review_summary",
+            "registry_status": skill_trust.registry_status,
+            "canonical_skill_id": skill_trust.canonical_skill_id,
+            "presented_name": skill_trust.presented_name,
+            "review_state": fspr_summary.get("review_state"),
+            "timing_mode": fspr_summary.get("timing_mode"),
+            "verdict": fspr_summary.get("verdict"),
+            "severity": fspr_summary.get("severity"),
+            "confidence": fspr_summary.get("confidence"),
+            "degraded": fspr_summary.get("degraded"),
+            "degradation_reason": fspr_summary.get("degradation_reason"),
+            "failure_reason": fspr_summary.get("failure_reason"),
+            "decision_affecting": False,
+        })
+
     if event.event_type != EventType.PRE_ACTION:
         return current_level, current_score, rule_hits, findings
 
@@ -1520,7 +1863,10 @@ def _skill_trust_evidence(
         return current_level, current_score, rule_hits, findings
 
     for finding in findings:
-        finding["decision_affecting"] = True
+        if finding.get("rule_id") == "fspr_review_summary":
+            finding["decision_affecting"] = False
+        else:
+            finding["decision_affecting"] = True
     risk_level = _max_risk_level(current_level, upgrade_level)
     score = max(current_score, _min_score_for_level(risk_level, config))
     return risk_level, score, rule_hits, findings
@@ -1597,6 +1943,165 @@ def _extract_text_for_d6(event: CanonicalEvent) -> str:
     return " ".join(parts)
 
 
+def _is_reviewable_local_effect(
+    effect_summary: dict[str, Any],
+    context: DecisionContext | None,
+    event: CanonicalEvent | None = None,
+) -> tuple[bool, list[str]]:
+    effects = set(effect_summary.get("effects") or [])
+    evidence_rules = {str(rule) for rule in effect_summary.get("evidence_rules") or []}
+    analysis_state = str(effect_summary.get("analysis_state") or "complete")
+    confidence = str(effect_summary.get("confidence") or "low")
+    wrappers = list(effect_summary.get("wrapper_chain") or [])
+    targets = list(effect_summary.get("targets") or [])
+    reasons: list[str] = []
+
+    if analysis_state != "complete":
+        reasons.append(f"analysis_state:{analysis_state}")
+    if wrappers:
+        reasons.append("wrapper_chain_present")
+    if confidence not in {"medium", "high"}:
+        reasons.append(f"low_effect_confidence:{confidence}")
+    for effect in sorted(effects.intersection(_NON_CLEARABLE_EFFECTS)):
+        reasons.append(f"non_clearable_effect:{effect}")
+    if effects and not effects.issubset(_REVIEWABLE_CONTEXTUAL_EFFECTS):
+        reasons.append("effect_not_reviewable_local")
+    for rule_id in sorted(evidence_rules):
+        lowered = rule_id.lower()
+        if any(fragment in lowered for fragment in _CONTEXTUAL_DISQUALIFYING_RULE_FRAGMENTS):
+            reasons.append(f"disqualifying_rule:{rule_id}")
+
+    allowed_roles = {
+        "future_execution.artifact",
+        "generated_artifact",
+        "verifier_artifact",
+        "workspace_file",
+        "document_input",
+        "source",
+        "input",
+    }
+    for target in targets:
+        if not isinstance(target, dict):
+            continue
+        role = str(target.get("path_role") or "")
+        if role and role not in allowed_roles:
+            reasons.append(f"unsupported_target_role:{role}")
+        workspace_relation = str(target.get("workspace_relation") or "")
+        if workspace_relation == "outside_workspace_or_absolute":
+            reasons.append(f"workspace_relation:{workspace_relation}")
+
+    payload = event.payload if event is not None else {}
+    cwd = str((payload or {}).get("cwd") or (payload or {}).get("working_directory") or "").strip()
+    if cwd:
+        cwd_path = Path(cwd).expanduser()
+        if ".." in cwd_path.parts:
+            reasons.append("cwd_outside_workspace")
+        elif cwd_path.is_absolute() and not (
+            cwd_path == Path("/workspace") or cwd_path.is_relative_to(Path("/workspace"))
+        ):
+            reasons.append("cwd_outside_workspace")
+
+    summary = context.session_risk_summary if context is not None else None
+    if isinstance(summary, dict) and summary.get("task_scope_path_escape"):
+        reasons.append("task_scope_path_escape")
+
+    return not reasons, reasons
+
+
+def _context_has_prior_fspr_block(context: DecisionContext | None) -> bool:
+    summary = context.session_risk_summary if context is not None else None
+    if not isinstance(summary, dict):
+        return False
+    return bool(summary.get("prior_fspr_hard_block") or summary.get("blocked_skill_lineage_facts"))
+
+
+def _classify_l1_authority(
+    *,
+    event: CanonicalEvent,
+    snapshot_fields: dict[str, Any],
+    context: DecisionContext | None,
+    config: DetectionConfig,
+) -> tuple[L1AuthorityClass, list[str], ReviewRoutingIntent | None]:
+    del config
+    rule_hits = set(snapshot_fields.get("rule_hits") or [])
+    routing_intents = list(snapshot_fields.get("routing_intents") or [])
+    effect_summary = snapshot_fields.get("effect_summary") or {}
+    effects = set(effect_summary.get("effects") or [])
+    evidence_rules = set(effect_summary.get("evidence_rules") or [])
+    risk_level = snapshot_fields["risk_level"]
+    dimensions = snapshot_fields["dimensions"]
+    summary = context.session_risk_summary if context is not None else None
+    blocked_lineage_match = (
+        summary.get("blocked_skill_lineage_match")
+        if isinstance(summary, dict)
+        else None
+    )
+
+    reasons: list[str] = []
+    if blocked_lineage_match:
+        reasons.append("blocked_skill_lineage_match")
+    for intent in routing_intents:
+        if intent.decision_affecting and intent.policy_action == "block":
+            reasons.append(intent.source)
+
+    reviewable_local, ineligible_reasons = _is_reviewable_local_effect(effect_summary, context, event)
+    contextual_session = dimensions.d4 > 0 or _context_has_prior_fspr_block(context)
+    if contextual_session and event.event_type == EventType.PRE_ACTION and risk_level in {
+        RiskLevel.HIGH,
+        RiskLevel.CRITICAL,
+    }:
+        for rule_id in sorted(rule_hits.intersection(_HARD_BLOCK_RULE_HITS)):
+            reasons.append(rule_id)
+        for rule_id in sorted(evidence_rules.intersection(_HARD_BLOCK_RULE_HITS)):
+            reasons.append(rule_id)
+        for effect in sorted(effects.intersection(_NON_CLEARABLE_EFFECTS)):
+            reasons.append(effect)
+    if (
+        event.event_type == EventType.PRE_ACTION
+        and risk_level in {RiskLevel.HIGH, RiskLevel.CRITICAL}
+        and contextual_session
+        and not reviewable_local
+    ):
+        reasons.extend(ineligible_reasons)
+
+    if reasons:
+        return L1AuthorityClass.DETERMINISTIC_HARD_BLOCK, list(dict.fromkeys(reasons)), None
+
+    if (
+        event.event_type == EventType.PRE_ACTION
+        and risk_level == RiskLevel.HIGH
+        and contextual_session
+        and reviewable_local
+    ):
+        metadata = contextual_binding_parts(event, context)
+        metadata.update({
+            "event_id": event.event_id,
+            "session_id": event.session_id,
+            "l1_authority_class": L1AuthorityClass.CONTEXTUAL_REVIEW_REQUIRED.value,
+            "l1_block_authority": "contextual_route_only",
+            "l2_l3_required": True,
+            "recovery_candidate_reason": "contextual_high_risk_after_fspr",
+            "recovery_ineligible_reasons": [],
+            "blocked_lineage_match": False,
+            "anti_bypass_match": False,
+        })
+        return (
+            L1AuthorityClass.CONTEXTUAL_REVIEW_REQUIRED,
+            ["contextual_high_risk_after_fspr"],
+            ReviewRoutingIntent(
+                source="contextual_review",
+                recommended_tier="l3",
+                policy_action="defer",
+                reason="contextual_high_risk_after_fspr",
+                source_metadata=metadata,
+                routing_affecting=True,
+                decision_affecting=False,
+            ),
+        )
+
+    return L1AuthorityClass.ALLOW_OR_AUDIT, [], None
+
+
 def compute_risk_snapshot(
     event: CanonicalEvent,
     context: Optional[DecisionContext],
@@ -1660,7 +2165,7 @@ def compute_risk_snapshot(
 
     dims = RiskDimensions(d1=d1, d2=d2, d3=d3, d4=d4, d5=d5, d6=d6)
     effect_envelope = normalize_action_effect(event, context)
-    effect_summary = effect_envelope.to_summary() if effect_envelope.effects or effect_envelope.evidence_rules else None
+    effect_summary = effect_envelope.to_summary()
 
     # Short-circuit rules (priority over scoring)
     sc_rule: Optional[str] = None
@@ -1708,6 +2213,7 @@ def compute_risk_snapshot(
         config,
     )
     routing_intents = _skill_trust_routing_intents_for_context(context, config)
+    routing_intents.extend(build_content_evidence_routing_intents(context, config))
     for rule_id in effect_envelope.evidence_rules:
         if rule_id not in rule_hits:
             rule_hits.append(rule_id)
@@ -1729,7 +2235,7 @@ def compute_risk_snapshot(
         else:
             risk_level = _max_risk_level(risk_level, RiskLevel.MEDIUM)
         score = max(score, _min_score_for_level(risk_level, config))
-    taint_flow_summary = _taint_flow_summary(event)
+    taint_flow_summary = _content_evidence_taint_summary(context, _taint_flow_summary(event))
     if taint_flow_summary is not None:
         taint_rule_hits = [
             str(rule_id)
@@ -1744,26 +2250,67 @@ def compute_risk_snapshot(
                 for rule in taint_flow_summary.get("rules", [])
                 if isinstance(rule, dict)
             }
+            content_rule_set = set(_content_evidence_rule_ids(context))
             if "critical" in severities:
                 risk_level = _max_risk_level(risk_level, RiskLevel.CRITICAL)
                 score = max(score, _min_score_for_level(risk_level, config))
-            elif "high" in severities:
+            elif "high" in severities and not (
+                content_rule_set.intersection({
+                    "document_input_to_network_sink",
+                    "document_input_encoded_to_network_sink",
+                    "subprocess_file_transfer",
+                })
+                and str(config.mode or "normal").strip().lower() in {"normal", "permissive"}
+            ):
                 risk_level = _max_risk_level(risk_level, RiskLevel.HIGH)
                 score = max(score, _min_score_for_level(risk_level, config))
+            elif content_rule_set.intersection({
+                "document_input_to_network_sink",
+                "document_input_encoded_to_network_sink",
+                "subprocess_file_transfer",
+            }):
+                risk_level = _max_risk_level(risk_level, RiskLevel.MEDIUM)
+                score = max(score, _min_score_for_level(risk_level, config))
 
+    snapshot_fields = {
+        "risk_level": risk_level,
+        "composite_score": score,
+        "dimensions": dims,
+        "short_circuit_rule": sc_rule,
+        "missing_dimensions": missing_dims,
+        "classified_by": ClassifiedBy.L1,
+        "classified_at": utc_now_iso(),
+        "rule_hits": rule_hits,
+        "skill_trust_findings": skill_trust_findings,
+        "routing_intents": routing_intents,
+        "taint_flow_summary": taint_flow_summary,
+        "effect_summary": effect_summary,
+    }
+    authority_class, authority_reasons, contextual_intent = _classify_l1_authority(
+        event=event,
+        snapshot_fields=snapshot_fields,
+        context=context,
+        config=config,
+    )
+    if contextual_intent is not None:
+        routing_intents.append(contextual_intent)
+    snapshot_fields["routing_intents"] = routing_intents
     snapshot = RiskSnapshot(
-        risk_level=risk_level,
-        composite_score=score,
-        dimensions=dims,
-        short_circuit_rule=sc_rule,
-        missing_dimensions=missing_dims,
-        classified_by=ClassifiedBy.L1,
-        classified_at=utc_now_iso(),
-        rule_hits=rule_hits,
-        skill_trust_findings=skill_trust_findings,
-        routing_intents=routing_intents,
-        taint_flow_summary=taint_flow_summary,
-        effect_summary=effect_summary,
+        **snapshot_fields,
+        l1_authority_class=authority_class,
+        l1_authority_reasons=authority_reasons,
+        l1_block_authority=(
+            "hard_block"
+            if authority_class == L1AuthorityClass.DETERMINISTIC_HARD_BLOCK
+            else "contextual_route_only"
+            if authority_class == L1AuthorityClass.CONTEXTUAL_REVIEW_REQUIRED
+            else "none"
+        ),
+        blocked_lineage_match=(
+            context.session_risk_summary.get("blocked_skill_lineage_match")
+            if context is not None and isinstance(context.session_risk_summary, dict)
+            else None
+        ),
     )
 
     # Update session tracker if risk >= high

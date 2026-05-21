@@ -20,6 +20,8 @@ from .models import (
     ClassifiedBy,
     CanonicalDecision,
     CanonicalEvent,
+    ContextualClearanceOutcome,
+    ContextualReviewClearance,
     DecisionContext,
     DecisionSource,
     DecisionTier,
@@ -215,11 +217,58 @@ def _requested_tier_from_routing_intents(
     return requested_tier
 
 
+def _authority_value(snapshot: RiskSnapshot) -> str:
+    return str(getattr(snapshot.l1_authority_class, "value", snapshot.l1_authority_class))
+
+
+def _is_contextual_review_required(snapshot: RiskSnapshot) -> bool:
+    return _authority_value(snapshot) == "contextual_review_required"
+
+
+def _contextual_review_intent(snapshot: RiskSnapshot):
+    return next((intent for intent in snapshot.routing_intents if intent.source == "contextual_review"), None)
+
+
+def _binding_matches_intent(intent_metadata: dict[str, Any], clearance: Any) -> bool:
+    binding = getattr(clearance, "binding", clearance)
+    if binding is None:
+        return False
+    for field in (
+        "event_id",
+        "session_id",
+        "effect_hash",
+        "canonical_argv_hash",
+        "raw_payload_hash",
+        "cwd_hash",
+        "interpreter",
+        "script_or_content_hash",
+    ):
+        expected = intent_metadata.get(field)
+        actual = getattr(binding, field, None)
+        if actual != expected:
+            return False
+    for field in ("input_path_hashes", "output_path_hashes"):
+        expected = sorted(intent_metadata.get(field) or [])
+        actual = sorted(getattr(binding, field, []) or [])
+        if expected != actual:
+            return False
+    return True
+
+
+def _contextual_audit_reasons(reasons: list[str] | None) -> list[str]:
+    return [
+        f"contextual_analyzer_finding_{index + 1}_redacted"
+        for index, _reason in enumerate(reasons or [])
+    ]
+
+
 def _automatic_l2_trigger_reason(
     event: CanonicalEvent,
     context: Optional[DecisionContext],
     l1_snapshot: RiskSnapshot,
 ) -> str | None:
+    if _is_contextual_review_required(l1_snapshot):
+        return "contextual_review_required"
     routing_intent = _highest_routing_intent(l1_snapshot, routing_only=True)
     if routing_intent is not None:
         return routing_intent.reason
@@ -241,6 +290,7 @@ def _benchmark_l2_auto_disabled(
         and str(config.mode or "").strip().lower() == "benchmark"
         and not config.benchmark_l2_auto_enabled
         and trigger_reason in {"medium_pre_action", "key_domain_event"}
+        and trigger_reason != "contextual_review_required"
     )
 
 
@@ -354,6 +404,15 @@ class L1PolicyEngine:
                 logging.getLogger(__name__).warning(
                     "L2 analysis failed; falling back to L1", exc_info=True,
                 )
+                if _is_contextual_review_required(l1_snapshot):
+                    snapshot = self._contextual_fail_closed_snapshot(
+                        l1_snapshot,
+                        requested_tier=requested_tier,
+                        actual_tier=DecisionTier.L1,
+                        reason="l2_analysis_failed",
+                    )
+                    decision = self._decide(event, snapshot, context)
+                    return decision, snapshot, DecisionTier.L1
                 snapshot = l1_snapshot.model_copy(update={
                     "l2_l3_summary": {
                         "status": "fallback_to_l1",
@@ -420,6 +479,73 @@ class L1PolicyEngine:
                 policy_version=self.POLICY_VERSION,
                 failure_class=FailureClass.NONE,
                 final=True,
+            )
+
+        if (
+            event.event_type == EventType.PRE_ACTION
+            and _authority_value(snapshot) == "deterministic_hard_block"
+        ):
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.BLOCK,
+                    reason=self._build_reason(event, snapshot, "Deterministic hard block: action blocked"),
+                    policy_id=self.POLICY_ID,
+                    risk_level=risk,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=True,
+                ),
+                event,
+                context,
+            )
+
+        if event.event_type == EventType.PRE_ACTION and _is_contextual_review_required(snapshot):
+            summary = snapshot.l2_l3_summary or {}
+            status = str(summary.get("status") or "")
+            if status == "contextual_review_cleared":
+                return self._with_scope_evaluation(
+                    CanonicalDecision(
+                        decision=DecisionVerdict.ALLOW,
+                        reason=self._build_reason(event, snapshot, "Contextual route cleared by bounded review"),
+                        policy_id=self.POLICY_ID,
+                        risk_level=snapshot.risk_level,
+                        decision_source=DecisionSource.POLICY,
+                        policy_version=self.POLICY_VERSION,
+                        failure_class=FailureClass.NONE,
+                        final=True,
+                    ),
+                    event,
+                    context,
+                )
+            if status == "contextual_review_deferred":
+                return self._with_scope_evaluation(
+                    CanonicalDecision(
+                        decision=DecisionVerdict.DEFER,
+                        reason=self._build_reason(event, snapshot, "Contextual route deferred by review"),
+                        policy_id=self.POLICY_ID,
+                        risk_level=snapshot.risk_level,
+                        decision_source=DecisionSource.POLICY,
+                        policy_version=self.POLICY_VERSION,
+                        failure_class=FailureClass.NONE,
+                        final=False,
+                    ),
+                    event,
+                    context,
+                )
+            return self._with_scope_evaluation(
+                CanonicalDecision(
+                    decision=DecisionVerdict.BLOCK,
+                    reason=self._build_reason(event, snapshot, "Contextual review required but not cleared"),
+                    policy_id=self.POLICY_ID,
+                    risk_level=snapshot.risk_level,
+                    decision_source=DecisionSource.POLICY,
+                    policy_version=self.POLICY_VERSION,
+                    failure_class=FailureClass.NONE,
+                    final=True,
+                ),
+                event,
+                context,
             )
 
         # pre_action: decide based on risk level
@@ -656,6 +782,27 @@ class L1PolicyEngine:
             "scope_evaluation": summary,
         })
 
+    def _contextual_fail_closed_snapshot(
+        self,
+        l1_snapshot: RiskSnapshot,
+        *,
+        requested_tier: DecisionTier,
+        actual_tier: DecisionTier,
+        reason: str,
+        analyzer_id: str = "",
+        result_reasons: list[str] | None = None,
+    ) -> RiskSnapshot:
+        return l1_snapshot.model_copy(update={
+            "l2_l3_summary": {
+                "status": "contextual_review_failed_closed",
+                "requested_tier": requested_tier.value,
+                "actual_tier": actual_tier.value,
+                "analyzer_id": analyzer_id,
+                "fail_closed_reason": reason,
+                "reasons": _contextual_audit_reasons(result_reasons),
+            }
+        })
+
     def apply_scope_evaluation(
         self,
         decision: CanonicalDecision,
@@ -698,6 +845,8 @@ class L1PolicyEngine:
         requested_tier: DecisionTier,
         automatic_trigger_reason: str | None = None,
     ) -> bool:
+        if _is_contextual_review_required(l1_snapshot):
+            return True
         if requested_tier in (DecisionTier.L2, DecisionTier.L3):
             return True
         return automatic_trigger_reason is not None
@@ -753,6 +902,119 @@ class L1PolicyEngine:
         target_level = result.target_level
         target_level = self._max_risk_level(target_level, l1_snapshot.risk_level)
         actual_tier = result.decision_tier
+        result_reasons = list(result.reasons)
+        content_evidence_present = context is not None and context.content_evidence is not None
+        persisted_reasons = (
+            [
+                f"analyzer_finding_{index + 1}_redacted_content_evidence_present"
+                for index, _reason in enumerate(result_reasons)
+            ]
+            if content_evidence_present
+            else result_reasons
+        )
+
+        if _is_contextual_review_required(l1_snapshot):
+            intent = _contextual_review_intent(l1_snapshot)
+            metadata = intent.source_metadata if intent is not None else {}
+            outcome = getattr(result.contextual_route_outcome, "value", result.contextual_route_outcome)
+            binding = result.contextual_clearance_binding
+            confidence = result.contextual_confidence if result.contextual_confidence is not None else result.confidence
+            clearance = result.contextual_clearance
+            contextual_reasons = _contextual_audit_reasons(list(result.reasons))
+            if result.decision_tier == DecisionTier.L1:
+                return self._contextual_fail_closed_snapshot(
+                    l1_snapshot,
+                    requested_tier=requested_tier,
+                    actual_tier=DecisionTier.L1,
+                    reason="degraded_to_l1",
+                    analyzer_id=result.analyzer_id,
+                    result_reasons=list(result.reasons),
+                ), DecisionTier.L1
+            if outcome == "clear_contextual_route":
+                if binding is None or confidence < 0.70:
+                    return self._contextual_fail_closed_snapshot(
+                        l1_snapshot,
+                        requested_tier=requested_tier,
+                        actual_tier=result.decision_tier,
+                        reason="clearance_low_confidence_or_missing",
+                        analyzer_id=result.analyzer_id,
+                        result_reasons=list(result.reasons),
+                    ), result.decision_tier
+                if not _binding_matches_intent(metadata, binding):
+                    return self._contextual_fail_closed_snapshot(
+                        l1_snapshot,
+                        requested_tier=requested_tier,
+                        actual_tier=result.decision_tier,
+                        reason="binding_mismatch",
+                        analyzer_id=result.analyzer_id,
+                        result_reasons=list(result.reasons),
+                    ), result.decision_tier
+                if clearance is not None and not _binding_matches_intent(metadata, clearance):
+                    return self._contextual_fail_closed_snapshot(
+                        l1_snapshot,
+                        requested_tier=requested_tier,
+                        actual_tier=result.decision_tier,
+                        reason="binding_mismatch",
+                        analyzer_id=result.analyzer_id,
+                        result_reasons=list(result.reasons),
+                    ), result.decision_tier
+                persisted_clearance = (
+                    clearance.model_copy(update={"reasons": contextual_reasons})
+                    if clearance is not None
+                    else ContextualReviewClearance(
+                        outcome=ContextualClearanceOutcome.CLEAR,
+                        binding=binding,
+                        review_tier=result.decision_tier,
+                        analyzer_id=result.analyzer_id,
+                        confidence=confidence,
+                        reasons=contextual_reasons,
+                    )
+                )
+                return l1_snapshot.model_copy(update={
+                    "risk_level": RiskLevel.MEDIUM,
+                    "classified_by": ClassifiedBy.L3
+                    if result.decision_tier == DecisionTier.L3
+                    else ClassifiedBy.L2,
+                    "contextual_review_clearance": persisted_clearance,
+                    "l2_l3_summary": {
+                        "status": "contextual_review_cleared",
+                        "requested_tier": requested_tier.value,
+                        "actual_tier": result.decision_tier.value,
+                        "analyzer_id": result.analyzer_id,
+                        "clearance_outcome": outcome,
+                        "reasons": contextual_reasons,
+                    },
+                }), result.decision_tier
+            if outcome == "defer_contextual_route":
+                return l1_snapshot.model_copy(update={
+                    "l2_l3_summary": {
+                        "status": "contextual_review_deferred",
+                        "requested_tier": requested_tier.value,
+                        "actual_tier": result.decision_tier.value,
+                        "analyzer_id": result.analyzer_id,
+                        "clearance_outcome": outcome,
+                        "reasons": contextual_reasons,
+                    },
+                }), result.decision_tier
+            if outcome == "block_contextual_route":
+                return l1_snapshot.model_copy(update={
+                    "l2_l3_summary": {
+                        "status": "contextual_review_blocked",
+                        "requested_tier": requested_tier.value,
+                        "actual_tier": result.decision_tier.value,
+                        "analyzer_id": result.analyzer_id,
+                        "clearance_outcome": outcome,
+                        "reasons": contextual_reasons,
+                    },
+                }), result.decision_tier
+            return self._contextual_fail_closed_snapshot(
+                l1_snapshot,
+                requested_tier=requested_tier,
+                actual_tier=result.decision_tier,
+                reason="contextual_clearance_not_granted",
+                analyzer_id=result.analyzer_id,
+                result_reasons=list(result.reasons),
+            ), result.decision_tier
 
         if actual_tier == DecisionTier.L1:
             return l1_snapshot.model_copy(update={
@@ -762,7 +1024,7 @@ class L1PolicyEngine:
                     "requested_tier": requested_tier.value,
                     "actual_tier": DecisionTier.L1.value,
                     "analyzer_id": result.analyzer_id,
-                    "reasons": list(result.reasons),
+                    "reasons": persisted_reasons,
                 },
             }), DecisionTier.L1
 
@@ -770,7 +1032,7 @@ class L1PolicyEngine:
         override = (
             RiskOverride(
                 original_level=l1_snapshot.risk_level,
-                reason="; ".join(result.reasons) if result.reasons else "L2 semantic escalation",
+                reason="; ".join(persisted_reasons) if persisted_reasons else "L2 semantic escalation",
             )
             if upgraded
             else None
@@ -789,7 +1051,7 @@ class L1PolicyEngine:
             "requested_tier": requested_tier.value,
             "actual_tier": actual_tier.value,
             "analyzer_id": result.analyzer_id,
-            "reasons": list(result.reasons),
+            "reasons": persisted_reasons,
         }
         if isinstance(context_summary, dict):
             if context_summary.get("l3_request_reason"):
@@ -815,6 +1077,11 @@ class L1PolicyEngine:
             routing_intents=list(l1_snapshot.routing_intents),
             taint_flow_summary=l1_snapshot.taint_flow_summary,
             effect_summary=l1_snapshot.effect_summary,
+            l1_authority_class=l1_snapshot.l1_authority_class,
+            l1_authority_reasons=list(l1_snapshot.l1_authority_reasons),
+            l1_block_authority=l1_snapshot.l1_block_authority,
+            contextual_review_clearance=l1_snapshot.contextual_review_clearance,
+            blocked_lineage_match=l1_snapshot.blocked_lineage_match,
         ), actual_tier
 
     @staticmethod

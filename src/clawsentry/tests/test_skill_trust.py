@@ -96,6 +96,39 @@ def test_skill_trust_grade_is_derived_from_state_and_evidence():
     assert derive_skill_trust_grade(mismatched) == "restricted"
 
 
+def test_resolve_skill_trust_separates_admission_and_fspr_summary():
+    context = resolve_skill_trust(
+        [],
+        {
+            "gateway_owned_metadata": True,
+            "presented_name": "pptx",
+            "admission_scan_id": "scan-1",
+            "admission_risk": "medium",
+            "admission_scan_requested": True,
+            "review_required": True,
+            "admission_scan_state": "completed",
+            "fspr_review_summary": {
+                "schema": "clawsentry.fspr_review_summary.v1",
+                "enabled": True,
+                "pre_use_enabled": True,
+                "review_state": "not_started",
+                "raw_path": "/workspace/secret",
+                "provider_prompt": "raw prompt must not propagate",
+            },
+        },
+    )
+
+    assert context.first_use_scan is not None
+    assert context.first_use_scan.state == "scan_completed"
+    assert context.fspr_review_summary == {
+        "schema": "clawsentry.fspr_review_summary.v1",
+        "enabled": True,
+        "pre_use_enabled": True,
+        "review_state": "not_started",
+    }
+    assert context.first_use_package_review is None
+
+
 def test_runtime_skill_ref_rejects_trust_strengthening_fields():
     ref = RuntimeSkillRef(
         ref_ordinal=0,
@@ -523,6 +556,46 @@ def test_allowed_mirror_with_matching_content_is_verified(tmp_path: Path):
     assert bound[0].runtime_path_status == "verified_mirror"
     assert bound[0].runtime_content_status == "content_verified"
     assert "runtime_content_unverified" not in bound[0].invariant_violations
+
+
+def test_admission_scanner_hashes_fixture_probe_and_package_buckets(tmp_path: Path):
+    skill_root = tmp_path / "package-helper"
+    (skill_root / "scripts").mkdir(parents=True)
+    (skill_root / "fixtures").mkdir()
+    (skill_root / "probes").mkdir()
+    (skill_root / "SKILL.md").write_text("---\nname: package-helper\n---\n", encoding="utf-8")
+    (skill_root / "scripts" / "run.py").write_text("print('ok')\n", encoding="utf-8")
+    (skill_root / "fixtures" / "case.json").write_text('{"ok": true}\n', encoding="utf-8")
+    (skill_root / "probes" / "smoke.json").write_text('{"input": "ping"}\n', encoding="utf-8")
+    (skill_root / "pyproject.toml").write_text("[project]\nname='package-helper'\n", encoding="utf-8")
+    (skill_root / "package.json").write_text('{"name":"package-helper"}\n', encoding="utf-8")
+
+    content_hashes = AdmissionScanner().scan(skill_root).content_hashes
+
+    assert set(content_hashes) >= {
+        "SKILL.md",
+        "scripts",
+        "fixtures",
+        "probes",
+        "pyproject.toml",
+        "package.json",
+    }
+    assert all(value.startswith("sha256:") for value in content_hashes.values())
+
+
+def test_admission_scanner_exposes_scanner_and_budget_metadata(tmp_path: Path):
+    skill_root = tmp_path / "package-helper"
+    skill_root.mkdir()
+    (skill_root / "SKILL.md").write_text("---\nname: package-helper\n---\n", encoding="utf-8")
+
+    report = AdmissionScanner().scan(skill_root, max_files=3, max_file_bytes=4096)
+
+    assert report.scanner_version.startswith("admission_scanner.")
+    assert report.budget_class == "custom"
+    assert report.budget_metadata == {
+        "max_files": 3,
+        "max_file_bytes": 4096,
+    }
 
 
 def test_allowed_mirror_with_content_drift_is_mismatch(tmp_path: Path):

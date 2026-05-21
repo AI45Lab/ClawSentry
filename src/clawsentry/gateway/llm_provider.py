@@ -155,6 +155,25 @@ class OpenAIProvider:
     def provider_id(self) -> str:
         return "openai"
 
+    def _extra_body(self) -> dict[str, object] | None:
+        """Compatibility body for model-specific OpenAI-compatible endpoints."""
+
+        normalized_model = self._model.strip().lower()
+        if "deepseek-v4-pro" in normalized_model:
+            return {"thinking": {"type": "enabled"}}
+        if "kimi-k2." in normalized_model:
+            return {
+                "thinking": {"type": "disabled"},
+                "chat_template_kwargs": {"thinking": False},
+            }
+        return None
+
+    def _reasoning_effort(self) -> str | None:
+        normalized_model = self._model.strip().lower()
+        if "deepseek-v4-pro" in normalized_model:
+            return "high"
+        return None
+
     async def aclose(self) -> None:
         """Close any lazy async client before its owning event loop exits."""
 
@@ -177,16 +196,21 @@ class OpenAIProvider:
     ) -> str:
         effective_max_tokens = max_tokens or self._config.max_tokens
         client = self._get_client()
+        request_kwargs = {
+            "model": self._model,
+            "max_tokens": effective_max_tokens,
+            "temperature": self._config.temperature,
+            "extra_body": self._extra_body(),
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+        }
+        reasoning_effort = self._reasoning_effort()
+        if reasoning_effort:
+            request_kwargs["reasoning_effort"] = reasoning_effort
         response = await asyncio.wait_for(
-            client.chat.completions.create(  # type: ignore[union-attr]
-                model=self._model,
-                max_tokens=effective_max_tokens,
-                temperature=self._config.temperature,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message},
-                ],
-            ),
+            client.chat.completions.create(**request_kwargs),  # type: ignore[union-attr]
             timeout=timeout_ms / 1000,
         )
         usage = getattr(response, "usage", None)
@@ -196,7 +220,14 @@ class OpenAIProvider:
             provider="openai",
             model=self._model,
         )
-        content = response.choices[0].message.content  # type: ignore[union-attr]
+        message = response.choices[0].message  # type: ignore[union-attr]
+        content = getattr(message, "content", None)
+        if not isinstance(content, str) or not content.strip():
+            for attr in ("reasoning_content", "reasoning"):
+                candidate = getattr(message, attr, None)
+                if isinstance(candidate, str) and candidate.strip():
+                    content = candidate
+                    break
         if not isinstance(content, str) or not content.strip():
             raise ValueError("OpenAI response did not contain message content")
         return content

@@ -40,6 +40,7 @@ from .anti_bypass_llm_recognizer import (
     AntiBypassLLMProvider,
     recognize_anti_bypass_candidate,
 )
+from .content_evidence import collect_for_event, strip_content_bodies
 from .event_bus import EventBus
 from .first_use_skill_review import FSPRLLMRoleProvider, run_first_use_skill_package_review
 from .idempotency import IdempotencyCache, periodic_cleanup
@@ -65,6 +66,7 @@ from .models import (
     AdapterEffectResult,
     CanonicalDecision,
     CanonicalEvent,
+    ContentEvidenceEnvelope,
     DecisionContext,
     DecisionEffects,
     DecisionSource,
@@ -72,6 +74,7 @@ from .models import (
     DecisionVerdict,
     EventType,
     FailureClass,
+    L1AuthorityClass,
     RiskLevel,
     RPCErrorCode,
     RPC_VERSION,
@@ -180,6 +183,7 @@ _CAPABILITY_NARROWING_DENIED_TOOLS = (
     "install_package",
 )
 _SAFE_LINEAGE_KEYS = {
+    "canonical_skill_id",
     "presented_skill_name",
     "skill_root_path_hash",
     "runtime_root_path_hash",
@@ -392,6 +396,37 @@ def _lineage_summary_from_event(event: dict[str, Any]) -> dict[str, Any] | None:
     return summary
 
 
+def _blocked_lineage_fact_from_meta(
+    meta: dict[str, Any],
+    decision: dict[str, Any],
+    snapshot: dict[str, Any],
+) -> dict[str, Any] | None:
+    if str(decision.get("decision") or "") != "block":
+        return None
+    reasons = set(snapshot.get("rule_hits") or [])
+    reasons.update(
+        str(item.get("source"))
+        for item in snapshot.get("routing_intents") or []
+        if isinstance(item, dict)
+    )
+    if "fspr_package_review" not in reasons and "runtime_binding" not in reasons:
+        return None
+    lineage = meta.get("lineage_event") or meta.get("skill_lineage")
+    if not isinstance(lineage, dict):
+        return None
+    keys = {
+        "canonical_skill_id": lineage.get("canonical_skill_id"),
+        "observed_name": lineage.get("observed_name") or lineage.get("presented_skill_name"),
+        "presented_skill_name": lineage.get("presented_skill_name"),
+        "runtime_root_path_hash": lineage.get("runtime_root_path_hash") or lineage.get("skill_root_path_hash"),
+        "metadata_record_id": lineage.get("metadata_record_id"),
+        "content_hash": lineage.get("content_hash"),
+        "source_event_id": lineage.get("event_id"),
+    }
+    compact = {key: value for key, value in keys.items() if isinstance(value, str) and value}
+    return compact or None
+
+
 def _lineage_event_from_summary(
     *,
     event: dict[str, Any],
@@ -599,7 +634,13 @@ def _safe_lineage_value(key: str, value: Any) -> Any | None:
         return None
     if key in {"runtime_path_status", "runtime_content_status", "runtime_evidence_kind", "workspace_relation"}:
         return _safe_identity_label(value, max_len=80)
-    if key in {"runtime_binding_reason", "observed_name", "current_runner_contract_id"}:
+    if key in {
+        "runtime_binding_reason",
+        "observed_name",
+        "presented_skill_name",
+        "canonical_skill_id",
+        "current_runner_contract_id",
+    }:
         return _safe_identity_label(value, max_len=256)
     if key == "metadata_record_id":
         if isinstance(value, str) and value.startswith("sha256:"):
@@ -872,6 +913,71 @@ def _context_with_mcp_raw(
     return context.model_copy(update={"mcp_context": mcp_context})
 
 
+def _content_evidence_approved_roots(context: DecisionContext | None) -> list[str]:
+    """Return trusted roots for request-local content evidence collection."""
+
+    if context is None or context.session_scope_profile is None:
+        return []
+    session_summary = context.session_risk_summary if isinstance(context.session_risk_summary, dict) else {}
+    if session_summary.get("content_evidence_roots_source") != "gateway_default_session_scope":
+        return []
+    task_rules = getattr(context.session_scope_profile, "task_rules", None)
+    roots = list(getattr(task_rules, "allowed_path_prefixes", []) or [])
+    return [str(root) for root in roots if str(root).strip() and str(root).strip() != "/"]
+
+
+def _content_evidence_rule_ids_from_envelope(envelope: ContentEvidenceEnvelope | None) -> set[str]:
+    if envelope is None:
+        return set()
+    rule_ids: set[str] = set()
+    for item in envelope.items:
+        for rule in item.derived_rules:
+            if isinstance(rule, dict) and rule.get("rule_id"):
+                rule_ids.add(str(rule["rule_id"]))
+    return rule_ids
+
+
+def _content_evidence_metric_flags(envelope: ContentEvidenceEnvelope | None) -> dict[str, bool]:
+    rule_ids = _content_evidence_rule_ids_from_envelope(envelope)
+    return {
+        "collected": envelope is not None,
+        "incomplete": "content_evidence_incomplete" in rule_ids,
+        "mismatch": "content_mismatch" in rule_ids,
+        "execution_unverified": "execution_content_unverified" in rule_ids,
+    }
+
+
+def _snapshot_has_content_evidence_rule(snapshot_dict: dict[str, Any]) -> bool:
+    rule_hits = {str(rule) for rule in snapshot_dict.get("rule_hits") or []}
+    content_rule_ids = {
+        "associated_script_network_sink",
+        "associated_script_network_indicator",
+        "document_input_to_network_sink",
+        "document_input_encoded_to_network_sink",
+        "credential_source_to_network_sink",
+        "subprocess_file_transfer",
+        "possible_document_input_to_network_sink",
+        "content_evidence_incomplete",
+        "content_mismatch",
+        "execution_content_unverified",
+    }
+    return bool(rule_hits.intersection(content_rule_ids))
+
+
+def _l3_trace_has_content_evidence_signal(l3_trace: dict[str, Any] | None) -> bool:
+    if not isinstance(l3_trace, dict):
+        return False
+    reason = str(l3_trace.get("trigger_reason") or "")
+    return reason in {
+        "associated_script_network_sink",
+        "document_input_to_network_sink",
+        "possible_document_input_to_network_sink",
+        "content_evidence_incomplete",
+        "content_mismatch",
+        "execution_content_unverified",
+    }
+
+
 def _mcp_identity_from_event_tool(tool_name: str | None) -> tuple[str | None, str | None]:
     parts = str(tool_name or "").split("__")
     if len(parts) >= 3 and parts[0] == "mcp":
@@ -927,6 +1033,50 @@ def _context_with_skill_trust_raw(
             "skill_root_path",
     ):
         raw.pop(key, None)
+    def _with_gateway_owned_fspr_evidence(
+        bound_refs: list[SkillTrustContext],
+    ) -> list[SkillTrustContext]:
+        if not bound_refs:
+            return bound_refs
+        primary = bound_refs[0]
+        owned_raw = _gateway_owned_skill_trust_metadata(
+            primary.presented_name or raw_metadata.get("presented_name")
+        )
+        if not owned_raw:
+            return bound_refs
+        owned_metadata = dict(raw_metadata)
+        owned_metadata.update(owned_raw)
+        _apply_gateway_owned_first_use_scan(owned_metadata, deadline_at=deadline_at)
+        _apply_gateway_owned_first_use_package_review(
+            owned_metadata,
+            event=event,
+            detection_config=detection_config,
+            deadline_at=deadline_at,
+        )
+        update = {
+            key: owned_metadata[key]
+            for key in (
+                "admission_scan_id",
+                "admission_risk",
+                "policy_fingerprint",
+                "content_hashes",
+                "admission_scan_requested",
+                "admission_scan_failure_class",
+                "first_use_package_review",
+                "fspr_review_summary",
+            )
+            if key in owned_metadata
+        }
+        raw.update(owned_raw)
+        raw.update(update)
+        resolved = resolve_skill_trust(list(gateway_records), owned_metadata)
+        enriched_primary = primary.model_copy(update={
+            "first_use_scan": resolved.first_use_scan,
+            "first_use_package_review": resolved.first_use_package_review,
+            "fspr_review_summary": resolved.fspr_review_summary,
+        })
+        return [enriched_primary, *bound_refs[1:]]
+
     runtime_refs = _gateway_observed_runtime_skill_refs(meta, context, event)
     if runtime_refs:
         metadata_bundle = _gateway_owned_skill_trust_bundle()
@@ -965,6 +1115,7 @@ def _context_with_skill_trust_raw(
                 ref.runtime_path_status in binding_decisive_statuses
                 for ref in bound_refs
             ):
+                bound_refs = _with_gateway_owned_fspr_evidence(bound_refs)
                 primary = bound_refs[0]
                 if context is None:
                     return DecisionContext(
@@ -1208,6 +1359,55 @@ def _fspr_timing_mode_for_event(
     return None
 
 
+def _fspr_provider_sync_enabled(detection_config: DetectionConfig | None) -> bool:
+    if detection_config is None or not detection_config.skill_trust_fspr_provider_enabled:
+        return False
+    mode = str(detection_config.mode or "normal").strip().lower()
+    profiles = {
+        str(profile).strip().lower()
+        for profile in detection_config.skill_trust_fspr_provider_sync_profiles
+        if str(profile).strip()
+    }
+    return mode in profiles
+
+
+def _fspr_review_summary(
+    *,
+    detection_config: DetectionConfig | None,
+    review_state: str,
+    timing_mode: str | None = None,
+    provider_used: bool = False,
+    verdict: str | None = None,
+    severity: str | None = None,
+    confidence: float | None = None,
+    degraded: bool | None = None,
+    degradation_reason: str | None = None,
+    failure_reason: str | None = None,
+    reason: str | None = None,
+) -> dict[str, object]:
+    return {
+        key: value
+        for key, value in {
+            "schema": "clawsentry.fspr_review_summary.v1",
+            "enabled": bool(getattr(detection_config, "skill_trust_fspr_enabled", False)),
+            "pre_use_enabled": bool(getattr(detection_config, "skill_trust_fspr_pre_use_enabled", False)),
+            "post_action_enabled": bool(getattr(detection_config, "skill_trust_fspr_post_action_enabled", False)),
+            "review_state": review_state,
+            "timing_mode": timing_mode,
+            "provider_sync_enabled": bool(_fspr_provider_sync_enabled(detection_config)),
+            "provider_used": provider_used,
+            "verdict": verdict,
+            "severity": severity,
+            "confidence": confidence,
+            "degraded": degraded,
+            "degradation_reason": degradation_reason,
+            "failure_reason": failure_reason,
+            "reason": reason,
+        }.items()
+        if value is not None
+    }
+
+
 def _apply_gateway_owned_first_use_package_review(
     raw_metadata: dict[str, Any],
     *,
@@ -1217,15 +1417,50 @@ def _apply_gateway_owned_first_use_package_review(
 ) -> None:
     """Attach bounded FSPR evidence only for Gateway-owned skill metadata."""
 
-    if raw_metadata.get("first_use_package_review"):
+    existing_review = raw_metadata.get("first_use_package_review")
+    if isinstance(existing_review, dict):
+        raw_metadata.setdefault(
+            "fspr_review_summary",
+            _fspr_review_summary(
+                detection_config=detection_config,
+                review_state="degraded" if existing_review.get("degraded") else "completed",
+                timing_mode=existing_review.get("timing_mode"),
+                verdict=existing_review.get("verdict"),
+                severity=existing_review.get("severity"),
+                confidence=existing_review.get("confidence"),
+                degraded=bool(existing_review.get("degraded", False)),
+                degradation_reason=existing_review.get("degradation_reason"),
+            ),
+        )
         return
     if not raw_metadata.get("gateway_owned_metadata"):
+        raw_metadata["fspr_review_summary"] = _fspr_review_summary(
+            detection_config=detection_config,
+            review_state="not_gateway_owned",
+        )
+        return
+    if detection_config is not None and not detection_config.skill_trust_fspr_enabled:
+        raw_metadata["fspr_review_summary"] = _fspr_review_summary(
+            detection_config=detection_config,
+            review_state="disabled_by_config",
+        )
         return
     timing_mode = _fspr_timing_mode_for_event(event, detection_config)
     if timing_mode is None:
+        raw_metadata["fspr_review_summary"] = _fspr_review_summary(
+            detection_config=detection_config,
+            review_state="not_applicable",
+            reason="timing_mode_unavailable",
+        )
         return
     root_value = raw_metadata.get("skill_root_path")
     if not isinstance(root_value, str) or not root_value.strip():
+        raw_metadata["fspr_review_summary"] = _fspr_review_summary(
+            detection_config=detection_config,
+            review_state="not_applicable",
+            timing_mode=timing_mode,
+            reason="skill_root_path_missing",
+        )
         return
     timeout_s = (
         max(0.0, float(detection_config.skill_trust_fspr_timeout_ms) / 1000.0)
@@ -1236,7 +1471,7 @@ def _apply_gateway_owned_first_use_package_review(
         timeout_s = min(timeout_s, max(0.0, deadline_at - time.monotonic()))
     provider = None
     selected_roles: tuple[str, ...] | None = None
-    if detection_config is not None and detection_config.skill_trust_fspr_provider_enabled:
+    if _fspr_provider_sync_enabled(detection_config):
         raw_provider = build_provider_from_env()
         if raw_provider is not None:
             provider = FSPRLLMRoleProvider(raw_provider, timeout_ms=timeout_s * 1000.0)
@@ -1254,6 +1489,13 @@ def _apply_gateway_owned_first_use_package_review(
             timing_mode=timing_mode,
             registry_snapshot_id=str(raw_metadata.get("registry_snapshot_id") or "unknown"),
             policy_fingerprint=str(raw_metadata.get("policy_fingerprint") or "unknown"),
+            policy_profile=str(getattr(detection_config, "mode", None) or "normal"),
+            budget_class=(
+                "custom"
+                if detection_config is not None
+                and detection_config.skill_trust_fspr_timeout_ms != 120_000
+                else "default"
+            ),
             cache_enabled=(
                 detection_config.skill_trust_fspr_cache_enabled
                 if detection_config is not None
@@ -1262,8 +1504,56 @@ def _apply_gateway_owned_first_use_package_review(
             provider=provider,
             selected_roles=selected_roles,
         )
-    except Exception:
+    except Exception as exc:
+        raw_metadata["fspr_review_summary"] = _fspr_review_summary(
+            detection_config=detection_config,
+            review_state="failed",
+            timing_mode=timing_mode,
+            provider_used=provider is not None,
+            degraded=True,
+            degradation_reason="inventory_failure",
+            failure_reason="inventory_failure",
+        )
+        raw_metadata["first_use_package_review"] = {
+            "schema": "clawsentry.first_use_skill_package_review.v1",
+            "timing_mode": timing_mode,
+            "verdict": "insufficient_evidence",
+            "severity": "low",
+            "confidence": 0.0,
+            "deterministic_findings_preserved": True,
+            "role_results": [
+                {
+                    "role": "deterministic_inventory",
+                    "verdict": "insufficient_evidence",
+                    "findings": [],
+                    "degraded": True,
+                    "coverage": "degraded",
+                    "degradation_reason": "inventory_failure",
+                }
+            ],
+            "final_findings": [],
+            "evidence_capsule": {
+                "schema": "clawsentry.fspr_evidence_capsule.v1",
+                "failure_class": "inventory_failure",
+                "failure_type": type(exc).__name__,
+            },
+            "degraded": True,
+            "degradation_reason": "inventory_failure",
+            "cache_hit": False,
+            "cache": {"hit": False, "reason": "not_cached"},
+        }
         return
+    raw_metadata["fspr_review_summary"] = _fspr_review_summary(
+        detection_config=detection_config,
+        review_state="degraded" if result.degraded else "completed",
+        timing_mode=result.timing_mode,
+        provider_used=provider is not None,
+        verdict=result.verdict,
+        severity=result.severity,
+        confidence=result.confidence,
+        degraded=result.degraded,
+        degradation_reason=result.degradation_reason,
+    )
     raw_metadata["first_use_package_review"] = result.model_dump(mode="json")
 
 
@@ -1590,6 +1880,40 @@ def _compact_l3_evidence_summary(l3_trace: dict[str, Any] | None) -> dict[str, A
         summary["toolkit_budget_exhausted"] = toolkit_calls_remaining <= 0
 
     return summary or None
+
+
+def _l3_trace_for_persistence(
+    l3_trace: dict[str, Any] | None,
+    *,
+    redact_raw_bodies: bool = True,
+    redact_final_findings: bool = False,
+) -> dict[str, Any] | None:
+    """Remove raw model/tool body echoes from durable L3 trace storage."""
+
+    if not isinstance(l3_trace, dict):
+        return l3_trace
+    sanitized = json.loads(json.dumps(l3_trace, default=str))
+    turns = sanitized.get("turns")
+    if isinstance(turns, list):
+        for turn in turns:
+            if not isinstance(turn, dict):
+                continue
+            if redact_raw_bodies and "response_raw" in turn:
+                turn["response_raw"] = "[REDACTED_L3_RESPONSE_RAW]"
+            tool_result = turn.get("tool_result")
+            if redact_raw_bodies and isinstance(tool_result, dict) and "content" in tool_result:
+                tool_result["content"] = "[REDACTED_TOOL_CONTENT]"
+    final_verdict = sanitized.get("final_verdict")
+    if (
+        redact_final_findings
+        and isinstance(final_verdict, dict)
+        and isinstance(final_verdict.get("findings"), list)
+    ):
+        final_verdict["findings"] = [
+            f"l3_finding_{index + 1}_redacted_for_persistence"
+            for index, _finding in enumerate(final_verdict["findings"])
+        ]
+    return sanitized
 
 
 def _copy_budget_event(budget_event: dict[str, Any] | None) -> dict[str, Any] | None:
@@ -2483,6 +2807,7 @@ class SupervisionGateway:
             if skill_registry_records is not None
             else load_skill_registry_records(self._detection_config.skill_trust_registry_path)
         )
+        self._blocked_skill_lineage_by_session: dict[str, list[dict[str, Any]]] = {}
         self._agent_safety_feedback_delivered_surfaces: set[tuple[str, str, str]] = set()
         self.default_session_scope_profile = _load_default_session_scope_profile()
         self.post_action_analyzer = PostActionAnalyzer(
@@ -2556,6 +2881,54 @@ class SupervisionGateway:
         }
         self._start_time = time.monotonic()
         self._ready = True
+
+    def _match_blocked_skill_lineage(
+        self,
+        *,
+        session_id: str,
+        event_dict: dict[str, Any],
+        context: DecisionContext | None,
+    ) -> dict[str, Any] | None:
+        facts = self._blocked_skill_lineage_by_session.get(session_id, [])
+        if not facts:
+            return None
+        current = _lineage_summary_from_event(event_dict) or {}
+        candidates: list[tuple[str, str]] = []
+        seen_candidates: set[tuple[str, str]] = set()
+
+        def add_candidate(key: str, value: Any) -> None:
+            if not isinstance(value, str) or not value:
+                return
+            item = (key, value)
+            if item in seen_candidates:
+                return
+            seen_candidates.add(item)
+            candidates.append(item)
+
+        for key in (
+            "runtime_root_path_hash",
+            "skill_root_path_hash",
+            "content_hash",
+            "metadata_record_id",
+            "canonical_skill_id",
+            "presented_skill_name",
+            "observed_name",
+        ):
+            add_candidate(key, current.get(key))
+        if context is not None and context.skill_trust is not None:
+            for key in ("runtime_root_path_hash", "metadata_record_id", "canonical_skill_id", "presented_name"):
+                value = getattr(context.skill_trust, key, None)
+                match_key = "presented_skill_name" if key == "presented_name" else key
+                add_candidate(match_key, value)
+        for fact in reversed(facts):
+            for key, value in candidates:
+                fact_value = fact.get(key)
+                if fact_value == value:
+                    return {
+                        "matched_key": key,
+                        "matched_value_hash": value if value.startswith("sha256:") else None,
+                    }
+        return None
 
     def _handle_budget_exhausted(self, event: dict[str, Any]) -> None:
         """Store and broadcast the first budget exhaustion transition for the day."""
@@ -2663,6 +3036,14 @@ class SupervisionGateway:
         l3_trace: dict[str, Any] | None,
     ) -> int:
         is_resolution = str(meta.get("record_type") or "") == "decision_resolution"
+        stored_l3_trace = _l3_trace_for_persistence(
+            l3_trace,
+            redact_raw_bodies=not self._detection_config.content_evidence_debug_persist_body,
+            redact_final_findings=(
+                _snapshot_has_content_evidence_rule(snapshot)
+                or _l3_trace_has_content_evidence_signal(l3_trace)
+            ),
+        )
         total_start = time.perf_counter()
         trajectory_store_seconds = 0.0
         session_registry_seconds = 0.0
@@ -2680,7 +3061,7 @@ class SupervisionGateway:
                     decision=stored_decision,
                     snapshot=snapshot,
                     meta=meta,
-                    l3_trace=l3_trace,
+                    l3_trace=stored_l3_trace,
                 )
             else:
                 record_id = self.trajectory_store.record(
@@ -2688,7 +3069,7 @@ class SupervisionGateway:
                     decision=stored_decision,
                     snapshot=snapshot,
                     meta=meta,
-                    l3_trace=l3_trace,
+                    l3_trace=stored_l3_trace,
                 )
             trajectory_store_seconds = time.perf_counter() - trajectory_start
 
@@ -2790,19 +3171,34 @@ class SupervisionGateway:
     ) -> DecisionContext | None:
         """Attach the configured default scope profile when request context lacks one."""
 
+        def _without_caller_root_marker(ctx: DecisionContext | None) -> DecisionContext | None:
+            if ctx is None or not isinstance(ctx.session_risk_summary, dict):
+                return ctx
+            if "content_evidence_roots_source" not in ctx.session_risk_summary:
+                return ctx
+            summary = dict(ctx.session_risk_summary)
+            summary.pop("content_evidence_roots_source", None)
+            return ctx.model_copy(update={"session_risk_summary": summary})
+
+        context = _without_caller_root_marker(context)
         profile = self.default_session_scope_profile
         if profile is None:
             return context
+        marker = {"content_evidence_roots_source": "gateway_default_session_scope"}
         if context is None:
             return DecisionContext(
                 session_scope_profile_id=profile.profile_id,
                 session_scope_profile=profile,
+                session_risk_summary=marker,
             )
         if context.session_scope_profile is not None:
             return context
+        summary = dict(context.session_risk_summary or {})
+        summary.update(marker)
         return context.model_copy(update={
             "session_scope_profile_id": profile.profile_id,
             "session_scope_profile": profile,
+            "session_risk_summary": summary,
         })
 
     def _apply_missing_session_scope_evaluation(
@@ -2952,6 +3348,10 @@ class SupervisionGateway:
         req = req.model_copy(update={
             "context": _context_with_mcp_raw(req.context, req.event)
         })
+        if req.context is not None and req.context.content_evidence is not None:
+            req = req.model_copy(update={
+                "context": req.context.model_copy(update={"content_evidence": None})
+            })
 
         # --- Optional event-scoped preset config from harness metadata ---
         _preset_name, _preset_overrides = _extract_project_config(
@@ -2962,6 +3362,45 @@ class SupervisionGateway:
             project_config = build_detection_config_with_preset(
                 _preset_name, _preset_overrides,
             )
+
+        if req.event.event_type == EventType.PRE_ACTION:
+            try:
+                content_evidence = collect_for_event(
+                    req.event,
+                    approved_roots=_content_evidence_approved_roots(req.context),
+                )
+            except Exception:
+                logger.exception("content evidence collection failed for event %s", req.event.event_id)
+                content_evidence = None
+            if content_evidence is not None:
+                self.metrics.record_content_evidence(
+                    **_content_evidence_metric_flags(content_evidence)
+                )
+                effective_content_config = project_config or self._detection_config
+                if (
+                    not effective_content_config.content_evidence_enabled
+                    or not effective_content_config.content_evidence_analyzer_body_enabled
+                ):
+                    content_evidence = strip_content_bodies(content_evidence)
+                context = req.context or DecisionContext()
+                req = req.model_copy(update={
+                    "context": context.model_copy(update={"content_evidence": content_evidence})
+                })
+
+        blocked_lineage_match = self._match_blocked_skill_lineage(
+            session_id=str(req.event.session_id or ""),
+            event_dict=req.event.model_dump(mode="json"),
+            context=req.context,
+        )
+        if blocked_lineage_match is not None:
+            summary = dict(req.context.session_risk_summary or {}) if req.context is not None else {}
+            summary["blocked_skill_lineage_match"] = blocked_lineage_match
+            req_context = (
+                req.context.model_copy(update={"session_risk_summary": summary})
+                if req.context is not None
+                else DecisionContext(session_risk_summary=summary)
+            )
+            req = req.model_copy(update={"context": req_context})
 
         # --- E-8: Record tool call for D4 frequency analysis ---
         if req.event.tool_name:
@@ -3259,6 +3698,7 @@ class SupervisionGateway:
                     "cross_tool_script_similarity": "anti-bypass-cross-tool-review",
                     "denied_effect_repeat": "anti-bypass-denied-effect-repeat",
                     "pending_effect_equivalent": "anti-bypass-pending-effect-review",
+                    "contextual_pending_effect_repeat": "anti-bypass-contextual-pending-effect-review",
                 }.get(anti_bypass_match.match_type, "anti-bypass-follow-up-guard")
                 decision = CanonicalDecision(
                     decision=verdict,
@@ -3284,17 +3724,36 @@ class SupervisionGateway:
                     if anti_bypass_match.match_type in {
                         "denied_effect_repeat",
                         "pending_effect_equivalent",
+                        "contextual_pending_effect_repeat",
                     }:
                         rule_hits = list(snapshot.rule_hits or [])
-                        match_rule = (
-                            "denied_effect_repeat"
-                            if anti_bypass_match.match_type == "denied_effect_repeat"
-                            else "pending_effect_equivalent"
-                        )
+                        match_rule = {
+                            "denied_effect_repeat": "denied_effect_repeat",
+                            "pending_effect_equivalent": "pending_effect_equivalent",
+                            "contextual_pending_effect_repeat": "contextual_pending_effect_repeat",
+                        }.get(anti_bypass_match.match_type)
                         for rule_id in (match_rule, *anti_bypass_match.reason_codes):
                             if rule_id and rule_id not in rule_hits:
                                 rule_hits.append(rule_id)
-                        update = {"rule_hits": rule_hits}
+                        authority_reasons = list(snapshot.l1_authority_reasons or [])
+                        for reason in ("anti_bypass_follow_up_guard", anti_bypass_match.match_type):
+                            if reason and reason not in authority_reasons:
+                                authority_reasons.append(reason)
+                        update = {
+                            "rule_hits": rule_hits,
+                            "routing_intents": [
+                                intent
+                                for intent in (snapshot.routing_intents or [])
+                                if intent.source != "contextual_review"
+                            ],
+                            "l1_authority_class": L1AuthorityClass.DETERMINISTIC_HARD_BLOCK,
+                            "l1_authority_reasons": authority_reasons,
+                            "l1_block_authority": "hard_block",
+                            "l2_l3_summary": {
+                                "status": "not_triggered",
+                                "actual_tier": "L1",
+                            },
+                        }
                         if anti_bypass_match.match_type == "denied_effect_repeat":
                             update["short_circuit_rule"] = "SC-5"
                         snapshot = snapshot.model_copy(update=update)
@@ -3651,6 +4110,9 @@ class SupervisionGateway:
             record_id=record_id,
             config=effective_config,
         )
+        lineage_fact = _blocked_lineage_fact_from_meta(meta_dict, decision_dict, snapshot_dict)
+        if lineage_fact is not None:
+            self._blocked_skill_lineage_by_session.setdefault(_sid, []).append(lineage_fact)
 
         current_risk_level = str(snapshot_dict.get("risk_level") or decision_dict.get("risk_level") or "low")
         occurred_at = str(event_dict.get("occurred_at") or utc_now_iso())
@@ -3714,6 +4176,11 @@ class SupervisionGateway:
             source_framework=_source_fw,
             latency_s=_latency_s,
         )
+        if (
+            _snapshot_has_content_evidence_rule(snapshot_dict)
+            and str(decision_dict.get("decision") or "").lower() != "allow"
+        ):
+            self.metrics.record_content_evidence(policy_not_allow=True)
 
         decision_event = {
             "type": "decision",

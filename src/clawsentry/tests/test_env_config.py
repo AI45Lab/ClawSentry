@@ -145,6 +145,26 @@ def test_capability_narrowing_and_agent_feedback_are_visible_config_fields(tmp_p
     assert effective.source_detail_for("features.agent_safety_feedback") == f"{env_file}:20"
 
 
+def test_content_evidence_rollout_fields_are_visible_config_fields(tmp_path):
+    env_file = tmp_path / "local.env"
+    env_file.write_text(
+        "CS_CONTENT_EVIDENCE_ENABLED=false\n"
+        "CS_CONTENT_EVIDENCE_ANALYZER_BODY_ENABLED=false\n"
+        "CS_CONTENT_EVIDENCE_DEBUG_PERSIST_BODY=true\n"
+        "CS_SKILL_TRUST_FSPR_PROVIDER_SYNC_PROFILES=strict,benchmark,normal\n",
+        encoding="utf-8",
+    )
+    parsed = parse_env_file(env_file)
+
+    effective = resolve_effective_config(environ={}, env_file=parsed)
+
+    assert effective.values["features.content_evidence"] is False
+    assert effective.values["content_evidence.analyzer_body_enabled"] is False
+    assert effective.values["content_evidence.debug_persist_body"] is True
+    assert effective.values["skill_trust.fspr_provider_sync_profiles"] == "strict,benchmark,normal"
+    assert effective.source_detail_for("features.content_evidence") == f"{env_file}:1"
+
+
 def test_tool_permission_group_override_config_reports_invalid_groups(tmp_path):
     env_file = tmp_path / "local.env"
     env_file.write_text(

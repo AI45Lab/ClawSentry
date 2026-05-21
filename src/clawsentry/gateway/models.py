@@ -177,6 +177,7 @@ ACTION_EFFECT_VERSION = "cs.action_effect.v1"
 DENIED_EFFECT_VERSION = "cs.denied_effect.v1"
 AGENT_SAFETY_FEEDBACK_VERSION = "clawsentry.agent_safety_feedback.v1"
 AGENT_ADVISORY_FEEDBACK_VERSION = "clawsentry.agent_advisory_feedback.v1"
+CONTENT_EVIDENCE_VERSION = "clawsentry.content_evidence.v1"
 
 
 # ---------------------------------------------------------------------------
@@ -327,6 +328,93 @@ class ActionEffectEnvelope(BaseModel):
             "analysis_state": self.analysis_state,
             "disabled_capabilities": list(self.disabled_capabilities),
         }
+
+
+class ContentEvidenceRange(BaseModel):
+    """Byte range included in request-local content evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    start: int = Field(ge=0)
+    end: int = Field(ge=0)
+    reason: str = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def validate_order(self) -> "ContentEvidenceRange":
+        if self.end < self.start:
+            raise ValueError("end must be greater than or equal to start")
+        return self
+
+
+class ContentEvidenceIntegrity(BaseModel):
+    """Pinned acquisition integrity metadata for content evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sha256: Optional[str] = None
+    sha256_full: Optional[str] = None
+    size_bytes: Optional[int] = Field(default=None, ge=0)
+    mtime_ns: Optional[int] = None
+    file_identity: Optional[str] = None
+    stat_before: dict[str, Any] = Field(default_factory=dict)
+    stat_after: dict[str, Any] = Field(default_factory=dict)
+
+
+class ContentEvidenceItem(BaseModel):
+    """Request-local content evidence item assembled by Gateway."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    schema_: str = Field(default=CONTENT_EVIDENCE_VERSION, alias="schema")
+    canonical_evidence_id: str
+    kind: str
+    source: str
+    path: Optional[str] = None
+    resolved_path_hash: Optional[str] = None
+    resolved_realpath_hash: Optional[str] = None
+    path_trust: str
+    content_trust: Literal["untrusted_content"] = "untrusted_content"
+    resolver_status: str
+    integrity: ContentEvidenceIntegrity = Field(default_factory=ContentEvidenceIntegrity)
+    included_ranges: list[ContentEvidenceRange] = Field(default_factory=list)
+    omitted_bytes: int = Field(default=0, ge=0)
+    truncated: bool = False
+    oversize: bool = False
+    derived_rules: list[dict[str, Any]] = Field(default_factory=list)
+    source_metadata: dict[str, Any] = Field(default_factory=dict)
+    content_persisted: bool = False
+    content: Optional[str] = None
+
+    @field_validator("schema_")
+    @classmethod
+    def validate_content_evidence_schema(cls, v: str) -> str:
+        if v != CONTENT_EVIDENCE_VERSION:
+            raise ValueError(f"schema must be '{CONTENT_EVIDENCE_VERSION}', got '{v}'")
+        return v
+
+    @field_validator("canonical_evidence_id")
+    @classmethod
+    def validate_evidence_id(cls, v: str) -> str:
+        if not re.fullmatch(r"ce_[0-9]{3,6}", v or ""):
+            raise ValueError("canonical_evidence_id must be a gateway-generated safe id")
+        return v
+
+
+class ContentEvidenceEnvelope(BaseModel):
+    """Request-local content evidence envelope."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    schema_: str = Field(default=CONTENT_EVIDENCE_VERSION, alias="schema")
+    items: list[ContentEvidenceItem] = Field(default_factory=list)
+    exact_ref_allowlist: list[str] = Field(default_factory=list)
+
+    @field_validator("schema_")
+    @classmethod
+    def validate_content_evidence_schema(cls, v: str) -> str:
+        if v != CONTENT_EVIDENCE_VERSION:
+            raise ValueError(f"schema must be '{CONTENT_EVIDENCE_VERSION}', got '{v}'")
+        return v
 
 
 class DeniedEffectRecord(BaseModel):
@@ -967,6 +1055,9 @@ class AdmissionReport(BaseModel):
 
     scan_id: str = "scan-local"
     skill_root_hash: str
+    scanner_version: str = "admission_scanner.v1"
+    budget_class: str = "default"
+    budget_metadata: dict[str, Any] = Field(default_factory=dict)
     content_hashes: dict[str, str] = Field(default_factory=dict)
     sbom: Optional[dict[str, Any]] = None
     checksum_evidence: dict[str, str] = Field(default_factory=dict)
@@ -1127,6 +1218,7 @@ class SkillTrustContext(BaseModel):
     current_runner_contract_id: Optional[str] = None
     ref_ordinal: Optional[int] = Field(default=None, ge=0)
     first_use_package_review: Optional[FirstUseSkillPackageReview | dict[str, Any]] = None
+    fspr_review_summary: Optional[dict[str, Any]] = None
     invariant_violations: list[str] = Field(default_factory=list)
     policy_fingerprint: Optional[str] = None
 
@@ -1216,6 +1308,46 @@ class RiskOverride(BaseModel):
     approved_by: Optional[str] = None
 
 
+class L1AuthorityClass(str, enum.Enum):
+    DETERMINISTIC_HARD_BLOCK = "deterministic_hard_block"
+    CONTEXTUAL_REVIEW_REQUIRED = "contextual_review_required"
+    ALLOW_OR_AUDIT = "allow_or_audit"
+
+
+class ContextualClearanceOutcome(str, enum.Enum):
+    NONE = "none"
+    CLEAR = "clear_contextual_route"
+    DEFER = "defer_contextual_route"
+    BLOCK = "block_contextual_route"
+
+
+class ContextualClearanceBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event_id: str = Field(..., min_length=1)
+    session_id: str = Field(..., min_length=1)
+    effect_hash: Optional[str] = None
+    canonical_argv_hash: Optional[str] = None
+    raw_payload_hash: Optional[str] = None
+    cwd_hash: Optional[str] = None
+    interpreter: Optional[str] = None
+    script_or_content_hash: Optional[str] = None
+    input_path_hashes: list[str] = Field(default_factory=list)
+    output_path_hashes: list[str] = Field(default_factory=list)
+
+
+class ContextualReviewClearance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    outcome: ContextualClearanceOutcome = ContextualClearanceOutcome.NONE
+    binding: Optional[ContextualClearanceBinding] = None
+    review_tier: Optional[DecisionTier] = None
+    analyzer_id: str = ""
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    expires_at: Optional[str] = None
+    reasons: list[str] = Field(default_factory=list)
+
+
 class ReviewRoutingIntent(BaseModel):
     """Policy-owned review and decision routing intent derived from evidence."""
 
@@ -1225,7 +1357,9 @@ class ReviewRoutingIntent(BaseModel):
         "first_use_admission",
         "runtime_binding",
         "fspr_package_review",
+        "content_evidence",
         "anti_bypass",
+        "contextual_review",
         "manual",
     ]
     recommended_tier: Literal["none", "l2", "l3"] = "none"
@@ -1260,6 +1394,11 @@ class RiskSnapshot(BaseModel):
     routing_intents: list[ReviewRoutingIntent] = Field(default_factory=list)
     taint_flow_summary: Optional[dict[str, Any]] = None
     effect_summary: Optional[dict[str, Any]] = None
+    l1_authority_class: L1AuthorityClass = L1AuthorityClass.ALLOW_OR_AUDIT
+    l1_authority_reasons: list[str] = Field(default_factory=list)
+    l1_block_authority: Literal["hard_block", "contextual_route_only", "none"] = "none"
+    contextual_review_clearance: Optional[ContextualReviewClearance] = None
+    blocked_lineage_match: Optional[dict[str, Any]] = None
 
     @field_validator("short_circuit_rule")
     @classmethod
@@ -1347,6 +1486,7 @@ class DecisionContext(BaseModel):
     tool_permission_group_overrides: dict[str, list[str]] = Field(default_factory=dict)
     skill_trust: Optional[SkillTrustContext] = None
     skill_trust_refs: list[SkillTrustContext] = Field(default_factory=list)
+    content_evidence: Optional[ContentEvidenceEnvelope] = None
     mcp_context: Optional[McpContext] = None
 
 

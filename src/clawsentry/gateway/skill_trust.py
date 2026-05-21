@@ -13,6 +13,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
+from .content_evidence import hash_evidence_bytes
 from .models import (
     AdmissionFinding,
     AdmissionReport,
@@ -25,6 +26,7 @@ from .models import (
 )
 
 POLICY_FINGERPRINT = "sha256:skill-trust-mvp-v1"
+ADMISSION_SCANNER_VERSION = "admission_scanner.v2"
 _MAX_HASH_FILE_BYTES = 1024 * 1024
 _FRAMEWORKS = ("codex", "claude-code", "kimi-cli", "gemini-cli")
 RUNTIME_PATH_STATUSES = frozenset({
@@ -50,6 +52,23 @@ SKILL_TRUST_GRADES = frozenset({
     "restricted",
     "blocked",
     "disabled",
+})
+FSPR_REVIEW_SUMMARY_ALLOWED_KEYS = frozenset({
+    "schema",
+    "enabled",
+    "pre_use_enabled",
+    "post_action_enabled",
+    "review_state",
+    "timing_mode",
+    "provider_sync_enabled",
+    "provider_used",
+    "verdict",
+    "severity",
+    "confidence",
+    "degraded",
+    "degradation_reason",
+    "failure_reason",
+    "reason",
 })
 
 
@@ -104,7 +123,7 @@ _METADATA_AVAILABILITY_MATRIX: tuple[dict[str, Any], ...] = (
     {
         "field": "content_hash",
         "sources": {
-            "codex": "admission report content_hashes for SKILL.md/scripts/references/data",
+            "codex": "admission report content_hashes for SKILL.md/scripts/references/data/fixtures/probes/package manifests",
             "claude-code": "unavailable",
             "kimi-cli": "unavailable",
             "gemini-cli": "unavailable",
@@ -311,7 +330,7 @@ _DECLARED_RANK_FILTER = re.compile(
 
 
 def _sha256(data: bytes) -> str:
-    return "sha256:" + hashlib.sha256(data).hexdigest()
+    return hash_evidence_bytes(data)
 
 
 def _runtime_root_path_hash(path: str | None) -> str | None:
@@ -707,7 +726,16 @@ def _content_status_for_match(
         expected_hashes = {
             key: value
             for key, value in record.content_hashes.items()
-            if key in {"SKILL.md", "scripts", "references", "data"}
+            if key in {
+                "SKILL.md",
+                "scripts",
+                "references",
+                "data",
+                "fixtures",
+                "probes",
+                "pyproject.toml",
+                "package.json",
+            }
         }
         comparable_hashes = {
             key: mirror_hashes.get(key)
@@ -1486,7 +1514,7 @@ class AdmissionScanner:
                 max_file_bytes=max_file_bytes,
             )
         _raise_if_scan_deadline_expired(deadline_at)
-        for child in ("scripts", "references", "data"):
+        for child in ("scripts", "references", "data", "fixtures", "probes"):
             child_path = root / child
             if child_path.exists():
                 child_file_count = sum(
@@ -1507,6 +1535,17 @@ class AdmissionScanner:
                 )
                 files_seen += child_file_count
             _raise_if_scan_deadline_expired(deadline_at)
+        for manifest_name in ("pyproject.toml", "package.json"):
+            manifest_path = root / manifest_name
+            if manifest_path.exists():
+                files_seen += 1
+                if max_files is not None and files_seen > max_files:
+                    raise TimeoutError("admission scan file count budget exceeded")
+                content_hashes[manifest_name] = _hash_file(
+                    manifest_path,
+                    max_file_bytes=max_file_bytes,
+                )
+            _raise_if_scan_deadline_expired(deadline_at)
 
         text = _read_in_tree_text(skill_md, root, deadline_at=deadline_at) if skill_md.exists() else ""
         findings: list[AdmissionFinding] = []
@@ -1524,6 +1563,16 @@ class AdmissionScanner:
         return AdmissionReport(
             scan_id=_sha256(f"{root.resolve()}:{skill_root_hash}".encode("utf-8"))[:24],
             skill_root_hash=skill_root_hash,
+            scanner_version=ADMISSION_SCANNER_VERSION,
+            budget_class="custom" if max_files is not None or max_file_bytes is not None else "default",
+            budget_metadata={
+                key: value
+                for key, value in {
+                    "max_files": max_files,
+                    "max_file_bytes": max_file_bytes,
+                }.items()
+                if value is not None
+            },
             content_hashes=content_hashes,
             sbom={
                 "components": [
@@ -1879,6 +1928,29 @@ def _strip_inline_comment(line: str) -> str:
     return line
 
 
+def _sanitize_fspr_review_summary(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    summary = {
+        str(key): value[key]
+        for key in FSPR_REVIEW_SUMMARY_ALLOWED_KEYS
+        if key in value and value[key] is not None
+    }
+    state = str(summary.get("review_state") or "")
+    allowed_states = {
+        "disabled_by_config",
+        "not_gateway_owned",
+        "not_applicable",
+        "not_started",
+        "completed",
+        "failed",
+        "degraded",
+    }
+    if state not in allowed_states:
+        return None
+    return summary
+
+
 def resolve_skill_trust(
     records: Iterable[SkillRegistryRecord],
     raw_metadata: dict[str, Any] | None,
@@ -1898,6 +1970,7 @@ def resolve_skill_trust(
     first_use_package_review = raw.get("first_use_package_review")
     if not isinstance(first_use_package_review, dict):
         first_use_package_review = None
+    fspr_review_summary = _sanitize_fspr_review_summary(raw.get("fspr_review_summary"))
     resolved_first_use_scan = (
         FirstUseScanState(
             state="scan_completed",
@@ -1927,6 +2000,7 @@ def resolve_skill_trust(
             trust_list_state="unlisted",
             first_use_scan=resolved_first_use_scan,
             first_use_package_review=first_use_package_review,
+            fspr_review_summary=fspr_review_summary,
         )
 
     registry = list(records)
@@ -1959,6 +2033,7 @@ def resolve_skill_trust(
             invariant_violations=sorted(set(violations)),
             first_use_scan=resolved_first_use_scan,
             first_use_package_review=first_use_package_review,
+            fspr_review_summary=fspr_review_summary,
             policy_fingerprint=POLICY_FINGERPRINT,
         )
 
@@ -2022,6 +2097,7 @@ def resolve_skill_trust(
             trust_list_state=trust_list_state,  # type: ignore[arg-type]
             invariant_violations=sorted(set(violations)),
             first_use_package_review=first_use_package_review,
+            fspr_review_summary=fspr_review_summary,
             policy_fingerprint=POLICY_FINGERPRINT,
         )
 
@@ -2101,6 +2177,7 @@ def resolve_skill_trust(
         trust_list_state=trust_list_state,  # type: ignore[arg-type]
         first_use_scan=first_use_scan,
         first_use_package_review=first_use_package_review,
+        fspr_review_summary=fspr_review_summary,
         invariant_violations=sorted(set(violations)),
         policy_fingerprint=record.policy_fingerprint or POLICY_FINGERPRINT,
     )
