@@ -14,7 +14,7 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 <span class="cs-pill">v0.8.3</span>
 <span class="cs-pill">2026-05-21</span>
 <span class="cs-pill">FSPR contextual recovery</span>
-<span class="cs-pill">775 focused tests passed</span>
+<span class="cs-pill">PyPI / GitHub Release live</span>
 </div>
 </section>
 
@@ -42,6 +42,7 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 | Replay fixture | 已新增 21-case AHP policy replay fixture |
 | Protected runner evidence | 已保存稳定 artifact snapshot 和脱敏 protected evidence |
 | 文档 | 首页、更新日志、Skill Trust、Benchmark 模式、配置状态和本页已更新 |
+| Public release | public main、GitHub Release 和 PyPI `clawsentry==0.8.3` 已同步 |
 
 ## 验收结果 {#validation}
 
@@ -55,6 +56,9 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 | SkillsSafety sec case | ASR `0.0`；TSR `1.0`；environment error `0.0` |
 | SKILL-INJECT injection 7 | ASR `0.0`；TSR `1.0`；TECH `0`；protected evidence OK |
 | SKILL-INJECT injection 13 | ASR `0.0`；TECH `0`；protected evidence OK；TSR 不适用 |
+| Public release gate | `3844 passed, 9 skipped` |
+| Publish workflow | Deploy Documentation、Rule Governance、Publish to PyPI 均为 PASS |
+| Package smoke | clean venv install `clawsentry==0.8.3`，版本输出 `0.8.3` |
 
 详细开发材料保留在开发仓库的 validation / materials 文档中。公开站点只保留可解释的发布摘要和验收边界，不公开内部 run directory、runner path 或私有结果目录。
 
@@ -67,13 +71,13 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 - 新的全量 benchmark leaderboard
 - 所有 SkillsSafety / SKILL-INJECT case 的完整矩阵结论
 - 对原始 `rerun3` 目录的复用验证，因为该目录当前工作树不可用
-- PyPI 或 GitHub tag 已同步到 `v0.8.3`；包发布状态以对应平台实际页面为准
+- 新的私有 benchmark 原始结果目录或内部 runner 路径
 
 ## 下一步 {#next}
 
 | 优先级 | 项目 |
 |---|---|
-| P0 | 若需要正式包发布，创建并核对 GitHub tag / PyPI `clawsentry==0.8.3` |
+| P0 | 监控 v0.8.3 发布后的 PyPI / GitHub Release / docs smoke |
 | P1 | 在完整 SkillsSafety / SKILL-INJECT matrix 上扩展 protected sweep |
 | P1 | 将 contextual recovery replay fixture 纳入常规 release gate |
 | P2 | 为 operator UI 增加 `contextual_review` routing source 展示与筛选 |
