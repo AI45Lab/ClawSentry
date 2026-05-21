@@ -158,5 +158,6 @@ nav:
   - 部署运维:
     - 生产部署: operations/deployment.md
     - Benchmark 模式: operations/benchmark-mode.md
+    - 发布进度: operations/release-progress.md
     - 故障排查: operations/troubleshooting.md
   - 更新日志: changelog.md

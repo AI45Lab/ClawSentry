@@ -7,6 +7,41 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
+## v0.8.3 {#v083}
+
+*2026-05-21*
+
+<div class="cs-pill-row">
+<span class="cs-pill cs-pill--release">FSPR Contextual Recovery Routing</span>
+<span class="cs-pill cs-pill--test">775 focused tests passed</span>
+</div>
+
+### 改进
+
+- **Contextual recovery routing** — FSPR 阻断 toxic / inconsistent skill 后，后续安全 recovery 写入、执行和验证不再只被高会话风险粗粒度拦截；Gateway 会生成 `ReviewRoutingIntent(source="contextual_review")`，交由 L2/L3 对具体 effect 做精确复核。
+- **Authority-bound L2/L3 clearance** — L2/L3 只能清除与当前安全 recovery effect 精确绑定的上下文风险，不能清除 blocked skill lineage、runtime binding violation、FSPR package inconsistency 或 anti-bypass denied-effect repeat。
+- **Blocked skill lineage boundary** — 被 FSPR 阻断的 skill lineage 会作为 session boundary 保留；同 lineage、同效果或等价绕过仍按 hard block 处理。
+- **Replay-safe protected evidence** — SkillsSafety / SKILL-INJECT protected runner 记录脱敏 evidence、hash、decision metadata 和稳定 artifact snapshot，不保存原始 skill root path，也不依赖 host network。
+
+### 验收
+
+- Focused regression gate：`775 passed in 17.89s`。
+- AHP policy replay：21 cases，decision match `1.0`、risk match `1.0`、unsafe-pass proxy `0.0`、overblock proxy `0.0`、schema-sync coverage `1.0`。
+- SkillsSafety recovered E2E：2 个 protected case 均为 ASR `0.0`、TSR `1.0`、environment error `0.0`。
+- SKILL-INJECT contextual protected E2E：injection 7 / 13 均为 ASR `0.0`、TECH `0`，并保留 FSPR pre-use inconsistent block evidence。
+
+### 文档
+
+- 新增 [发布进度](operations/release-progress.md) 页面，记录本版本实现范围、验收结果和剩余边界。
+- Skill Trust、Benchmark 模式和配置发布状态已更新到 v0.8.3 口径。
+
+### 边界
+
+- 本版本发布的是 FSPR block 后安全恢复路径的路由与证据边界，不声明新的全量 benchmark leaderboard。
+- 原始 `rerun3` 结果目录在当前工作树缺失，E2E case selection 来自已有项目交接文档并通过新鲜 rerun 重建验证。
+
+---
+
 ## v0.8.2 {#v082}
 
 *2026-05-20*

@@ -18,8 +18,8 @@ hide:
 { .tagline-sub }
 
 <div class="cs-pill-row" markdown>
-<span class="cs-version-badge">v0.8.2</span>
-<span class="cs-pill">3645 tests passing</span>
+<span class="cs-version-badge">v0.8.3</span>
+<span class="cs-pill">775 focused tests passing</span>
 <span class="cs-pill">6 frameworks</span>
 <span class="cs-pill">sync_decision.1.0</span>
 </div>
@@ -31,8 +31,8 @@ hide:
 
 </div>
 
-!!! tip "v0.8.2 — Post-action provenance validator removed"
-    Post-action artifact provenance validator 已移除；Skill Trust runtime binding、skill-use ledger、FSPR evidence-only 和 runtime mirror content verification 继续保留。[查看完整更新日志 →](changelog.md)
+!!! tip "v0.8.3 — FSPR contextual recovery routing"
+    FSPR toxic skill block 后，安全 recovery 动作可以通过 `contextual_review` 路由进入 L2/L3 精确复核；blocked skill lineage、anti-bypass hard block 和 replay-safe evidence 继续作为硬边界。[查看完整更新日志 →](changelog.md)
 
 ---
 

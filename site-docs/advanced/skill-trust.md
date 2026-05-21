@@ -11,6 +11,7 @@ description: 管理 agent skill 供应链风险：admission scan、registry 生�
 Skill Trust 把本地 skill 包的身份、来源、hash、别名和 admission scan 结果接入 Gateway，变成可审计的运行时上下文。低信任 skill 不能仅凭文档声称自己是 canonical，也不能通过近名、改名或 provenance label 绕过策略。
 
 <div class="cs-pill-row" markdown>
+<span class="cs-pill">v0.8.3 contextual recovery</span>
 <span class="cs-pill">v0.8.0 runtime binding</span>
 <span class="cs-pill">六框架 surface acceptance</span>
 <span class="cs-pill">trust-mvp-v1 指纹</span>
@@ -128,6 +129,31 @@ stateDiagram-v2
 | `cross_skill_overlap` | 多个 skill 共享同一 data 目录 hash | `medium` |
 
 `scan_many()` 还会跨 skill 根目录检测 hyphen/underscore 重复和 near-name 重复，并将额外 finding 注入各自的 report。
+
+## First-Use Skill Package Review (FSPR) Evidence
+
+FSPR 是 package-level evidence，不替代 runtime binding review。确定性 scanner 会把 finding 归一化到以下 `finding_family`：`semantic_integrity`、`supply_chain`、`secret_exposure`、`data_exfiltration`、`injection_resistance`、`permission_scope`、`destructive_potential`、`resource_discipline`、`persistence`。每条 finding 保留旧字段，同时补充 `rule_id`、`severity`、`confidence`、`language`、`evidence_refs`、`declared_capabilities`、`observed_capabilities`、`scanner_version` 和 `budget_truncated`。
+
+Provider-backed FSPR 复用 L2/L3 reviewer 的 `CS_LLM_PROVIDER`、`CS_LLM_MODEL`、`CS_LLM_BASE_URL` 和运行时 `CS_LLM_API_KEY`，但这些变量只是 provider 配置。执行 provider-backed FSPR 还必须显式设置 `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED=true`；pre-use 同步 provider 路径还必须命中 `CS_SKILL_TRUST_FSPR_PROVIDER_SYNC_PROFILES`（默认 `strict,benchmark`）。Provider 输出中的 `recommended_action`、`recommended_policy_action` 和 `recommended_review_tier` 会降级并被 policy 忽略。
+
+ReadContentEvidence 复用 Content Evidence envelope，而不是创建第二套 schema。它只读取 Gateway-owned approved roots 中的 native read targets；请求侧 roots 和入站 `content_evidence` 都不能扩大读取边界。当前规则包括 `read_content_prompt_injection`、`read_content_hidden_html_instruction`、`read_content_zero_width_or_bidi`、`read_content_markdown_beacon`、`read_content_data_uri_or_base64_payload`、`sensitive_read_path`、`credential_read_content_skipped`、`read_content_execution_or_network_instruction`、`read_content_unsupported_binary` 和 `read_content_oversize`。敏感路径先按路径产生 finding，不读取正文。
+
+ToolSemanticRegistry 当前仅 shadow-mode 记录 native tool 语义，覆盖 Codex、Claude Code、A3S、Gemini、Kimi、OpenClaw 和 MCP 的初始映射。策略和 effect 归一化仍由既有实现生效；operator 配置的 `CS_TOOL_PERMISSION_GROUP_OVERRIDES` 继续优先于 registry defaults。
+
+### FSPR block 后的 contextual recovery routing {#contextual-recovery-routing}
+
+v0.8.3 以后，FSPR 阻断 toxic 或 inconsistent skill package 后，Gateway 会把“安全恢复动作”和“继续使用被阻断 skill lineage”区分开处理。
+
+| 情况 | Gateway 行为 |
+|---|---|
+| 继续读取、执行或复用被 FSPR 阻断的 skill package / lineage | 保持 `block`；blocked lineage 是硬边界 |
+| 对同一危险效果做 exact repeat、normalized repeat 或 denied-effect repeat | 保持 anti-bypass hard block |
+| 创建与被阻断 skill 无关的安全 fallback artifact，且 effect 绑定到当前 workspace | 生成 `contextual_review` routing intent，允许 L2/L3 对该 effect 精确复核 |
+| 无 target、target 在 workspace 外、或仅靠 cwd 前缀伪装 workspace | 不进入 contextual clearance；按常规风险或 hard block 处理 |
+
+`contextual_review` 只是一条 Gateway-owned routing intent，不是 allowlist，也不是对 FSPR verdict 的撤销。L2/L3 的 clearance 必须绑定到当前 action 的 normalized effect、target boundary 和 authority metadata；它不能清除 `fspr_package_review`、`runtime_binding_identity_conflict`、blocked lineage 或 anti-bypass denied-effect evidence。
+
+Replay 与 protected benchmark evidence 只保留 hash、状态、routing source、canonical decision 和脱敏摘要。原始 skill root path、host-only proxy secret、raw package body 和 L3 trace 不进入公开 replay payload。
 
 ## 运行时解析与 Invariant Violations {#runtime-resolution}
 
