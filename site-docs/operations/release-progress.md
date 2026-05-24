@@ -14,7 +14,7 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 <span class="cs-pill">v0.8.4</span>
 <span class="cs-pill">2026-05-24</span>
 <span class="cs-pill">FSPR agentic-readonly default</span>
-<span class="cs-pill">public validation passed</span>
+<span class="cs-pill">published</span>
 </div>
 </section>
 
@@ -40,7 +40,7 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 | Legacy role-set cleanup | 旧 `metadata-only` / `reduced` / `full` MAS role-set 从生产配置面移除并 fail closed |
 | Benchmark runner | microbench 默认 review mode 改为 `agentic-readonly`，legacy `--role-set` 只保留 `final-only` |
 | 在线文档 | 首页、更新日志、Skill Trust、配置页、Benchmark 配置和本页已更新 |
-| Public release | public main、GitHub Release 和 PyPI `clawsentry==0.8.4` 发布待 public sync / tag / CI 确认 |
+| Public release | public main `34bed15`、GitHub Release `v0.8.4`、PyPI `clawsentry==0.8.4` 和在线文档已发布 |
 
 ## 验收结果 {#validation}
 
@@ -51,7 +51,7 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 | 72-case comparison | hardened `agentic-readonly` detection / healthy / minimum-quality `0.958333`，degraded `0` |
 | final-only comparison | detection `0.861111`，healthy `0.777778`，degraded `6` |
 | Execution path split | 59 deterministic floor / 5 digest floor / 8 provider path |
-| Release gate | 本地与公开仓库 build/docs/diff gate 通过；public publish CI 待 tag 后确认 |
+| Release gate | 本地与公开仓库 build/docs/diff gate、Publish to PyPI、Deploy Documentation、GitHub Release latest、PyPI install smoke 和在线文档 smoke 均通过 |
 
 详细开发材料保留在开发仓库的 validation / materials 文档中。公开站点只保留可解释的发布摘要和验收边界，不公开内部 run directory、runner path 或私有结果目录。
 
@@ -70,7 +70,7 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 
 | 优先级 | 项目 |
 |---|---|
-| P0 | 完成 v0.8.4 public sync、tag、PyPI / GitHub Release / docs smoke |
+| P0 | 观察 v0.8.4 发布后用户反馈和异常报告 |
 | P1 | 基于 3 个 agentic provider-path miss 做 attack-surface catalog |
 | P1 | 为 `agentic-readonly` 和 `final-only` 整理独立 timeout profile |
 | P2 | 将 FSPR review mode / execution path 纳入运行报告筛选 |
