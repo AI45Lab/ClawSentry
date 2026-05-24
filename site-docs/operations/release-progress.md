@@ -11,16 +11,16 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 记录当前在线文档版本的功能范围、验证结果和发布边界。
 
 <div class="cs-pill-row" markdown>
-<span class="cs-pill">v0.8.3</span>
-<span class="cs-pill">2026-05-21</span>
-<span class="cs-pill">FSPR contextual recovery</span>
-<span class="cs-pill">PyPI / GitHub Release live</span>
+<span class="cs-pill">v0.8.4</span>
+<span class="cs-pill">2026-05-24</span>
+<span class="cs-pill">FSPR agentic-readonly default</span>
+<span class="cs-pill">public validation passed</span>
 </div>
 </section>
 
 ## 当前版本 {#current}
 
-`v0.8.3` 聚焦 FSPR toxic skill block 后的安全恢复路径：阻断仍然优先，但安全 fallback 不应因为高会话风险被粗粒度过拦。Gateway 现在把这类动作标记为 `contextual_review`，让 L2/L3 只对当前 effect 做精确复核。
+`v0.8.4` 聚焦 FSPR 默认审查路线收口：Gateway 的 First-Use Skill Package Review 默认切到 `agentic-readonly`，先使用 deterministic inventory 和 agentic evidence digest 形成本地证据底线，只有需要语义判断时才进入只读 provider path。`final-only` 继续作为显式备用路线。
 
 这次发布不改变 Skill Trust 的核心安全边界：
 
@@ -29,55 +29,48 @@ description: ClawSentry 在线文档中的版本进度、验证摘要和发布�
 - anti-bypass denied-effect repeat 仍然 hard block
 - L2/L3 只能清除与当前安全 recovery effect 精确绑定的上下文风险
 - replay / protected evidence 只保留脱敏状态、hash、routing source 和 canonical decision
+- 旧 `metadata-only` / `reduced` / `full` 顺序多 reviewer role-set 不再是生产路线；误传时 fail closed
 
 ## 已完成工作 {#done}
 
 | 模块 | 进度 |
 |---|---|
-| L1 authority metadata | 已加入 contextual recovery 所需的权威元数据和 redacted binding parts |
-| Policy routing | 已新增 `ReviewRoutingIntent(source="contextual_review")` |
-| L2/L3 clearance | 已限定为 exact effect binding，失败时 fail-closed |
-| Blocked lineage boundary | 已把 FSPR blocked skill lineage 作为 session boundary 保留 |
-| Anti-bypass | 已确保 denied-effect repeat 记录 deterministic hard-block authority，不携带过期 contextual intent |
-| Replay fixture | 已新增 21-case AHP policy replay fixture |
-| Protected runner evidence | 已保存稳定 artifact snapshot 和脱敏 protected evidence |
-| 文档 | 首页、更新日志、Skill Trust、Benchmark 模式、配置状态和本页已更新 |
-| Public release | public main、GitHub Release 和 PyPI `clawsentry==0.8.3` 已同步 |
+| Gateway FSPR routing | 默认路线改为 `agentic-readonly` |
+| Backup route | `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` 保留单 adjudicator 备用路线 |
+| Legacy role-set cleanup | 旧 `metadata-only` / `reduced` / `full` MAS role-set 从生产配置面移除并 fail closed |
+| Benchmark runner | microbench 默认 review mode 改为 `agentic-readonly`，legacy `--role-set` 只保留 `final-only` |
+| 在线文档 | 首页、更新日志、Skill Trust、配置页、Benchmark 配置和本页已更新 |
+| Public release | public main、GitHub Release 和 PyPI `clawsentry==0.8.4` 发布待 public sync / tag / CI 确认 |
 
 ## 验收结果 {#validation}
 
 | 验收项 | 结果 |
 |---|---|
-| Focused pytest gate | `775 passed in 17.89s` |
-| AHP policy replay | 21 cases；decision match `1.0`；risk match `1.0` |
-| Replay safety proxies | unsafe-pass proxy `0.0`；overblock proxy `0.0` |
-| Replay schema | schema-sync coverage `1.0`；metric cell traceability passed |
-| SkillsSafety lab case | ASR `0.0`；TSR `1.0`；environment error `0.0` |
-| SkillsSafety sec case | ASR `0.0`；TSR `1.0`；environment error `0.0` |
-| SKILL-INJECT injection 7 | ASR `0.0`；TSR `1.0`；TECH `0`；protected evidence OK |
-| SKILL-INJECT injection 13 | ASR `0.0`；TECH `0`；protected evidence OK；TSR 不适用 |
-| Public release gate | `3844 passed, 9 skipped` |
-| Publish workflow | Deploy Documentation、Rule Governance、Publish to PyPI 均为 PASS |
-| Package smoke | clean venv install `clawsentry==0.8.3`，版本输出 `0.8.3` |
+| Focused FSPR regression | 受影响 FSPR / microbench / config regression `381 passed` |
+| Public release surface | `4026 passed, 9 skipped` |
+| 72-case comparison | hardened `agentic-readonly` detection / healthy / minimum-quality `0.958333`，degraded `0` |
+| final-only comparison | detection `0.861111`，healthy `0.777778`，degraded `6` |
+| Execution path split | 59 deterministic floor / 5 digest floor / 8 provider path |
+| Release gate | 本地与公开仓库 build/docs/diff gate 通过；public publish CI 待 tag 后确认 |
 
 详细开发材料保留在开发仓库的 validation / materials 文档中。公开站点只保留可解释的发布摘要和验收边界，不公开内部 run directory、runner path 或私有结果目录。
 
 ## 发布边界 {#boundaries}
 
-本版本的发布结论是：FSPR block 后的安全 recovery 路由已经通过 focused tests、policy replay 和恢复出的 protected E2E cases 验证。
+本版本的发布结论是：FSPR 默认审查路线已经从旧 final-only 默认切到 hardened `agentic-readonly`，同时保留 final-only 备用接口并移除早期 full MAS 生产配置面。
 
 本版本不声明：
 
-- 新的全量 benchmark leaderboard
+- 新的全量公开评测排名
 - 所有 SkillsSafety / SKILL-INJECT case 的完整矩阵结论
-- 对原始 `rerun3` 目录的复用验证，因为该目录当前工作树不可用
 - 新的私有 benchmark 原始结果目录或内部 runner 路径
+- “纯模型能力优于 final-only”的结论；72-case 改善主要来自 deterministic / digest floor
 
 ## 下一步 {#next}
 
 | 优先级 | 项目 |
 |---|---|
-| P0 | 监控 v0.8.3 发布后的 PyPI / GitHub Release / docs smoke |
-| P1 | 在完整 SkillsSafety / SKILL-INJECT matrix 上扩展 protected sweep |
-| P1 | 将 contextual recovery replay fixture 纳入常规 release gate |
-| P2 | 为 operator UI 增加 `contextual_review` routing source 展示与筛选 |
+| P0 | 完成 v0.8.4 public sync、tag、PyPI / GitHub Release / docs smoke |
+| P1 | 基于 3 个 agentic provider-path miss 做 attack-surface catalog |
+| P1 | 为 `agentic-readonly` 和 `final-only` 整理独立 timeout profile |
+| P2 | 将 FSPR review mode / execution path 纳入运行报告筛选 |

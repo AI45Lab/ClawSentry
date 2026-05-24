@@ -8,6 +8,28 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.8.4] — 2026-05-24
+
+### 改进
+
+- **FSPR agentic-readonly production default** — ClawSentry Gateway 的 First-Use Skill Package Review 默认路线切换为 `agentic-readonly`：先使用 deterministic inventory 和 agentic evidence digest 形成本地证据底线，必要时才进入只读 provider loop。
+- **Final-only backup route** — `final-only` 保留为备用路线，可通过 `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` 显式启用；legacy `CS_SKILL_TRUST_FSPR_ROLE_SET=final-only` 仍兼容。
+- **Old full MAS removed from runtime surface** — 早期 `metadata-only` / `reduced` / `full` 顺序多 reviewer role-set 不再作为生产配置面；误传这些 legacy role-set 时 Gateway fail closed，不回退到旧 MAS。
+
+### 文档
+
+- 在线 Skill Trust、环境变量、DetectionConfig、Benchmark 配置、首页、发布进度和 README 已更新到 v0.8.4 口径。
+- 进度文档补充 Work 2C / Work 2D 结论：72-case real toxic corpus 中 hardened `agentic-readonly` 明确优于 `final-only`，但收益必须按 execution path 拆分解释：59 deterministic floor / 5 digest floor / 8 provider path。
+
+### 测试与验证
+
+- Focused FSPR / microbench / config regression、真实 72-case smoke、构建和子代理审查已完成并记录在本轮发布验证材料中。
+
+### 边界
+
+- 本版本发布 FSPR 默认路线和配置面收口，不声明新的全量公开评测排名。
+- 72-case 结论不能表述成纯 provider/model 能力；execution path 是 59 deterministic floor / 5 digest floor / 8 provider path。
+
 ## [0.8.3] — 2026-05-21
 
 ### 新增
@@ -1746,6 +1768,7 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.8.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.4
 [0.8.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.3
 [0.8.2]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.2
 [0.8.1]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.1

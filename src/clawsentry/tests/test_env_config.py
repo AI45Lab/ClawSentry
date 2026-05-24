@@ -331,6 +331,7 @@ def test_fspr_settings_are_visible_config_fields():
             "CS_SKILL_TRUST_FSPR_ENABLED": "true",
             "CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED": "true",
             "CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED": "true",
+            "CS_SKILL_TRUST_FSPR_REVIEW_MODE": "final-only",
             "CS_SKILL_TRUST_FSPR_ROLE_SET": "identity-only",
             "CS_SKILL_TRUST_FSPR_TIMEOUT_MS": "2500",
             "CS_SKILL_TRUST_FSPR_CACHE_ENABLED": "false",
@@ -341,6 +342,7 @@ def test_fspr_settings_are_visible_config_fields():
     assert effective.values["skill_trust.fspr_enabled"] is True
     assert effective.values["skill_trust.fspr_pre_use_enabled"] is True
     assert effective.values["skill_trust.fspr_post_action_enabled"] is True
+    assert effective.values["skill_trust.fspr_review_mode"] == "final-only"
     assert effective.values["skill_trust.fspr_role_set"] == "identity-only"
     assert effective.values["skill_trust.fspr_timeout_ms"] == 2500
     assert effective.values["skill_trust.fspr_cache_enabled"] is False

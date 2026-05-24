@@ -102,6 +102,9 @@ class EffectOutcome(str, enum.Enum):
     TOOL_INPUT_SANITIZE = "tool_input_sanitize"
     TOOL_OUTPUT_SANITIZE = "tool_output_sanitize"
     TOOL_OUTPUT_WOULD_SANITIZE = "tool_output_would_sanitize"
+    NATIVE_BLOCK = "native_block"
+    NATIVE_DEFER = "native_defer"
+    NATIVE_MODIFY = "native_modify"
 
 
 class DecisionSource(str, enum.Enum):
@@ -1500,7 +1503,7 @@ class SyncDecisionRequest(BaseModel):
     """
     rpc_version: str = Field(default=RPC_VERSION)
     request_id: str = Field(..., min_length=1)
-    deadline_ms: int = Field(..., gt=0, le=120000)  # Hard upper limit 120s (L3 needs LLM round-trips on slow providers)
+    deadline_ms: int = Field(..., gt=0, le=600000)  # Hard upper limit 10m; L3 may need multi-minute provider calls.
     decision_tier: DecisionTier
     event: CanonicalEvent
     context: Optional[DecisionContext] = None

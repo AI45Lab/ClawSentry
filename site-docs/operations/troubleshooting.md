@@ -311,7 +311,7 @@ description: ClawSentry 常见问题诊断与解决方案
     === "OpenAI / 兼容 API"
         ```bash
         export CS_LLM_PROVIDER=openai
-        export OPENAI_API_KEY = sk-your-key-here
+        export OPENAI_API_KEY = <openai-api-key>
         # 如果使用兼容 API（如 Kimi、DeepSeek）
         export CS_LLM_BASE_URL=https://api.deepseek.com/v1
         export CS_LLM_MODEL=deepseek-chat
@@ -320,7 +320,7 @@ description: ClawSentry 常见问题诊断与解决方案
     === "Anthropic"
         ```bash
         export CS_LLM_PROVIDER=anthropic
-        export ANTHROPIC_API_KEY=sk-ant-your-key-here
+        export ANTHROPIC_API_KEY=<anthropic-api-key>
         ```
 
     !!! info "仅 L1 模式"

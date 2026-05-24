@@ -211,7 +211,10 @@ class TestGatewayCore:
             "agent_id": "agent-001",
             "source_framework": "test",
             "occurred_at": "2026-05-21T00:00:00+00:00",
-            "payload": {"command": "pwd", "cwd": "/workspace/private/project"},
+            "payload": {
+                "command": "python3 scripts/verify.py > artifacts/out.json",
+                "cwd": "/workspace/private/project",
+            },
             "tool_name": "bash",
         })
 
@@ -226,6 +229,41 @@ class TestGatewayCore:
         serialized = json.dumps(snapshot, sort_keys=True)
         assert "pwd" not in serialized
         assert "/workspace/private/project" not in serialized
+
+    @pytest.mark.asyncio
+    async def test_contextual_clearance_rejects_parent_directory_write_escape(self):
+        gw = SupervisionGateway(
+            analyzer=ContextualClearingAnalyzer(),
+            detection_config=DetectionConfig(mode="benchmark", d4_high_threshold=3),
+        )
+        session_id = "sess-gateway-contextual-escape"
+        for _ in range(3):
+            gw.policy_engine.session_tracker.record_high_risk_event(session_id)
+        params = _sync_decision_params(deadline_ms=10_000, event={
+            "event_id": "evt-contextual-gateway-escape",
+            "trace_id": "trace-contextual-gateway-escape",
+            "event_type": "pre_action",
+            "session_id": session_id,
+            "agent_id": "agent-001",
+            "source_framework": "test",
+            "occurred_at": "2026-05-21T00:00:00+00:00",
+            "payload": {
+                "command": "python3 scripts/verify.py > ../out.json",
+                "cwd": "/workspace/private/project",
+            },
+            "tool_name": "bash",
+        })
+
+        result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", params))
+
+        decision = result["result"]["decision"]
+        assert decision["decision"] == "block"
+        record = gw.trajectory_store.records[-1]
+        snapshot = record["risk_snapshot"]
+        assert snapshot["l1_authority_class"] == "deterministic_hard_block"
+        assert "contextual_review" not in {
+            intent["source"] for intent in snapshot["routing_intents"]
+        }
 
     @pytest.mark.asyncio
     async def test_idempotency_cache_hit(self, gw):

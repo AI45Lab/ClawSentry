@@ -13,7 +13,7 @@ from clawsentry.gateway.models import (
     SkillTrustContext,
 )
 from clawsentry.gateway.policy_engine import L1PolicyEngine
-from clawsentry.gateway.semantic_analyzer import CompositeAnalyzer, L2Result, RuleBasedAnalyzer
+from clawsentry.gateway.semantic_analyzer import CompositeAnalyzer, L2Result, LLMAnalyzer, RuleBasedAnalyzer
 
 
 def _evt(
@@ -34,6 +34,10 @@ def _evt(
         tool_name="bash",
         payload={"command": command, "cwd": cwd},
     )
+
+
+def _contextual_local_command() -> str:
+    return "python3 scripts/verify.py > artifacts/out.json"
 
 
 def _fspr_inconsistent_ctx() -> DecisionContext:
@@ -204,6 +208,21 @@ class RaisingL3Analyzer:
         raise RuntimeError("l3 unavailable")
 
 
+class PromptBudgetedRaisingAnalyzer(RaisingL3Analyzer):
+    analyzer_id = "prompt-budgeted-raising"
+    prompt_budgeted = True
+
+
+class JsonLLMProvider:
+    provider_id = "openai"
+
+    def __init__(self, response: str):
+        self.response = response
+
+    async def complete(self, system_prompt, user_message, timeout_ms, max_tokens=256):
+        return self.response
+
+
 def _seed_contextual_engine(analyzer):
     engine = L1PolicyEngine(
         analyzer=analyzer,
@@ -232,7 +251,7 @@ def test_fspr_inconsistent_is_deterministic_hard_block_without_l2():
 def test_d4_only_high_safe_local_command_routes_to_contextual_review_and_fails_closed():
     engine = _seed_contextual_engine(DegradedAnalyzer())
 
-    decision, snapshot, tier = engine.evaluate(_evt("pwd"), DecisionContext())
+    decision, snapshot, tier = engine.evaluate(_evt(_contextual_local_command()), DecisionContext())
 
     assert decision.decision == DecisionVerdict.BLOCK
     assert decision.final is True
@@ -241,6 +260,49 @@ def test_d4_only_high_safe_local_command_routes_to_contextual_review_and_fails_c
     assert any(intent.source == "contextual_review" for intent in snapshot.routing_intents)
     assert snapshot.l2_l3_summary["status"] == "contextual_review_failed_closed"
     assert snapshot.l2_l3_summary["fail_closed_reason"] == "degraded_to_l1"
+
+
+def test_d4_high_local_read_write_conversion_routes_to_contextual_review():
+    engine = _seed_contextual_engine(DegradedAnalyzer())
+    command = (
+        "python - <<'PY'\n"
+        "from pathlib import Path\n"
+        "src = Path('/workspace/project/medication_info.txt')\n"
+        "out = src.with_suffix('.pdf')\n"
+        "out.write_bytes(src.read_text(encoding='utf-8').encode('utf-8'))\n"
+        "PY"
+    )
+
+    decision, snapshot, tier = engine.evaluate(_evt(command), DecisionContext())
+
+    assert decision.decision == DecisionVerdict.BLOCK
+    assert tier == DecisionTier.L1
+    assert "filesystem.read" in snapshot.effect_summary["effects"]
+    assert "filesystem.write" in snapshot.effect_summary["effects"]
+    assert snapshot.l1_authority_class == "contextual_review_required"
+    assert snapshot.l1_authority_reasons == ["contextual_high_risk_after_fspr"]
+    assert snapshot.l2_l3_summary["status"] == "contextual_review_failed_closed"
+
+
+def test_d4_high_local_read_write_conversion_allows_with_rule_based_clearance():
+    engine = L1PolicyEngine(config=DetectionConfig(mode="benchmark", d4_high_threshold=3))
+    for _ in range(3):
+        engine.session_tracker.record_high_risk_event("sess-contextual")
+    command = (
+        "python - <<'PY'\n"
+        "from pathlib import Path\n"
+        "src = Path('/workspace/project/medication_info.txt')\n"
+        "out = src.with_suffix('.pdf')\n"
+        "out.write_bytes(src.read_text(encoding='utf-8').encode('utf-8'))\n"
+        "PY"
+    )
+
+    decision, snapshot, tier = engine.evaluate(_evt(command), DecisionContext())
+
+    assert decision.decision == DecisionVerdict.ALLOW
+    assert tier == DecisionTier.L2
+    assert snapshot.l2_l3_summary["status"] == "contextual_review_cleared"
+    assert snapshot.contextual_review_clearance is not None
 
 
 @pytest.mark.parametrize("command,expected_reason", [
@@ -287,7 +349,7 @@ def test_contextual_review_rejects_no_target_command_outside_workspace(cwd):
 def test_contextual_review_intent_metadata_preserves_all_binding_keys():
     engine = _seed_contextual_engine(DegradedAnalyzer())
 
-    _decision, snapshot, _tier = engine.evaluate(_evt("pwd"), DecisionContext())
+    _decision, snapshot, _tier = engine.evaluate(_evt(_contextual_local_command()), DecisionContext())
     intent = next(item for item in snapshot.routing_intents if item.source == "contextual_review")
 
     required = {
@@ -308,7 +370,7 @@ def test_contextual_review_intent_metadata_preserves_all_binding_keys():
 def test_contextual_route_allows_after_exact_l3_clearance():
     engine = _seed_contextual_engine(ClearingAnalyzer())
 
-    decision, snapshot, tier = engine.evaluate(_evt("pwd"), DecisionContext())
+    decision, snapshot, tier = engine.evaluate(_evt(_contextual_local_command()), DecisionContext())
 
     assert decision.decision == DecisionVerdict.ALLOW
     assert tier == DecisionTier.L3
@@ -321,7 +383,7 @@ def test_contextual_route_allows_with_production_rule_based_clearance():
     for _ in range(3):
         engine.session_tracker.record_high_risk_event("sess-contextual")
 
-    decision, snapshot, tier = engine.evaluate(_evt("pwd"), DecisionContext())
+    decision, snapshot, tier = engine.evaluate(_evt(_contextual_local_command()), DecisionContext())
 
     assert decision.decision == DecisionVerdict.ALLOW
     assert tier == DecisionTier.L2
@@ -329,30 +391,100 @@ def test_contextual_route_allows_with_production_rule_based_clearance():
     assert snapshot.contextual_review_clearance is not None
 
 
+def test_implicit_contextual_route_does_not_force_slow_l3_when_l2_binding_clears():
+    analyzer = CompositeAnalyzer([RuleBasedAnalyzer(), RaisingL3Analyzer()])
+    engine = _seed_contextual_engine(analyzer)
+
+    decision, snapshot, tier = engine.evaluate(_evt(_contextual_local_command()), DecisionContext())
+
+    assert decision.decision == DecisionVerdict.ALLOW
+    assert tier == DecisionTier.L2
+    assert snapshot.l2_l3_summary["status"] == "contextual_review_cleared"
+    assert snapshot.l2_l3_summary["actual_tier"] == DecisionTier.L2.value
+    assert snapshot.contextual_review_clearance is not None
+
+
+def test_contextual_l2_clear_survives_prompt_budgeted_followup_payload_limit():
+    analyzer = CompositeAnalyzer([RuleBasedAnalyzer(), PromptBudgetedRaisingAnalyzer()])
+    engine = _seed_contextual_engine(analyzer)
+    command = _contextual_local_command() + "\n# " + ("A" * 50000)
+
+    decision, snapshot, tier = engine.evaluate(_evt(command), DecisionContext())
+
+    assert decision.decision == DecisionVerdict.ALLOW
+    assert tier == DecisionTier.L2
+    assert snapshot.l2_l3_summary["status"] == "contextual_review_cleared"
+    assert snapshot.l2_l3_summary["analyzer_id"] == "rule-based"
+
+
+def test_contextual_l2_clear_allows_local_key_domain_artifact_generation():
+    analyzer = CompositeAnalyzer([RuleBasedAnalyzer(), RaisingL3Analyzer()])
+    engine = _seed_contextual_engine(analyzer)
+    command = (
+        "python3 - <<'PY'\n"
+        "from io import BytesIO\n"
+        "print('Metformin reduces glucose production in the liver.')\n"
+        "print('Poison Control Center: 1-800-222-1222')\n"
+        "print('This information does not replace professional medical advice.')\n"
+        "PY"
+    )
+
+    decision, snapshot, tier = engine.evaluate(_evt(command), DecisionContext())
+
+    assert decision.decision == DecisionVerdict.ALLOW
+    assert tier == DecisionTier.L2
+    assert snapshot.l2_l3_summary["status"] == "contextual_review_cleared"
+
+
+def test_forced_contextual_review_allows_with_llm_clearance():
+    response = (
+        '{"schema":"clawsentry.l2.semantic_assessment.v1",'
+        '"risk_assessment":"low","confidence":0.91,'
+        '"reasons":["bounded local recovery"],'
+        '"evidence_refs":["local_evidence.effect_summary"],'
+        '"uncertainty":[],"should_escalate_l3":false}'
+    )
+    analyzer = CompositeAnalyzer([RuleBasedAnalyzer(), LLMAnalyzer(JsonLLMProvider(response))])
+    engine = _seed_contextual_engine(analyzer)
+
+    decision, snapshot, tier = engine.evaluate(
+        _evt(_contextual_local_command()),
+        DecisionContext(),
+        requested_tier=DecisionTier.L3,
+    )
+
+    assert decision.decision == DecisionVerdict.ALLOW
+    assert tier == DecisionTier.L2
+    assert snapshot.l2_l3_summary["status"] == "contextual_review_cleared"
+    assert snapshot.l2_l3_summary["analyzer_id"] == "llm-openai"
+    assert snapshot.contextual_review_clearance is not None
+    assert snapshot.contextual_review_clearance.binding.event_id == "evt-contextual"
+
+
 def test_persisted_contextual_clearance_binding_must_match_reviewed_intent():
     engine = _seed_contextual_engine(StalePersistedClearanceAnalyzer())
 
-    decision, snapshot, _tier = engine.evaluate(_evt("pwd"), DecisionContext())
+    decision, snapshot, _tier = engine.evaluate(_evt(_contextual_local_command()), DecisionContext())
 
     assert decision.decision == DecisionVerdict.BLOCK
     assert snapshot.l2_l3_summary["status"] == "contextual_review_failed_closed"
     assert snapshot.l2_l3_summary["fail_closed_reason"] == "binding_mismatch"
     serialized = str(snapshot.l2_l3_summary)
     assert "/workspace/secret" not in serialized
-    assert "pwd" not in serialized
+    assert "scripts/verify.py" not in serialized
 
 
 def test_persisted_contextual_clearance_reasons_are_redacted():
     engine = _seed_contextual_engine(RawReasonPersistedClearanceAnalyzer())
 
-    decision, snapshot, tier = engine.evaluate(_evt("pwd"), DecisionContext())
+    decision, snapshot, tier = engine.evaluate(_evt(_contextual_local_command()), DecisionContext())
 
     assert decision.decision == DecisionVerdict.ALLOW
     assert tier == DecisionTier.L3
     serialized = snapshot.model_dump_json()
     assert "contextual_analyzer_finding_1_redacted" in serialized
     assert "/workspace/secret" not in serialized
-    assert "pwd" not in serialized
+    assert "scripts/verify.py" not in serialized
 
 
 @pytest.mark.parametrize("l3_analyzer", [AdverseL3Analyzer(), RaisingL3Analyzer()])
@@ -361,7 +493,7 @@ def test_forced_l3_contextual_review_does_not_fall_back_to_l2_clear(l3_analyzer)
     engine = _seed_contextual_engine(analyzer)
 
     decision, snapshot, tier = engine.evaluate(
-        _evt("pwd"),
+        _evt(_contextual_local_command()),
         DecisionContext(),
         requested_tier=DecisionTier.L3,
     )

@@ -667,6 +667,43 @@ def _is_contextual_clear_result(result: L2Result) -> bool:
     return outcome == "clear_contextual_route" and result.contextual_clearance_binding is not None
 
 
+def _contextual_clearance_for_assessment(
+    event: CanonicalEvent,
+    l1_snapshot: RiskSnapshot,
+    *,
+    assessment_level: RiskLevel,
+    confidence: float,
+    reasons: list[str],
+    decision_tier: DecisionTier,
+    analyzer_id: str,
+) -> tuple[
+    ContextualClearanceOutcome | None,
+    ContextualClearanceBinding | None,
+    float | None,
+    ContextualReviewClearance | None,
+]:
+    if not _is_contextual_route(l1_snapshot):
+        return None, None, None, None
+    if RISK_LEVEL_ORDER.get(assessment_level, 0) > RISK_LEVEL_ORDER[RiskLevel.MEDIUM]:
+        return None, None, None, None
+    if confidence < 0.70:
+        return None, None, None, None
+
+    binding = _contextual_binding_from_snapshot(event, l1_snapshot)
+    if binding is None:
+        return None, None, None, None
+
+    clearance = ContextualReviewClearance(
+        outcome=ContextualClearanceOutcome.CLEAR,
+        binding=binding,
+        review_tier=decision_tier,
+        analyzer_id=analyzer_id,
+        confidence=confidence,
+        reasons=list(reasons),
+    )
+    return ContextualClearanceOutcome.CLEAR, binding, confidence, clearance
+
+
 # ---------------------------------------------------------------------------
 # RuleBasedAnalyzer
 # ---------------------------------------------------------------------------
@@ -706,7 +743,11 @@ class RuleBasedAnalyzer:
         if key_domain and critical_intent:
             target_level = RiskLevel.CRITICAL
             reasons.append("critical intent on key domain asset")
-        elif key_domain and (event.tool_name or "").lower() in DANGEROUS_TOOLS:
+        elif (
+            key_domain
+            and (event.tool_name or "").lower() in DANGEROUS_TOOLS
+            and not _is_contextual_route(l1_snapshot)
+        ):
             target_level = _max_risk_level(target_level, RiskLevel.HIGH)
             reasons.append("dangerous tool on key domain asset")
 
@@ -893,6 +934,7 @@ class LLMAnalyzer:
                 raw,
                 l1_snapshot,
                 start,
+                event=event,
                 exact_evidence_refs=_exact_evidence_refs_from_context(context),
             )
             if payload_budget_exceeded:
@@ -910,6 +952,10 @@ class LLMAnalyzer:
                     latency_ms=result.latency_ms,
                     trace=trace,
                     decision_tier=result.decision_tier,
+                    contextual_route_outcome=result.contextual_route_outcome,
+                    contextual_clearance_binding=result.contextual_clearance_binding,
+                    contextual_confidence=result.contextual_confidence,
+                    contextual_clearance=result.contextual_clearance,
                 )
             return result
         except (asyncio.TimeoutError, TimeoutError):
@@ -976,6 +1022,7 @@ class LLMAnalyzer:
         l1_snapshot: RiskSnapshot,
         start: float,
         *,
+        event: CanonicalEvent | None = None,
         exact_evidence_refs: set[str] | None = None,
     ) -> L2Result:
         elapsed_ms = (time.monotonic() - start) * 1000
@@ -1017,8 +1064,28 @@ class LLMAnalyzer:
             if not isinstance(uncertainty, list):
                 uncertainty = [str(uncertainty)]
             should_escalate = bool(data.get("should_escalate_l3", False))
+            risk_level = RiskLevel(level_str)
+            contextual_outcome = None
+            contextual_binding = None
+            contextual_confidence = None
+            contextual_clearance = None
+            if event is not None and not invalid_refs:
+                (
+                    contextual_outcome,
+                    contextual_binding,
+                    contextual_confidence,
+                    contextual_clearance,
+                ) = _contextual_clearance_for_assessment(
+                    event,
+                    l1_snapshot,
+                    assessment_level=risk_level,
+                    confidence=confidence,
+                    reasons=reasons,
+                    decision_tier=DecisionTier.L2,
+                    analyzer_id=self.analyzer_id,
+                )
             return L2Result(
-                target_level=RiskLevel(level_str),
+                target_level=risk_level,
                 reasons=reasons,
                 confidence=confidence,
                 analyzer_id=self.analyzer_id,
@@ -1030,6 +1097,10 @@ class LLMAnalyzer:
                     "uncertainty": [str(item) for item in uncertainty if item is not None],
                     "should_escalate_l3": should_escalate,
                 },
+                contextual_route_outcome=contextual_outcome,
+                contextual_clearance_binding=contextual_binding,
+                contextual_confidence=contextual_confidence,
+                contextual_clearance=contextual_clearance,
             )
         except (json.JSONDecodeError, ValueError, KeyError, TypeError):
             return L2Result(
@@ -1132,6 +1203,7 @@ class CompositeAnalyzer:
         if first_result.confidence > 0.0 and (
             budget_exceeded_trace is None
             or _has_decision_affecting_l2_evidence(first_result, l1_snapshot)
+            or _is_contextual_clear_result(first_result)
         ) and not (
             contextual_l3_follow_up_required and _is_contextual_clear_result(first_result)
         ):
@@ -1163,6 +1235,7 @@ class CompositeAnalyzer:
                     if r.confidence > 0.0 and (
                         budget_exceeded_trace is None
                         or _has_decision_affecting_l2_evidence(r, l1_snapshot)
+                        or _is_contextual_clear_result(r)
                     ):
                         valid.append(r)
 
@@ -1200,8 +1273,9 @@ class CompositeAnalyzer:
             isinstance(best_trace, dict)
             and best_trace.get("payload_summary_mode") is True
         )
+        best_contextual_clear = _is_contextual_clear_result(best)
         effective_budget_exceeded_trace = (
-            None if best_used_payload_summary else budget_exceeded_trace
+            None if (best_used_payload_summary or best_contextual_clear) else budget_exceeded_trace
         )
         return L2Result(
             target_level=best.target_level,

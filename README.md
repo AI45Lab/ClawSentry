@@ -23,7 +23,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **3645 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
+- **4026 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
 
 ## Installation
 
@@ -34,6 +34,12 @@ pip install clawsentry[all]      # everything
 ```
 
 Requires Python >= 3.11.
+
+## What's New in v0.8.4
+
+- **FSPR agentic-readonly default**: first-use skill package review now defaults to deterministic inventory + agentic evidence digest, with a bounded read-only provider loop only when needed.
+- **final-only remains a backup**: set `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` to use the legacy single final adjudicator route.
+- **Old full MAS removed**: `metadata-only`, `reduced`, and `full` sequential reviewer role-sets are no longer production routes and fail closed if supplied through the legacy role-set setting.
 
 ## What's New in v0.8.3
 

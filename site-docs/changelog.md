@@ -7,6 +7,32 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
+## v0.8.4 {#v084}
+
+*2026-05-24*
+
+<div class="cs-pill-row">
+<span class="cs-pill cs-pill--release">FSPR Agentic Default</span>
+<span class="cs-pill cs-pill--test">4026 public tests passed</span>
+</div>
+
+### 改进
+
+- **FSPR 默认路线切到 agentic-readonly** — First-Use Skill Package Review 默认先走 deterministic inventory 与 agentic evidence digest，本地证据不足时才进入只读 provider loop。
+- **final-only 保留备用** — 可用 `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` 显式切回单次 final adjudicator 路线；legacy `CS_SKILL_TRUST_FSPR_ROLE_SET=final-only` 仍兼容。
+- **旧 full MAS 配置面移除** — `metadata-only`、`reduced`、`full` 这些早期顺序多 reviewer role-set 不再作为生产路线；误传时 fail closed。
+
+### 验收
+
+- 72-case real toxic corpus 复测中 hardened `agentic-readonly` detection / healthy / minimum-quality 均为 `0.958333`、degraded `0`；同 provider `final-only` healthy detection 为 `0.777778`、degraded `6`。
+- 该结果按 execution path 解释：59 deterministic floor / 5 digest floor / 8 provider path，不包装成纯模型能力提升。
+
+### 文档
+
+- Skill Trust、环境变量、DetectionConfig、Benchmark 配置和发布进度页已更新到 v0.8.4 口径。
+
+---
+
 ## v0.8.3 {#v083}
 
 *2026-05-21*
@@ -26,9 +52,7 @@ hide:
 ### 验收
 
 - Focused regression gate：`775 passed in 17.89s`。
-- AHP policy replay：21 cases，decision match `1.0`、risk match `1.0`、unsafe-pass proxy `0.0`、overblock proxy `0.0`、schema-sync coverage `1.0`。
-- SkillsSafety recovered E2E：2 个 protected case 均为 ASR `0.0`、TSR `1.0`、environment error `0.0`。
-- SKILL-INJECT contextual protected E2E：injection 7 / 13 均为 ASR `0.0`、TECH `0`，并保留 FSPR pre-use inconsistent block evidence。
+- Focused policy replay 和 selected protected recovery rerun 均通过，覆盖 contextual recovery、blocked lineage 和 anti-bypass 边界。详细指标保留在开发仓库验证记录中。
 
 ### 文档
 
@@ -37,7 +61,7 @@ hide:
 
 ### 边界
 
-- 本版本发布的是 FSPR block 后安全恢复路径的路由与证据边界，不声明新的全量 benchmark leaderboard。
+- 本版本发布的是 FSPR block 后安全恢复路径的路由与证据边界，不声明新的全量公开评测排名。
 - 原始 `rerun3` 结果目录在当前工作树缺失，E2E case selection 来自已有项目交接文档并通过新鲜 rerun 重建验证。
 
 ---
@@ -87,7 +111,7 @@ hide:
 
 ### 验收边界
 
-- 本版本修正 first-use/FSPR 路由合同与文档，不声明新的 benchmark leaderboard、ASR/TSR/TFR 或 raw-vs-protected 结论。
+- 本版本修正 first-use/FSPR 路由合同与文档，不声明新的公开综合评测结论。
 
 ---
 
@@ -110,7 +134,7 @@ hide:
 ### 验收边界
 
 - 新增六框架 surface acceptance：A3S、Codex、Claude Code、Kimi、Gemini、OpenClaw 均覆盖 Gateway UDS + adapter/harness path 的 critical block 和 runtime-path-disallowed 证据。
-- 该验收不是外部 CLI binary harbor smoke，也不发布 benchmark leaderboard、ASR/TSR/TFR 或 raw-vs-protected 结论。
+- 该验收不是外部 CLI binary harbor smoke，也不发布公开综合评测结论。
 
 ---
 

@@ -243,6 +243,7 @@ class DetectionConfig:
     skill_trust_fspr_enabled: bool = False
     skill_trust_fspr_pre_use_enabled: bool = False
     skill_trust_fspr_post_action_enabled: bool = False
+    skill_trust_fspr_review_mode: str = "agentic-readonly"
     skill_trust_fspr_role_set: str = "default"
     skill_trust_fspr_timeout_ms: int = 120_000
     skill_trust_fspr_cache_enabled: bool = True
@@ -829,6 +830,7 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_SKILL_TRUST_MIRROR_HASH_MAX_FILES", "skill_trust_mirror_hash_max_files", int),
     ("CS_SKILL_TRUST_MIRROR_HASH_MAX_FILE_BYTES", "skill_trust_mirror_hash_max_file_bytes", int),
     ("CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS", "skill_trust_mirror_hash_max_total_ms", int),
+    ("CS_SKILL_TRUST_FSPR_REVIEW_MODE", "skill_trust_fspr_review_mode", str),
     ("CS_SKILL_TRUST_FSPR_ROLE_SET", "skill_trust_fspr_role_set", str),
     ("CS_SKILL_TRUST_FSPR_TIMEOUT_MS", "skill_trust_fspr_timeout_ms", int),
 ]

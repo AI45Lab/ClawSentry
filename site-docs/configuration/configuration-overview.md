@@ -101,7 +101,7 @@ CS_DEFER_TIMEOUT_ACTION=block
 
 ```bash title=".clawsentry.env.local（不要提交，显式加载）"
 CS_AUTH_TOKEN=dev-only-token
-CS_LLM_API_KEY=sk-...
+CS_LLM_API_KEY=<api-key>
 CS_HTTP_PORT=9100
 ```
 
@@ -153,10 +153,10 @@ clawsentry service validate --env-file /etc/clawsentry/gateway.env
 
 ## 发布状态核对 {#release-status}
 
-截至 2026-05-21，本仓库文档发布面已刷新到 `v0.8.3`：
+截至 2026-05-24，本仓库文档发布面已刷新到 `v0.8.4`：
 
-- 在线文档版本：`v0.8.3`
+- 在线文档版本：`v0.8.4`
 - 代码包最新公开发布仍以实际 GitHub tag / PyPI 页面为准；若尚未发布同名包，本文档先记录本轮验证完成的功能口径。
-- 运行时配置来源仍保持 env-first strict split；Skill Trust runtime binding、skill-use ledger、FSPR、trust-list lifecycle、runtime mirror content verification、capability narrowing、agent-facing safety feedback 和 contextual recovery routing 都通过 `CS_*` env / profile action 或 Gateway-owned metadata 显式配置。v0.8.2 起不再提供 post-action artifact provenance validator。
+- 运行时配置来源仍保持 env-first strict split；Skill Trust runtime binding、skill-use ledger、FSPR、trust-list lifecycle、runtime mirror content verification、capability narrowing、agent-facing safety feedback 和 contextual recovery routing 都通过 `CS_*` env / profile action 或 Gateway-owned metadata 显式配置。v0.8.4 起 FSPR 默认 review mode 是 `agentic-readonly`，`final-only` 是备用路线；旧 `metadata-only` / `reduced` / `full` MAS role-set 已从生产配置面移除。v0.8.2 起不再提供 post-action artifact provenance validator。
 
 若你看到更早版本，优先清浏览器/CDN 缓存，并确认访问的是 <https://github.com/Elroyper/ClawSentry> 与 <https://pypi.org/project/clawsentry/>。

@@ -1103,7 +1103,7 @@ clawsentry l3 full-review --session sess-001 --queue-only --json
 # 明确限定 record 边界，并使用共享 CS_LLM_* provider runner
 CS_LLM_PROVIDER=openai \
 CS_LLM_MODEL=gpt-advisory \
-OPENAI_API_KEY = sk-... \
+OPENAI_API_KEY = <api-key> \
 clawsentry l3 full-review \
   --session sess-001 \
   --from-record-id 4 \
@@ -1254,7 +1254,7 @@ clawsentry config show --effective
 #### 生成 L2/L3-ready 配置骨架
 
 ```bash
-export CS_LLM_API_KEY = sk-...
+export CS_LLM_API_KEY = <api-key>
 clawsentry config wizard --non-interactive \
   --framework codex \
   --mode strict \

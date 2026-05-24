@@ -906,7 +906,10 @@ def test_skill_trust_register_dir_writes_registry_and_runtime_metadata(
     assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["scope"] == "workspace"
     assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["skill_root_path"] == str(alias)
     assert metadata_payload["raw_metadata_by_skill"]["search-accommodation"]["skill_root_path_hash"].startswith("sha256:")
-    assert metadata_payload["preflight_actions"][0]["blocked_skills"] == ["search-accommodation"]
+    assert metadata_payload["preflight_actions"][0]["blocked_skills"] == [
+        "search-accommodation",
+        "search-accommodations",
+    ]
 
 
 def test_skill_trust_register_dir_records_new_skill_transitions(

@@ -68,7 +68,7 @@ CS_TRAJECTORY_DB_PATH=/var/lib/clawsentry/trajectory.db
 
 # ===== LLM 配置（可选，启用 L2/L3 分析） =====
 CS_LLM_PROVIDER=openai
-OPENAI_API_KEY = sk-your-api-key-here
+OPENAI_API_KEY = <openai-api-key>
 CS_LLM_BASE_URL=https://api.openai.com/v1
 CS_LLM_MODEL=gpt-4o-mini
 
@@ -805,7 +805,7 @@ CS_UDS_PATH=/tmp/clawsentry.sock
 
 # LLM 配置（可选）
 CS_LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-xxx
+ANTHROPIC_API_KEY=<anthropic-api-key>
 
 # Prometheus 指标
 CS_METRICS_AUTH=false

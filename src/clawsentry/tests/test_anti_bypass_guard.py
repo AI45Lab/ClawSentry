@@ -611,6 +611,27 @@ class TestAntiBypassMemory:
 
         assert match.match_type == "denied_effect_repeat"
 
+    def test_stderr_to_devnull_block_does_not_seed_denied_write_memory(self):
+        guard = AntiBypassGuard()
+        cfg = DetectionConfig(anti_bypass_guard_enabled=True)
+        prior = _event(
+            event_id="evt-devnull-redirection",
+            payload={"command": "find / -maxdepth 2 -name AGENTS.md 2>/dev/null"},
+        )
+
+        guard.record_final_decision(prior, _decision(policy_id="L1-rule-engine"), None, {}, 18, cfg)
+        match = guard.match_pre_action(
+            _event(
+                event_id="evt-real-workspace-write",
+                payload={"command": "printf '%s' payload > /workspace/medication_info.pdf"},
+            ),
+            None,
+            cfg,
+        )
+
+        assert guard.denied_effect_records_for_session("sess-anti-bypass") == []
+        assert match is None
+
     def test_resolved_pending_effect_allow_clears_review_hold(self):
         cfg = DetectionConfig(anti_bypass_guard_enabled=True)
         guard = AntiBypassGuard()

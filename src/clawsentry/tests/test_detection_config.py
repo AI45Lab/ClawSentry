@@ -247,6 +247,7 @@ class TestBuildFromEnv:
             "CS_SKILL_TRUST_FSPR_ENABLED": "true",
             "CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED": "true",
             "CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED": "true",
+            "CS_SKILL_TRUST_FSPR_REVIEW_MODE": "final-only",
             "CS_SKILL_TRUST_FSPR_ROLE_SET": "identity-only",
             "CS_SKILL_TRUST_FSPR_TIMEOUT_MS": "2500",
             "CS_SKILL_TRUST_FSPR_CACHE_ENABLED": "false",
@@ -258,6 +259,7 @@ class TestBuildFromEnv:
         assert c.skill_trust_fspr_enabled is True
         assert c.skill_trust_fspr_pre_use_enabled is True
         assert c.skill_trust_fspr_post_action_enabled is True
+        assert c.skill_trust_fspr_review_mode == "final-only"
         assert c.skill_trust_fspr_role_set == "identity-only"
         assert c.skill_trust_fspr_timeout_ms == 2500
         assert c.skill_trust_fspr_cache_enabled is False

@@ -42,7 +42,11 @@ from .anti_bypass_llm_recognizer import (
 )
 from .content_evidence import collect_for_event, strip_content_bodies
 from .event_bus import EventBus
-from .first_use_skill_review import FSPRLLMRoleProvider, run_first_use_skill_package_review
+from .first_use_skill_review import (
+    FSPRLLMRoleProvider,
+    run_agentic_readonly_fspr_review,
+    run_first_use_skill_package_review,
+)
 from .idempotency import IdempotencyCache, periodic_cleanup
 from .llm_provider import InstrumentedProvider
 from .session_registry import (
@@ -134,6 +138,15 @@ from .enterprise import (
 )
 
 logger = logging.getLogger("clawsentry")
+
+_FSPR_REVIEW_CACHE_MAX_ENTRIES = 256
+_FSPR_REVIEW_CACHE: dict[str, Any] = {}
+
+
+def _trim_fspr_review_cache() -> None:
+    while len(_FSPR_REVIEW_CACHE) > _FSPR_REVIEW_CACHE_MAX_ENTRIES:
+        _FSPR_REVIEW_CACHE.pop(next(iter(_FSPR_REVIEW_CACHE)))
+
 
 _DEFAULT_UI_DIR = Path(__file__).parent.parent / "ui" / "dist"
 DEFAULT_L3_ADVISORY_RUNNER = "llm_provider"
@@ -1038,44 +1051,47 @@ def _context_with_skill_trust_raw(
     ) -> list[SkillTrustContext]:
         if not bound_refs:
             return bound_refs
-        primary = bound_refs[0]
-        owned_raw = _gateway_owned_skill_trust_metadata(
-            primary.presented_name or raw_metadata.get("presented_name")
-        )
-        if not owned_raw:
-            return bound_refs
-        owned_metadata = dict(raw_metadata)
-        owned_metadata.update(owned_raw)
-        _apply_gateway_owned_first_use_scan(owned_metadata, deadline_at=deadline_at)
-        _apply_gateway_owned_first_use_package_review(
-            owned_metadata,
-            event=event,
-            detection_config=detection_config,
-            deadline_at=deadline_at,
-        )
-        update = {
-            key: owned_metadata[key]
-            for key in (
-                "admission_scan_id",
-                "admission_risk",
-                "policy_fingerprint",
-                "content_hashes",
-                "admission_scan_requested",
-                "admission_scan_failure_class",
-                "first_use_package_review",
-                "fspr_review_summary",
+        enriched_refs: list[SkillTrustContext] = []
+        for index, ref in enumerate(bound_refs):
+            owned_raw = _gateway_owned_skill_trust_metadata(
+                ref.presented_name or raw_metadata.get("presented_name")
             )
-            if key in owned_metadata
-        }
-        raw.update(owned_raw)
-        raw.update(update)
-        resolved = resolve_skill_trust(list(gateway_records), owned_metadata)
-        enriched_primary = primary.model_copy(update={
-            "first_use_scan": resolved.first_use_scan,
-            "first_use_package_review": resolved.first_use_package_review,
-            "fspr_review_summary": resolved.fspr_review_summary,
-        })
-        return [enriched_primary, *bound_refs[1:]]
+            if not owned_raw:
+                enriched_refs.append(ref)
+                continue
+            owned_metadata = dict(raw_metadata)
+            owned_metadata.update(owned_raw)
+            _apply_gateway_owned_first_use_scan(owned_metadata, deadline_at=deadline_at)
+            _apply_gateway_owned_first_use_package_review(
+                owned_metadata,
+                event=event,
+                detection_config=detection_config,
+                deadline_at=deadline_at,
+            )
+            update = {
+                key: owned_metadata[key]
+                for key in (
+                    "admission_scan_id",
+                    "admission_risk",
+                    "policy_fingerprint",
+                    "content_hashes",
+                    "admission_scan_requested",
+                    "admission_scan_failure_class",
+                    "first_use_package_review",
+                    "fspr_review_summary",
+                )
+                if key in owned_metadata
+            }
+            if index == 0:
+                raw.update(owned_raw)
+                raw.update(update)
+            resolved = resolve_skill_trust(list(gateway_records), owned_metadata)
+            enriched_refs.append(ref.model_copy(update={
+                "first_use_scan": resolved.first_use_scan,
+                "first_use_package_review": resolved.first_use_package_review,
+                "fspr_review_summary": resolved.fspr_review_summary,
+            }))
+        return enriched_refs
 
     runtime_refs = _gateway_observed_runtime_skill_refs(meta, context, event)
     if runtime_refs:
@@ -1371,6 +1387,47 @@ def _fspr_provider_sync_enabled(detection_config: DetectionConfig | None) -> boo
     return mode in profiles
 
 
+class _UnavailableFSPRProvider:
+    """Fail loudly when config requested provider-backed FSPR but none resolved."""
+
+    def review_role(
+        self,
+        *,
+        role: str,
+        prompt: str,
+        response_format: dict[str, object] | None = None,
+    ) -> str:
+        del role, prompt, response_format
+        raise RuntimeError("provider_unavailable")
+
+
+def _fspr_review_mode_for_config(
+    detection_config: DetectionConfig | None,
+) -> str:
+    review_mode = str(
+        getattr(detection_config, "skill_trust_fspr_review_mode", "agentic-readonly")
+        if detection_config is not None
+        else "agentic-readonly"
+    ).strip().lower()
+    role_set = str(
+        getattr(detection_config, "skill_trust_fspr_role_set", "default")
+        if detection_config is not None
+        else "default"
+    ).strip().lower()
+    if role_set not in {"", "default", "final-only", "final_only"}:
+        return f"unknown_review_mode:removed_role_set:{role_set}"
+    if (
+        role_set in {"final-only", "final_only"}
+        and review_mode in {"", "default", "agentic-readonly", "agentic_readonly"}
+    ):
+        return "final-only"
+    if review_mode in {"", "default", "agentic-readonly", "agentic_readonly"}:
+        return "agentic-readonly"
+    if review_mode in {"final-only", "final_only"}:
+        return "final-only"
+    return f"unknown_review_mode:{review_mode}"
+
+
 def _fspr_review_summary(
     *,
     detection_config: DetectionConfig | None,
@@ -1470,40 +1527,60 @@ def _apply_gateway_owned_first_use_package_review(
     if deadline_at is not None:
         timeout_s = min(timeout_s, max(0.0, deadline_at - time.monotonic()))
     provider = None
-    selected_roles: tuple[str, ...] | None = None
+    review_mode = _fspr_review_mode_for_config(detection_config)
     if _fspr_provider_sync_enabled(detection_config):
         raw_provider = build_provider_from_env()
         if raw_provider is not None:
             provider = FSPRLLMRoleProvider(raw_provider, timeout_ms=timeout_s * 1000.0)
-            selected_roles = (
-                "metadata_reviewer",
-                "script_behavior_reviewer",
-                "data_reference_reviewer",
-                "provenance_identity_reviewer",
-                "cross_file_consistency_reviewer",
-            )
+        else:
+            provider = _UnavailableFSPRProvider()
     try:
-        result = run_first_use_skill_package_review(
-            root_value,
-            timeout_s=timeout_s,
-            timing_mode=timing_mode,
-            registry_snapshot_id=str(raw_metadata.get("registry_snapshot_id") or "unknown"),
-            policy_fingerprint=str(raw_metadata.get("policy_fingerprint") or "unknown"),
-            policy_profile=str(getattr(detection_config, "mode", None) or "normal"),
-            budget_class=(
-                "custom"
-                if detection_config is not None
-                and detection_config.skill_trust_fspr_timeout_ms != 120_000
-                else "default"
-            ),
-            cache_enabled=(
-                detection_config.skill_trust_fspr_cache_enabled
-                if detection_config is not None
-                else True
-            ),
-            provider=provider,
-            selected_roles=selected_roles,
+        cache = (
+            _FSPR_REVIEW_CACHE
+            if detection_config is None or detection_config.skill_trust_fspr_cache_enabled
+            else None
         )
+        cache_enabled = (
+            detection_config.skill_trust_fspr_cache_enabled
+            if detection_config is not None
+            else True
+        )
+        if review_mode == "agentic-readonly" and provider is not None:
+            result = run_agentic_readonly_fspr_review(
+                root_value,
+                timeout_s=timeout_s,
+                timing_mode=timing_mode,
+                registry_snapshot_id=str(raw_metadata.get("registry_snapshot_id") or "unknown"),
+                policy_fingerprint=str(raw_metadata.get("policy_fingerprint") or "unknown"),
+                cache=cache,
+                cache_enabled=cache_enabled,
+                provider=provider,
+            )
+        else:
+            selected_roles: tuple[str, ...] | None = None
+            if review_mode == "final-only" and provider is not None:
+                selected_roles = ()
+            elif review_mode.startswith("unknown_review_mode:"):
+                selected_roles = (f"unknown_role_set:{review_mode.removeprefix('unknown_review_mode:')}",)
+            result = run_first_use_skill_package_review(
+                root_value,
+                timeout_s=timeout_s,
+                timing_mode=timing_mode,
+                registry_snapshot_id=str(raw_metadata.get("registry_snapshot_id") or "unknown"),
+                policy_fingerprint=str(raw_metadata.get("policy_fingerprint") or "unknown"),
+                policy_profile=str(getattr(detection_config, "mode", None) or "normal"),
+                budget_class=(
+                    "custom"
+                    if detection_config is not None
+                    and detection_config.skill_trust_fspr_timeout_ms != 120_000
+                    else "default"
+                ),
+                cache=cache,
+                cache_enabled=cache_enabled,
+                provider=provider,
+                selected_roles=selected_roles,
+            )
+        _trim_fspr_review_cache()
     except Exception as exc:
         raw_metadata["fspr_review_summary"] = _fspr_review_summary(
             detection_config=detection_config,

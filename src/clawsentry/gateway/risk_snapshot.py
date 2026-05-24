@@ -90,6 +90,11 @@ _FSPR_ALLOWED_VERDICTS = frozenset({
     "insufficient_evidence",
 })
 _FSPR_ALLOWED_TIMING_MODES = frozenset({"pre_use_gate", "post_action_incremental_evidence"})
+_FSPR_PROVIDER_HEALTH_DEGRADATION_REASONS = frozenset({
+    "provider_invalid_json",
+    "provider_unavailable",
+    "provider_call_timeout",
+})
 
 _HARD_BLOCK_RULE_HITS = frozenset({
     "runtime_path_disallowed",
@@ -118,6 +123,7 @@ _NON_CLEARABLE_EFFECTS = frozenset({
 
 _REVIEWABLE_CONTEXTUAL_EFFECTS = frozenset({
     "command.exec",
+    "filesystem.read",
     "filesystem.write",
     "future_execution.artifact",
 })
@@ -1307,13 +1313,109 @@ def _validated_fspr_review(fspr_review: object) -> dict | None:
     return review
 
 
-def skill_trust_fspr_policy_action(fspr_review: object, config: DetectionConfig) -> str | None:
+def _normalized_degradation_reason(value: object) -> str:
+    return str(value or "").split(":", 1)[0].strip()
+
+
+def _fspr_finding_is_hard(finding: object) -> bool:
+    if not isinstance(finding, dict):
+        return False
+    return bool(
+        finding.get("decision_affecting")
+        or str(finding.get("severity") or "").lower() in {"high", "critical"}
+    )
+
+
+def _fspr_role_result_is_hard(role_result: object) -> bool:
+    if not isinstance(role_result, dict):
+        return False
+    verdict = str(role_result.get("verdict") or "").lower()
+    severity = str(role_result.get("severity") or "").lower()
+    return bool(
+        role_result.get("decision_affecting")
+        or verdict in {"suspicious", "inconsistent"}
+        or severity in {"high", "critical"}
+    )
+
+
+def _fspr_review_has_hard_findings(review: dict[str, Any]) -> bool:
+    if str(review.get("severity") or "").lower() in {"high", "critical"}:
+        return True
+    if any(_fspr_finding_is_hard(item) for item in review.get("final_findings") or []):
+        return True
+    for role_result in review.get("role_results") or []:
+        if not isinstance(role_result, dict):
+            continue
+        if _fspr_role_result_is_hard(role_result):
+            return True
+        if any(_fspr_finding_is_hard(item) for item in role_result.get("findings") or []):
+            return True
+    return False
+
+
+def is_provider_health_only_degraded_fspr(fspr_review: object) -> bool:
+    review = _validated_fspr_review(fspr_review)
+    if review is None:
+        return False
+    if not bool(review.get("degraded")):
+        return False
+    if str(review.get("verdict") or "") != "insufficient_evidence":
+        return False
+    if _normalized_degradation_reason(review.get("degradation_reason")) not in _FSPR_PROVIDER_HEALTH_DEGRADATION_REASONS:
+        return False
+    if review.get("deterministic_findings_preserved") is not True:
+        return False
+    if review.get("admission_recommendation") is not None:
+        return False
+    if _fspr_review_has_hard_findings(review):
+        return False
+    return True
+
+
+def is_strong_trusted_runtime_binding(skill_trust) -> tuple[bool, str]:
+    if skill_trust is None:
+        return False, "skill_trust_missing"
+    if getattr(skill_trust, "registry_status", None) != "matched":
+        return False, "registry_status_not_matched"
+    if getattr(skill_trust, "trust_list_state", None) != "allowlist":
+        return False, "trust_list_state_not_allowlist"
+    if getattr(skill_trust, "admission_risk", None) != "low":
+        return False, "admission_risk_not_low"
+    runtime_path_status = getattr(skill_trust, "runtime_path_status", None)
+    if runtime_path_status not in {"verified_source", "verified_mirror"}:
+        return False, "runtime_path_not_verified"
+    runtime_content_status = getattr(skill_trust, "runtime_content_status", None)
+    if runtime_content_status not in {"content_verified", "trusted_runner_immutable", "not_applicable"}:
+        return False, "runtime_content_not_verified"
+    if runtime_content_status == "not_applicable" and runtime_path_status != "verified_source":
+        return False, "runtime_content_not_applicable_without_source_binding"
+    if getattr(skill_trust, "metadata_source", None) != "gateway_owned_metadata":
+        return False, "metadata_not_gateway_owned"
+    if not getattr(skill_trust, "metadata_record_id", None):
+        return False, "metadata_record_id_missing"
+    if not getattr(skill_trust, "runtime_evidence_kind", None):
+        return False, "runtime_evidence_kind_missing"
+    if not getattr(skill_trust, "policy_fingerprint", None):
+        return False, "policy_fingerprint_missing"
+    if getattr(skill_trust, "invariant_violations", None):
+        return False, "invariant_violation_present"
+    return True, ""
+
+
+def skill_trust_fspr_policy_action(
+    fspr_review: object,
+    config: DetectionConfig,
+    skill_trust=None,
+) -> str | None:
     """Resolve Gateway-owned policy action from FSPR evidence."""
 
     review = _validated_fspr_review(fspr_review)
     if review is None:
         return None
     if str(review.get("timing_mode") or "") != "pre_use_gate":
+        return "audit"
+    strong_binding, _failure_reason = is_strong_trusted_runtime_binding(skill_trust)
+    if is_provider_health_only_degraded_fspr(review) and strong_binding:
         return "audit"
     verdict = str(review.get("verdict") or "")
     mode = str(config.mode or "normal").strip().lower()
@@ -1348,13 +1450,20 @@ def skill_trust_fspr_policy_action(fspr_review: object, config: DetectionConfig)
     return matrix[mode].get(verdict, "audit")
 
 
-def skill_trust_fspr_review_tier(fspr_review: object, config: DetectionConfig) -> str | None:
+def skill_trust_fspr_review_tier(
+    fspr_review: object,
+    config: DetectionConfig,
+    skill_trust=None,
+) -> str | None:
     """Resolve Gateway-owned review tier from FSPR evidence."""
 
     review = _validated_fspr_review(fspr_review)
     if review is None:
         return None
     if str(review.get("timing_mode") or "") != "pre_use_gate":
+        return "none"
+    strong_binding, _failure_reason = is_strong_trusted_runtime_binding(skill_trust)
+    if is_provider_health_only_degraded_fspr(review) and strong_binding:
         return "none"
     verdict = str(review.get("verdict") or "")
     mode = str(config.mode or "normal").strip().lower()
@@ -1469,8 +1578,10 @@ def build_skill_trust_routing_intents(skill_trust, config: DetectionConfig) -> l
     if fspr_review is not None:
         if str(fspr_review.get("timing_mode") or "") != "pre_use_gate":
             return intents
-        policy_action = skill_trust_fspr_policy_action(fspr_review, config) or "audit"
-        review_tier = skill_trust_fspr_review_tier(fspr_review, config) or "none"
+        policy_action = skill_trust_fspr_policy_action(fspr_review, config, skill_trust) or "audit"
+        review_tier = skill_trust_fspr_review_tier(fspr_review, config, skill_trust) or "none"
+        strong_binding, strong_binding_failure_reason = is_strong_trusted_runtime_binding(skill_trust)
+        provider_health_only = is_provider_health_only_degraded_fspr(fspr_review)
         intents.append(ReviewRoutingIntent(
             source="fspr_package_review",
             recommended_tier=review_tier,
@@ -1482,6 +1593,9 @@ def build_skill_trust_routing_intents(skill_trust, config: DetectionConfig) -> l
                 "confidence": fspr_review.get("confidence"),
                 "degraded": bool(fspr_review.get("degraded", False)),
                 "degradation_reason": fspr_review.get("degradation_reason"),
+                "provider_health_only": provider_health_only,
+                "strong_runtime_binding": strong_binding,
+                "strong_binding_failure_reason": strong_binding_failure_reason,
             }),
             routing_affecting=review_tier in {"l2", "l3"},
             decision_affecting=policy_action in {"defer", "block"},
@@ -1692,13 +1806,23 @@ def _skill_trust_evidence(
     runtime_binding_action = skill_trust_runtime_binding_action(skill_trust, config)
     fspr_review = _validated_fspr_review(getattr(skill_trust, "first_use_package_review", None))
     fspr_rule: str | None = None
-    fspr_policy_action = skill_trust_fspr_policy_action(fspr_review, config) if fspr_review is not None else None
-    fspr_review_tier = skill_trust_fspr_review_tier(fspr_review, config) if fspr_review is not None else None
+    fspr_policy_action = (
+        skill_trust_fspr_policy_action(fspr_review, config, skill_trust)
+        if fspr_review is not None
+        else None
+    )
+    fspr_review_tier = (
+        skill_trust_fspr_review_tier(fspr_review, config, skill_trust)
+        if fspr_review is not None
+        else None
+    )
     fspr_decision_affecting = False
     fspr_routing_affecting = False
     if isinstance(fspr_review, dict):
         fspr_verdict = str(fspr_review.get("verdict") or "")
         fspr_timing_mode = str(fspr_review.get("timing_mode") or "")
+        fspr_provider_health_only = is_provider_health_only_degraded_fspr(fspr_review)
+        fspr_strong_binding, fspr_strong_binding_failure_reason = is_strong_trusted_runtime_binding(skill_trust)
         if fspr_verdict == "inconsistent":
             fspr_rule = "first_use_skill_package_inconsistent"
         elif fspr_verdict == "suspicious":
@@ -1772,6 +1896,9 @@ def _skill_trust_evidence(
                 "routing_affecting": fspr_routing_affecting,
                 "fspr_degraded": bool(fspr_review.get("degraded", False)),
                 "fspr_degradation_reason": fspr_review.get("degradation_reason"),
+                "provider_health_only": fspr_provider_health_only,
+                "strong_runtime_binding": fspr_strong_binding,
+                "strong_binding_failure_reason": fspr_strong_binding_failure_reason,
                 "decision_affecting": fspr_decision_affecting,
             })
         findings.append(finding)
@@ -1903,6 +2030,11 @@ def _counts_toward_d4_high_risk(snapshot: RiskSnapshot) -> bool:
         "first_use_scan_not_started",
         "first_use_scan_pending_budget_exhausted",
         "first_use_scan_running_sync",
+        "native_read_effect",
+        "shell_read_probe",
+        "shell_enumerate_probe",
+        "shell_capability_probe",
+        "pure_workspace_read_audit_narrowing",
     }
     if not rule_hits.issubset(skill_trust_rules):
         return True
@@ -1976,6 +2108,7 @@ def _is_reviewable_local_effect(
         "generated_artifact",
         "verifier_artifact",
         "workspace_file",
+        "workspace_directory",
         "document_input",
         "source",
         "input",
@@ -1989,6 +2122,11 @@ def _is_reviewable_local_effect(
         workspace_relation = str(target.get("workspace_relation") or "")
         if workspace_relation == "outside_workspace_or_absolute":
             reasons.append(f"workspace_relation:{workspace_relation}")
+    has_inside_workspace_target = any(
+        isinstance(target, dict)
+        and str(target.get("workspace_relation") or "") == "inside_workspace"
+        for target in targets
+    )
 
     payload = event.payload if event is not None else {}
     cwd = str((payload or {}).get("cwd") or (payload or {}).get("working_directory") or "").strip()
@@ -1996,14 +2134,102 @@ def _is_reviewable_local_effect(
         cwd_path = Path(cwd).expanduser()
         if ".." in cwd_path.parts:
             reasons.append("cwd_outside_workspace")
-        elif cwd_path.is_absolute() and not (
-            cwd_path == Path("/workspace") or cwd_path.is_relative_to(Path("/workspace"))
+        elif (
+            cwd_path.is_absolute()
+            and not (cwd_path == Path("/workspace") or cwd_path.is_relative_to(Path("/workspace")))
+            and not has_inside_workspace_target
         ):
             reasons.append("cwd_outside_workspace")
 
     summary = context.session_risk_summary if context is not None else None
     if isinstance(summary, dict) and summary.get("task_scope_path_escape"):
         reasons.append("task_scope_path_escape")
+
+    return not reasons, reasons
+
+
+def _is_pure_workspace_read_effect(
+    effect_summary: dict[str, Any],
+    *,
+    event: CanonicalEvent,
+    rule_hits: set[str],
+    routing_intents: list[ReviewRoutingIntent],
+    context: DecisionContext | None,
+    dimensions: RiskDimensions,
+) -> tuple[bool, list[str]]:
+    effects = set(effect_summary.get("effects") or [])
+    evidence_rules = {str(rule) for rule in effect_summary.get("evidence_rules") or []}
+    analysis_state = str(effect_summary.get("analysis_state") or "complete")
+    confidence = str(effect_summary.get("confidence") or "low")
+    wrappers = list(effect_summary.get("wrapper_chain") or [])
+    targets = list(effect_summary.get("targets") or [])
+    reasons: list[str] = []
+
+    pure_effects = {"filesystem.read", "filesystem.enumerate", "environment.probe"}
+    if not effects:
+        reasons.append("effect_missing")
+    elif not effects.issubset(pure_effects):
+        reasons.append("effect_not_pure_read")
+    if analysis_state != "complete":
+        reasons.append(f"analysis_state:{analysis_state}")
+    if confidence not in {"medium", "high"}:
+        reasons.append(f"low_effect_confidence:{confidence}")
+    if wrappers:
+        reasons.append("wrapper_chain_present")
+    if dimensions.d6 >= 2.0:
+        reasons.append("high_d6_injection_signal")
+    if rule_hits.intersection(_HARD_BLOCK_RULE_HITS):
+        reasons.append("hard_block_rule_present")
+    if evidence_rules.intersection(_HARD_BLOCK_RULE_HITS):
+        reasons.append("hard_block_effect_rule_present")
+    for rule_id in sorted(evidence_rules):
+        lowered = rule_id.lower()
+        if any(fragment in lowered for fragment in _CONTEXTUAL_DISQUALIFYING_RULE_FRAGMENTS):
+            reasons.append(f"disqualifying_rule:{rule_id}")
+    for intent in routing_intents:
+        if intent.decision_affecting and intent.policy_action in {"block", "defer"}:
+            reasons.append(f"decision_affecting_route:{intent.source}")
+
+    allowed_roles = {"workspace_file", "workspace_directory", "capability_probe"}
+    allowed_workspace_relations = {"inside_workspace", "process_environment"}
+    for target in targets:
+        if not isinstance(target, dict):
+            reasons.append("malformed_target")
+            continue
+        role = str(target.get("path_role") or "")
+        if role and role not in allowed_roles:
+            reasons.append(f"unsupported_target_role:{role}")
+        workspace_relation = str(target.get("workspace_relation") or "")
+        if workspace_relation and workspace_relation not in allowed_workspace_relations:
+            reasons.append(f"workspace_relation:{workspace_relation}")
+    has_inside_workspace_target = any(
+        isinstance(target, dict)
+        and str(target.get("workspace_relation") or "") == "inside_workspace"
+        for target in targets
+    )
+
+    summary = context.session_risk_summary if context is not None else None
+    if isinstance(summary, dict):
+        if summary.get("blocked_skill_lineage_match") or summary.get("blocked_skill_lineage_facts"):
+            reasons.append("blocked_skill_lineage")
+        if summary.get("prior_fspr_hard_block"):
+            reasons.append("prior_fspr_hard_block")
+        if summary.get("task_scope_path_escape"):
+            reasons.append("task_scope_path_escape")
+    payload = event.payload if event is not None else {}
+    cwd = str((payload or {}).get("cwd") or (payload or {}).get("working_directory") or "").strip()
+    if cwd:
+        cwd_path = Path(cwd).expanduser()
+        if ".." in cwd_path.parts:
+            reasons.append("cwd_outside_workspace")
+        elif (
+            cwd_path.is_absolute()
+            and not (cwd_path == Path("/workspace") or cwd_path.is_relative_to(Path("/workspace")))
+            and not has_inside_workspace_target
+        ):
+            reasons.append("cwd_outside_workspace")
+    if set(_content_evidence_rule_ids(context)):
+        reasons.append("content_evidence_present")
 
     return not reasons, reasons
 
@@ -2022,12 +2248,17 @@ def _classify_l1_authority(
     context: DecisionContext | None,
     config: DetectionConfig,
 ) -> tuple[L1AuthorityClass, list[str], ReviewRoutingIntent | None]:
-    del config
     rule_hits = set(snapshot_fields.get("rule_hits") or [])
     routing_intents = list(snapshot_fields.get("routing_intents") or [])
     effect_summary = snapshot_fields.get("effect_summary") or {}
     effects = set(effect_summary.get("effects") or [])
     evidence_rules = set(effect_summary.get("evidence_rules") or [])
+    short_circuit_rule = snapshot_fields.get("short_circuit_rule")
+    target_roles = {
+        str(target.get("path_role"))
+        for target in effect_summary.get("targets") or []
+        if isinstance(target, dict) and target.get("path_role")
+    }
     risk_level = snapshot_fields["risk_level"]
     dimensions = snapshot_fields["dimensions"]
     summary = context.session_risk_summary if context is not None else None
@@ -2043,6 +2274,23 @@ def _classify_l1_authority(
     for intent in routing_intents:
         if intent.decision_affecting and intent.policy_action == "block":
             reasons.append(intent.source)
+
+    if event.event_type == EventType.PRE_ACTION:
+        if "package.install" in effects:
+            reasons.append("package.install")
+        if "future_execution.entrypoint" in effects:
+            reasons.append("future_execution.entrypoint")
+        if target_roles.intersection({"credential_source", "hidden_oracle"}):
+            reasons.append("credential_source")
+        if "skill_package_read" in target_roles:
+            reasons.append("skill_package_read")
+        for rule_id in sorted(
+            (rule_hits | evidence_rules).intersection({
+                "persistence_entrypoint_write",
+                "wrapper_chain_unresolved",
+            })
+        ):
+            reasons.append(rule_id)
 
     reviewable_local, ineligible_reasons = _is_reviewable_local_effect(effect_summary, context, event)
     contextual_session = dimensions.d4 > 0 or _context_has_prior_fspr_block(context)
@@ -2067,6 +2315,45 @@ def _classify_l1_authority(
     if reasons:
         return L1AuthorityClass.DETERMINISTIC_HARD_BLOCK, list(dict.fromkeys(reasons)), None
 
+    native_write_requires_contextual = (
+        event.event_type == EventType.PRE_ACTION
+        and "filesystem.write" in effects
+        and "native_write_effect" in evidence_rules
+        and not short_circuit_rule
+    )
+    if native_write_requires_contextual:
+        if not reviewable_local:
+            return (
+                L1AuthorityClass.DETERMINISTIC_HARD_BLOCK,
+                list(dict.fromkeys(["native_write_not_reviewable", *ineligible_reasons])),
+                None,
+            )
+        metadata = contextual_binding_parts(event, context)
+        metadata.update({
+            "event_id": event.event_id,
+            "session_id": event.session_id,
+            "l1_authority_class": L1AuthorityClass.CONTEXTUAL_REVIEW_REQUIRED.value,
+            "l1_block_authority": "contextual_route_only",
+            "l2_l3_required": True,
+            "recovery_candidate_reason": "native_write_contextual_review",
+            "recovery_ineligible_reasons": [],
+            "blocked_lineage_match": False,
+            "anti_bypass_match": False,
+        })
+        return (
+            L1AuthorityClass.CONTEXTUAL_REVIEW_REQUIRED,
+            ["native_write_contextual_review"],
+            ReviewRoutingIntent(
+                source="contextual_review",
+                recommended_tier="l2",
+                policy_action="defer",
+                reason="native_write_contextual_review",
+                source_metadata=metadata,
+                routing_affecting=True,
+                decision_affecting=False,
+            ),
+        )
+
     if (
         event.event_type == EventType.PRE_ACTION
         and risk_level == RiskLevel.HIGH
@@ -2090,7 +2377,7 @@ def _classify_l1_authority(
             ["contextual_high_risk_after_fspr"],
             ReviewRoutingIntent(
                 source="contextual_review",
-                recommended_tier="l3",
+                recommended_tier="l2",
                 policy_action="defer",
                 reason="contextual_high_risk_after_fspr",
                 source_metadata=metadata,
@@ -2271,6 +2558,27 @@ def compute_risk_snapshot(
             }):
                 risk_level = _max_risk_level(risk_level, RiskLevel.MEDIUM)
                 score = max(score, _min_score_for_level(risk_level, config))
+
+    pure_read, _pure_read_reasons = _is_pure_workspace_read_effect(
+        effect_summary,
+        event=event,
+        rule_hits=set(rule_hits),
+        routing_intents=routing_intents,
+        context=context,
+        dimensions=dims,
+    )
+    if (
+        pure_read
+        and event.event_type == EventType.PRE_ACTION
+        and dims.d4 > 0
+        and risk_level == RiskLevel.HIGH
+        and sc_rule is None
+        and taint_flow_summary is None
+    ):
+        risk_level = RiskLevel.MEDIUM
+        score = min(score, max(config.threshold_medium, config.threshold_high - 0.01))
+        if "pure_workspace_read_audit_narrowing" not in rule_hits:
+            rule_hits.append("pure_workspace_read_audit_narrowing")
 
     snapshot_fields = {
         "risk_level": risk_level,

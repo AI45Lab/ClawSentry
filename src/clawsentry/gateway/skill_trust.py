@@ -583,6 +583,24 @@ def _metadata_record_to_raw(record: SkillTrustMetadataRecord) -> dict[str, Any]:
     return {key: value for key, value in raw.items() if value is not None}
 
 
+def _metadata_record_trust_list_state(record: SkillTrustMetadataRecord) -> str:
+    value = str(record.raw.get("trust_list_state") or record.raw.get("list_state") or "unlisted")
+    if value in {"allowlist", "greylist", "blacklist", "unlisted", "revoked", "disabled"}:
+        return value
+    return "unlisted"
+
+
+def _metadata_record_admission_risk(record: SkillTrustMetadataRecord) -> str:
+    value = str(record.raw.get("admission_risk") or "unknown")
+    if value in {"low", "medium", "high", "critical", "unknown"}:
+        return value
+    return "unknown"
+
+
+def _metadata_record_policy_fingerprint(record: SkillTrustMetadataRecord) -> str:
+    return str(record.raw.get("policy_fingerprint") or POLICY_FINGERPRINT)
+
+
 def load_skill_trust_runtime_metadata_bundle(bundle: dict[str, Any] | None) -> SkillTrustMetadataBundle:
     """Normalize old and new runtime metadata bundles into record-indexed metadata."""
 
@@ -831,9 +849,10 @@ def bind_runtime_skill_refs(
                         runtime_evidence_kind=ref.evidence_kind,
                         current_runner_contract_id=effective_runner_contract_id,
                         ref_ordinal=ref.ref_ordinal,
-                        trust_list_state="unlisted",
+                        trust_list_state=_metadata_record_trust_list_state(record),  # type: ignore[arg-type]
+                        admission_risk=_metadata_record_admission_risk(record),  # type: ignore[arg-type]
                         invariant_violations=violations,
-                        policy_fingerprint=POLICY_FINGERPRINT,
+                        policy_fingerprint=_metadata_record_policy_fingerprint(record),
                     )
                 )
                 continue
@@ -912,8 +931,9 @@ def bind_runtime_skill_refs(
                     metadata_record_id=record.metadata_record_id,
                     runtime_evidence_kind=ref.evidence_kind,
                     ref_ordinal=ref.ref_ordinal,
-                    trust_list_state="unlisted",
-                    policy_fingerprint=POLICY_FINGERPRINT,
+                    trust_list_state=_metadata_record_trust_list_state(record),  # type: ignore[arg-type]
+                    admission_risk=_metadata_record_admission_risk(record),  # type: ignore[arg-type]
+                    policy_fingerprint=_metadata_record_policy_fingerprint(record),
                 )
             )
             continue
@@ -989,17 +1009,16 @@ def build_skill_trust_bundle(
             status="unknown",
         )
         target_state = "allowlist" if report.admission_risk == RiskLevel.LOW else "greylist"
-        records.append(
-            apply_trust_list_state(
-                record,
-                target_state,
-                reason_code=(
-                    "clean_admission_report"
-                    if target_state == "allowlist"
-                    else "admission_review_required"
-                ),
-            )
+        trusted_record = apply_trust_list_state(
+            record,
+            target_state,
+            reason_code=(
+                "clean_admission_report"
+                if target_state == "allowlist"
+                else "admission_review_required"
+            ),
         )
+        records.append(trusted_record)
         allowed_runtime_roots = _allowed_runtime_roots_for_skill(
             source_root_path=source_root_path,
             skill_dir_name=root.name,
@@ -1027,6 +1046,12 @@ def build_skill_trust_bundle(
             "runtime_binding_profile": "source_or_mirror",
             "skill_root_hash": report.skill_root_hash,
             "content_hashes": report.content_hashes,
+            "trust_list_state": trusted_record.list_state,
+            "list_state": trusted_record.list_state,
+            "trust_level": trusted_record.trust_level,
+            "status": trusted_record.status,
+            "admission_risk": report.admission_risk.value,
+            "policy_fingerprint": trusted_record.policy_fingerprint or POLICY_FINGERPRINT,
         }
         metadata_records.append(metadata_record)
         metadata_by_normalized_name.setdefault(_display_normalize(root.name), []).append(metadata_record_id)
@@ -1042,6 +1067,11 @@ def build_skill_trust_bundle(
             "provenance_label_conflict": False,
             "admission_scan_id": report.scan_id,
             "admission_risk": report.admission_risk.value,
+            "trust_list_state": trusted_record.list_state,
+            "list_state": trusted_record.list_state,
+            "trust_level": trusted_record.trust_level,
+            "status": trusted_record.status,
+            "policy_fingerprint": trusted_record.policy_fingerprint or POLICY_FINGERPRINT,
             "metadata_record_id": metadata_record_id,
             "source_root_path": source_root_path,
             "source_root_path_hash": source_root_path_hash,
@@ -1060,15 +1090,17 @@ def build_skill_trust_bundle(
         if len(group) < 2:
             continue
         canonical = _choose_bundle_canonical(group)
-        blocked = sorted(root for root in group if root != canonical)
+        blocked = sorted(group)
         if not blocked:
             continue
         action = {
             "root": str(parent),
-            "canonical_skill": canonical.name,
             "blocked_skills": [root.name for root in blocked],
+            "ambiguous_skills": [root.name for root in blocked],
             "gateway_registry_status": "ambiguous",
             "gateway_rule_hits": ["ambiguous_skill_alias", "provenance_label_conflict"],
+            "policy_decision": "block",
+            "policy_reason": "ambiguous_skill_alias_with_provenance_label_conflict",
             "control_plane_evidence": "skill_trust_preflight",
         }
         preflight_actions.append(action)

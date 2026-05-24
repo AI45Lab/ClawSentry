@@ -12,7 +12,7 @@ import re as _re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Iterable, Optional
 
 try:
     from .a3s_adapter import A3SCodeAdapter
@@ -64,6 +64,11 @@ def _runtime_root_path_hash(path: str) -> str:
 def _monitoring_disabled_by_env() -> bool:
     raw = os.environ.get("CS_PROJECT_ENABLED", os.environ.get("CS_ENABLED", "true"))
     return str(raw).strip().lower() in {"0", "false", "no", "off"}
+
+
+def _codex_fallback_fail_closed_enabled() -> bool:
+    raw = os.environ.get("CS_CODEX_FALLBACK_FAIL_CLOSED", "")
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
 
 _EVENT_TO_HOOK: dict[str, str] = {
     "pre_action": "PreToolUse",
@@ -805,6 +810,18 @@ def _requested_effect_outcomes(decision_effects: dict[str, Any] | None) -> list[
     return outcomes
 
 
+def _decision_action_outcomes(result: dict[str, Any]) -> list[str]:
+    action = str(result.get("action") or "").strip()
+    decision = str(result.get("decision") or "").strip()
+    if action == "block" or decision == "block":
+        return ["native_block"]
+    if action == "defer" or decision == "defer":
+        return ["native_defer"]
+    if action == "modify" or decision == "modify":
+        return ["native_modify"]
+    return []
+
+
 def _record_inprocess_adapter_effect_result(
     adapter: A3SCodeAdapter,
     event: Any,
@@ -812,27 +829,42 @@ def _record_inprocess_adapter_effect_result(
     *,
     enforced: bool,
     degraded_reason: str | None = None,
+    enforced_outcomes: Iterable[str] | None = None,
+    degraded_outcomes: Iterable[str] | None = None,
+    host_ack: dict[str, Any] | None = None,
 ) -> None:
     gateway = getattr(adapter, "_gateway", None)
     if gateway is None:
         return
     decision_effects = result.get("decision_effects")
-    outcomes = _requested_effect_outcomes(
+    requested_outcomes = _decision_action_outcomes(result) + _requested_effect_outcomes(
         decision_effects if isinstance(decision_effects, dict) else None
     )
-    if not outcomes:
+    if not requested_outcomes:
         return
+    if enforced_outcomes is None and degraded_outcomes is None:
+        enforced_values = requested_outcomes if enforced else []
+        degraded_values = [] if enforced else requested_outcomes
+    else:
+        enforced_values = list(enforced_outcomes or [])
+        degraded_values = list(degraded_outcomes or [])
     try:
-        effect_id = str(decision_effects.get("effect_id") or "unknown")
+        effect_id = (
+            str(decision_effects.get("effect_id"))
+            if isinstance(decision_effects, dict) and decision_effects.get("effect_id")
+            else f"native-action:{getattr(event, 'trace_id', None) or getattr(event, 'event_id', None) or 'unknown'}"
+        )
         payload = AdapterEffectResult(
             effect_id=effect_id,
             framework=str(getattr(adapter, "source_framework", "a3s-code") or "a3s-code"),
             adapter=str(getattr(adapter, "CALLER_ADAPTER_ID", "a3s-gateway-harness")),
-            requested=outcomes,
-            enforced=outcomes if enforced else [],
-            degraded=[] if enforced else outcomes,
-            degrade_reason=degraded_reason,
+            requested=requested_outcomes,
+            enforced=enforced_values,
+            degraded=degraded_values,
+            degrade_reason=degraded_reason if degraded_values else None,
+            host_ack=host_ack,
             event_id=str(getattr(event, "event_id", "") or ""),
+            tool_use_id=str(getattr(event, "trace_id", "") or ""),
             session_id=str(getattr(event, "session_id", "") or ""),
         )
         gateway.record_adapter_effect_result(payload)
@@ -1235,12 +1267,45 @@ class A3SGatewayHarness:
         )
         result = _decision_to_ahp_result(decision)
         _attach_adapter_response_metadata(self.adapter, result)
+        event_name = str(msg.get("hook_event_name", ""))
+        action = str(result.get("action", "continue"))
+        action_outcomes = _decision_action_outcomes(result)
+        decision_effect_outcomes = _requested_effect_outcomes(
+            result.get("decision_effects") if isinstance(result.get("decision_effects"), dict) else None
+        )
+        pre_execution_enforced = (
+            bool(action_outcomes)
+            and event_name in {"PreToolUse", "PermissionRequest", "UserPromptSubmit"}
+        )
+        if event_name == "PostToolUse" and action_outcomes:
+            enforced_outcomes: list[str] = []
+            degraded_outcomes = action_outcomes + decision_effect_outcomes
+            degraded_reason = "codex_native_hook_post_action_cannot_enforce_block"
+        elif pre_execution_enforced:
+            enforced_outcomes = action_outcomes
+            degraded_outcomes = decision_effect_outcomes
+            degraded_reason = "codex_pretool_effects_unsupported" if degraded_outcomes else None
+        else:
+            enforced_outcomes = []
+            degraded_outcomes = action_outcomes + decision_effect_outcomes
+            degraded_reason = (
+                "codex_native_hook_cannot_enforce_action"
+                if action_outcomes
+                else "codex_pretool_effects_unsupported"
+            )
         _record_inprocess_adapter_effect_result(
             self.adapter,
             evt,
             result,
-            enforced=False,
-            degraded_reason="codex_pretool_effects_unsupported",
+            enforced=pre_execution_enforced and not decision_effect_outcomes,
+            degraded_reason=degraded_reason,
+            enforced_outcomes=enforced_outcomes,
+            degraded_outcomes=degraded_outcomes,
+            host_ack={
+                "hook_event_name": event_name,
+                "action": action,
+                "enforcement_supported": pre_execution_enforced,
+            },
         )
         return result
 
@@ -1334,7 +1399,6 @@ class A3SGatewayHarness:
             "BeforeModel",
             "AfterModel",
             "BeforeTool",
-            "AfterTool",
         }
         _record_inprocess_adapter_effect_result(
             self.adapter,
@@ -1515,7 +1579,11 @@ class A3SGatewayHarness:
         if action in ("continue", "allow"):
             return None
 
-        if policy_id.startswith("fallback-"):
+        fallback_fail_closed_enforced = (
+            policy_id == "fallback-fail-closed"
+            and _codex_fallback_fail_closed_enabled()
+        )
+        if policy_id.startswith("fallback-") and not fallback_fail_closed_enforced:
             _log_stderr(
                 f"Gateway unreachable — fail-open for Codex {hook_event_name} "
                 f"(would have been: {action})"

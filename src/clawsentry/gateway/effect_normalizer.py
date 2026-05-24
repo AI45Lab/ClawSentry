@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import posixpath
 import re
 import shlex
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .models import (
@@ -27,8 +28,24 @@ _NATIVE_WRITE_TOOLS = {
     "write_file",
     "edit",
     "edit_file",
+    "multiedit",
+    "multi_edit",
     "create_file",
     "apply_patch",
+}
+_NATIVE_READ_TOOLS = {
+    "read",
+    "read_file",
+    "filesystem.read_file",
+}
+_NATIVE_ENUMERATE_TOOLS = {
+    "glob",
+    "grep",
+    "ls",
+    "list",
+    "list_dir",
+    "list_files",
+    "search",
 }
 _DELEGATION_TOOLS = {"agent", "task"}
 _EXECUTABLE_SUFFIXES = (".sh", ".bash", ".zsh", ".py", ".js", ".mjs", ".cjs", ".ps1", ".bat", ".cmd")
@@ -54,6 +71,12 @@ _CREDENTIAL_MARKERS = (
     "secret",
     "token",
 )
+_HIDDEN_ORACLE_MARKERS = (
+    "hidden_oracle",
+    "/hidden-oracle/",
+    "/oracle/expected",
+    "expected_answer",
+)
 _PATH_RE = re.compile(r"(?:[A-Za-z]:)?(?:[./~]?[\w.-]+/)*[\w.-]+\.[A-Za-z0-9_+-]+")
 _URL_RE = re.compile(r"https?://[^\s'\"<>]+", re.IGNORECASE)
 _SHELL_SEGMENT_SPLIT_RE = re.compile(r"\s*(?:&&|\|\||;)\s*")
@@ -73,6 +96,7 @@ def normalize_action_effect(
     tool_l = tool.lower()
     payload = event.payload or {}
     raw_text = _payload_text(payload)
+    cwd = str(payload.get("cwd") or payload.get("working_directory") or "").strip()
     effects: list[str] = []
     targets: list[ActionEffectTarget] = []
     interpreters: list[str] = []
@@ -85,9 +109,25 @@ def normalize_action_effect(
         _add_effect(effects, "filesystem.write")
         target = _first_payload_path(payload) or _first_path(raw_text)
         if target:
-            targets.append(_target_for_path(target))
+            targets.append(_target_for_path(target, cwd=cwd))
         _add_rule(rules, "native_write_effect")
         confidence = "high"
+
+    if tool_l in _NATIVE_READ_TOOLS:
+        _add_effect(effects, "filesystem.read")
+        target = _first_payload_path(payload) or _first_path(raw_text)
+        if target:
+            targets.append(_target_for_path(target, role=_path_role_for_read(target), cwd=cwd))
+        _add_rule(rules, "native_read_effect")
+        confidence = _max_confidence(confidence, "high")
+
+    if tool_l in _NATIVE_ENUMERATE_TOOLS:
+        _add_effect(effects, "filesystem.enumerate")
+        target = _first_payload_path(payload) or _first_path(raw_text)
+        if target:
+            targets.append(_target_for_path(target, role="workspace_directory", cwd=cwd))
+        _add_rule(rules, "native_enumerate_effect")
+        confidence = _max_confidence(confidence, "high")
 
     if tool_l in {"bash", "shell", "terminal", "command", "exec", "sh", "zsh"}:
         interpreters.append("bash")
@@ -374,6 +414,40 @@ def _analyze_shell(text: str) -> dict[str, Any]:
         _merge(rules, archive_result["rules"])
         confidence = _max_confidence(confidence, archive_result["confidence"])
 
+    mkdir_targets = _mkdir_targets(text)
+    if mkdir_targets:
+        _add_effect(effects, "filesystem.write")
+        targets.extend(_target_for_path(path, role="workspace_directory") for path in mkdir_targets)
+        _add_rule(rules, "shell_directory_create")
+        confidence = _max_confidence(confidence, "medium")
+
+    archive_targets = _plain_archive_creation_targets(text)
+    if archive_targets:
+        _add_effect(effects, "filesystem.write")
+        targets.extend(_target_for_path(path) for path in archive_targets)
+        _add_rule(rules, "archive_creation_write")
+        confidence = _max_confidence(confidence, "medium")
+
+    script_targets = _interpreter_script_targets(text)
+    if script_targets:
+        _add_effect(effects, "command.exec")
+        targets.extend(_target_for_path(path, role=_path_role(path)) for path in script_targets)
+        _add_rule(rules, "interpreter_script_execution")
+        confidence = _max_confidence(confidence, "medium")
+
+    read_probe_result = _analyze_shell_read_list_probe(text)
+    _merge(effects, read_probe_result["effects"])
+    targets.extend(read_probe_result["targets"])
+    _merge(rules, read_probe_result["rules"])
+    confidence = _max_confidence(confidence, read_probe_result["confidence"])
+
+    awk_write_targets = _awk_internal_write_targets(text)
+    if awk_write_targets:
+        _add_effect(effects, "filesystem.write")
+        targets.extend(_target_for_path(path) for path in awk_write_targets)
+        _add_rule(rules, "awk_file_write")
+        confidence = _max_confidence(confidence, "medium")
+
     if re.search(r"\b(?:curl|wget|scp|rsync)\b", text):
         _add_effect(effects, "network.fetch")
         _add_rule(rules, "network_equivalent_fetch")
@@ -399,18 +473,305 @@ def _analyze_shell(text: str) -> dict[str, Any]:
     }
 
 
+def _analyze_shell_read_list_probe(text: str) -> dict[str, Any]:
+    effects: list[str] = []
+    targets: list[ActionEffectTarget] = []
+    rules: list[str] = []
+    confidence = "low"
+
+    read_commands = {"cat", "head", "tail", "less", "more", "file"}
+    enumerate_commands = {"ls", "find"}
+    probe_commands = {"which", "type", "pwd", "whoami", "id", "uname", "command"}
+
+    for tokens in _shell_segments(text):
+        if not tokens:
+            continue
+        command = Path(tokens[0]).name.lower()
+        non_option_args = [token for token in tokens[1:] if token and not token.startswith("-")]
+        if command in read_commands:
+            _add_effect(effects, "filesystem.read")
+            for path in non_option_args[:3]:
+                if path not in {"-", "/dev/null"}:
+                    targets.append(_target_for_path(path, role=_path_role_for_read(path)))
+            _add_rule(rules, "shell_read_probe")
+            confidence = _max_confidence(confidence, "medium")
+        elif command in {"grep", "rg", "sed", "awk"}:
+            candidate_paths = [arg for arg in non_option_args[1:] if _looks_like_path_arg(arg)]
+            if candidate_paths:
+                _add_effect(effects, "filesystem.read")
+                targets.extend(
+                    _target_for_path(path, role=_path_role_for_read(path))
+                    for path in candidate_paths[:3]
+                )
+                _add_rule(rules, "shell_read_probe")
+                confidence = _max_confidence(confidence, "medium")
+            elif _is_shell_capability_probe(command, tokens, text):
+                _add_effect(effects, "environment.probe")
+                probe = " ".join(tokens[:2]) if len(tokens) > 1 else command
+                targets.append(_probe_target(probe))
+                _add_rule(rules, "shell_capability_probe")
+                confidence = _max_confidence(confidence, "medium")
+        elif command in enumerate_commands:
+            _add_effect(effects, "filesystem.enumerate")
+            candidate_paths = [arg for arg in non_option_args if _looks_like_path_arg(arg)] or ["."]
+            targets.extend(_target_for_path(path, role="workspace_directory") for path in candidate_paths[:3])
+            _add_rule(rules, "shell_enumerate_probe")
+            confidence = _max_confidence(confidence, "medium")
+        elif command in probe_commands:
+            _add_effect(effects, "environment.probe")
+            probe = " ".join(tokens[:2]) if len(tokens) > 1 else command
+            targets.append(_probe_target(probe))
+            _add_rule(rules, "shell_capability_probe")
+            confidence = _max_confidence(confidence, "medium")
+        elif _is_shell_capability_probe(command, tokens, text):
+            _add_effect(effects, "environment.probe")
+            probe = " ".join(tokens[:2]) if len(tokens) > 1 else command
+            targets.append(_probe_target(probe))
+            _add_rule(rules, "shell_capability_probe")
+            confidence = _max_confidence(confidence, "medium")
+
+    return {
+        "effects": effects,
+        "targets": targets,
+        "rules": rules,
+        "confidence": confidence,
+    }
+
+
+def _awk_internal_write_targets(text: str) -> list[str]:
+    targets: list[str] = []
+    for tokens in _shell_segments(text):
+        if not tokens or Path(tokens[0]).name.lower() != "awk":
+            continue
+        for script in _awk_inline_scripts(tokens):
+            bindings = _awk_string_bindings(script)
+            for raw_target in _awk_write_expressions(script):
+                target = raw_target.strip().strip("()").strip()
+                if len(target) >= 2 and target[0] in {"'", '"'} and target[-1] == target[0]:
+                    path = target[1:-1]
+                else:
+                    path = bindings.get(target)
+                if path and _looks_like_path_arg(path):
+                    targets.append(path)
+    return targets[:3]
+
+
+def _awk_inline_scripts(tokens: list[str]) -> list[str]:
+    scripts: list[str] = []
+    index = 1
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "-f":
+            index += 2
+            continue
+        if token == "-v":
+            index += 2
+            continue
+        if token.startswith("-v") or token.startswith("--"):
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        if "{" in token or "BEGIN" in token or "END" in token or ">" in token:
+            scripts.append(token)
+        index += 1
+    return scripts
+
+
+def _awk_string_bindings(script: str) -> dict[str, str]:
+    bindings: dict[str, str] = {}
+    for match in re.finditer(r"\b([A-Za-z_]\w*)\s*=\s*(['\"])([^'\"]+)\2", script):
+        variable = match.group(1)
+        value = match.group(3)
+        if _looks_like_path_arg(value):
+            bindings[variable] = value
+    return bindings
+
+
+def _awk_write_expressions(script: str) -> list[str]:
+    targets: list[str] = []
+    pattern = re.compile(
+        r"\b(?:print|printf)\b[^;{}\n]{0,512}>\s*"
+        r"(?P<target>\(?\s*(?:[A-Za-z_]\w*|['\"][^'\"]+['\"])\s*\)?)"
+    )
+    for match in pattern.finditer(script):
+        targets.append(match.group("target"))
+    return targets
+
+
+def _is_shell_capability_probe(command: str, tokens: list[str], text: str) -> bool:
+    if not tokens:
+        return False
+    if _is_help_or_version_probe(tokens):
+        return True
+    if command in {"npm", "pnpm", "yarn"} and len(tokens) >= 2:
+        subcommand = tokens[1].lower()
+        if subcommand in {"root", "prefix", "bin", "config"}:
+            return True
+        if subcommand == "list" and any(token in {"-g", "--global"} for token in tokens[2:]):
+            return True
+    if command == "git" and tokens[1:3] == ["rev-parse", "--is-inside-work-tree"]:
+        return True
+    if command in {"python", "python3"}:
+        return _is_python_capability_probe(tokens, text)
+    if command in {"node", "nodejs"}:
+        return _is_node_capability_probe(tokens, text)
+    if command == "perl":
+        return _is_perl_constant_probe(tokens)
+    if command == "awk":
+        return _is_awk_constant_probe(tokens)
+    if command in {"echo", "printf"}:
+        return _is_stdout_constant_probe(tokens, text)
+    return False
+
+
+def _is_help_or_version_probe(tokens: list[str]) -> bool:
+    return any(token in {"--help", "-h", "--version", "-v", "-V", "-VV"} for token in tokens[1:])
+
+
+def _is_python_capability_probe(tokens: list[str], text: str) -> bool:
+    if _is_help_or_version_probe(tokens):
+        return True
+    lowered = text.lower()
+    risky_markers = (
+        "open(",
+        ".write(",
+        "subprocess",
+        "os.system",
+        "requests.",
+        "socket",
+        "shutil",
+        "eval(",
+        "exec(",
+    )
+    if any(marker in lowered for marker in risky_markers):
+        return False
+    if any(marker in lowered for marker in ("sys.version", "importlib.util.find_spec")):
+        return True
+    return _is_python_import_version_probe(text)
+
+
+def _is_python_import_version_probe(text: str) -> bool:
+    if "__version__" not in text and "importlib.metadata.version" not in text:
+        return False
+    if not re.search(r"\bimport\s+[A-Za-z_][\w.]*", text):
+        return False
+    return bool(re.search(r"\bprint\s*\(", text))
+
+
+def _is_node_capability_probe(tokens: list[str], text: str) -> bool:
+    if _is_help_or_version_probe(tokens):
+        return True
+    if _is_node_constant_probe(tokens):
+        return True
+    lowered = text.lower()
+    risky_markers = (
+        "writefile",
+        "appendfile",
+        "unlink",
+        "rm(",
+        "rmdir",
+        "mkdir",
+        "child_process",
+        "process.env",
+        "eval(",
+        "function(",
+        "fetch(",
+        "axios.",
+    )
+    if any(marker in lowered for marker in risky_markers):
+        return False
+    modules = re.findall(r"\brequire\(\s*['\"]([^'\"]+)['\"]\s*\)", text)
+    if not modules or "console.log" not in lowered:
+        return False
+    blocked_modules = {"fs", "node:fs", "child_process", "node:child_process", "http", "https", "net", "tls", "dgram"}
+    return all(_is_safe_node_probe_module(module, blocked_modules) for module in modules)
+
+
+def _inline_script_after_flag(tokens: list[str], flags: set[str]) -> str | None:
+    for index, token in enumerate(tokens[:-1]):
+        if token in flags:
+            return tokens[index + 1]
+    return None
+
+
+def _is_node_constant_probe(tokens: list[str]) -> bool:
+    script = _inline_script_after_flag(tokens, {"-e", "--eval"})
+    if script is None:
+        return False
+    return re.fullmatch(
+        r"\s*console\.log\(\s*['\"][A-Za-z0-9_.: -]{1,80}['\"]\s*\)\s*;?\s*",
+        script,
+    ) is not None
+
+
+def _is_perl_constant_probe(tokens: list[str]) -> bool:
+    script = _inline_script_after_flag(tokens, {"-e"})
+    if script is None:
+        return False
+    return re.fullmatch(
+        r"\s*print\s+['\"][A-Za-z0-9_.: -]{1,80}(?:\\n)?['\"]\s*;?\s*",
+        script,
+    ) is not None
+
+
+def _is_awk_constant_probe(tokens: list[str]) -> bool:
+    if len(tokens) != 2:
+        return False
+    return re.fullmatch(
+        r"\s*BEGIN\s*\{\s*print\s+['\"][A-Za-z0-9_.: -]{1,80}['\"]\s*;?\s*\}\s*",
+        tokens[1],
+    ) is not None
+
+
+def _is_safe_node_probe_module(module: str, blocked_modules: set[str]) -> bool:
+    normalized = str(module or "").strip().lower()
+    if not normalized or normalized in blocked_modules:
+        return False
+    if normalized.startswith((".", "/", "\\")) or ".." in normalized:
+        return False
+    if "/" in normalized and not normalized.startswith("@"):
+        return False
+    if normalized.startswith("@") and normalized.count("/") != 1:
+        return False
+    return bool(re.fullmatch(r"@?[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)?", normalized))
+
+
+def _is_stdout_constant_probe(tokens: list[str], text: str) -> bool:
+    if len(tokens) < 2:
+        return False
+    if any(marker in text for marker in ("$", "`", "<", ">", "|")):
+        return False
+    return not any(_looks_like_path_arg(token) for token in tokens[1:])
+
+
 def _shell_segments(text: str) -> list[list[str]]:
     segments: list[list[str]] = []
+    tokens = _shell_tokens_with_punctuation(text)
+    if tokens:
+        current: list[str] = []
+        for token in tokens:
+            if token and all(char in ";&|" for char in token):
+                if current:
+                    segments.append(current)
+                    current = []
+                continue
+            current.append(token)
+        if current:
+            segments.append(current)
+        return segments
+
     for part in _SHELL_SEGMENT_SPLIT_RE.split(text):
         stripped = part.strip()
         if not stripped:
             continue
         try:
-            tokens = shlex.split(stripped)
+            part_tokens = shlex.split(stripped)
         except ValueError:
-            tokens = stripped.split()
-        if tokens:
-            segments.append(tokens)
+            part_tokens = stripped.split()
+        if part_tokens:
+            segments.append(part_tokens)
     return segments
 
 
@@ -508,16 +869,138 @@ def _analyze_encrypted_archive_creation(text: str) -> dict[str, Any]:
     }
 
 
+def _mkdir_targets(text: str) -> list[str]:
+    targets: list[str] = []
+    for tokens in _shell_segments(text):
+        if not tokens or Path(tokens[0]).name.lower() != "mkdir":
+            continue
+        for token in tokens[1:]:
+            if token.startswith("-"):
+                continue
+            targets.append(token)
+    return targets[:3]
+
+
+def _plain_archive_creation_targets(text: str) -> list[str]:
+    targets: list[str] = []
+    shell_cwd: str | None = None
+    for tokens in _shell_segments(text):
+        if not tokens:
+            continue
+        command = Path(tokens[0]).name.lower()
+        if command == "cd":
+            shell_cwd = _updated_shell_cwd(shell_cwd, tokens)
+            continue
+        if command == "zip":
+            for token in tokens[1:]:
+                if token.startswith("-"):
+                    continue
+                targets.append(_resolve_shell_target(token, shell_cwd))
+                break
+        elif command == "tar":
+            for index, token in enumerate(tokens[:-1]):
+                if token in {"-f", "--file"}:
+                    targets.append(_resolve_shell_target(tokens[index + 1], shell_cwd))
+                    break
+                if token.startswith("--file="):
+                    targets.append(_resolve_shell_target(token.split("=", 1)[1], shell_cwd))
+                    break
+    return [target for target in targets if target][:3]
+
+
+def _updated_shell_cwd(current: str | None, tokens: list[str]) -> str | None:
+    if len(tokens) < 2:
+        return current
+    target = str(tokens[1] or "").strip()
+    if not target or target.startswith("-") or target == "~":
+        return None
+    if target.startswith("/"):
+        return posixpath.normpath(target)
+    if current:
+        return posixpath.normpath(posixpath.join(current, target))
+    return None
+
+
+def _resolve_shell_target(target: str, shell_cwd: str | None) -> str:
+    normalized = str(target or "").strip().strip("'\"")
+    if not shell_cwd or not normalized or normalized.startswith(("/", "~")):
+        return normalized
+    if re.match(r"^[A-Za-z]:", normalized):
+        return normalized
+    return posixpath.normpath(posixpath.join(shell_cwd, normalized))
+
+
+def _interpreter_script_targets(text: str) -> list[str]:
+    targets: list[str] = []
+    interpreters = {"python", "python3", "node", "nodejs", "bash", "sh", "zsh"}
+    inline_flags = {"-c", "-e", "-m", "-"}
+    for tokens in _shell_segments(text):
+        if not tokens or Path(tokens[0]).name.lower() not in interpreters:
+            continue
+        for token in tokens[1:]:
+            if token in inline_flags:
+                break
+            if token.startswith("-"):
+                continue
+            if token.endswith(_EXECUTABLE_SUFFIXES):
+                targets.append(token)
+            break
+    return targets[:3]
+
+
 def _analyze_python(text: str) -> dict[str, Any]:
     effects: list[str] = []
     targets: list[ActionEffectTarget] = []
     rules: list[str] = []
     confidence = "low"
+    path_bindings = _python_path_variable_bindings(text)
+    path_literals = _python_path_constructor_literals(text)
 
     for path in re.findall(r"open\(\s*['\"]([^'\"]+)['\"]", text):
         if any(marker in path.lower() for marker in _CREDENTIAL_MARKERS):
             _add_rule(rules, "credential_read")
             confidence = _max_confidence(confidence, "high")
+    for path in re.findall(r"os\.path\.(?:exists|isfile|isdir)\(\s*['\"]([^'\"]+)['\"]", text):
+        _add_effect(effects, "filesystem.read")
+        targets.append(_target_for_path(path, role=_path_role_for_read(path)))
+        _add_rule(rules, "python_path_probe")
+        confidence = _max_confidence(confidence, "medium")
+    for path in re.findall(
+        r"(?:Path|pathlib\.Path)\(\s*['\"]([^'\"]+)['\"]\s*\)\.(?:exists|is_file|is_dir)\(",
+        text,
+    ):
+        _add_effect(effects, "filesystem.read")
+        targets.append(_target_for_path(path, role=_path_role_for_read(path)))
+        _add_rule(rules, "python_path_probe")
+        confidence = _max_confidence(confidence, "medium")
+    for variable in re.findall(r"\b([A-Za-z_]\w*)\.(?:exists|is_file|is_dir)\(", text):
+        path = path_bindings.get(variable)
+        if path:
+            _add_effect(effects, "filesystem.read")
+            targets.append(_target_for_path(path, role=_path_role_for_read(path)))
+            _add_rule(rules, "python_path_probe")
+            confidence = _max_confidence(confidence, "medium")
+    for path in re.findall(
+        r"(?:Path|pathlib\.Path)\(\s*['\"]([^'\"]+)['\"]\s*\)\.read_(?:text|bytes)\(",
+        text,
+    ):
+        _add_effect(effects, "filesystem.read")
+        targets.append(_target_for_path(path, role=_path_role_for_read(path)))
+        _add_rule(rules, "python_file_read")
+        confidence = _max_confidence(confidence, "medium")
+    if path_literals and re.search(r"\.read_(?:text|bytes)\(", text):
+        for path in path_literals:
+            _add_effect(effects, "filesystem.read")
+            targets.append(_target_for_path(path, role=_path_role_for_read(path)))
+            _add_rule(rules, "python_file_read")
+            confidence = _max_confidence(confidence, "medium")
+    for variable in re.findall(r"\b([A-Za-z_]\w*)\.read_(?:text|bytes)\(", text):
+        path = path_bindings.get(variable)
+        if path:
+            _add_effect(effects, "filesystem.read")
+            targets.append(_target_for_path(path, role=_path_role_for_read(path)))
+            _add_rule(rules, "python_file_read")
+            confidence = _max_confidence(confidence, "medium")
     for path in re.findall(r"open\(\s*['\"]([^'\"]+)['\"]\s*,\s*['\"][^'\"]*[wax+][^'\"]*['\"]", text):
         _add_effect(effects, "filesystem.write")
         targets.append(_target_for_path(path))
@@ -528,6 +1011,25 @@ def _analyze_python(text: str) -> dict[str, Any]:
         targets.append(_target_for_path(path))
         _add_rule(rules, "python_file_write")
         confidence = "high"
+    for variable in re.findall(r"\b([A-Za-z_]\w*)\.write_(?:text|bytes)\(", text):
+        path = path_bindings.get(variable)
+        if path:
+            _add_effect(effects, "filesystem.write")
+            targets.append(_target_for_path(path))
+            _add_rule(rules, "python_file_write")
+            confidence = "high"
+    for path in re.findall(r"\.\s*save\(\s*['\"]([^'\"]+)['\"]\s*\)", text):
+        _add_effect(effects, "filesystem.write")
+        targets.append(_target_for_path(path))
+        _add_rule(rules, "python_file_write")
+        confidence = "high"
+    for variable in re.findall(r"\.\s*save\(\s*([A-Za-z_]\w*)\s*\)", text):
+        path = path_bindings.get(variable)
+        if path:
+            _add_effect(effects, "filesystem.write")
+            targets.append(_target_for_path(path))
+            _add_rule(rules, "python_file_write")
+            confidence = "high"
     for path in re.findall(r"shutil\.(?:copy|copyfile|move)\([^,]+,\s*['\"]([^'\"]+)['\"]", text):
         _add_effect(effects, "filesystem.write")
         targets.append(_target_for_path(path))
@@ -540,12 +1042,52 @@ def _analyze_python(text: str) -> dict[str, Any]:
     return {"effects": effects, "targets": targets, "rules": rules, "confidence": confidence}
 
 
+def _python_path_constructor_literals(text: str) -> list[str]:
+    return re.findall(r"(?:Path|pathlib\.Path)\(\s*['\"]([^'\"]+)['\"]\s*\)", text)
+
+
+def _python_path_variable_bindings(text: str) -> dict[str, str]:
+    bindings: dict[str, str] = {}
+    path_constructor = r"(?:Path|pathlib\.Path)"
+    for variable, path in re.findall(
+        rf"\b([A-Za-z_]\w*)\s*=\s*{path_constructor}\(\s*['\"]([^'\"]+)['\"]\s*\)",
+        text,
+    ):
+        bindings[variable] = path
+    for variable, base_variable, suffix in re.findall(
+        r"\b([A-Za-z_]\w*)\s*=\s*([A-Za-z_]\w*)\.with_suffix\(\s*['\"]([^'\"]+)['\"]\s*\)",
+        text,
+    ):
+        base_path = bindings.get(base_variable)
+        if not base_path:
+            continue
+        derived = _path_with_suffix(base_path, suffix)
+        if derived:
+            bindings[variable] = derived
+    return bindings
+
+
+def _path_with_suffix(path: str, suffix: str) -> str | None:
+    try:
+        return str(PurePosixPath(path).with_suffix(suffix))
+    except ValueError:
+        return None
+
+
 def _analyze_node(text: str) -> dict[str, Any]:
     effects: list[str] = []
     targets: list[ActionEffectTarget] = []
     rules: list[str] = []
     confidence = "low"
     for path in re.findall(r"(?:writeFile|writeFileSync|appendFile|appendFileSync)\(\s*['\"]([^'\"]+)['\"]", text):
+        _add_effect(effects, "filesystem.write")
+        targets.append(_target_for_path(path))
+        _add_rule(rules, "node_file_write")
+        confidence = "high"
+    for path in re.findall(
+        r"\bwriteFile\s*\(\s*\{[^{}]*\bfileName\s*:\s*['\"]([^'\"]+)['\"]",
+        text,
+    ):
         _add_effect(effects, "filesystem.write")
         targets.append(_target_for_path(path))
         _add_rule(rules, "node_file_write")
@@ -665,7 +1207,7 @@ def _payload_text(payload: dict[str, Any]) -> str:
 
 
 def _first_payload_path(payload: dict[str, Any]) -> str | None:
-    for key in ("path", "file_path", "target", "destination", "destination_path", "output_path"):
+    for key in ("path", "file_path", "relative_path", "target", "destination", "destination_path", "output_path"):
         value = payload.get(key)
         if isinstance(value, str) and value.strip():
             return value.strip()
@@ -674,11 +1216,42 @@ def _first_payload_path(payload: dict[str, Any]) -> str | None:
 
 def _redirection_paths(text: str) -> list[str]:
     paths: list[str] = []
-    for match in re.finditer(r"(?<![A-Za-z0-9])(?:\d?>{1,2})\s*(['\"]?)([^'\"\s;|&]+)\1", text):
-        path = match.group(2)
-        if path and not path.startswith("&"):
-            paths.append(path)
+    tokens = _shell_tokens_with_punctuation(text)
+    if not tokens:
+        return paths
+    write_redirect_ops = {">", ">>", "&>", ">&", ">|"}
+    for index, token in enumerate(tokens[:-1]):
+        if token not in write_redirect_ops:
+            continue
+        if token == ">" and index > 0 and tokens[index - 1] == "-":
+            continue
+        path = tokens[index + 1]
+        if _is_nonpersistent_redirect_target(path):
+            continue
+        paths.append(path)
     return paths
+
+
+def _shell_tokens_with_punctuation(text: str) -> list[str]:
+    try:
+        lexer = shlex.shlex(text, posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        return list(lexer)
+    except ValueError:
+        return []
+
+
+def _is_nonpersistent_redirect_target(path: str) -> bool:
+    normalized = str(path or "").strip().strip("'\"")
+    lowered = normalized.lower()
+    return (
+        not normalized
+        or normalized.startswith("&")
+        or normalized.isdigit()
+        or lowered in {"/dev/null", "nul", "/dev/stdout", "/dev/stderr"}
+        or re.fullmatch(r"/dev/fd/\d+", lowered) is not None
+        or re.fullmatch(r"/proc/self/fd/\d+", lowered) is not None
+    )
 
 
 def _tee_paths(text: str) -> list[str]:
@@ -749,19 +1322,30 @@ def _first_path(text: str) -> str | None:
     return paths[0] if paths else None
 
 
-def _target_for_path(path: str) -> ActionEffectTarget:
+def _looks_like_path_arg(value: str) -> bool:
+    if value in {".", ".."}:
+        return True
+    return "/" in value or "." in Path(value).name
+
+
+def _target_for_path(path: str, *, role: str | None = None, cwd: str | None = None) -> ActionEffectTarget:
     normalized = str(path or "").strip().strip("'\"")
-    role = _path_role(normalized)
     return ActionEffectTarget(
         kind="path",
         path_hash=_hash(normalized),
-        path_role=role,
-        workspace_relation=_workspace_relation(normalized),
+        path_role=role or _path_role(normalized),
+        workspace_relation=_workspace_relation(normalized, cwd=cwd),
     )
 
 
 def _path_role(path: str) -> str:
     lowered = path.lower()
+    if any(marker in lowered for marker in _CREDENTIAL_MARKERS):
+        return "credential_source"
+    if any(marker in lowered for marker in _HIDDEN_ORACLE_MARKERS):
+        return "hidden_oracle"
+    if _is_skill_package_path(lowered):
+        return "skill_package_read"
     if any(marker in lowered for marker in _PERSISTENCE_MARKERS):
         return "persistence_entrypoint"
     if "loader" in lowered or "bootstrap" in lowered:
@@ -771,10 +1355,55 @@ def _path_role(path: str) -> str:
     return "workspace_file"
 
 
-def _workspace_relation(path: str) -> str:
-    if path.startswith(("/", "~")) or re.match(r"^[A-Za-z]:", path):
+def _is_skill_package_path(lowered_path: str) -> bool:
+    known_roots = (
+        "/.codex/skills/",
+        "/.claude/skills/",
+        "/.agents/skills/",
+        ".codex/skills/",
+        ".claude/skills/",
+        ".agents/skills/",
+    )
+    if any(marker in lowered_path for marker in known_roots):
+        return True
+    if re.search(r"/(?:codex|claude|gemini|kimi|agents?)/skills/[^/]+(?:/|$)", lowered_path):
+        return True
+    return bool(re.search(r"(?:^|/)skills/[^/]+/skill\.md$", lowered_path))
+
+
+def _path_role_for_read(path: str) -> str:
+    role = _path_role(path)
+    if role == "future_execution.artifact":
+        return "workspace_file"
+    return role
+
+
+def _workspace_relation(path: str, *, cwd: str | None = None) -> str:
+    normalized = str(path or "").strip().strip("'\"")
+    normalized_slash = normalized.replace("\\", "/")
+    parts = [part for part in normalized_slash.split("/") if part]
+    if ".." in parts:
+        return "outside_workspace_or_absolute"
+    if normalized in {".", "./"}:
+        return "inside_workspace"
+    cwd_slash = str(cwd or "").strip().strip("'\"").replace("\\", "/").rstrip("/")
+    if cwd_slash and not cwd_slash.startswith("~") and not re.match(r"^[A-Za-z]:", cwd_slash):
+        if normalized_slash == cwd_slash or normalized_slash.startswith(cwd_slash + "/"):
+            return "inside_workspace"
+    if normalized.startswith("/workspace/") or normalized == "/workspace":
+        return "inside_workspace"
+    if normalized.startswith(("/", "~")) or re.match(r"^[A-Za-z]:", normalized):
         return "outside_workspace_or_absolute"
     return "inside_workspace"
+
+
+def _probe_target(probe: str) -> ActionEffectTarget:
+    return ActionEffectTarget(
+        kind="capability_probe",
+        path_hash=_hash(probe),
+        path_role="capability_probe",
+        workspace_relation="process_environment",
+    )
 
 
 def _disabled_capabilities(context: DecisionContext | None) -> set[str]:

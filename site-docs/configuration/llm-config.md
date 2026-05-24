@@ -56,7 +56,7 @@ CS_LLM_PROVIDER=
 
 ```bash title=".clawsentry.env.local"
 CS_LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxx
+ANTHROPIC_API_KEY=<anthropic-api-key>
 ```
 
 ### 可选配置
@@ -89,7 +89,7 @@ pip install anthropic
 
 ```bash title=".clawsentry.env.local"
 CS_LLM_PROVIDER=openai
-OPENAI_API_KEY = sk-proj-xxxxxxxxxxxxx
+OPENAI_API_KEY = <openai-api-key>
 ```
 
 ### 可选配置
@@ -126,7 +126,7 @@ CS_LLM_MODEL=qwen2.5:7b
 
 ```bash title=".clawsentry.env.local"
 CS_LLM_PROVIDER=openai
-OPENAI_API_KEY=token-xxx
+OPENAI_API_KEY=<api-token>
 CS_LLM_BASE_URL=http://gpu-server:8000/v1
 CS_LLM_MODEL=Qwen/Qwen2.5-72B-Instruct
 ```
@@ -135,7 +135,7 @@ CS_LLM_MODEL=Qwen/Qwen2.5-72B-Instruct
 
 ```bash title=".clawsentry.env.local"
 CS_LLM_PROVIDER=openai
-OPENAI_API_KEY = sk-litellm-xxx
+OPENAI_API_KEY = <litellm-api-key>
 CS_LLM_BASE_URL=http://litellm-proxy:4000/v1
 CS_LLM_MODEL=gpt-4o  # 路由到 LiteLLM 配置的模型
 ```
@@ -176,7 +176,7 @@ ClawSentry 支持多种 API 密钥注入方式，适合不同的 secret manager 
 
 ```bash
 # secret manager 把密钥注入到 MY_SECRET_LLM_KEY
-export MY_SECRET_LLM_KEY=sk-ant-xxx
+export MY_SECRET_LLM_KEY=<anthropic-api-key>
 # 告知 ClawSentry 使用该变量
 export CS_LLM_API_KEY_ENV=MY_SECRET_LLM_KEY
 ```
@@ -280,7 +280,7 @@ L3 是最高决策层，启用后可对高风险事件进行多轮工具调用�
 ```bash title=".clawsentry.env.local"
 # 必须先配置 LLM Provider
 CS_LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-xxx
+ANTHROPIC_API_KEY=<anthropic-api-key>
 
 # 然后启用 L3
 CS_L3_ENABLED=true
@@ -433,7 +433,7 @@ ClawSentry 的分层架构天然具备成本控制能力。
 
 ```bash title=".clawsentry.env.local"
 CS_LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxx
+ANTHROPIC_API_KEY=<anthropic-api-key>
 CS_LLM_MODEL=claude-sonnet-4-20250514
 CS_L3_ENABLED=true
 AHP_SKILLS_DIR=/etc/clawsentry/custom-skills
@@ -443,7 +443,7 @@ AHP_SKILLS_DIR=/etc/clawsentry/custom-skills
 
 ```bash title=".clawsentry.env.local"
 CS_LLM_PROVIDER=openai
-OPENAI_API_KEY = sk-proj-xxxxxxxxxxxxx
+OPENAI_API_KEY = <openai-api-key>
 CS_LLM_MODEL=gpt-4o
 # CS_L3_ENABLED 保持默认 false
 ```
@@ -462,7 +462,7 @@ CS_L3_ENABLED=true
 
 ```bash title=".clawsentry.env.local"
 CS_LLM_PROVIDER=openai
-OPENAI_API_KEY = sk-deepseek-xxxxxxxxxxxxx
+OPENAI_API_KEY = <deepseek-api-key>
 CS_LLM_BASE_URL=https://api.deepseek.com/v1
 CS_LLM_MODEL=deepseek-chat
 ```

@@ -14,6 +14,7 @@ from clawsentry.gateway.models import (
     CanonicalDecision,
     DecisionSource,
     DecisionVerdict,
+    EffectOutcome,
     EventType,
     RiskLevel,
     SkillRegistryRecord,
@@ -1852,6 +1853,14 @@ class TestFrameworkArgument:
 class TestCodexNativeHookDispatch:
     """Codex native hooks use Codex normalization and Codex response semantics."""
 
+    class _AdapterEffectRecorder:
+        def __init__(self) -> None:
+            self.records = []
+
+        def record_adapter_effect_result(self, result):
+            self.records.append(result)
+            return {"created": True, "result": result}
+
     @staticmethod
     def _decision(
         decision: DecisionVerdict,
@@ -2409,6 +2418,128 @@ class TestCodexNativeHookDispatch:
         }
 
     @pytest.mark.asyncio
+    async def test_codex_pretooluse_block_records_enforced_native_action(self):
+        from unittest.mock import AsyncMock
+
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.BLOCK,
+                reason="native write denied",
+                risk_level=RiskLevel.CRITICAL,
+            )
+        )
+        recorder = self._AdapterEffectRecorder()
+        adapter._gateway = recorder
+        harness = A3SGatewayHarness(adapter)
+
+        response = await harness.dispatch_async(
+            {
+                "session_id": "sess-codex-native-enforced",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "apply_patch",
+                "tool_input": {
+                    "command": "*** Begin Patch\n*** Update File: app.py\n",
+                    "file_path": "app.py",
+                },
+                "tool_use_id": "tool-codex-native-enforced",
+            }
+        )
+
+        assert response is not None
+        assert recorder.records
+        record = recorder.records[0]
+        assert record.framework == "codex"
+        assert record.requested == [EffectOutcome.NATIVE_BLOCK]
+        assert record.enforced == [EffectOutcome.NATIVE_BLOCK]
+        assert record.degraded == []
+        assert record.tool_use_id == "tool-codex-native-enforced"
+        assert record.host_ack == {
+            "hook_event_name": "PreToolUse",
+            "action": "block",
+            "enforcement_supported": True,
+        }
+
+    @pytest.mark.asyncio
+    async def test_codex_posttooluse_block_records_degraded_native_action(self):
+        from unittest.mock import AsyncMock
+
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.BLOCK,
+                reason="post-action observation cannot undo write",
+                risk_level=RiskLevel.CRITICAL,
+            )
+        )
+        recorder = self._AdapterEffectRecorder()
+        adapter._gateway = recorder
+        harness = A3SGatewayHarness(adapter)
+
+        response = await harness.dispatch_async(
+            {
+                "session_id": "sess-codex-native-degraded",
+                "hook_event_name": "PostToolUse",
+                "tool_name": "apply_patch",
+                "tool_input": {
+                    "command": "*** Begin Patch\n*** Update File: app.py\n",
+                    "file_path": "app.py",
+                },
+                "tool_use_id": "tool-codex-native-degraded",
+            }
+        )
+
+        assert response is not None
+        assert recorder.records
+        record = recorder.records[0]
+        assert record.framework == "codex"
+        assert record.requested == [EffectOutcome.NATIVE_BLOCK]
+        assert record.enforced == []
+        assert record.degraded == [EffectOutcome.NATIVE_BLOCK]
+        assert record.degrade_reason == "codex_native_hook_post_action_cannot_enforce_block"
+        assert record.tool_use_id == "tool-codex-native-degraded"
+        assert record.host_ack == {
+            "hook_event_name": "PostToolUse",
+            "action": "block",
+            "enforcement_supported": False,
+        }
+
+    @pytest.mark.asyncio
+    async def test_gemini_aftertool_block_records_degraded_native_action(self):
+        from unittest.mock import AsyncMock
+
+        adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="gemini-cli")
+        adapter.request_decision = AsyncMock(
+            return_value=self._decision(
+                DecisionVerdict.BLOCK,
+                reason="post-action Gemini observation cannot undo write",
+                risk_level=RiskLevel.CRITICAL,
+            )
+        )
+        recorder = self._AdapterEffectRecorder()
+        adapter._gateway = recorder
+        harness = A3SGatewayHarness(adapter)
+
+        response = await harness.dispatch_async(
+            {
+                "session_id": "sess-gemini-native-degraded",
+                "hook_event_name": "AfterTool",
+                "tool_name": "write_file",
+                "tool_input": {"path": "app.py", "content": "x"},
+                "tool_use_id": "tool-gemini-native-degraded",
+            }
+        )
+
+        assert response is not None
+        assert recorder.records
+        record = recorder.records[0]
+        assert record.framework == "gemini-cli"
+        assert record.requested == [EffectOutcome.NATIVE_BLOCK]
+        assert record.enforced == []
+        assert record.degraded == [EffectOutcome.NATIVE_BLOCK]
+        assert record.degrade_reason == "gemini_hook_effect_is_advisory_or_partial"
+
+    @pytest.mark.asyncio
     async def test_codex_sessionstart_never_returns_host_block(self):
         from unittest.mock import AsyncMock
 
@@ -2432,9 +2563,10 @@ class TestCodexNativeHookDispatch:
         assert response is None
 
     @pytest.mark.asyncio
-    async def test_codex_fallback_policy_fails_open_with_diagnostic(self, capsys):
+    async def test_codex_fallback_fail_closed_pretooluse_returns_deny_shape(self, monkeypatch):
         from unittest.mock import AsyncMock
 
+        monkeypatch.setenv("CS_CODEX_FALLBACK_FAIL_CLOSED", "1")
         adapter = A3SCodeAdapter(uds_path="/tmp/nonexistent.sock", source_framework="codex")
         adapter.request_decision = AsyncMock(
             return_value=self._decision(
@@ -2454,8 +2586,45 @@ class TestCodexNativeHookDispatch:
             }
         )
 
-        assert response is None
-        assert "Gateway unreachable" in capsys.readouterr().err
+        assert response == {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": (
+                    "[ClawSentry] gateway unreachable fallback (risk: high)"
+                ),
+            }
+        }
+
+    @pytest.mark.asyncio
+    async def test_codex_gateway_unreachable_fail_closed_blocks_bash_pretooluse(self, monkeypatch):
+        monkeypatch.setenv("CS_CODEX_FALLBACK_FAIL_CLOSED", "1")
+        adapter = A3SCodeAdapter(
+            uds_path="/tmp/nonexistent-clawsentry.sock",
+            default_deadline_ms=1,
+            max_rpc_retries=0,
+            source_framework="codex",
+        )
+        harness = A3SGatewayHarness(adapter)
+
+        response = await harness.dispatch_async(
+            {
+                "session_id": "sess-fallback-codex-real-adapter",
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": "sed -n '1,220p' /workspace/.codex/skills/xlsx/SKILL.md"
+                },
+            }
+        )
+
+        assert response is not None
+        output = response["hookSpecificOutput"]
+        assert output["hookEventName"] == "PreToolUse"
+        assert output["permissionDecision"] == "deny"
+        assert "Fallback: fail-closed for high-risk pre_action" in output[
+            "permissionDecisionReason"
+        ]
 
     @pytest.mark.asyncio
     async def test_codex_permission_request_block_returns_deny_behavior(self):

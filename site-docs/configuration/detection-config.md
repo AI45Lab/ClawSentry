@@ -148,10 +148,11 @@ DetectionConfig（frozen dataclass）
 | `skill_trust_fspr_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_ENABLED` | 启用 First-Use Skill Package Review |
 | `skill_trust_fspr_pre_use_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED` | pre-use gate FSPR evidence |
 | `skill_trust_fspr_post_action_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED` | post-action incremental FSPR evidence |
-| `skill_trust_fspr_role_set` | `str` | `default` | `CS_SKILL_TRUST_FSPR_ROLE_SET` | FSPR role set 标识 |
+| `skill_trust_fspr_review_mode` | `str` | `agentic-readonly` | `CS_SKILL_TRUST_FSPR_REVIEW_MODE` | FSPR 审查路线；默认 agentic-readonly，`final-only` 为备用 |
+| `skill_trust_fspr_role_set` | `str` | `default` | `CS_SKILL_TRUST_FSPR_ROLE_SET` | legacy role-set；仅 `final-only` 兼容保留 |
 | `skill_trust_fspr_timeout_ms` | `int` | `120000` | `CS_SKILL_TRUST_FSPR_TIMEOUT_MS` | FSPR 超时预算 |
 | `skill_trust_fspr_cache_enabled` | `bool` | `true` | `CS_SKILL_TRUST_FSPR_CACHE_ENABLED` | 启用 FSPR cache |
-| `skill_trust_fspr_provider_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED` | 允许 provider-backed FSPR roles |
+| `skill_trust_fspr_provider_enabled` | `bool` | `false` | `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED` | 允许 provider-backed FSPR review path |
 | `capability_narrowing_enabled` | `bool` | `false` | `CS_CAPABILITY_NARROWING_ENABLED` | 高会话风险时应用收窄的 SessionScopeProfile |
 | `capability_narrowing_trigger_risk` | `str` | `high` | `CS_CAPABILITY_NARROWING_TRIGGER_RISK` | 自动收窄触发阈值：`low`、`medium`、`high`、`critical` |
 | `capability_narrowing_allowed_tool_permission_groups` | `tuple[str, ...]` | `("read_only",)` | `CS_CAPABILITY_NARROWING_ALLOWED_TOOL_PERMISSION_GROUPS` | 自动收窄后允许的工具权限组 |

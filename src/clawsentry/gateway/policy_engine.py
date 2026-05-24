@@ -126,7 +126,7 @@ def _context_with_routing_intents(
         session_summary["l3_trigger_source_metadata"] = {
             key: value for key, value in metadata.items() if value is not None
         }
-    elif routing_intent.recommended_tier == "l2":
+    elif routing_intent.recommended_tier == "l2" and routing_intent.source != "contextual_review":
         session_summary["force_l2"] = True
     if context is not None:
         return context.model_copy(update={"session_risk_summary": session_summary})

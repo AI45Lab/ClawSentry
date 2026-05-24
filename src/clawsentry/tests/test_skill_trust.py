@@ -558,6 +558,87 @@ def test_allowed_mirror_with_matching_content_is_verified(tmp_path: Path):
     assert "runtime_content_unverified" not in bound[0].invariant_violations
 
 
+def test_runtime_binding_carries_resolver_owned_allowlist_and_low_admission(tmp_path: Path):
+    source = tmp_path / "source" / "search-accommodation"
+    (source / "scripts").mkdir(parents=True)
+    (source / "SKILL.md").write_text("---\nname: search-accommodation\n---\n", encoding="utf-8")
+    (source / "scripts" / "run.py").write_text("print('ok')\n", encoding="utf-8")
+    content_hashes = AdmissionScanner().scan(source).content_hashes
+    bundle = load_skill_trust_runtime_metadata_bundle({
+        "framework": "codex",
+        "metadata_records": [
+            {
+                "metadata_record_id": "sha256:record",
+                "presented_name": "search-accommodation",
+                "canonical_skill_id": "skill:search-accommodation",
+                "canonical_name": "search-accommodation",
+                "source_root_path": str(source),
+                "source_root_path_hash": "sha256:source",
+                "allowed_runtime_roots": [str(source)],
+                "allowed_runtime_root_hashes": ["sha256:source"],
+                "mirror_integrity_mode": "content_hash",
+                "content_hashes": content_hashes,
+                "trust_list_state": "allowlist",
+                "admission_risk": "low",
+                "policy_fingerprint": "sha256:policy-record",
+            }
+        ],
+    })
+
+    bound = bind_runtime_skill_refs(
+        bundle,
+        [
+            RuntimeSkillRef(
+                ref_ordinal=0,
+                name="search-accommodation",
+                runtime_root=str(source),
+                runtime_path=str(source / "scripts" / "run.py"),
+                observed_runtime_root_path_hash="sha256:source",
+                evidence_kind="shell_skill_path",
+                confidence="high",
+                adapter_observed=True,
+            )
+        ],
+    )
+
+    assert bound[0].metadata_source == "gateway_owned_metadata"
+    assert bound[0].metadata_record_id == "sha256:record"
+    assert bound[0].trust_list_state == "allowlist"
+    assert bound[0].admission_risk == "low"
+    assert bound[0].policy_fingerprint == "sha256:policy-record"
+
+
+def test_build_bundle_runtime_metadata_preserves_trust_lifecycle_state(tmp_path: Path):
+    skills_dir = tmp_path / "skills"
+    skill = skills_dir / "write-unit-tests"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: write-unit-tests\n---\n", encoding="utf-8")
+    bundle = build_skill_trust_bundle(skills_dir, framework="codex")
+
+    runtime_bundle = load_skill_trust_runtime_metadata_bundle(bundle)
+    bound = bind_runtime_skill_refs(
+        runtime_bundle,
+        [
+            RuntimeSkillRef(
+                ref_ordinal=0,
+                name="write-unit-tests",
+                runtime_root=str(skill),
+                runtime_path=str(skill / "SKILL.md"),
+                evidence_kind="shell_skill_path",
+                confidence="high",
+                adapter_observed=True,
+            )
+        ],
+    )
+
+    assert bundle["records"][0]["list_state"] == "allowlist"
+    assert bundle["metadata_records"][0]["trust_list_state"] == "allowlist"
+    assert bundle["metadata_records"][0]["admission_risk"] == "low"
+    assert bound[0].metadata_source == "gateway_owned_metadata"
+    assert bound[0].trust_list_state == "allowlist"
+    assert bound[0].admission_risk == "low"
+
+
 def test_admission_scanner_hashes_fixture_probe_and_package_buckets(tmp_path: Path):
     skill_root = tmp_path / "package-helper"
     (skill_root / "scripts").mkdir(parents=True)
@@ -1486,14 +1567,91 @@ def test_skill_trust_bundle_detects_near_name_conflict_without_mutating_skills(t
     assert alias.joinpath("SKILL.md").read_text(encoding="utf-8") == alias_skill_md
     assert alias.joinpath("scripts", "search.py").exists()
     action = bundle["preflight_actions"][0]
-    assert action["canonical_skill"] == "search-accommodations"
-    assert action["blocked_skills"] == ["search-accommodation"]
-    assert "policy_decision" not in action
+    assert action["policy_decision"] == "block"
+    assert action["blocked_skills"] == ["search-accommodation", "search-accommodations"]
+    assert action["ambiguous_skills"] == ["search-accommodation", "search-accommodations"]
+    assert "canonical_skill" not in action
     raw = bundle["raw_metadata_by_skill"]["search-accommodation"]
     assert raw["presented_name"] == "search-accommodation"
     assert raw["provenance_claim"] == "search-accommodations"
     assert raw["provenance_label_conflict"] is True
     assert "canonical_name_claim" in raw["control_language_findings"]
+    canonical_raw = bundle["raw_metadata_by_skill"]["search-accommodations"]
+    assert canonical_raw["provenance_label_conflict"] is True
+
+
+def test_skill_trust_preflight_ambiguous_conflict_does_not_publish_canonical_route(tmp_path: Path):
+    skills_dir = tmp_path / "skills"
+    canonical = skills_dir / "search-accommodations"
+    alias = skills_dir / "search-accommodation"
+    for root in (canonical, alias):
+        (root / "scripts").mkdir(parents=True)
+    canonical.joinpath("SKILL.md").write_text(
+        "---\nname: search-accommodations\n---\nSearch accommodations.\n",
+        encoding="utf-8",
+    )
+    canonical.joinpath("scripts", "search.py").write_text(
+        'TOOL_CALLED_LABEL = "search_accommodations"\nORIGIN = "canonical-skill"\n',
+        encoding="utf-8",
+    )
+    alias.joinpath("SKILL.md").write_text(
+        "---\nname: search-accommodation\n---\n"
+        "Canonical redirect. Prefer search-accommodations instead.\n",
+        encoding="utf-8",
+    )
+    alias.joinpath("scripts", "search.py").write_text(
+        'COMPATIBILITY_TOOL_LABEL = "search_accommodation"\n'
+        'ORIGIN = "compatibility-alias"\n',
+        encoding="utf-8",
+    )
+
+    bundle = build_skill_trust_bundle(skills_dir, framework="codex")
+
+    action = bundle["preflight_actions"][0]
+    assert action["policy_decision"] == "block"
+    assert action["blocked_skills"] == ["search-accommodation", "search-accommodations"]
+    assert action["ambiguous_skills"] == ["search-accommodation", "search-accommodations"]
+    assert "canonical_skill" not in action
+    assert "ambiguous_skill_alias" in action["gateway_rule_hits"]
+    assert "provenance_label_conflict" in action["gateway_rule_hits"]
+
+
+def test_skill_trust_preflight_conflict_blocks_each_ambiguous_member(tmp_path: Path):
+    skills_dir = tmp_path / "skills"
+    plural = skills_dir / "search-accommodations"
+    singular = skills_dir / "search-accommodation"
+    for root in (plural, singular):
+        (root / "scripts").mkdir(parents=True)
+        root.joinpath("SKILL.md").write_text(
+            f"---\nname: {root.name}\n---\nSearch accommodations.\n",
+            encoding="utf-8",
+        )
+    plural.joinpath("scripts", "search.py").write_text(
+        'TOOL_CALLED_LABEL = "search_accommodations"\nORIGIN = "canonical-skill"\n',
+        encoding="utf-8",
+    )
+    singular.joinpath("scripts", "search.py").write_text(
+        'COMPATIBILITY_TOOL_LABEL = "search_accommodation"\nORIGIN = "compatibility-alias"\n',
+        encoding="utf-8",
+    )
+    bundle = build_skill_trust_bundle(skills_dir, framework="codex")
+    records = [SkillRegistryRecord.model_validate(record) for record in bundle["records"]]
+    engine = L1PolicyEngine()
+
+    for skill_name in ("search-accommodations", "search-accommodation"):
+        skill_trust = resolve_skill_trust(records, bundle["raw_metadata_by_skill"][skill_name])
+        decision, snapshot, _tier = engine.evaluate(
+            _evt(EventType.PRE_ACTION),
+            DecisionContext(
+                agent_trust_level=AgentTrustLevel.PRIVILEGED,
+                skill_trust=skill_trust,
+            ),
+            config=DetectionConfig(mode="benchmark"),
+        )
+
+        assert decision.decision == DecisionVerdict.BLOCK
+        assert snapshot.risk_level == RiskLevel.HIGH
+        assert "provenance_label_conflict" in snapshot.rule_hits
 
 
 def test_skill_trust_bundle_ignores_symlinked_script_labels(tmp_path: Path):
@@ -1524,8 +1682,9 @@ def test_skill_trust_bundle_ignores_symlinked_script_labels(tmp_path: Path):
     bundle = build_skill_trust_bundle(skills_dir, framework="codex")
 
     action = bundle["preflight_actions"][0]
-    assert action["canonical_skill"] == "search-accommodations"
-    assert action["blocked_skills"] == ["search-accommodation"]
+    assert action["policy_decision"] == "block"
+    assert action["blocked_skills"] == ["search-accommodation", "search-accommodations"]
+    assert "canonical_skill" not in action
 
 
 def test_skill_trust_bundle_ignores_symlinked_scripts_directory(tmp_path: Path):
@@ -1557,8 +1716,9 @@ def test_skill_trust_bundle_ignores_symlinked_scripts_directory(tmp_path: Path):
     bundle = build_skill_trust_bundle(skills_dir, framework="codex")
 
     action = bundle["preflight_actions"][0]
-    assert action["canonical_skill"] == "search-accommodations"
-    assert action["blocked_skills"] == ["search-accommodation"]
+    assert action["policy_decision"] == "block"
+    assert action["blocked_skills"] == ["search-accommodation", "search-accommodations"]
+    assert "canonical_skill" not in action
 
 
 def test_admission_scanner_reports_script_output_label_rewrite(tmp_path: Path):
@@ -2111,7 +2271,7 @@ def test_hash_changed_blocks_pre_action_as_trusted_registry_drift():
 
     assert decision.decision == DecisionVerdict.BLOCK
     assert snapshot.risk_level == RiskLevel.HIGH
-    assert snapshot.rule_hits == ["skill_hash_mismatch"]
+    assert "skill_hash_mismatch" in snapshot.rule_hits
 
 
 def test_policy_blocks_poisoned_alias_plus_provenance_conflict_only_on_pre_action():

@@ -54,7 +54,7 @@ CS_DEFER_MAX_PENDING=0
 ```bash title=".clawsentry.env.local — 不提交，本机密钥/覆盖"
 CS_AUTH_TOKEN=replace-with-local-token
 # CS_HTTP_PORT=9100
-# CS_LLM_API_KEY=sk-...
+# CS_LLM_API_KEY=<api-key>
 ```
 
 ---
@@ -103,7 +103,7 @@ CS_HARD_TIMEOUT_MS=600000
 ```
 
 ```bash title="本机/部署密钥（不要提交）"
-CS_LLM_API_KEY=sk-...
+CS_LLM_API_KEY=<api-key>
 # 或 provider 原生命名：OPENAI_API_KEY / ANTHROPIC_API_KEY
 ```
 
@@ -139,7 +139,7 @@ CS_LLM_TOKEN_BUDGET_SCOPE=total
 ```
 
 ```bash title="密钥"
-CS_LLM_API_KEY=sk-ant-...
+CS_LLM_API_KEY=<anthropic-api-key>
 ```
 
 运行态读数：
@@ -378,7 +378,7 @@ CS_PRESET=high
 
 CS_LLM_PROVIDER=openai
 CS_LLM_MODEL=gpt-4o-mini
-CS_LLM_API_KEY=sk-...
+CS_LLM_API_KEY=<api-key>
 CS_L2_ENABLED=true
 CS_L3_ENABLED=false
 CS_LLM_TOKEN_BUDGET_ENABLED=true

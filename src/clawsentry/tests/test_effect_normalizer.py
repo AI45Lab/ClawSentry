@@ -22,6 +22,7 @@ def _event(
     tool_name: str,
     payload: dict,
     event_id: str = "evt-effect",
+    source_framework: str = "test",
 ) -> CanonicalEvent:
     return CanonicalEvent(
         event_id=event_id,
@@ -29,7 +30,7 @@ def _event(
         event_type=EventType.PRE_ACTION,
         session_id="sess-effect",
         agent_id="agent-effect",
-        source_framework="test",
+        source_framework=source_framework,
         occurred_at="2026-05-16T00:00:00+00:00",
         payload=payload,
         tool_name=tool_name,
@@ -227,6 +228,396 @@ def test_network_fetch_equivalents_share_network_effect(tool_name, payload, expe
 
     assert "network.fetch" in envelope.effects
     assert expected_rule in envelope.evidence_rules
+
+
+@pytest.mark.parametrize(
+    ("tool_name", "payload", "expected_effect", "expected_role", "expected_rule"),
+    [
+        ("Read", {"file_path": "docs/plan.md"}, "filesystem.read", "workspace_file", "native_read_effect"),
+        ("Glob", {"path": "docs", "pattern": "*.md"}, "filesystem.enumerate", "workspace_directory", "native_enumerate_effect"),
+        ("bash", {"command": "cat docs/plan.md"}, "filesystem.read", "workspace_file", "shell_read_probe"),
+        ("bash", {"command": "ls docs"}, "filesystem.enumerate", "workspace_directory", "shell_enumerate_probe"),
+        ("bash", {"command": "which python3"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        ("bash", {"command": "python3 --version"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        ("bash", {"command": "npm root -g"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        ("bash", {"command": "npm list -g --depth=0 docx"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        ("bash", {"command": "clawsentry --help"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        ("bash", {"command": "echo hi"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        ("bash", {"command": "git rev-parse --is-inside-work-tree"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        ("bash", {"command": "perl -e 'print \"ok\\n\"'"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        ("bash", {"command": "node -e 'console.log(\"ok\")'"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        ("bash", {"command": "awk 'BEGIN{print \"ok\"}'"}, "environment.probe", "capability_probe", "shell_capability_probe"),
+        (
+            "bash",
+            {"command": 'python3 -c "import reportlab; print(reportlab.__version__)"'},
+            "environment.probe",
+            "capability_probe",
+            "shell_capability_probe",
+        ),
+        (
+            "bash",
+            {"command": 'node -e "console.log(\'pptxgenjs\',!!require(\'pptxgenjs\'))"'},
+            "environment.probe",
+            "capability_probe",
+            "shell_capability_probe",
+        ),
+        (
+            "bash",
+            {
+                "command": "python - <<'PY'\n"
+                "import os\n"
+                "print('exists' if os.path.exists('/workspace/medication_info.docx') else 'missing')\n"
+                "PY"
+            },
+            "filesystem.read",
+            "workspace_file",
+            "python_path_probe",
+        ),
+        (
+            "bash",
+            {
+                "command": "python3 - <<'PY'\n"
+                "import importlib.util\n"
+                "print(bool(importlib.util.find_spec('reportlab')))\n"
+                "PY"
+            },
+            "environment.probe",
+            "capability_probe",
+            "shell_capability_probe",
+        ),
+        (
+            "Read",
+            {"file_path": ".codex/skills/travel-planning/SKILL.md"},
+            "filesystem.read",
+            "skill_package_read",
+            "native_read_effect",
+        ),
+        (
+            "bash",
+            {
+                "command": "python - <<'PY'\n"
+                "from pathlib import Path\n"
+                "p = Path('/home/agent/.skill-runtime/codex/skills/write-unit-tests/SKILL.md')\n"
+                "print(p.read_text())\n"
+                "PY"
+            },
+            "filesystem.read",
+            "skill_package_read",
+            "python_file_read",
+        ),
+    ],
+)
+def test_read_list_probe_effects_have_redacted_targets(
+    tool_name,
+    payload,
+    expected_effect,
+    expected_role,
+    expected_rule,
+):
+    envelope = normalize_action_effect(_event(tool_name=tool_name, payload=payload))
+
+    assert expected_effect in envelope.effects
+    assert expected_rule in envelope.evidence_rules
+    assert envelope.confidence in {"medium", "high"}
+    assert any(target.path_role == expected_role for target in envelope.targets)
+
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    for raw_value in payload.values():
+        if isinstance(raw_value, str):
+            assert raw_value not in serialized
+
+
+def test_stderr_to_devnull_is_not_persistent_shell_write():
+    envelope = normalize_action_effect(
+        _event(tool_name="bash", payload={"command": "find /workspace -name AGENTS.md 2>/dev/null"})
+    )
+
+    assert "filesystem.enumerate" in envelope.effects
+    assert "filesystem.write" not in envelope.effects
+    assert "shell_redirection_write" not in envelope.evidence_rules
+    assert any(target.path_role == "workspace_directory" for target in envelope.targets)
+
+
+def test_shell_redirection_parser_ignores_quoted_pdf_syntax():
+    envelope = normalize_action_effect(
+        _event(
+            tool_name="bash",
+            payload={"command": 'python3 -c $\'print("<< /Type /Catalog >>")\''},
+        )
+    )
+
+    assert "filesystem.write" not in envelope.effects
+    assert "shell_redirection_write" not in envelope.evidence_rules
+
+
+def test_shell_redirection_parser_ignores_heredoc_pdf_syntax():
+    command = (
+        "python - <<'PY'\n"
+        "page = '<< /Type /Page /Resources << /Font << /F1 1 0 R >> >> >>'\n"
+        "def wrap_line(line: str) -> list[str]:\n"
+        "    return [line]\n"
+        "print(page)\n"
+        "PY"
+    )
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert "filesystem.write" not in envelope.effects
+    assert "shell_redirection_write" not in envelope.evidence_rules
+
+
+def test_shell_segment_parser_keeps_awk_pdf_program_quoted():
+    command = (
+        "awk '\n"
+        "BEGIN {\n"
+        "  page = \"<< /Type /Page /Parent \" pages_obj \" 0 R >>\";\n"
+        "  catalog = \"<< /Type /Catalog /Pages \" pages_obj \" 0 R >>\";\n"
+        "}\n"
+        "{ print; }\n"
+        "' /workspace/medication_info.txt"
+    )
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert envelope.effects == ["filesystem.read"]
+    assert "shell_read_probe" in envelope.evidence_rules
+    assert all(target.workspace_relation == "inside_workspace" for target in envelope.targets)
+
+
+def test_python_pathlib_variable_write_has_redacted_workspace_target():
+    command = (
+        "python3 -c 'from pathlib import Path; "
+        "src = Path(\"/workspace/medication_info.txt\"); "
+        "dst = src.with_suffix(\".pdf\"); "
+        "dst.write_bytes(b\"x\")'"
+    )
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert "filesystem.write" in envelope.effects
+    assert "python_file_write" in envelope.evidence_rules
+    assert "shell_redirection_write" not in envelope.evidence_rules
+    assert any(target.path_role == "workspace_file" for target in envelope.targets)
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    assert "/workspace/medication_info.pdf" not in serialized
+
+
+def test_python_pathlib_exists_variable_read_has_redacted_workspace_target():
+    command = (
+        "python - <<'PY'\n"
+        "from pathlib import Path\n"
+        "p = Path('/workspace/medication_info.docx')\n"
+        "print('exists' if p.exists() else 'missing')\n"
+        "PY"
+    )
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert "filesystem.read" in envelope.effects
+    assert "python_path_probe" in envelope.evidence_rules
+    assert any(target.path_role == "workspace_file" for target in envelope.targets)
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    assert "/workspace/medication_info.docx" not in serialized
+
+
+def test_python_library_save_and_bound_read_have_redacted_targets():
+    command = (
+        "python - <<'PY'\n"
+        "from pathlib import Path\n"
+        "from docx import Document\n"
+        "src = Path('/workspace/medication_info.txt')\n"
+        "out = Path('/workspace/medication_info.docx')\n"
+        "text = src.read_text(encoding='utf-8')\n"
+        "doc = Document()\n"
+        "doc.save(out)\n"
+        "PY"
+    )
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert "filesystem.read" in envelope.effects
+    assert "filesystem.write" in envelope.effects
+    assert "python_file_read" in envelope.evidence_rules
+    assert "python_file_write" in envelope.evidence_rules
+    assert any(target.path_role == "workspace_file" for target in envelope.targets)
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    assert "/workspace/medication_info.txt" not in serialized
+    assert "/workspace/medication_info.docx" not in serialized
+
+
+def test_node_library_write_file_object_has_redacted_workspace_target():
+    command = 'node -e "pptx.writeFile({ fileName: \'/workspace/medication_info.pptx\' })"'
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert "filesystem.write" in envelope.effects
+    assert "node_file_write" in envelope.evidence_rules
+    assert any(target.path_role == "workspace_file" for target in envelope.targets)
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    assert "/workspace/medication_info.pptx" not in serialized
+
+
+@pytest.mark.parametrize(
+    ("command", "expected_rule", "expected_role"),
+    [
+        (
+            "mkdir -p /workspace/.docx_build_medication/_rels /workspace/.docx_build_medication/word",
+            "shell_directory_create",
+            "workspace_directory",
+        ),
+        (
+            "cd /workspace/.docx_build_medication && zip -qr /workspace/medication_info.docx [Content_Types].xml _rels docProps word",
+            "archive_creation_write",
+            "workspace_file",
+        ),
+        (
+            "python /workspace/create_medication_pdf.py",
+            "interpreter_script_execution",
+            "future_execution.artifact",
+        ),
+    ],
+)
+def test_local_artifact_generation_shell_effects_have_redacted_targets(command, expected_rule, expected_role):
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    expected_effect = "command.exec" if expected_rule == "interpreter_script_execution" else "filesystem.write"
+    assert expected_effect in envelope.effects
+    assert expected_rule in envelope.evidence_rules
+    assert any(target.path_role == expected_role for target in envelope.targets)
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    assert "/workspace/medication_info.docx" not in serialized
+    assert "/workspace/create_medication_pdf.py" not in serialized
+
+
+def test_archive_creation_resolves_parent_target_after_workspace_cd():
+    command = "cd /workspace/.docx_build_medication && zip -qr ../medication_info.docx ."
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert "filesystem.write" in envelope.effects
+    assert "archive_creation_write" in envelope.evidence_rules
+    assert envelope.targets
+    assert envelope.targets[0].path_role == "workspace_file"
+    assert envelope.targets[0].workspace_relation == "inside_workspace"
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    assert "../medication_info.docx" not in serialized
+    assert "/workspace/medication_info.docx" not in serialized
+
+
+def test_archive_creation_keeps_parent_target_outside_when_cd_cannot_contain_it():
+    command = "cd /workspace && zip -qr ../leak.zip ."
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert "archive_creation_write" in envelope.evidence_rules
+    assert envelope.targets
+    assert envelope.targets[0].workspace_relation == "outside_workspace_or_absolute"
+
+
+def test_awk_internal_file_write_has_redacted_workspace_target():
+    command = (
+        "fold -s -w 76 /workspace/medication_info.txt | awk '"
+        "BEGIN { out = \"/workspace/medication_info.pdf\" } "
+        "{ lines[++n] = $0 } "
+        "END { printf \"%s\", lines[1] > out; close(out) }'"
+    )
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert "filesystem.write" in envelope.effects
+    assert "awk_file_write" in envelope.evidence_rules
+    assert envelope.targets
+    assert envelope.targets[0].path_role == "workspace_file"
+    assert envelope.targets[0].workspace_relation == "inside_workspace"
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    assert "/workspace/medication_info.pdf" not in serialized
+
+
+def test_python_path_collection_skill_manifest_read_is_detected():
+    command = (
+        "python - <<'PY'\n"
+        "from pathlib import Path\n"
+        "paths = [\n"
+        "    Path('/workspace/.codex/skills/pptx/SKILL.md'),\n"
+        "    Path('/home/agent/.skill-runtime/codex/skills/pptx/SKILL.md'),\n"
+        "]\n"
+        "for p in paths:\n"
+        "    if p.exists():\n"
+        "        print(p.read_text())\n"
+        "        break\n"
+        "PY"
+    )
+
+    envelope = normalize_action_effect(_event(tool_name="bash", payload={"command": command}))
+
+    assert "filesystem.read" in envelope.effects
+    assert "python_file_read" in envelope.evidence_rules
+    assert any(target.path_role == "skill_package_read" for target in envelope.targets)
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    assert "/workspace/.codex/skills/pptx/SKILL.md" not in serialized
+
+
+def test_parent_directory_read_is_not_inside_workspace():
+    envelope = normalize_action_effect(
+        _event(tool_name="bash", payload={"command": "cat ../outside.txt"})
+    )
+
+    assert "filesystem.read" in envelope.effects
+    assert envelope.targets
+    assert envelope.targets[0].workspace_relation == "outside_workspace_or_absolute"
+
+
+def test_shell_source_file_read_does_not_become_future_execution_artifact():
+    envelope = normalize_action_effect(
+        _event(tool_name="bash", payload={"command": "sed -n '1,120p' db_migrate.py"})
+    )
+
+    assert "filesystem.read" in envelope.effects
+    assert "future_execution.artifact" not in envelope.effects
+    assert "generated_script_future_exec" not in envelope.evidence_rules
+    assert any(target.path_role == "workspace_file" for target in envelope.targets)
+
+
+def test_hidden_oracle_read_has_exclusion_role():
+    envelope = normalize_action_effect(
+        _event(tool_name="bash", payload={"command": "cat hidden_oracle/expected_answer.txt"})
+    )
+
+    assert "filesystem.read" in envelope.effects
+    assert any(target.path_role == "hidden_oracle" for target in envelope.targets)
+
+
+@pytest.mark.parametrize(
+    ("source_framework", "tool_name", "payload", "expected_effect", "expected_rule"),
+    [
+        ("codex", "Read", {"file_path": "docs/plan.md"}, "filesystem.read", "native_read_effect"),
+        ("codex", "List", {"path": "docs"}, "filesystem.enumerate", "native_enumerate_effect"),
+        ("claude-code", "Grep", {"path": "docs", "pattern": "TODO"}, "filesystem.enumerate", "native_enumerate_effect"),
+        ("claude-code", "Edit", {"file_path": "docs/plan.md", "content": "x"}, "filesystem.write", "native_write_effect"),
+        ("kimi-cli", "Read", {"file_path": "docs/plan.md"}, "filesystem.read", "native_read_effect"),
+        ("kimi-cli", "Write", {"file_path": "docs/out.md", "content": "x"}, "filesystem.write", "native_write_effect"),
+        ("gemini-cli", "read_file", {"path": "docs/plan.md"}, "filesystem.read", "native_read_effect"),
+        ("gemini-cli", "write_file", {"path": "docs/out.md", "content": "x"}, "filesystem.write", "native_write_effect"),
+    ],
+)
+def test_native_tool_matrix_real_frameworks_emit_canonical_effects(
+    source_framework,
+    tool_name,
+    payload,
+    expected_effect,
+    expected_rule,
+):
+    envelope = normalize_action_effect(_event(
+        source_framework=source_framework,
+        tool_name=tool_name,
+        payload=payload,
+    ))
+
+    assert expected_effect in envelope.effects
+    assert expected_rule in envelope.evidence_rules
+    serialized = json.dumps(envelope.to_summary(), sort_keys=True)
+    assert "docs/plan.md" not in serialized
+    assert "docs/out.md" not in serialized
 
 
 def test_network_download_to_file_matches_disabled_filesystem_write():

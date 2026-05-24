@@ -50,7 +50,7 @@ Gateway 调用 `resolve_skill_trust()` 做 identity / lineage / hash / mirror / 
 </div>
 
 !!! note "v0.8.0 验收边界"
-    六框架 surface acceptance 覆盖 Gateway UDS + adapter/harness 决策路径上的 `runtime_path_disallowed`、blocked ledger entry 和 agent-facing feedback。它不是外部 CLI binary harbor smoke，也不是 benchmark leaderboard 或 ASR/TSR/TFR 结论。
+    六框架 surface acceptance 覆盖 Gateway UDS + adapter/harness 决策路径上的 `runtime_path_disallowed`、blocked ledger entry 和 agent-facing feedback。它不是外部 CLI binary harbor smoke，也不发布公开综合评测结论。
 
 ## Trust-list 状态 {#trust-list-states}
 
@@ -154,6 +154,14 @@ v0.8.3 以后，FSPR 阻断 toxic 或 inconsistent skill package 后，Gateway �
 `contextual_review` 只是一条 Gateway-owned routing intent，不是 allowlist，也不是对 FSPR verdict 的撤销。L2/L3 的 clearance 必须绑定到当前 action 的 normalized effect、target boundary 和 authority metadata；它不能清除 `fspr_package_review`、`runtime_binding_identity_conflict`、blocked lineage 或 anti-bypass denied-effect evidence。
 
 Replay 与 protected benchmark evidence 只保留 hash、状态、routing source、canonical decision 和脱敏摘要。原始 skill root path、host-only proxy secret、raw package body 和 L3 trace 不进入公开 replay payload。
+
+### 默认 FSPR 审查路线 {#fspr-review-mode}
+
+v0.8.4 起，生产默认 FSPR 路线切换为 `agentic-readonly`。这条路线不是旧 full MAS：它先运行本地 deterministic inventory 和 `agentic-evidence-digest-v1`，能由本地硬证据证明风险时直接返回；只有需要语义判断的少数情况才调用 provider，并且只允许 list/read/search 只读工具。
+
+`final-only` 保留为备用路线，可通过 `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` 显式启用。旧的 `full`、`reduced`、`metadata-only` role-set 已不再作为生产配置面；如果通过 legacy `CS_SKILL_TRUST_FSPR_ROLE_SET` 传入这些值，Gateway 会 fail closed，而不是回到早期顺序多 reviewer prompt。
+
+72-case real toxic corpus 复测显示 hardened `agentic-readonly` 相比 `final-only` 有更高 healthy detection 和 0 degraded。但该结果必须按路径拆分解释：59 deterministic floor / 5 digest floor / 8 provider path，不能表述成纯 provider/model 能力。
 
 ## 运行时解析与 Invariant Violations {#runtime-resolution}
 
@@ -353,6 +361,9 @@ CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS=1000
 CS_SKILL_TRUST_FSPR_ENABLED=false
 CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED=false
 CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED=false
+CS_SKILL_TRUST_FSPR_REVIEW_MODE=agentic-readonly
+# 可选备用路线：CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only
+# Legacy 兼容入口只接受 final-only；旧 full/reduced/metadata-only 会 fail closed。
 CS_SKILL_TRUST_FSPR_ROLE_SET=default
 CS_SKILL_TRUST_FSPR_TIMEOUT_MS=120000
 CS_SKILL_TRUST_FSPR_CACHE_ENABLED=true
