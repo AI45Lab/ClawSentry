@@ -18,7 +18,7 @@ hide:
 { .tagline-sub }
 
 <div class="cs-pill-row" markdown>
-<span class="cs-version-badge">v0.8.3</span>
+<span class="cs-version-badge">v0.8.5</span>
 <span class="cs-pill">stable public docs</span>
 <span class="cs-pill">6 frameworks</span>
 <span class="cs-pill">sync_decision.1.0</span>
@@ -31,7 +31,7 @@ hide:
 
 </div>
 
-!!! tip "v0.8.3 — Public docs cleanup"
+!!! tip "v0.8.5 — Public docs cleanup"
     在线文档已清理为公开用户路径：安装、集成、配置、API、部署、故障排查和更新日志。Gateway 运行时策略、API 合同和 Skill Trust 行为不变。[查看完整更新日志 →](changelog.md)
 
 ---

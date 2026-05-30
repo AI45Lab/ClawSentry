@@ -6,7 +6,7 @@
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.8.3)**: Benchmark-debug and FSPR infrastructure from the mainline is now published: read-content evidence, real-package FSPR scanning, provider microbench tooling, benchmark runner hardening, and cleaner public docs.
+**Current release highlight (v0.8.5)**: Benchmark-debug and FSPR infrastructure from the mainline is now published: read-content evidence, real-package FSPR scanning, provider microbench tooling, benchmark runner hardening, and cleaner public docs.
 
 ---
 

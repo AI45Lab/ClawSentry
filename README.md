@@ -35,7 +35,7 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
-## What's New in v0.8.3
+## What's New in v0.8.5
 
 - **Content evidence and FSPR debug infrastructure**: Gateway read-content evidence, FSPR real-package scanning, provider microbench tooling, and corpus utilities are now part of the mainline.
 - **Benchmark runner hardening**: benchmark runners gained reviewer routing, proxy handling, parallel execution support, retry controls, technical rerun helpers, and raw rejudge support.

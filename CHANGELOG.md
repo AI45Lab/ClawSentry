@@ -8,7 +8,7 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
-## [0.8.3] — 2026-05-31
+## [0.8.5] — 2026-05-31
 
 ### 新增
 
@@ -26,12 +26,46 @@
 
 - 更新内部进度文档和 benchmark 计划到 2026-05-31，区分已完成 full protected pair、Kimi first-case smoke、Gemini 待跑和 technical 偏高需重测的结果。
 - 刷新公开在线文档口径，移除容易过期的测试数量、内部 API 覆盖矩阵入口、内部 benchmark 结果页和过细的发布流水账。
-- 刷新 README、PyPI README、在线 changelog 和配置概览到 `v0.8.3`。
+- 刷新 README、PyPI README、在线 changelog 和配置概览到 `v0.8.5`。
 
 ### 边界
 
 - 本版本包含 v0.8.2 之后已经进入主线的 benchmark-debug / FSPR / content evidence / runner 基础设施更新。
 - 内部 benchmark 原始结果、ASR/TSR/TFR 分析和 runner 细节继续保留在开发仓库文档，不进入公开在线文档主路径。
+
+## [0.8.4] — 2026-05-24
+
+### 改进
+
+- **FSPR agentic-readonly production default** — ClawSentry Gateway 的 First-Use Skill Package Review 默认路线切换为 `agentic-readonly`：先使用 deterministic inventory 和 agentic evidence digest 形成本地证据底线，必要时才进入只读 provider loop。
+- **Final-only backup route** — `final-only` 保留为备用路线，可通过 `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` 显式启用；legacy `CS_SKILL_TRUST_FSPR_ROLE_SET=final-only` 仍兼容。
+- **Old full MAS removed from runtime surface** — 早期 `metadata-only` / `reduced` / `full` 顺序多 reviewer role-set 不再作为生产配置面；误传这些 legacy role-set 时 Gateway fail closed，不回退到旧 MAS。
+
+### 文档
+
+- 在线 Skill Trust、环境变量、DetectionConfig、Benchmark 配置、首页和 README 已更新到 v0.8.4 口径。
+- 进度文档补充 Work 2C / Work 2D 结论，并强调结果必须按 execution path 拆分解释。
+
+### 边界
+
+- 本版本发布 FSPR 默认路线和配置面收口，不声明新的全量公开评测排名。
+
+## [0.8.3] — 2026-05-21
+
+### 新增
+
+- **FSPR contextual recovery routing** — FSPR 阻断 toxic / inconsistent skill package 后，后续安全 fallback 写入、执行和验证动作会通过 `ReviewRoutingIntent(source="contextual_review")` 进入精确 L2/L3 effect review，避免被高会话风险粗粒度过拦。
+- **Authority-bound contextual clearance** — L2/L3 只能清除与当前 action normalized effect、workspace target boundary 和 authority metadata 精确绑定的上下文风险；不能清除 blocked skill lineage、FSPR package inconsistency、runtime binding violation 或 anti-bypass denied-effect repeat。
+- **Blocked skill lineage session boundary** — 被 FSPR 阻断的 skill lineage 会在 session 中保留为硬边界；继续读取、执行、复用同 lineage，或对同一危险效果做 exact / normalized / denied-effect repeat，仍会 hard block。
+
+### 改进
+
+- **Replay and protected evidence hardening** — protected runner 保存稳定 artifact snapshot、decision metadata、hash 和脱敏 protected evidence，不保存原始 skill root path，不依赖 host network。
+- **AHP replay fixture** — 新增 contextual recovery / lineage / anti-bypass replay fixture，覆盖 decision/risk match、unsafe-pass proxy、overblock proxy、schema sync 和 metric-cell traceability。
+
+### 边界
+
+- 本版本发布 FSPR block 后安全 recovery 路由与证据边界，不发布新的全量 benchmark leaderboard。
 
 ## [0.8.2] — 2026-05-20
 
@@ -1740,6 +1774,8 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.8.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.5
+[0.8.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.4
 [0.8.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.3
 [0.8.2]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.2
 [0.8.1]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.1

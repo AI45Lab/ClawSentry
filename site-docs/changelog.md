@@ -7,7 +7,7 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
-## v0.8.3 {#v083}
+## v0.8.5 {#v085}
 
 *2026-05-31*
 
@@ -30,6 +30,46 @@ hide:
 
 - 本版本发布 v0.8.2 之后已经进入主线的 benchmark-debug、FSPR、content evidence 和 runner 基础设施更新。
 - 内部实验原始结果、完整指标和 runner 细节保留在开发仓库中，不作为公开用户文档入口。
+
+---
+
+## v0.8.4 {#v084}
+
+*2026-05-24*
+
+<div class="cs-pill-row">
+<span class="cs-pill cs-pill--release">FSPR Agentic Default</span>
+</div>
+
+### 改进
+
+- **FSPR 默认路线切到 agentic-readonly** — First-Use Skill Package Review 默认先走 deterministic inventory 与 agentic evidence digest，本地证据不足时才进入只读 provider loop。
+- **final-only 保留备用** — 可用 `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` 显式切回单次 final adjudicator 路线；legacy `CS_SKILL_TRUST_FSPR_ROLE_SET=final-only` 仍兼容。
+- **旧 full MAS 配置面移除** — `metadata-only`、`reduced`、`full` 这些早期顺序多 reviewer role-set 不再作为生产路线；误传时 fail closed。
+
+### 边界
+
+- 本版本发布 FSPR 默认路线和配置面收口，不声明新的全量公开评测排名。
+
+---
+
+## v0.8.3 {#v083}
+
+*2026-05-21*
+
+<div class="cs-pill-row">
+<span class="cs-pill cs-pill--release">FSPR Contextual Recovery Routing</span>
+</div>
+
+### 改进
+
+- **Contextual recovery routing** — FSPR 阻断 toxic / inconsistent skill 后，后续安全 recovery 写入、执行和验证会交由 L2/L3 对具体 effect 做精确复核。
+- **Authority-bound L2/L3 clearance** — L2/L3 只能清除与当前安全 recovery effect 精确绑定的上下文风险，不能清除 blocked skill lineage、runtime binding violation、FSPR package inconsistency 或 anti-bypass denied-effect repeat。
+- **Blocked skill lineage boundary** — 被 FSPR 阻断的 skill lineage 会作为 session boundary 保留；同 lineage、同效果或等价绕过仍按 hard block 处理。
+
+### 边界
+
+- 本版本发布的是 FSPR block 后安全恢复路径的路由与证据边界，不声明新的全量公开评测排名。
 
 ---
 
