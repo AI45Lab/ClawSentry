@@ -18,8 +18,8 @@ hide:
 { .tagline-sub }
 
 <div class="cs-pill-row" markdown>
-<span class="cs-version-badge">v0.8.4</span>
-<span class="cs-pill">FSPR agentic default</span>
+<span class="cs-version-badge">v0.8.3</span>
+<span class="cs-pill">stable public docs</span>
 <span class="cs-pill">6 frameworks</span>
 <span class="cs-pill">sync_decision.1.0</span>
 </div>
@@ -31,8 +31,8 @@ hide:
 
 </div>
 
-!!! tip "v0.8.4 — FSPR agentic-readonly default"
-    First-Use Skill Package Review 默认切到 `agentic-readonly`：先用 deterministic inventory 和 evidence digest 建立本地证据底线，必要时才进入只读 provider path；`final-only` 保留为显式备用路线。[查看完整更新日志 →](changelog.md)
+!!! tip "v0.8.3 — Public docs cleanup"
+    在线文档已清理为公开用户路径：安装、集成、配置、API、部署、故障排查和更新日志。Gateway 运行时策略、API 合同和 Skill Trust 行为不变。[查看完整更新日志 →](changelog.md)
 
 ---
 
@@ -47,7 +47,7 @@ Claude Code、a3s-code 和 OpenClaw 支持高危操作**前置阻断**；Codex �
 
 <div class="card" markdown>
 ### :zap: 不拖慢你的工作流
-L1 规则引擎 <0.3ms 完成约 95% 的事件决策；L2 语义分析和 L3 审查 Agent 仅在必要时触发，绝大多数请求无感知延迟。
+L1 规则引擎优先处理确定性风险；L2 语义分析和 L3 审查 Agent 仅在需要更多上下文时触发，避免把所有请求都送入重型审查。
 </div>
 
 <div class="card" markdown>
@@ -143,7 +143,7 @@ L1 规则引擎 <0.3ms 完成约 95% 的事件决策；L2 语义分析和 L3 审
 
 ```mermaid
 flowchart LR
-    A["AI Agent\n执行工具调用"] -->|"pre_action 事件"| B["ClawSentry\n风险评估 <1ms"]
+    A["AI Agent\n执行工具调用"] -->|"pre_action 事件"| B["ClawSentry\n风险评估"]
     B -->|"低风险"| C["✅ ALLOW\n正常执行"]
     B -->|"高风险"| D["❌ BLOCK\n自动拦截"]
     B -->|"中等风险"| E["⏸ DEFER\n等待审批"]
@@ -151,9 +151,9 @@ flowchart LR
 
 | 层级 | 触发条件 | 延迟 |
 |:---:|:---|:---:|
-| **L1** 规则引擎（约 95% 事件） | 所有事件，毫秒级黑白名单与注入检测 | <0.3ms |
-| **L2** 语义分析 | L1 不确定、medium+ 风险、上下文歧义 | <3s |
-| **L3** 审查 Agent | HIGH+ 风险、累积异常、显式触发 | <30s |
+| **L1** 规则引擎 | 所有事件，确定性黑白名单与注入检测 | 本地快速判断 |
+| **L2** 语义分析 | L1 不确定、medium+ 风险、上下文歧义 | 按需触发 |
+| **L3** 审查 Agent | HIGH+ 风险、累积异常、显式触发 | 按需触发 |
 
 每层仅在无法确定时向上升级；L3 为终审，永不降级。L3 内部失败降级为 `confidence=0.0`（fail-closed）。
 

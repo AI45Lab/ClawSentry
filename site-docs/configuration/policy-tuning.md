@@ -459,7 +459,7 @@ OPENAI_API_KEY=ollama
 
 ```bash title=".clawsentry.env.local"
 # 启用认证
-CS_AUTH_TOKEN = <staging-auth-token>
+CS_AUTH_TOKEN = staging-token-xxx
 
 # 适中的速率限制
 CS_RATE_LIMIT_PER_MINUTE=300
@@ -472,7 +472,7 @@ AHP_SESSION_ENFORCEMENT_COOLDOWN_SECONDS=120
 
 # 完整三层决策
 CS_LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=<anthropic-api-key>
+ANTHROPIC_API_KEY=sk-ant-xxx
 CS_L3_ENABLED=true
 
 # 持久化轨迹
@@ -500,7 +500,7 @@ AHP_SSL_KEYFILE=/etc/ssl/private/clawsentry-key.pem
 
 # 完整三层决策
 CS_LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=<anthropic-api-key>
+ANTHROPIC_API_KEY=sk-ant-xxx
 CS_L3_ENABLED=true
 
 # Webhook 安全加固

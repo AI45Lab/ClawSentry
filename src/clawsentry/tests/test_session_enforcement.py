@@ -2347,10 +2347,7 @@ class TestSessionEnforcementIntegration:
     async def test_gateway_enriches_skill_trust_raw_metadata_before_policy(self):
         gw = SupervisionGateway(
             trajectory_db_path=":memory:",
-            detection_config=DetectionConfig(
-                mode="strict",
-                skill_trust_first_use_strict_policy="audit_only",
-            ),
+            detection_config=DetectionConfig(mode="strict"),
         )
 
         resp = await gw.handle_jsonrpc(
@@ -2412,10 +2409,7 @@ class TestSessionEnforcementIntegration:
     async def test_gateway_redacts_pathlike_skill_trust_identity_fields_from_replay(self):
         gw = SupervisionGateway(
             trajectory_db_path=":memory:",
-            detection_config=DetectionConfig(
-                mode="strict",
-                skill_trust_first_use_strict_policy="audit_only",
-            ),
+            detection_config=DetectionConfig(mode="strict"),
         )
 
         await gw.handle_jsonrpc(
@@ -2642,10 +2636,7 @@ class TestSessionEnforcementIntegration:
     async def test_request_skill_trust_raw_derived_fields_cannot_spoof_policy(self):
         gw = SupervisionGateway(
             trajectory_db_path=":memory:",
-            detection_config=DetectionConfig(
-                mode="strict",
-                skill_trust_first_use_strict_policy="audit_only",
-            ),
+            detection_config=DetectionConfig(mode="strict"),
             skill_registry_records=[
                 SkillRegistryRecord(
                     canonical_skill_id="skill:search-accommodations",

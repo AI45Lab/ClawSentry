@@ -129,7 +129,6 @@ nav:
   - API 文档:
     - API 概览: api/overview.md
     - 交互式 API Reference: api/reference.md
-    - API 有效性报告: api/validity-report.md
     - 指标字典: api/metric-dictionary.md
     - 鉴权与安全: api/authentication.md
     - 决策 / AHP 端点: api/decisions.md
@@ -157,7 +156,5 @@ nav:
     - 向量相似度接入 (D6): advanced/embedding-backend.md
   - 部署运维:
     - 生产部署: operations/deployment.md
-    - Benchmark 模式: operations/benchmark-mode.md
-    - 发布进度: operations/release-progress.md
     - 故障排查: operations/troubleshooting.md
   - 更新日志: changelog.md

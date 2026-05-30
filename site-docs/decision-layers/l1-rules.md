@@ -696,7 +696,6 @@ L1 不仅产生自己的判决，还决定是否将事件升级到 L2 语义分�
 |---------|------|------|
 | `medium_pre_action` | `event_type == PRE_ACTION` 且 L1 风险等级 == `MEDIUM` | `policy_engine._automatic_l2_trigger_reason` |
 | `fspr_package_review` / `runtime_binding_identity_conflict` | Skill Trust routing intent 请求 L2/L3 review | 同上 |
-| `contextual_review` | FSPR block 后的安全 recovery effect 请求精确 L2/L3 review；只允许清除当前 effect 绑定风险，不清除 blocked lineage 或 anti-bypass hard evidence | 同上 |
 | `key_domain_event` | 事件文本匹配 `KEY_DOMAIN_PATTERN`（`prod`/`production`/`credential`/`secret`/`token`/`password`/`key`） | `semantic_analyzer.KEY_DOMAIN_PATTERN` |
 | `manual_l2_escalation` | `DecisionContext.session_risk_summary` 含手动升级标志 | `semantic_analyzer.has_manual_l2_escalation_flag` |
 

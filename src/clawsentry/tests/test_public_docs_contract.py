@@ -288,13 +288,14 @@ def test_recent_user_facing_features_have_online_docs_journey_anchors() -> None:
     for term in codex_terms:
         assert term in docs["codex"]
 
-    api_validity_terms = [
-        "api-validity.json",
-        "validity-report.md",
+    api_maintenance_terms = [
+        "openapi.json",
         "python scripts/docs_api_inventory.py validate",
     ]
-    for term in api_validity_terms:
+    for term in api_maintenance_terms:
         assert term in docs["api_overview"]
+    assert "api-validity.json" not in docs["api_overview"]
+    assert "validity-report.md" not in docs["api_overview"]
 
 
 def test_metric_dictionary_has_single_clear_canonical_section() -> None:
@@ -542,17 +543,18 @@ def test_public_synced_docs_do_not_expose_private_benchmark_details() -> None:
         PACKAGE_README,
         REPO_ROOT / "CHANGELOG.md",
         REPO_ROOT / "pyproject.toml",
-        REPO_ROOT / "benchmarks" / "README.md",
-        REPO_ROOT / "benchmarks" / "RESULTS.md",
-        REPO_ROOT / "benchmarks" / "RUNBOOK.md",
-        REPO_ROOT / "scripts" / "sync-to-public.sh",
     ]
+    sync_script = REPO_ROOT / "scripts" / "sync-to-public.sh"
+    if sync_script.exists():
+        public_paths.append(sync_script)
     public_paths.extend((REPO_ROOT / "site-docs").rglob("*.md"))
-    public_paths.extend((REPO_ROOT / "benchmarks" / "fixtures").rglob("*.json"))
-    public_paths.extend((REPO_ROOT / "benchmarks" / "fixtures").rglob("*.jsonl"))
     public_docs = "\n".join(
         path.read_text(encoding="utf-8") for path in public_paths if path.exists()
     )
+    if sync_script.exists():
+        assert '"$PUBLIC_DIR/benchmarks"' in public_docs
+    else:
+        assert not (REPO_ROOT / "benchmarks").exists()
 
     private_terms = [
         "kimi-k2.5",

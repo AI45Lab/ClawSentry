@@ -1,12 +1,12 @@
 # ClawSentry — AHP Supervision Gateway
 
-> **Python 3.11+** | **4026 public Python regression tests + 56 Web UI tests** | Protocol `ahp.1.0`
+> **Python 3.11+** | **Public Python and Web UI regression coverage** | Protocol `ahp.1.0`
 
 **ClawSentry** is the Python reference implementation of AHP (Agent Harness Protocol) — a unified security supervision gateway for multi-agent frameworks. Deployed as a sidecar, it normalizes runtime events from different frameworks (a3s-code, Claude Code, Codex, Gemini CLI, Kimi CLI, OpenClaw) into a unified protocol, passes them through a three-layer progressive risk evaluation pipeline, and produces real-time decisions (allow / block / modify / defer) with complete audit trails.
 
 **Core goal**: Eliminate cross-framework policy duplication and observability fragmentation through a "protocol-first, decision-centralized" approach to agent security governance.
 
-**Current release highlight (v0.8.4)**: FSPR now defaults to `agentic-readonly`, combining deterministic inventory, agentic evidence digest, and a bounded read-only provider path when needed. `final-only` remains available as an explicit backup route, while the old `metadata-only` / `reduced` / `full` sequential MAS role-sets are removed from the production surface.
+**Current release highlight (v0.8.3)**: Benchmark-debug and FSPR infrastructure from the mainline is now published: read-content evidence, real-package FSPR scanning, provider microbench tooling, benchmark runner hardening, and cleaner public docs.
 
 ---
 
@@ -479,7 +479,7 @@ src/clawsentry/
 |-- ui/                                # Web security dashboard (React SPA)
 |   |-- src/                           # TypeScript source
 |   +-- dist/                          # Pre-built artifacts (shipped with pip)
-+-- tests/                             # Public Python regression suite (4026 passed / 9 skipped)
++-- tests/                             # Public Python regression suite
 ```
 
 ---
@@ -561,7 +561,7 @@ For operator-controlled readiness checks, use the packaged manual smoke helper:
 ```bash
 CS_LLM_PROVIDER=openai \
 CS_LLM_MODEL=gpt-advisory-smoke \
-OPENAI_API_KEY=<api-key> \
+OPENAI_API_KEY=sk-... \
 python -m clawsentry.devtools.l3_advisory_provider_smoke \
   --output-report l3-advisory-provider-smoke-readiness.md
 ```
@@ -620,7 +620,7 @@ pip install -e ".[dev]"
 
 # Full suite
 python -m pytest src/clawsentry/tests/ -v --tb=short
-# Expected: current public release validation 4026 passed, 9 skipped
+# Expected: all public regression tests pass
 
 # E2E (requires LLM API key)
 A3S_SDK_E2E=1 python -m pytest src/clawsentry/tests/ -v --tb=short

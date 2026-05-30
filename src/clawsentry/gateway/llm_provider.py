@@ -11,8 +11,6 @@ import inspect
 from dataclasses import dataclass
 from typing import Optional, Protocol, runtime_checkable
 
-import httpx
-
 
 @dataclass
 class LLMProviderConfig:
@@ -46,15 +44,8 @@ class LLMProvider(Protocol):
         user_message: str,
         timeout_ms: float,
         max_tokens: int = 256,
-        *,
-        response_format: dict[str, object] | None = None,
+        response_format: Optional[dict[str, object]] = None,
     ) -> str: ...
-
-
-def _sdk_http_client() -> httpx.AsyncClient:
-    """Create SDK transport isolated from benchmark/host proxy variables."""
-
-    return httpx.AsyncClient(trust_env=False)
 
 
 class AnthropicProvider:
@@ -82,7 +73,6 @@ class AnthropicProvider:
             kwargs: dict = {"api_key": self._config.api_key}
             if self._config.base_url:
                 kwargs["base_url"] = self._client_base_url(self._config.base_url)
-            kwargs["http_client"] = _sdk_http_client()
             self._client = anthropic.AsyncAnthropic(**kwargs)
         return self._client
 
@@ -118,8 +108,7 @@ class AnthropicProvider:
         user_message: str,
         timeout_ms: float,
         max_tokens: int = 256,
-        *,
-        response_format: dict[str, object] | None = None,
+        response_format: Optional[dict[str, object]] = None,
     ) -> str:
         effective_max_tokens = max_tokens or self._config.max_tokens
         client = self._get_client()
@@ -161,7 +150,6 @@ class OpenAIProvider:
             kwargs: dict = {"api_key": self._config.api_key}
             if self._config.base_url:
                 kwargs["base_url"] = self._config.base_url
-            kwargs["http_client"] = _sdk_http_client()
             self._client = openai.AsyncOpenAI(**kwargs)
         return self._client
 
@@ -188,14 +176,6 @@ class OpenAIProvider:
             return "high"
         return None
 
-    def _temperature(self) -> float | None:
-        """Return a temperature only for models that accept caller supplied values."""
-
-        normalized_model = self._model.strip().lower()
-        if "kimi-k2." in normalized_model or normalized_model.startswith("gpt-5.4-mini"):
-            return None
-        return self._config.temperature
-
     async def aclose(self) -> None:
         """Close any lazy async client before its owning event loop exits."""
 
@@ -215,23 +195,20 @@ class OpenAIProvider:
         user_message: str,
         timeout_ms: float,
         max_tokens: int = 256,
-        *,
-        response_format: dict[str, object] | None = None,
+        response_format: Optional[dict[str, object]] = None,
     ) -> str:
         effective_max_tokens = max_tokens or self._config.max_tokens
         client = self._get_client()
         request_kwargs = {
             "model": self._model,
             "max_tokens": effective_max_tokens,
+            "temperature": self._config.temperature,
             "extra_body": self._extra_body(),
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
         }
-        temperature = self._temperature()
-        if temperature is not None:
-            request_kwargs["temperature"] = temperature
         reasoning_effort = self._reasoning_effort()
         if reasoning_effort:
             request_kwargs["reasoning_effort"] = reasoning_effort
@@ -291,26 +268,12 @@ class InstrumentedProvider:
         user_message: str,
         timeout_ms: float,
         max_tokens: int = 256,
-        *,
-        response_format: dict[str, object] | None = None,
     ) -> str:
         status = "ok"
         try:
-            if response_format is None:
-                result = await self._inner.complete(
-                    system_prompt,
-                    user_message,
-                    timeout_ms,
-                    max_tokens,
-                )
-            else:
-                result = await self._inner.complete(
-                    system_prompt,
-                    user_message,
-                    timeout_ms,
-                    max_tokens,
-                    response_format=response_format,
-                )
+            result = await self._inner.complete(
+                system_prompt, user_message, timeout_ms, max_tokens,
+            )
             return result
         except asyncio.TimeoutError:
             status = "timeout"

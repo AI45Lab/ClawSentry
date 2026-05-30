@@ -8,58 +8,30 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
-## [0.8.4] — 2026-05-24
-
-### 改进
-
-- **FSPR agentic-readonly production default** — ClawSentry Gateway 的 First-Use Skill Package Review 默认路线切换为 `agentic-readonly`：先使用 deterministic inventory 和 agentic evidence digest 形成本地证据底线，必要时才进入只读 provider loop。
-- **Final-only backup route** — `final-only` 保留为备用路线，可通过 `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` 显式启用；legacy `CS_SKILL_TRUST_FSPR_ROLE_SET=final-only` 仍兼容。
-- **Old full MAS removed from runtime surface** — 早期 `metadata-only` / `reduced` / `full` 顺序多 reviewer role-set 不再作为生产配置面；误传这些 legacy role-set 时 Gateway fail closed，不回退到旧 MAS。
-
-### 文档
-
-- 在线 Skill Trust、环境变量、DetectionConfig、Benchmark 配置、首页、发布进度和 README 已更新到 v0.8.4 口径。
-- 进度文档补充 Work 2C / Work 2D 结论：72-case real toxic corpus 中 hardened `agentic-readonly` 明确优于 `final-only`，但收益必须按 execution path 拆分解释：59 deterministic floor / 5 digest floor / 8 provider path。
-
-### 测试与验证
-
-- Focused FSPR / microbench / config regression、真实 72-case smoke、构建和子代理审查已完成并记录在本轮发布验证材料中。
-
-### 边界
-
-- 本版本发布 FSPR 默认路线和配置面收口，不声明新的全量公开评测排名。
-- 72-case 结论不能表述成纯 provider/model 能力；execution path 是 59 deterministic floor / 5 digest floor / 8 provider path。
-
-## [0.8.3] — 2026-05-21
+## [0.8.3] — 2026-05-31
 
 ### 新增
 
-- **FSPR contextual recovery routing** — FSPR 阻断 toxic / inconsistent skill package 后，后续安全 fallback 写入、执行和验证动作会通过 `ReviewRoutingIntent(source="contextual_review")` 进入精确 L2/L3 effect review，避免被高会话风险粗粒度过拦。
-- **Authority-bound contextual clearance** — L2/L3 只能清除与当前 action normalized effect、workspace target boundary 和 authority metadata 精确绑定的上下文风险；不能清除 blocked skill lineage、FSPR package inconsistency、runtime binding violation 或 anti-bypass denied-effect repeat。
-- **Blocked skill lineage session boundary** — 被 FSPR 阻断的 skill lineage 会在 session 中保留为硬边界；继续读取、执行、复用同 lineage，或对同一危险效果做 exact / normalized / denied-effect repeat，仍会 hard block。
+- **Content evidence / read-native evidence** — Gateway 现在可以从受控 read 内容中提取 prompt-injection、隐藏 HTML 等内容证据，并对 raw body、敏感路径和二进制内容做隐私边界处理。
+- **FSPR benchmark-debug support** — FSPR deterministic scanner 接入真实 skill 包内容扫描，新增 provider microbench、真实有毒 skill corpus 工具和 golden manifest 覆盖，便于复验首次使用 skill 包审查质量。
+- **Tool semantic registry expansion** — 工具语义归一扩展到 Codex、Claude Code、A3S、Gemini、Kimi、OpenClaw 和 MCP 命名，作为 shadow/辅助归一能力，不覆盖显式 override。
+- **Benchmark runner hardening** — Benchmark runners 增加 reviewer routing、loopback proxy rewrite、retry override、并行运行支持、warning marker 鉴权、setup prebake/triage 加速、raw rejudge 和 protected rerun 编排。
 
 ### 改进
 
-- **Replay and protected evidence hardening** — protected runner 保存稳定 artifact snapshot、decision metadata、hash 和脱敏 protected evidence，不保存原始 skill root path，不依赖 host network。
-- **AHP replay fixture** — 新增 21-case contextual recovery / lineage / anti-bypass replay fixture，覆盖 decision/risk match、unsafe-pass proxy、overblock proxy、schema sync 和 metric-cell traceability。
+- **Benchmark agent feedback default** — benchmark 受保护运行默认关闭 agent-facing safety feedback，避免 feedback 对评测任务行为造成额外干扰。
+- **Protected benchmark progress support** — protected pair 配置、proxy/no_proxy 处理、API-key/OAuth 环境隔离和 slash model result-dir slug 处理得到修复。
 
 ### 文档
 
-- 新增中文交接材料：`docs/materials/2026-05-21-skillsafety-fspr-contextual-recovery-routing-handoff-cn.md`。
-- 新增验证材料：`docs/validation/2026-05-21-skillsafety-fspr-contextual-recovery-routing.md`。
-- 在线文档首页、更新日志、Skill Trust、Benchmark 模式、配置发布状态和发布进度页更新到 v0.8.3 口径。
-
-### 测试与验证
-
-- Focused contextual recovery regression gate：`775 passed in 17.89s`。
-- AHP policy replay：21 cases，decision match `1.0`，risk match `1.0`，unsafe-pass proxy `0.0`，overblock proxy `0.0`，schema-sync coverage `1.0`，metric-cell traceability PASS。
-- SkillsSafety protected recovered E2E：2 cases，ASR `0.0`，TSR `1.0`，environment error `0.0`。
-- SKILL-INJECT contextual protected E2E：injection 7 / 13，ASR `0.0`，TECH `0`，protected evidence OK；injection 7 TSR `1.0`，injection 13 TSR 不适用。
+- 更新内部进度文档和 benchmark 计划到 2026-05-31，区分已完成 full protected pair、Kimi first-case smoke、Gemini 待跑和 technical 偏高需重测的结果。
+- 刷新公开在线文档口径，移除容易过期的测试数量、内部 API 覆盖矩阵入口、内部 benchmark 结果页和过细的发布流水账。
+- 刷新 README、PyPI README、在线 changelog 和配置概览到 `v0.8.3`。
 
 ### 边界
 
-- 本版本发布 FSPR block 后安全 recovery 路由与证据边界，不发布新的全量 benchmark leaderboard。
-- 原始 `rerun3` 结果目录在当前工作树缺失；E2E case selection 来自已有项目交接材料，并通过新鲜 protected rerun 重建验证。
+- 本版本包含 v0.8.2 之后已经进入主线的 benchmark-debug / FSPR / content evidence / runner 基础设施更新。
+- 内部 benchmark 原始结果、ASR/TSR/TFR 分析和 runner 细节继续保留在开发仓库文档，不进入公开在线文档主路径。
 
 ## [0.8.2] — 2026-05-20
 
@@ -1768,7 +1740,6 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
-[0.8.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.4
 [0.8.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.3
 [0.8.2]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.2
 [0.8.1]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.1

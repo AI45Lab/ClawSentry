@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import re
 import time
 import tokenize
@@ -14,6 +15,10 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 from .content_evidence import hash_evidence_bytes
+from .managed_benchmark_warnings import (
+    WORK5C_WARNING_PROFILE_ID,
+    strip_managed_work5c_warning_blocks,
+)
 from .models import (
     AdmissionFinding,
     AdmissionReport,
@@ -339,7 +344,26 @@ def _runtime_root_path_hash(path: str | None) -> str | None:
     return _sha256(str(path).encode("utf-8"))
 
 
-def _hash_file(path: Path, *, max_file_bytes: int | None = None) -> str:
+def _env_bool(name: str) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return False
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _work5c_warning_strip_enabled() -> bool:
+    return (
+        _env_bool("CS_WORK5C_WARNING_EMITTED")
+        and os.environ.get("CS_WORK5C_WARNING_PROFILE_ID") == WORK5C_WARNING_PROFILE_ID
+    )
+
+
+def _hash_file(
+    path: Path,
+    *,
+    max_file_bytes: int | None = None,
+    strip_managed_skill_md: bool = False,
+) -> str:
     if path.is_symlink():
         return _sha256(f"symlink-skipped:{path.name}".encode("utf-8"))
     try:
@@ -351,7 +375,12 @@ def _hash_file(path: Path, *, max_file_bytes: int | None = None) -> str:
             return _sha256(f"large-file-skipped:{path.name}:{size}".encode("utf-8"))
     except OSError:
         return _sha256(f"file-unreadable:{path.name}".encode("utf-8"))
-    return _sha256(path.read_bytes())
+    data = path.read_bytes()
+    if strip_managed_skill_md and path.name == "SKILL.md":
+        data = strip_managed_work5c_warning_blocks(
+            data.decode("utf-8", errors="replace")
+        ).encode("utf-8")
+    return _sha256(data)
 
 
 def _raise_if_scan_deadline_expired(deadline_at: float | None) -> None:
@@ -359,7 +388,13 @@ def _raise_if_scan_deadline_expired(deadline_at: float | None) -> None:
         raise TimeoutError("admission scan deadline exceeded")
 
 
-def _read_in_tree_text(path: Path, root: Path, *, deadline_at: float | None = None) -> str:
+def _read_in_tree_text(
+    path: Path,
+    root: Path,
+    *,
+    deadline_at: float | None = None,
+    strip_managed_skill_md: bool = False,
+) -> str:
     _raise_if_scan_deadline_expired(deadline_at)
     if path.is_symlink():
         return ""
@@ -372,7 +407,10 @@ def _read_in_tree_text(path: Path, root: Path, *, deadline_at: float | None = No
             return ""
     except OSError:
         return ""
-    return path.read_text(encoding="utf-8", errors="replace")
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if strip_managed_skill_md and path.name == "SKILL.md":
+        return strip_managed_work5c_warning_blocks(text)
+    return text
 
 
 def _hash_directory(
@@ -381,6 +419,7 @@ def _hash_directory(
     deadline_at: float | None = None,
     max_files: int | None = None,
     max_file_bytes: int | None = None,
+    strip_managed_skill_md: bool = False,
 ) -> str:
     hasher = hashlib.sha256()
     files_seen = 0
@@ -413,7 +452,12 @@ def _hash_directory(
                 hasher.update(f"large-file-skipped:{size}".encode("utf-8"))
                 hasher.update(b"\0")
                 continue
-            hasher.update(file.read_bytes())
+            data = file.read_bytes()
+            if strip_managed_skill_md and file.relative_to(path).as_posix() == "SKILL.md":
+                data = strip_managed_work5c_warning_blocks(
+                    data.decode("utf-8", errors="replace")
+                ).encode("utf-8")
+            hasher.update(data)
             hasher.update(b"\0")
     return "sha256:" + hasher.hexdigest()
 
@@ -581,24 +625,6 @@ def _metadata_record_to_raw(record: SkillTrustMetadataRecord) -> dict[str, Any]:
         "runtime_binding_profile": record.runtime_binding_profile,
     })
     return {key: value for key, value in raw.items() if value is not None}
-
-
-def _metadata_record_trust_list_state(record: SkillTrustMetadataRecord) -> str:
-    value = str(record.raw.get("trust_list_state") or record.raw.get("list_state") or "unlisted")
-    if value in {"allowlist", "greylist", "blacklist", "unlisted", "revoked", "disabled"}:
-        return value
-    return "unlisted"
-
-
-def _metadata_record_admission_risk(record: SkillTrustMetadataRecord) -> str:
-    value = str(record.raw.get("admission_risk") or "unknown")
-    if value in {"low", "medium", "high", "critical", "unknown"}:
-        return value
-    return "unknown"
-
-
-def _metadata_record_policy_fingerprint(record: SkillTrustMetadataRecord) -> str:
-    return str(record.raw.get("policy_fingerprint") or POLICY_FINGERPRINT)
 
 
 def load_skill_trust_runtime_metadata_bundle(bundle: dict[str, Any] | None) -> SkillTrustMetadataBundle:
@@ -849,10 +875,9 @@ def bind_runtime_skill_refs(
                         runtime_evidence_kind=ref.evidence_kind,
                         current_runner_contract_id=effective_runner_contract_id,
                         ref_ordinal=ref.ref_ordinal,
-                        trust_list_state=_metadata_record_trust_list_state(record),  # type: ignore[arg-type]
-                        admission_risk=_metadata_record_admission_risk(record),  # type: ignore[arg-type]
+                        trust_list_state="unlisted",
                         invariant_violations=violations,
-                        policy_fingerprint=_metadata_record_policy_fingerprint(record),
+                        policy_fingerprint=POLICY_FINGERPRINT,
                     )
                 )
                 continue
@@ -931,9 +956,8 @@ def bind_runtime_skill_refs(
                     metadata_record_id=record.metadata_record_id,
                     runtime_evidence_kind=ref.evidence_kind,
                     ref_ordinal=ref.ref_ordinal,
-                    trust_list_state=_metadata_record_trust_list_state(record),  # type: ignore[arg-type]
-                    admission_risk=_metadata_record_admission_risk(record),  # type: ignore[arg-type]
-                    policy_fingerprint=_metadata_record_policy_fingerprint(record),
+                    trust_list_state="unlisted",
+                    policy_fingerprint=POLICY_FINGERPRINT,
                 )
             )
             continue
@@ -1009,16 +1033,17 @@ def build_skill_trust_bundle(
             status="unknown",
         )
         target_state = "allowlist" if report.admission_risk == RiskLevel.LOW else "greylist"
-        trusted_record = apply_trust_list_state(
-            record,
-            target_state,
-            reason_code=(
-                "clean_admission_report"
-                if target_state == "allowlist"
-                else "admission_review_required"
-            ),
+        records.append(
+            apply_trust_list_state(
+                record,
+                target_state,
+                reason_code=(
+                    "clean_admission_report"
+                    if target_state == "allowlist"
+                    else "admission_review_required"
+                ),
+            )
         )
-        records.append(trusted_record)
         allowed_runtime_roots = _allowed_runtime_roots_for_skill(
             source_root_path=source_root_path,
             skill_dir_name=root.name,
@@ -1046,12 +1071,6 @@ def build_skill_trust_bundle(
             "runtime_binding_profile": "source_or_mirror",
             "skill_root_hash": report.skill_root_hash,
             "content_hashes": report.content_hashes,
-            "trust_list_state": trusted_record.list_state,
-            "list_state": trusted_record.list_state,
-            "trust_level": trusted_record.trust_level,
-            "status": trusted_record.status,
-            "admission_risk": report.admission_risk.value,
-            "policy_fingerprint": trusted_record.policy_fingerprint or POLICY_FINGERPRINT,
         }
         metadata_records.append(metadata_record)
         metadata_by_normalized_name.setdefault(_display_normalize(root.name), []).append(metadata_record_id)
@@ -1067,11 +1086,6 @@ def build_skill_trust_bundle(
             "provenance_label_conflict": False,
             "admission_scan_id": report.scan_id,
             "admission_risk": report.admission_risk.value,
-            "trust_list_state": trusted_record.list_state,
-            "list_state": trusted_record.list_state,
-            "trust_level": trusted_record.trust_level,
-            "status": trusted_record.status,
-            "policy_fingerprint": trusted_record.policy_fingerprint or POLICY_FINGERPRINT,
             "metadata_record_id": metadata_record_id,
             "source_root_path": source_root_path,
             "source_root_path_hash": source_root_path_hash,
@@ -1090,17 +1104,15 @@ def build_skill_trust_bundle(
         if len(group) < 2:
             continue
         canonical = _choose_bundle_canonical(group)
-        blocked = sorted(group)
+        blocked = sorted(root for root in group if root != canonical)
         if not blocked:
             continue
         action = {
             "root": str(parent),
+            "canonical_skill": canonical.name,
             "blocked_skills": [root.name for root in blocked],
-            "ambiguous_skills": [root.name for root in blocked],
             "gateway_registry_status": "ambiguous",
             "gateway_rule_hits": ["ambiguous_skill_alias", "provenance_label_conflict"],
-            "policy_decision": "block",
-            "policy_reason": "ambiguous_skill_alias_with_provenance_label_conflict",
             "control_plane_evidence": "skill_trust_preflight",
         }
         preflight_actions.append(action)
@@ -1535,6 +1547,7 @@ class AdmissionScanner:
         root = Path(skill_root)
         _raise_if_scan_deadline_expired(deadline_at)
         skill_md = root / "SKILL.md"
+        strip_work5c_warning = _work5c_warning_strip_enabled()
         content_hashes: dict[str, str] = {}
         files_seen = 0
         if skill_md.exists():
@@ -1544,6 +1557,7 @@ class AdmissionScanner:
             content_hashes["SKILL.md"] = _hash_file(
                 skill_md,
                 max_file_bytes=max_file_bytes,
+                strip_managed_skill_md=strip_work5c_warning,
             )
         _raise_if_scan_deadline_expired(deadline_at)
         for child in ("scripts", "references", "data", "fixtures", "probes"):
@@ -1579,7 +1593,16 @@ class AdmissionScanner:
                 )
             _raise_if_scan_deadline_expired(deadline_at)
 
-        text = _read_in_tree_text(skill_md, root, deadline_at=deadline_at) if skill_md.exists() else ""
+        text = (
+            _read_in_tree_text(
+                skill_md,
+                root,
+                deadline_at=deadline_at,
+                strip_managed_skill_md=strip_work5c_warning,
+            )
+            if skill_md.exists()
+            else ""
+        )
         findings: list[AdmissionFinding] = []
         findings.extend(self._hash_findings(content_hashes))
         findings.extend(self._alias_findings(text, content_hashes.get("SKILL.md")))
@@ -1591,7 +1614,13 @@ class AdmissionScanner:
             if _risk_value(finding.severity.value) > _risk_value(admission_risk.value):
                 admission_risk = finding.severity
 
-        skill_root_hash = _hash_directory(root, deadline_at=deadline_at)
+        skill_root_hash = _hash_directory(
+            root,
+            deadline_at=deadline_at,
+            max_files=max_files,
+            max_file_bytes=max_file_bytes,
+            strip_managed_skill_md=strip_work5c_warning,
+        )
         return AdmissionReport(
             scan_id=_sha256(f"{root.resolve()}:{skill_root_hash}".encode("utf-8"))[:24],
             skill_root_hash=skill_root_hash,

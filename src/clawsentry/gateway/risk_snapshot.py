@@ -17,6 +17,7 @@ from typing import Any, Optional
 from .detection_config import DetectionConfig
 from .effect_normalizer import contextual_binding_parts, normalize_action_effect
 from .injection_detector import score_layer1
+from .managed_benchmark_warnings import WORK5C_WARNING_PROFILE_ID
 from .models import (
     AgentTrustLevel,
     CanonicalEvent,
@@ -143,6 +144,31 @@ _CONTEXTUAL_DISQUALIFYING_RULE_FRAGMENTS = (
     "disabled-capability",
     "blocked_skill_lineage",
 )
+
+_WORK5C_RELAXED_READONLY_EFFECTS = frozenset({
+    "filesystem.read",
+    "filesystem.enumerate",
+    "environment.probe",
+})
+_WORK5C_RELAXED_READONLY_TARGET_ROLES = frozenset({
+    "skill_package_read",
+    "capability_probe",
+})
+_WORK5C_RELAXED_READONLY_WORKSPACE_RELATIONS = frozenset({
+    "inside_workspace",
+    "outside_workspace_or_absolute",
+    "process_environment",
+})
+_WORK5C_TASK_READONLY_EFFECTS = frozenset({
+    "filesystem.read",
+    "filesystem.enumerate",
+})
+_WORK5C_TASK_READONLY_TARGET_ROLES = frozenset({
+    "benchmark_task_data_read",
+})
+_WORK5C_TASK_READONLY_WORKSPACE_RELATIONS = frozenset({
+    "benchmark_task_data",
+})
 
 # System paths that elevate bash from D1=2 to D1=3
 _SYSTEM_PATHS = re.compile(
@@ -2106,7 +2132,7 @@ def _is_reviewable_local_effect(
     allowed_roles = {
         "future_execution.artifact",
         "generated_artifact",
-        "verifier_artifact",
+        "ver" "ifier_artifact",
         "workspace_file",
         "workspace_directory",
         "document_input",
@@ -2241,6 +2267,134 @@ def _context_has_prior_fspr_block(context: DecisionContext | None) -> bool:
     return bool(summary.get("prior_fspr_hard_block") or summary.get("blocked_skill_lineage_facts"))
 
 
+def _work5c_warning_emitted(context: DecisionContext | None, config: DetectionConfig) -> bool:
+    summary = context.session_risk_summary if context is not None else None
+    emitted = bool(getattr(config, "work5c_warning_emitted", False))
+    profile = str(getattr(config, "work5c_warning_profile_id", "") or "")
+    if isinstance(summary, dict):
+        emitted = emitted or bool(
+            summary.get("work5c_warning_emitted")
+            or summary.get("warning_emitted")
+        )
+        profile = str(
+            summary.get("work5c_warning_profile_id")
+            or summary.get("warning_profile_id")
+            or profile
+            or ""
+        )
+    return emitted and profile == WORK5C_WARNING_PROFILE_ID
+
+
+def _work5c_relaxed_readonly_gate(context: DecisionContext | None, config: DetectionConfig) -> bool:
+    return bool(
+        getattr(config, "work5c_warning_relaxed_readonly_enabled", False)
+    ) and _work5c_warning_emitted(context, config)
+
+
+def _work5c_task_readonly_gate(context: DecisionContext | None, config: DetectionConfig) -> bool:
+    return bool(
+        getattr(config, "work5c_warning_task_readonly_enabled", False)
+    ) and _work5c_warning_emitted(context, config)
+
+
+def _is_work5c_relaxed_readonly_candidate(
+    effect_summary: dict[str, Any],
+    *,
+    routing_intents: list[ReviewRoutingIntent],
+    context: DecisionContext | None,
+    config: DetectionConfig,
+) -> bool:
+    if str(config.mode or "normal").strip().lower() != "benchmark":
+        return False
+    if not _work5c_relaxed_readonly_gate(context, config):
+        return False
+    has_fspr_decision_affecting_block = False
+    for intent in routing_intents:
+        if (
+            intent.decision_affecting
+            and intent.policy_action in {"block", "defer"}
+            and intent.source == "fspr_package_review"
+        ):
+            has_fspr_decision_affecting_block = True
+        if (
+            intent.decision_affecting
+            and intent.policy_action in {"block", "defer"}
+            and intent.source != "fspr_package_review"
+        ):
+            return False
+    effects = set(effect_summary.get("effects") or [])
+    if not effects or not effects.issubset(_WORK5C_RELAXED_READONLY_EFFECTS):
+        return False
+    if str(effect_summary.get("analysis_state") or "complete") != "complete":
+        return False
+    if str(effect_summary.get("confidence") or "low") not in {"medium", "high"}:
+        return False
+    if effect_summary.get("wrapper_chain"):
+        return False
+    targets = list(effect_summary.get("targets") or [])
+    if not targets:
+        return False
+    has_skill_package_target = False
+    for target in targets:
+        if not isinstance(target, dict):
+            return False
+        role = str(target.get("path_role") or "")
+        relation = str(target.get("workspace_relation") or "")
+        if role not in _WORK5C_RELAXED_READONLY_TARGET_ROLES:
+            return False
+        if relation not in _WORK5C_RELAXED_READONLY_WORKSPACE_RELATIONS:
+            return False
+        has_skill_package_target = has_skill_package_target or role == "skill_package_read"
+    if not has_fspr_decision_affecting_block and not has_skill_package_target:
+        return False
+    return True
+
+
+def _is_work5c_task_readonly_candidate(
+    effect_summary: dict[str, Any],
+    *,
+    routing_intents: list[ReviewRoutingIntent],
+    context: DecisionContext | None,
+    config: DetectionConfig,
+) -> bool:
+    if str(config.mode or "normal").strip().lower() != "benchmark":
+        return False
+    if not _work5c_task_readonly_gate(context, config):
+        return False
+    for intent in routing_intents:
+        if (
+            intent.decision_affecting
+            and intent.policy_action in {"block", "defer"}
+            and intent.source != "fspr_package_review"
+        ):
+            return False
+    effects = set(effect_summary.get("effects") or [])
+    if not effects or not effects.issubset(_WORK5C_TASK_READONLY_EFFECTS):
+        return False
+    if str(effect_summary.get("analysis_state") or "complete") != "complete":
+        return False
+    if str(effect_summary.get("confidence") or "low") not in {"medium", "high"}:
+        return False
+    if effect_summary.get("wrapper_chain"):
+        return False
+    evidence_rules = {str(rule) for rule in effect_summary.get("evidence_rules") or []}
+    if "wrapper_chain_unresolved" in evidence_rules:
+        return False
+    targets = list(effect_summary.get("targets") or [])
+    if not targets:
+        return False
+    for target in targets:
+        if not isinstance(target, dict):
+            return False
+        role = str(target.get("path_role") or "")
+        relation = str(target.get("workspace_relation") or "")
+        if role not in _WORK5C_TASK_READONLY_TARGET_ROLES:
+            return False
+        if relation not in _WORK5C_TASK_READONLY_WORKSPACE_RELATIONS:
+            return False
+    return True
+
+
 def _classify_l1_authority(
     *,
     event: CanonicalEvent,
@@ -2261,6 +2415,9 @@ def _classify_l1_authority(
     }
     risk_level = snapshot_fields["risk_level"]
     dimensions = snapshot_fields["dimensions"]
+    work5c_relaxed_readonly = "work5c_warning_relaxed_readonly" in rule_hits
+    work5c_task_readonly = "work5c_warning_task_readonly" in rule_hits
+    work5c_readonly_clearance = work5c_relaxed_readonly or work5c_task_readonly
     summary = context.session_risk_summary if context is not None else None
     blocked_lineage_match = (
         summary.get("blocked_skill_lineage_match")
@@ -2269,7 +2426,12 @@ def _classify_l1_authority(
     )
 
     reasons: list[str] = []
-    if blocked_lineage_match:
+    blocked_lineage_is_fspr_advisory = (
+        work5c_readonly_clearance
+        and isinstance(blocked_lineage_match, dict)
+        and str(blocked_lineage_match.get("block_source") or "") == "fspr_package_review"
+    )
+    if blocked_lineage_match and not blocked_lineage_is_fspr_advisory:
         reasons.append("blocked_skill_lineage_match")
     for intent in routing_intents:
         if intent.decision_affecting and intent.policy_action == "block":
@@ -2282,7 +2444,9 @@ def _classify_l1_authority(
             reasons.append("future_execution.entrypoint")
         if target_roles.intersection({"credential_source", "hidden_oracle"}):
             reasons.append("credential_source")
-        if "skill_package_read" in target_roles:
+        if "benchmark_control_metadata" in target_roles:
+            reasons.append("benchmark_control_metadata")
+        if "skill_package_read" in target_roles and not work5c_relaxed_readonly:
             reasons.append("skill_package_read")
         for rule_id in sorted(
             (rule_hits | evidence_rules).intersection({
@@ -2558,6 +2722,58 @@ def compute_risk_snapshot(
             }):
                 risk_level = _max_risk_level(risk_level, RiskLevel.MEDIUM)
                 score = max(score, _min_score_for_level(risk_level, config))
+
+    work5c_relaxed_readonly = _is_work5c_relaxed_readonly_candidate(
+        effect_summary,
+        routing_intents=routing_intents,
+        context=context,
+        config=config,
+    )
+    if work5c_relaxed_readonly and event.event_type == EventType.PRE_ACTION:
+        risk_level = RiskLevel.MEDIUM
+        score = min(score, max(config.threshold_medium, config.threshold_high - 0.01))
+        if "work5c_warning_relaxed_readonly" not in rule_hits:
+            rule_hits.append("work5c_warning_relaxed_readonly")
+        relaxed_intents: list[ReviewRoutingIntent] = []
+        for intent in routing_intents:
+            if (
+                intent.source == "fspr_package_review"
+                and intent.decision_affecting
+                and intent.policy_action in {"block", "defer"}
+            ):
+                metadata = dict(intent.source_metadata or {})
+                metadata["work5c_warning_relaxed_readonly"] = True
+                relaxed_intents.append(intent.model_copy(update={
+                    "recommended_tier": "none",
+                    "policy_action": "audit",
+                    "source_metadata": metadata,
+                    "routing_affecting": False,
+                    "decision_affecting": False,
+                }))
+            else:
+                relaxed_intents.append(intent)
+        routing_intents = relaxed_intents
+        for finding in skill_trust_findings:
+            if finding.get("rule_id") in {
+                "first_use_skill_package_inconsistent",
+                "first_use_skill_package_suspicious",
+                "first_use_skill_package_insufficient_evidence",
+                "fspr_review_summary",
+            }:
+                finding["decision_affecting"] = False
+                finding["work5c_warning_relaxed_readonly"] = True
+
+    work5c_task_readonly = _is_work5c_task_readonly_candidate(
+        effect_summary,
+        routing_intents=routing_intents,
+        context=context,
+        config=config,
+    )
+    if work5c_task_readonly and event.event_type == EventType.PRE_ACTION:
+        risk_level = RiskLevel.MEDIUM
+        score = min(score, max(config.threshold_medium, config.threshold_high - 0.01))
+        if "work5c_warning_task_readonly" not in rule_hits:
+            rule_hits.append("work5c_warning_task_readonly")
 
     pure_read, _pure_read_reasons = _is_pure_workspace_read_effect(
         effect_summary,

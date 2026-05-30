@@ -587,16 +587,6 @@ class TestSyncDecisionRequest:
                 event=CanonicalEvent(**_minimal_event()),
             )
 
-    def test_deadline_allows_three_minute_l3_reviews(self):
-        req = SyncDecisionRequest(
-            request_id="req-001",
-            deadline_ms=180000,
-            decision_tier=DecisionTier.L3,
-            event=CanonicalEvent(**_minimal_event()),
-        )
-
-        assert req.deadline_ms == 180000
-
     def test_deadline_zero_rejected(self):
         with pytest.raises(ValidationError):
             SyncDecisionRequest(

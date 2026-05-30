@@ -92,8 +92,9 @@ def test_deployable_api_validity_report_is_current_and_traceable() -> None:
     assert report["source_artifacts"]["coverage"] == "site-docs/api/api-coverage.json"
     assert report["summary"]["status_counts"] == {"enterprise": 10, "excluded": 3, "public": 41}
     report_page = VALIDITY_REPORT_PAGE.read_text(encoding="utf-8")
-    assert "API 有效性报告" in report_page
-    assert "src/clawsentry/gateway/server.py:" in report_page
+    assert "API 维护说明" in report_page
+    assert "python scripts/docs_api_inventory.py validate" in report_page
+    assert "src/clawsentry/gateway/server.py:" not in report_page
 
 
 def test_api_coverage_matrix_has_semantic_fields_and_unique_routes() -> None:
@@ -330,14 +331,14 @@ def test_api_reference_page_is_in_nav_and_has_raw_openapi_fallback() -> None:
     mkdocs_text = (REPO_ROOT / "mkdocs.yml").read_text(encoding="utf-8")
 
     assert "api/reference.md" in mkdocs_text
-    assert "api/validity-report.md" in mkdocs_text
     assert "交互式 API Reference" in mkdocs_text
-    assert "API 有效性报告" in mkdocs_text
+    assert "api/validity-report.md" not in mkdocs_text
+    assert "API 有效性报告" not in mkdocs_text
     assert "openapi.json" in reference_text
     assert "Scalar" in reference_text or "scalar" in reference_text
     assert "原始 OpenAPI JSON" in reference_text
-    assert "api-validity.json" in reference_text
-    assert "validity-report.md" in reference_text
+    assert "api-validity.json" not in reference_text
+    assert "validity-report.md" not in reference_text
     assert 'href="../openapi.json"' in reference_text
     assert "🧭" not in reference_text
     if "cdn.jsdelivr" in reference_text or "unpkg.com" in reference_text:

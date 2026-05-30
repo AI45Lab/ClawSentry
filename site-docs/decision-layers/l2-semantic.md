@@ -330,7 +330,7 @@ graph TD
 
     ```bash
     export CS_LLM_PROVIDER=anthropic
-    export ANTHROPIC_API_KEY=<anthropic-api-key>
+    export ANTHROPIC_API_KEY=sk-ant-xxx
     # 可选：覆盖模型
     export CS_LLM_MODEL=claude-sonnet-4-20250514
     clawsentry gateway
@@ -350,7 +350,7 @@ graph TD
 
     ```bash
     export CS_LLM_PROVIDER=anthropic
-    export ANTHROPIC_API_KEY=<anthropic-api-key>
+    export ANTHROPIC_API_KEY=sk-ant-xxx
     export CS_L3_ENABLED=true
     clawsentry gateway
     ```

@@ -7,62 +7,29 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
-## v0.8.4 {#v084}
-
-*2026-05-24*
-
-<div class="cs-pill-row">
-<span class="cs-pill cs-pill--release">FSPR Agentic Default</span>
-<span class="cs-pill cs-pill--test">4026 public tests passed</span>
-</div>
-
-### 改进
-
-- **FSPR 默认路线切到 agentic-readonly** — First-Use Skill Package Review 默认先走 deterministic inventory 与 agentic evidence digest，本地证据不足时才进入只读 provider loop。
-- **final-only 保留备用** — 可用 `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` 显式切回单次 final adjudicator 路线；legacy `CS_SKILL_TRUST_FSPR_ROLE_SET=final-only` 仍兼容。
-- **旧 full MAS 配置面移除** — `metadata-only`、`reduced`、`full` 这些早期顺序多 reviewer role-set 不再作为生产路线；误传时 fail closed。
-
-### 验收
-
-- 72-case real toxic corpus 复测中 hardened `agentic-readonly` detection / healthy / minimum-quality 均为 `0.958333`、degraded `0`；同 provider `final-only` healthy detection 为 `0.777778`、degraded `6`。
-- 该结果按 execution path 解释：59 deterministic floor / 5 digest floor / 8 provider path，不包装成纯模型能力提升。
-
-### 文档
-
-- Skill Trust、环境变量、DetectionConfig、Benchmark 配置和发布进度页已更新到 v0.8.4 口径。
-
----
-
 ## v0.8.3 {#v083}
 
-*2026-05-21*
+*2026-05-31*
 
 <div class="cs-pill-row">
-<span class="cs-pill cs-pill--release">FSPR Contextual Recovery Routing</span>
-<span class="cs-pill cs-pill--test">775 focused tests passed</span>
+<span class="cs-pill cs-pill--release">Benchmark Debug Infrastructure</span>
 </div>
 
-### 改进
+### 新增
 
-- **Contextual recovery routing** — FSPR 阻断 toxic / inconsistent skill 后，后续安全 recovery 写入、执行和验证不再只被高会话风险粗粒度拦截；Gateway 会生成 `ReviewRoutingIntent(source="contextual_review")`，交由 L2/L3 对具体 effect 做精确复核。
-- **Authority-bound L2/L3 clearance** — L2/L3 只能清除与当前安全 recovery effect 精确绑定的上下文风险，不能清除 blocked skill lineage、runtime binding violation、FSPR package inconsistency 或 anti-bypass denied-effect repeat。
-- **Blocked skill lineage boundary** — 被 FSPR 阻断的 skill lineage 会作为 session boundary 保留；同 lineage、同效果或等价绕过仍按 hard block 处理。
-- **Replay-safe protected evidence** — SkillsSafety / SKILL-INJECT protected runner 记录脱敏 evidence、hash、decision metadata 和稳定 artifact snapshot，不保存原始 skill root path，也不依赖 host network。
-
-### 验收
-
-- Focused regression gate：`775 passed in 17.89s`。
-- Focused policy replay 和 selected protected recovery rerun 均通过，覆盖 contextual recovery、blocked lineage 和 anti-bypass 边界。详细指标保留在开发仓库验证记录中。
+- **Content evidence** — Gateway 可以从受控 read 内容中提取 prompt-injection、隐藏 HTML 等内容证据，并保留隐私边界。
+- **FSPR real-package support** — First-Use Skill Package Review 增加真实 skill 包扫描、provider microbench 和 corpus 工具，便于复验首次使用审查质量。
+- **Runner hardening** — Benchmark runners 增加 reviewer routing、代理处理、并行运行、retry controls、技术失败重跑和 raw rejudge 支持。
 
 ### 文档
 
-- 新增 [发布进度](operations/release-progress.md) 页面，记录本版本实现范围、验收结果和剩余边界。
-- Skill Trust、Benchmark 模式和配置发布状态已更新到 v0.8.3 口径。
+- **公开文档去内部化** — 首页、安装页、API 文档、配置模板和 Benchmark 模式页移除了容易过期的测试数量、内部覆盖矩阵入口、私有评测摘要和发布流水账。
+- **用户路径收敛** — 公开站点继续保留安装、快速开始、集成接入、配置参考、CLI、OpenAPI、部署、故障排查和更新日志。
 
 ### 边界
 
-- 本版本发布的是 FSPR block 后安全恢复路径的路由与证据边界，不声明新的全量公开评测排名。
-- 原始 `rerun3` 结果目录在当前工作树缺失，E2E case selection 来自已有项目交接文档并通过新鲜 rerun 重建验证。
+- 本版本发布 v0.8.2 之后已经进入主线的 benchmark-debug、FSPR、content evidence 和 runner 基础设施更新。
+- 内部实验原始结果、完整指标和 runner 细节保留在开发仓库中，不作为公开用户文档入口。
 
 ---
 
@@ -72,7 +39,6 @@ hide:
 
 <div class="cs-pill-row">
 <span class="cs-pill cs-pill--release">Provenance Validator Removal</span>
-<span class="cs-pill cs-pill--test">focused regression passed</span>
 </div>
 
 ### 移除
@@ -95,7 +61,6 @@ hide:
 
 <div class="cs-pill-row">
 <span class="cs-pill cs-pill--release">First-Use Review Routing</span>
-<span class="cs-pill cs-pill--test">focused regression passed</span>
 </div>
 
 ### 改进
@@ -111,7 +76,7 @@ hide:
 
 ### 验收边界
 
-- 本版本修正 first-use/FSPR 路由合同与文档，不声明新的公开综合评测结论。
+- 本版本修正 first-use/FSPR 路由合同与文档，不声明新的公开评测结论。
 
 ---
 
@@ -121,7 +86,6 @@ hide:
 
 <div class="cs-pill-row">
 <span class="cs-pill cs-pill--release">Skill Trust Runtime Binding</span>
-<span class="cs-pill cs-pill--test">3645 passed, 16 skipped</span>
 </div>
 
 ### 新增
@@ -134,7 +98,7 @@ hide:
 ### 验收边界
 
 - 新增六框架 surface acceptance：A3S、Codex、Claude Code、Kimi、Gemini、OpenClaw 均覆盖 Gateway UDS + adapter/harness path 的 critical block 和 runtime-path-disallowed 证据。
-- 该验收不是外部 CLI binary harbor smoke，也不发布公开综合评测结论。
+- 该验收是运行时接线验收，不是公开评测排名。
 
 ---
 
@@ -144,7 +108,6 @@ hide:
 
 <div class="cs-pill-row">
 <span class="cs-pill cs-pill--release">Cross-CLI Skill Trust</span>
-<span class="cs-pill cs-pill--test">3456 passed, 16 skipped</span>
 </div>
 
 ### 修复
@@ -155,7 +118,7 @@ hide:
 
 ### 改进
 
-- **Benchmark matrix compatibility** — SkillsSafety/SKILL-INJECT 当前 live matrix 明确覆盖 Codex、Claude Code、Kimi CLI、Gemini CLI；`a3s-code` 在这两组 benchmark runner 中保持 unsupported rationale。
+- **Benchmark mode compatibility** — Benchmark 模式文档明确无人值守运行边界，避免和普通生产接入混淆。
 
 ### 文档
 
@@ -169,13 +132,12 @@ hide:
 
 <div class="cs-pill-row">
 <span class="cs-pill cs-pill--release">L3 Multi-turn Default</span>
-<span class="cs-pill cs-pill--test">3446 passed, 16 skipped</span>
 </div>
 
 ### 改进
 
 - **L3 default multi-turn mode** — L3 AgentAnalyzer 现在默认使用 multi-turn review；只有显式设置 `CS_L3_MULTI_TURN=false`、`0`、`no` 或 `off` 才会进入 legacy single-turn。
-- **Benchmark protected profile alignment** — Protected SkillsSafetyBench Docker sweep 固定环境改为 `CS_L3_MULTI_TURN=true`，与公开默认模式一致。
+- **Benchmark profile alignment** — 无人值守 benchmark profile 固定环境改为 `CS_L3_MULTI_TURN=true`，与公开默认模式一致。
 
 ### 文档
 
@@ -189,7 +151,6 @@ hide:
 
 <div class="cs-pill-row">
 <span class="cs-pill cs-pill--release">L2 Evidence Capsule</span>
-<span class="cs-pill cs-pill--test">3444 passed, 16 skipped</span>
 </div>
 
 ### 改进
@@ -206,7 +167,6 @@ hide:
 
 <div class="cs-pill-row">
 <span class="cs-pill cs-pill--release">Anti-bypass L1</span>
-<span class="cs-pill cs-pill--test">3419 passed, 16 skipped</span>
 </div>
 
 ### 新增
@@ -223,7 +183,6 @@ hide:
 
 <div class="cs-pill-row">
 <span class="cs-pill cs-pill--release">Public Release Metadata</span>
-<span class="cs-pill cs-pill--test">3357 passed, 16 skipped</span>
 </div>
 
 ### 修复
@@ -232,7 +191,7 @@ hide:
 
 ### 文档
 
-- API 文档、配置页和首页刷新到当前公开版本。Benchmark 模式的用户说明保留在 [Benchmark 模式](operations/benchmark-mode.md)。
+- API 文档、配置页和首页刷新到当前公开版本。Benchmark 模式保留为 CI / 无人值守运行说明。
 
 ---
 
@@ -242,7 +201,6 @@ hide:
 
 <div class="cs-pill-row">
 <span class="cs-pill cs-pill--release">Skill Trust Registry</span>
-<span class="cs-pill cs-pill--test">3468 passed, 15 skipped</span>
 </div>
 
 ### 新增

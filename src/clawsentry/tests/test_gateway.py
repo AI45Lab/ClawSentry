@@ -30,12 +30,8 @@ from clawsentry.gateway.session_enforcement import EnforcementAction, SessionEnf
 from clawsentry.gateway.models import (
     ClassifiedBy,
     CanonicalDecision,
-    ContextualClearanceBinding,
-    ContextualClearanceOutcome,
-    ContextualReviewClearance,
     DecisionSource,
     DecisionTier,
-    DecisionVerdict,
     RiskDimensions,
     RiskLevel,
     RiskSnapshot,
@@ -111,45 +107,6 @@ def _gateway_with_fake_l3(tmp_path, skills_dir, provider, config: DetectionConfi
     )
 
 
-class ContextualClearingAnalyzer:
-    analyzer_id = "gateway-contextual-clearing"
-
-    async def analyze(self, event, context, l1_snapshot, budget_ms):
-        intent = next(i for i in l1_snapshot.routing_intents if i.source == "contextual_review")
-        md = intent.source_metadata
-        binding = ContextualClearanceBinding(
-            event_id=event.event_id,
-            session_id=event.session_id,
-            effect_hash=md.get("effect_hash"),
-            canonical_argv_hash=md.get("canonical_argv_hash"),
-            raw_payload_hash=md.get("raw_payload_hash"),
-            cwd_hash=md.get("cwd_hash"),
-            interpreter=md.get("interpreter"),
-            script_or_content_hash=md.get("script_or_content_hash"),
-            input_path_hashes=md.get("input_path_hashes") or [],
-            output_path_hashes=md.get("output_path_hashes") or [],
-        )
-        clearance = ContextualReviewClearance(
-            outcome=ContextualClearanceOutcome.CLEAR,
-            binding=binding,
-            review_tier=DecisionTier.L3,
-            analyzer_id=self.analyzer_id,
-            confidence=0.9,
-            reasons=["bounded local verifier"],
-        )
-        return L2Result(
-            target_level=l1_snapshot.risk_level,
-            analyzer_id=self.analyzer_id,
-            confidence=0.9,
-            reasons=["bounded local verifier"],
-            decision_tier=DecisionTier.L3,
-            contextual_route_outcome=ContextualClearanceOutcome.CLEAR,
-            contextual_clearance_binding=binding,
-            contextual_confidence=0.9,
-            contextual_clearance=clearance,
-        )
-
-
 # ===========================================================================
 # Gateway Core Tests
 # ===========================================================================
@@ -178,7 +135,7 @@ class TestGatewayCore:
 
     @pytest.mark.asyncio
     async def test_dangerous_command_returns_block(self, gw):
-        params = _sync_decision_params(deadline_ms=10_000, event={
+        params = _sync_decision_params(event={
             "event_id": "evt-002",
             "trace_id": "trace-002",
             "event_type": "pre_action",
@@ -193,77 +150,6 @@ class TestGatewayCore:
         result = await gw.handle_jsonrpc(body)
         decision = result["result"]["decision"]
         assert decision["decision"] == "block"
-
-    @pytest.mark.asyncio
-    async def test_contextual_clearance_metadata_persists_without_raw_command(self):
-        gw = SupervisionGateway(
-            analyzer=ContextualClearingAnalyzer(),
-            detection_config=DetectionConfig(mode="benchmark", d4_high_threshold=3),
-        )
-        session_id = "sess-gateway-contextual"
-        for _ in range(3):
-            gw.policy_engine.session_tracker.record_high_risk_event(session_id)
-        params = _sync_decision_params(deadline_ms=10_000, event={
-            "event_id": "evt-contextual-gateway",
-            "trace_id": "trace-contextual-gateway",
-            "event_type": "pre_action",
-            "session_id": session_id,
-            "agent_id": "agent-001",
-            "source_framework": "test",
-            "occurred_at": "2026-05-21T00:00:00+00:00",
-            "payload": {
-                "command": "python3 scripts/verify.py > artifacts/out.json",
-                "cwd": "/workspace/private/project",
-            },
-            "tool_name": "bash",
-        })
-
-        result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", params))
-
-        decision = result["result"]["decision"]
-        assert decision["decision"] == "allow"
-        record = gw.trajectory_store.records[-1]
-        snapshot = record["risk_snapshot"]
-        assert snapshot["l1_authority_class"] == "contextual_review_required"
-        assert snapshot["l2_l3_summary"]["status"] == "contextual_review_cleared"
-        serialized = json.dumps(snapshot, sort_keys=True)
-        assert "pwd" not in serialized
-        assert "/workspace/private/project" not in serialized
-
-    @pytest.mark.asyncio
-    async def test_contextual_clearance_rejects_parent_directory_write_escape(self):
-        gw = SupervisionGateway(
-            analyzer=ContextualClearingAnalyzer(),
-            detection_config=DetectionConfig(mode="benchmark", d4_high_threshold=3),
-        )
-        session_id = "sess-gateway-contextual-escape"
-        for _ in range(3):
-            gw.policy_engine.session_tracker.record_high_risk_event(session_id)
-        params = _sync_decision_params(deadline_ms=10_000, event={
-            "event_id": "evt-contextual-gateway-escape",
-            "trace_id": "trace-contextual-gateway-escape",
-            "event_type": "pre_action",
-            "session_id": session_id,
-            "agent_id": "agent-001",
-            "source_framework": "test",
-            "occurred_at": "2026-05-21T00:00:00+00:00",
-            "payload": {
-                "command": "python3 scripts/verify.py > ../out.json",
-                "cwd": "/workspace/private/project",
-            },
-            "tool_name": "bash",
-        })
-
-        result = await gw.handle_jsonrpc(_jsonrpc_request("ahp/sync_decision", params))
-
-        decision = result["result"]["decision"]
-        assert decision["decision"] == "block"
-        record = gw.trajectory_store.records[-1]
-        snapshot = record["risk_snapshot"]
-        assert snapshot["l1_authority_class"] == "deterministic_hard_block"
-        assert "contextual_review" not in {
-            intent["source"] for intent in snapshot["routing_intents"]
-        }
 
     @pytest.mark.asyncio
     async def test_idempotency_cache_hit(self, gw):
@@ -845,17 +731,6 @@ class TestGatewayCore:
         rec = gw.trajectory_store.records[-1]
         assert rec["risk_snapshot"]["short_circuit_rule"] == "SC-5"
         assert "denied_effect_repeat" in rec["risk_snapshot"]["rule_hits"]
-        assert rec["risk_snapshot"]["l1_authority_class"] == "deterministic_hard_block"
-        assert rec["risk_snapshot"]["l1_block_authority"] == "hard_block"
-        assert "denied_effect_repeat" in rec["risk_snapshot"]["l1_authority_reasons"]
-        assert all(
-            intent["source"] != "contextual_review"
-            for intent in rec["risk_snapshot"]["routing_intents"]
-        )
-        assert rec["risk_snapshot"]["l2_l3_summary"] == {
-            "status": "not_triggered",
-            "actual_tier": "L1",
-        }
         assert rec["meta"]["anti_bypass"]["match_type"] == "denied_effect_repeat"
 
     @pytest.mark.asyncio

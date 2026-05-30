@@ -37,7 +37,7 @@ L3 是 ClawSentry 三层决策模型的最高层，部署一个拥有只读工�
 | 优先级 | 触发原因 | 条件 |
 |---|---|---|
 | 1 | `anti_bypass_followup` | `session_risk_summary.l3_request_reason == "anti_bypass_followup"` |
-| 2 | `fspr_package_review` / `runtime_binding_identity_conflict` / `contextual_review` | `session_risk_summary.l3_request_reason` 来自 Gateway-owned routing intent |
+| 2 | `fspr_package_review` / `runtime_binding_identity_conflict` | `session_risk_summary.l3_request_reason` 来自 Skill Trust routing intent |
 | 3 | `session_l3_require` | `session_risk_summary.l3_require_enforced is True` |
 | 4 | `replace_l2_routing` | `session_risk_summary.l3_routing_mode == "replace_l2"` |
 | 5 | `requested_tier_l3` | `session_risk_summary.l3_request_reason == "requested_tier_l3"` |
@@ -225,7 +225,7 @@ flowchart TD
 
 | `trigger_reason` | 强制选择的 Skill |
 |---|---|
-| `fspr_package_review` / `runtime_binding_identity_conflict` / `contextual_review` | `skill-trust-audit`（若存在）|
+| `fspr_package_review` / `runtime_binding_identity_conflict` | `skill-trust-audit`（若存在）|
 | `anti_bypass_followup` | `data-staging-exfil-chain-audit`（若存在）|
 
 ### Skill Manifest 字段 `clawsentry.l3_skill.v1`

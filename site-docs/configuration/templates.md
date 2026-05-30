@@ -54,7 +54,7 @@ CS_DEFER_MAX_PENDING=0
 ```bash title=".clawsentry.env.local — 不提交，本机密钥/覆盖"
 CS_AUTH_TOKEN=replace-with-local-token
 # CS_HTTP_PORT=9100
-# CS_LLM_API_KEY=<api-key>
+# CS_LLM_API_KEY=sk-...
 ```
 
 ---
@@ -103,7 +103,7 @@ CS_HARD_TIMEOUT_MS=600000
 ```
 
 ```bash title="本机/部署密钥（不要提交）"
-CS_LLM_API_KEY=<api-key>
+CS_LLM_API_KEY=sk-...
 # 或 provider 原生命名：OPENAI_API_KEY / ANTHROPIC_API_KEY
 ```
 
@@ -139,7 +139,7 @@ CS_LLM_TOKEN_BUDGET_SCOPE=total
 ```
 
 ```bash title="密钥"
-CS_LLM_API_KEY=<anthropic-api-key>
+CS_LLM_API_KEY=sk-ant-...
 ```
 
 运行态读数：
@@ -220,11 +220,10 @@ CS_ANTI_BYPASS_SIMILARITY_THRESHOLD=0.92
 
 适合 benchmark、敏感仓库和团队共享 skill registry。先生成 registry/runtime metadata，再通过 env 启用 Gateway 解析。完整说明见 [Skill Trust / Registry](../advanced/skill-trust.md)。
 
-!!! warning "SkillsSafetyBench balanced default"
-    下面的策略块是严格 supply-chain 模板。SkillsSafetyBench 平衡主跑应使用
-    `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY=scan_sync`，并把
-    `CS_CAPABILITY_NARROWING_ENABLED` / `CS_AGENT_SAFETY_FEEDBACK_ENABLED`
-    留给单独消融，除非该批实验明确在测试这些反馈/收紧机制。
+!!! warning "Benchmark / CI profile"
+    下面的策略块是严格 supply-chain 模板。无人值守 benchmark 或 CI 回归建议使用
+    `CS_SKILL_TRUST_FIRST_USE_BENCHMARK_POLICY=scan_sync`。是否启用 capability narrowing
+    和 agent-facing safety feedback 取决于你要验证的运行边界。
 
 ```bash
 clawsentry skill-trust register-dir \
@@ -378,7 +377,7 @@ CS_PRESET=high
 
 CS_LLM_PROVIDER=openai
 CS_LLM_MODEL=gpt-4o-mini
-CS_LLM_API_KEY=<api-key>
+CS_LLM_API_KEY=sk-...
 CS_L2_ENABLED=true
 CS_L3_ENABLED=false
 CS_LLM_TOKEN_BUDGET_ENABLED=true

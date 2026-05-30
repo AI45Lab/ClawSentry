@@ -14,9 +14,6 @@ description: 使用 Scalar 风格界面浏览 ClawSentry OpenAPI 端点、schema
 
 <div class="cs-actions" markdown>
 [原始 OpenAPI JSON](openapi.json){ .md-button .md-button--primary }
-[覆盖矩阵](api-coverage.json){ .md-button }
-[有效性报告](validity-report.md){ .md-button }
-[机器可读报告](api-validity.json){ .md-button }
 </div>
 </section>
 
@@ -24,15 +21,12 @@ description: 使用 Scalar 风格界面浏览 ClawSentry OpenAPI 端点、schema
     下面的 OpenAPI artifact 是**文档侧静态产物**，由 route inventory + curated semantic overlay 生成。它不会修改 ClawSentry 运行时 API 行为。
 
 !!! warning "Scalar 资源权衡"
-    本阶段不引入新的构建依赖。页面使用 pinned CDN 版本加载 Scalar API Reference；`mkdocs build --strict` 不依赖远程 JS 是否可达。若你的环境无法访问 CDN，请直接查看 [原始 OpenAPI JSON](openapi.json)。页面还对 Scalar 1.52.5 的 `Invalid YAML object` 已知 false-positive 做了窄范围 console 兼容处理；源 JSON 与有效性报告仍是核验依据。
+    本阶段不引入新的构建依赖。页面使用 pinned CDN 版本加载 Scalar API Reference；`mkdocs build --strict` 不依赖远程 JS 是否可达。若你的环境无法访问 CDN，请直接查看 [原始 OpenAPI JSON](openapi.json)。
 
 <div class="cs-reference-toolbar" markdown>
 | 交接包 | 用途 |
 | --- | --- |
 | [`openapi.json`](openapi.json) | 前端/SDK/HTTP client 生成与字段核对 |
-| [`api-coverage.json`](api-coverage.json) | 查看 service、auth、source、Markdown ref 和示例覆盖 |
-| [`validity-report.md`](validity-report.md) | 人类可读的 API 真实性核验结果 |
-| [`api-validity.json`](api-validity.json) | 可导入脚本或 CI 的机器可读核验结果 |
 </div>
 
 <div
@@ -50,7 +44,7 @@ description: 使用 Scalar 风格界面浏览 ClawSentry OpenAPI 端点、schema
   console.error = function filterScalarInvalidYamlObject() {
     const message = Array.from(arguments).map(String).join(' ')
     if (message.includes('Invalid YAML object')) {
-      console.info('Scalar parser notice filtered: OpenAPI JSON is valid; see api-validity.json for traceability.')
+      console.info('Scalar parser notice filtered: OpenAPI JSON is valid.')
       return
     }
     window.__clawsentryScalarConsoleError.apply(console, arguments)
@@ -67,7 +61,7 @@ description: 使用 Scalar 风格界面浏览 ClawSentry OpenAPI 端点、schema
 | 构建 Enterprise OS 20 类风险统计 | 企业模式下先接 `GET /enterprise/report/live?cached=true`；需要审计窗口时再接 `GET /enterprise/report/summary?window_seconds=3600`，读取 `by_trinityguard_subtype` / `by_trinityguard_tier` 或 `trinityguard.by_subtype` / `trinityguard.by_tier`。 |
 | 构建实时流 | 使用 `GET /report/stream`；浏览器侧可用 query token，服务端集成优先 Bearer token。 |
 | 构建处置动作 | acknowledge / enforcement / quarantine / L3 advisory 写入端点都按 contract 验证，不在报告生成时盲目 live 调用。 |
-| 核对 API 是否真实存在 | 打开 [API 有效性报告](validity-report.md)，查看 source file:line、Markdown anchor 和 OpenAPI operation。 |
+| 核对 API 是否真实存在 | 在源码仓库运行 `python scripts/docs_api_inventory.py validate`。 |
 
 ## 如何阅读这个 Reference
 
@@ -90,6 +84,6 @@ OpenAPI 中的 Skill Trust 端点是 operator surface，不是 adapter 决策路
 | `GET /skill-trust/transition/recommendations` | 查看 FSPR/P2 等 evidence-only 推荐 | recommendation source、target state、evidence refs |
 | `POST /skill-trust/transition` | 写入 allowlist/greylist/blacklist/revoke/disable/restore/override transition | `idempotency_key`、`expected_registry_snapshot_id`、`target_state`、`reason_code`、`evidence_refs`、`operator_id_hash`、`override_id` |
 
-Runtime binding and contextual recovery evidence remains in AHP decisions and replay metadata: `runtime_path_status`、`runtime_root_path_hash`、`runtime_content_status`、`metadata_record_id`、`skill_use_ledger`、`routing_intents[].source` and contextual clearance summaries. v0.8.3 adds `contextual_review` as a Gateway-owned routing source for safe recovery effects after FSPR blocks; v0.8.2 removed the post-action artifact provenance validator, so completed canonical decisions are not revisited through artifact label claims.
+Runtime binding evidence remains in AHP decisions and replay metadata: `runtime_path_status`、`runtime_root_path_hash`、`runtime_content_status`、`metadata_record_id` and `skill_use_ledger`. v0.8.2 removed the post-action artifact provenance validator; completed canonical decisions are not revisited through artifact label claims.
 
 Agent-facing safety feedback appears in decision responses only for supported critical-block delivery modes. Unsupported hosts record audit metadata instead of claiming prompt injection delivery.

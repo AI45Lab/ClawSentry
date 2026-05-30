@@ -228,6 +228,31 @@ def test_capability_narrowing_config_reports_invalid_values(tmp_path):
     assert any("capability_narrowing.greylist_action invalid" in warning for warning in effective.warnings)
 
 
+def test_work5c_warning_config_fields_are_visible_and_default_off(tmp_path):
+    defaults = resolve_effective_config(environ={})
+
+    assert defaults.values["features.work5c_warning_emitted"] is False
+    assert defaults.values["features.work5c_warning_profile_id"] == ""
+    assert defaults.values["features.work5c_warning_fspr"] is False
+
+    env_file = tmp_path / "local.env"
+    env_file.write_text(
+        "CS_WORK5C_WARNING_EMITTED=true\n"
+        "CS_WORK5C_WARNING_PROFILE_ID=fspr-warning-skill-md-shadow-v1\n"
+        "CS_WORK5C_WARNING_FSPR_ENABLED=true\n",
+        encoding="utf-8",
+    )
+    parsed = parse_env_file(env_file)
+
+    effective = resolve_effective_config(environ={}, env_file=parsed)
+
+    assert effective.values["features.work5c_warning_emitted"] is True
+    assert effective.values["features.work5c_warning_profile_id"] == "fspr-warning-skill-md-shadow-v1"
+    assert effective.values["features.work5c_warning_fspr"] is True
+    assert effective.source_detail_for("features.work5c_warning_profile_id") == f"{env_file}:2"
+    assert effective.source_detail_for("features.work5c_warning_fspr") == f"{env_file}:3"
+
+
 def test_skill_trust_control_plane_inputs_are_visible_config_fields(tmp_path):
     env_file = tmp_path / "local.env"
     env_file.write_text(
@@ -331,7 +356,6 @@ def test_fspr_settings_are_visible_config_fields():
             "CS_SKILL_TRUST_FSPR_ENABLED": "true",
             "CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED": "true",
             "CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED": "true",
-            "CS_SKILL_TRUST_FSPR_REVIEW_MODE": "final-only",
             "CS_SKILL_TRUST_FSPR_ROLE_SET": "identity-only",
             "CS_SKILL_TRUST_FSPR_TIMEOUT_MS": "2500",
             "CS_SKILL_TRUST_FSPR_CACHE_ENABLED": "false",
@@ -342,7 +366,6 @@ def test_fspr_settings_are_visible_config_fields():
     assert effective.values["skill_trust.fspr_enabled"] is True
     assert effective.values["skill_trust.fspr_pre_use_enabled"] is True
     assert effective.values["skill_trust.fspr_post_action_enabled"] is True
-    assert effective.values["skill_trust.fspr_review_mode"] == "final-only"
     assert effective.values["skill_trust.fspr_role_set"] == "identity-only"
     assert effective.values["skill_trust.fspr_timeout_ms"] == 2500
     assert effective.values["skill_trust.fspr_cache_enabled"] is False

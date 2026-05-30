@@ -46,7 +46,7 @@ clawsentry start --framework codex --open-browser
 适合团队仓库、安全敏感项目或希望 Dashboard 显示语义/审查结果的用户。密钥只放环境变量，预算显式打开。
 
 ```bash
-export CS_LLM_API_KEY = <api-key>
+export CS_LLM_API_KEY = sk-...
 clawsentry config wizard --non-interactive \
   --mode strict \
   --llm-provider openai \

@@ -11,10 +11,16 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import json
 import logging
+import os
+import re
 import time
+from pathlib import Path
 from typing import Any, Optional
 
+from .effect_normalizer import normalize_action_effect
+from .managed_benchmark_warnings import WORK5C_WARNING_PROFILE_ID
 from .models import (
     RISK_LEVEL_ORDER,
     ClassifiedBy,
@@ -56,6 +62,14 @@ _L2_OVERHEAD_MARGIN_MS: float = 200.0
 # Inner margin (ms) subtracted from the analyzer budget so analyzers can
 # degrade gracefully (producing traces/results) before the outer timeout fires.
 _INNER_BUDGET_MARGIN_MS: float = 300.0
+_WORK5C_FALLBACK_READONLY_EFFECTS = frozenset({
+    "filesystem.read",
+    "filesystem.enumerate",
+    "environment.probe",
+})
+_WORK5C_FALLBACK_SKILL_NAME_RE = re.compile(
+    r"/(?:root/\.(?:agents|codex)|logs/agent|workspace/\.codex|app)/skills/([^/\s'\";]+)"
+)
 
 
 def _analyzer_supports_l3(analyzer) -> bool:
@@ -1093,6 +1107,144 @@ class L1PolicyEngine:
 # Fallback decision factory (04 section 11.3)
 # ---------------------------------------------------------------------------
 
+def _env_truthy(name: str) -> bool:
+    return str(os.environ.get(name, "")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _work5c_fallback_warning_emitted() -> bool:
+    return (
+        str(os.environ.get("CS_MODE", "")).strip().lower() == "benchmark"
+        and _env_truthy("CS_WORK5C_WARNING_EMITTED")
+        and str(os.environ.get("CS_WORK5C_WARNING_PROFILE_ID", "")).strip()
+        == WORK5C_WARNING_PROFILE_ID
+    )
+
+
+def _work5c_fallback_skill_relaxation_enabled() -> bool:
+    return (
+        _env_truthy("CS_WORK5C_WARNING_RELAXED_READONLY_ENABLED")
+        and _work5c_fallback_warning_emitted()
+    )
+
+
+def _work5c_fallback_task_readonly_enabled() -> bool:
+    return (
+        _env_truthy("CS_WORK5C_WARNING_TASK_READONLY_ENABLED")
+        and _work5c_fallback_warning_emitted()
+    )
+
+
+def _skill_names_from_event_command(event: CanonicalEvent) -> set[str]:
+    payload = event.payload or {}
+    command = str(payload.get("command") or payload.get("input") or "")
+    return {
+        match.group(1)
+        for match in _WORK5C_FALLBACK_SKILL_NAME_RE.finditer(command)
+        if match.group(1)
+    }
+
+
+def _blocked_skill_names_from_evidence() -> set[str]:
+    evidence_path = Path(
+        os.environ.get("CS_SKILL_TRUST_EVIDENCE_PATH")
+        or "/logs/agent/clawsentry-skill-trust-evidence.jsonl"
+    )
+    try:
+        lines = evidence_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return set()
+
+    blocked: set[str] = set()
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        for key in ("blocked_skills", "ambiguous_skills"):
+            values = payload.get(key)
+            if not isinstance(values, list):
+                continue
+            blocked.update(str(value).strip() for value in values if str(value).strip())
+    return blocked
+
+
+def _is_work5c_gateway_fallback_relaxed_readonly(event: CanonicalEvent) -> bool:
+    if not _work5c_fallback_skill_relaxation_enabled():
+        return False
+    if event.event_type != EventType.PRE_ACTION:
+        return False
+
+    skill_names = _skill_names_from_event_command(event)
+    if not skill_names:
+        return False
+    if skill_names.intersection(_blocked_skill_names_from_evidence()):
+        return False
+
+    try:
+        effect_summary = normalize_action_effect(event, None).to_summary()
+    except Exception:
+        logger.debug("Work5C fallback effect normalization failed", exc_info=True)
+        return False
+
+    effects = set(effect_summary.get("effects") or [])
+    if not effects or not effects.issubset(_WORK5C_FALLBACK_READONLY_EFFECTS):
+        return False
+    if str(effect_summary.get("analysis_state") or "complete") != "complete":
+        return False
+    if str(effect_summary.get("confidence") or "low") not in {"medium", "high"}:
+        return False
+    if effect_summary.get("wrapper_chain"):
+        return False
+
+    targets = effect_summary.get("targets") or []
+    if not targets:
+        return False
+    return all(
+        isinstance(target, dict)
+        and str(target.get("path_role") or "") == "skill_package_read"
+        for target in targets
+    )
+
+
+def _is_work5c_gateway_fallback_task_readonly(event: CanonicalEvent) -> bool:
+    if not _work5c_fallback_task_readonly_enabled():
+        return False
+    if event.event_type != EventType.PRE_ACTION:
+        return False
+
+    try:
+        effect_summary = normalize_action_effect(event, None).to_summary()
+    except Exception:
+        logger.debug("Work5C task fallback effect normalization failed", exc_info=True)
+        return False
+
+    effects = set(effect_summary.get("effects") or [])
+    if not effects or not effects.issubset({"filesystem.read", "filesystem.enumerate"}):
+        return False
+    if str(effect_summary.get("analysis_state") or "complete") != "complete":
+        return False
+    if str(effect_summary.get("confidence") or "low") not in {"medium", "high"}:
+        return False
+    if effect_summary.get("wrapper_chain"):
+        return False
+    if "wrapper_chain_unresolved" in set(effect_summary.get("evidence_rules") or []):
+        return False
+
+    targets = effect_summary.get("targets") or []
+    if not targets:
+        return False
+    return all(
+        isinstance(target, dict)
+        and str(target.get("path_role") or "") == "benchmark_task_data_read"
+        and str(target.get("workspace_relation") or "") == "benchmark_task_data"
+        for target in targets
+    )
+
+
 def make_fallback_decision(
     event: CanonicalEvent,
     risk_hints_contain_high_danger: bool = False,
@@ -1105,6 +1257,48 @@ def make_fallback_decision(
     etype = event.event_type
 
     if etype == EventType.PRE_ACTION:
+        if _is_work5c_gateway_fallback_relaxed_readonly(event):
+            return CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason=(
+                    "Fallback: Work5C read-only skill package evidence "
+                    "defer (gateway unreachable)"
+                ),
+                policy_id="fallback-defer",
+                risk_level=RiskLevel.MEDIUM,
+                decision_source=DecisionSource.SYSTEM,
+                failure_class=FailureClass.UPSTREAM_UNAVAILABLE,
+                retry_after_ms=1000,
+            )
+        if _is_work5c_gateway_fallback_task_readonly(event):
+            return CanonicalDecision(
+                decision=DecisionVerdict.DEFER,
+                reason=(
+                    "Fallback: Work5C read-only benchmark task data "
+                    "defer (gateway unreachable)"
+                ),
+                policy_id="fallback-defer",
+                risk_level=RiskLevel.MEDIUM,
+                decision_source=DecisionSource.SYSTEM,
+                failure_class=FailureClass.UPSTREAM_UNAVAILABLE,
+                retry_after_ms=1000,
+            )
+        if _fallback_has_blocked_target_role(
+            event,
+            {"credential_source", "hidden_oracle", "benchmark_control_metadata"},
+        ):
+            return CanonicalDecision(
+                decision=DecisionVerdict.BLOCK,
+                reason=(
+                    "Fallback: fail-closed for protected benchmark control/oracle "
+                    "metadata (gateway unreachable)"
+                ),
+                policy_id="fallback-fail-closed",
+                risk_level=RiskLevel.HIGH,
+                decision_source=DecisionSource.SYSTEM,
+                failure_class=FailureClass.UPSTREAM_UNAVAILABLE,
+                final=True,
+            )
         if risk_hints_contain_high_danger or _tool_matches_danger(event):
             return CanonicalDecision(
                 decision=DecisionVerdict.BLOCK,
@@ -1152,3 +1346,15 @@ def _tool_matches_danger(event: CanonicalEvent) -> bool:
     """Check if tool name matches known dangerous patterns."""
     tool = (event.tool_name or "").lower()
     return tool in DANGEROUS_TOOLS
+
+
+def _fallback_has_blocked_target_role(event: CanonicalEvent, blocked_roles: set[str]) -> bool:
+    try:
+        effect_summary = normalize_action_effect(event, None).to_summary()
+    except Exception:
+        logger.debug("Fallback target role normalization failed", exc_info=True)
+        return False
+    for target in effect_summary.get("targets") or []:
+        if isinstance(target, dict) and str(target.get("path_role") or "") in blocked_roles:
+            return True
+    return False

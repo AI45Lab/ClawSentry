@@ -37,7 +37,6 @@ from .semantic_analyzer import (
     L2Result,
     _MAX_PROMPT_PAYLOAD_LEN,
     _compact_prompt_text,
-    _contextual_clearance_for_assessment,
     _exact_evidence_refs_from_context,
     _max_risk_level,
     _redacted_payload_text,
@@ -576,7 +575,6 @@ class AgentAnalyzer:
 
         result = self._parse_final_response(
             raw,
-            event,
             l1_snapshot,
             start,
             exact_evidence_refs=_exact_evidence_refs_from_context(context),
@@ -608,7 +606,6 @@ class AgentAnalyzer:
                     retry_latency = (time.monotonic() - retry_start) * 1000
                     retry_result = self._parse_final_response(
                         retry_raw,
-                        event,
                         l1_snapshot,
                         start,
                         exact_evidence_refs=_exact_evidence_refs_from_context(context),
@@ -674,10 +671,6 @@ class AgentAnalyzer:
             confidence=result.confidence, analyzer_id=result.analyzer_id,
             latency_ms=result.latency_ms, trace=trace,
             decision_tier=result.decision_tier,
-            contextual_route_outcome=result.contextual_route_outcome,
-            contextual_clearance_binding=result.contextual_clearance_binding,
-            contextual_confidence=result.contextual_confidence,
-            contextual_clearance=result.contextual_clearance,
         )
 
     # ------------------------------------------------------------------
@@ -755,10 +748,6 @@ class AgentAnalyzer:
                 confidence=result.confidence, analyzer_id=result.analyzer_id,
                 latency_ms=result.latency_ms, trace=trace,
                 decision_tier=result.decision_tier,
-                contextual_route_outcome=result.contextual_route_outcome,
-                contextual_clearance_binding=result.contextual_clearance_binding,
-                contextual_confidence=result.contextual_confidence,
-                contextual_clearance=result.contextual_clearance,
             )
 
         for _turn in range(self._config.max_reasoning_turns):
@@ -806,7 +795,6 @@ class AgentAnalyzer:
                 # Not a valid tool_call response -- try as final
                 result = self._parse_final_response(
                     raw,
-                    event,
                     l1_snapshot,
                     start,
                     exact_evidence_refs=_exact_evidence_refs_from_context(context),
@@ -831,7 +819,6 @@ class AgentAnalyzer:
                 # done=True in tool_call response means final without tool
                 result = self._parse_final_response(
                     raw,
-                    event,
                     l1_snapshot,
                     start,
                     exact_evidence_refs=_exact_evidence_refs_from_context(context),
@@ -1327,7 +1314,6 @@ class AgentAnalyzer:
     def _parse_final_response(
         self,
         raw: str,
-        event: CanonicalEvent,
         l1_snapshot: RiskSnapshot,
         start: float,
         *,
@@ -1383,25 +1369,6 @@ class AgentAnalyzer:
             confidence = float(data.get("confidence", 0.7))
             confidence = max(0.0, min(1.0, confidence))
             target_level = _max_risk_level(risk_level, l1_snapshot.risk_level)
-            contextual_outcome = None
-            contextual_binding = None
-            contextual_confidence = None
-            contextual_clearance = None
-            if not invalid_refs:
-                (
-                    contextual_outcome,
-                    contextual_binding,
-                    contextual_confidence,
-                    contextual_clearance,
-                ) = _contextual_clearance_for_assessment(
-                    event,
-                    l1_snapshot,
-                    assessment_level=risk_level,
-                    confidence=confidence,
-                    reasons=[str(item) for item in findings[: self._config.max_findings]],
-                    decision_tier=DecisionTier.L3,
-                    analyzer_id=self.analyzer_id,
-                )
             return L2Result(
                 target_level=target_level,
                 reasons=[str(item) for item in findings[: self._config.max_findings]],
@@ -1409,10 +1376,6 @@ class AgentAnalyzer:
                 analyzer_id=self.analyzer_id,
                 latency_ms=round(elapsed_ms, 3),
                 decision_tier=DecisionTier.L3,
-                contextual_route_outcome=contextual_outcome,
-                contextual_clearance_binding=contextual_binding,
-                contextual_confidence=contextual_confidence,
-                contextual_clearance=contextual_clearance,
             )
         except Exception:
             return self._degraded(

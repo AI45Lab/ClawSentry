@@ -77,6 +77,18 @@ _HIDDEN_ORACLE_MARKERS = (
     "/oracle/expected",
     "expected_answer",
 )
+_BENCHMARK_CONTROL_DATA_MARKERS = (
+    "/control/",
+    "/hidden_oracle/",
+    "observer_trace",
+    "runtime_observer",
+    "task_control",
+    "task-control",
+    "ground_truth",
+    "answer_key",
+    "/verifier/",
+    "/judge/",
+)
 _PATH_RE = re.compile(r"(?:[A-Za-z]:)?(?:[./~]?[\w.-]+/)*[\w.-]+\.[A-Za-z0-9_+-]+")
 _URL_RE = re.compile(r"https?://[^\s'\"<>]+", re.IGNORECASE)
 _SHELL_SEGMENT_SPLIT_RE = re.compile(r"\s*(?:&&|\|\||;)\s*")
@@ -125,7 +137,8 @@ def normalize_action_effect(
         _add_effect(effects, "filesystem.enumerate")
         target = _first_payload_path(payload) or _first_path(raw_text)
         if target:
-            targets.append(_target_for_path(target, role="workspace_directory", cwd=cwd))
+            role = "skill_package_read" if _is_skill_package_path(str(target).lower()) else "workspace_directory"
+            targets.append(_target_for_path(target, role=role, cwd=cwd))
         _add_rule(rules, "native_enumerate_effect")
         confidence = _max_confidence(confidence, "high")
 
@@ -435,6 +448,16 @@ def _analyze_shell(text: str) -> dict[str, Any]:
         _add_rule(rules, "interpreter_script_execution")
         confidence = _max_confidence(confidence, "medium")
 
+    inline_task_data_targets = _inline_interpreter_task_data_targets(text)
+    if inline_task_data_targets:
+        _add_effect(effects, "command.exec")
+        targets.extend(
+            _target_for_path(path, role=_path_role_for_read(path))
+            for path in inline_task_data_targets
+        )
+        _add_rule(rules, "wrapper_chain_unresolved")
+        confidence = _max_confidence(confidence, "high")
+
     read_probe_result = _analyze_shell_read_list_probe(text)
     _merge(effects, read_probe_result["effects"])
     targets.extend(read_probe_result["targets"])
@@ -479,7 +502,7 @@ def _analyze_shell_read_list_probe(text: str) -> dict[str, Any]:
     rules: list[str] = []
     confidence = "low"
 
-    read_commands = {"cat", "head", "tail", "less", "more", "file"}
+    read_commands = {"cat", "head", "tail", "less", "more", "file", "wc"}
     enumerate_commands = {"ls", "find"}
     probe_commands = {"which", "type", "pwd", "whoami", "id", "uname", "command"}
 
@@ -511,10 +534,48 @@ def _analyze_shell_read_list_probe(text: str) -> dict[str, Any]:
                 targets.append(_probe_target(probe))
                 _add_rule(rules, "shell_capability_probe")
                 confidence = _max_confidence(confidence, "medium")
+        elif command in {"test", "[", "[["}:
+            candidate_paths = _shell_test_path_probe_targets(tokens)
+            if candidate_paths:
+                _add_effect(effects, "filesystem.read")
+                targets.extend(
+                    _target_for_path(path, role=_path_role_for_read(path))
+                    for path in candidate_paths[:3]
+                )
+                _add_rule(rules, "shell_path_metadata_probe")
+                confidence = _max_confidence(confidence, "medium")
         elif command in enumerate_commands:
+            if command == "find" and any(
+                token == "-exec" or token == "-execdir" or token.startswith("-exec")
+                for token in tokens[1:]
+            ):
+                _add_effect(effects, "command.exec")
+                candidate_paths = [arg for arg in non_option_args if _looks_like_path_arg(arg)] or ["."]
+                targets.extend(
+                    _target_for_path(
+                        path,
+                        role=_path_role_for_read(path)
+                        if _is_benchmark_task_data_path(path.lower())
+                        else "workspace_directory",
+                    )
+                    for path in candidate_paths[:3]
+                )
+                _add_rule(rules, "wrapper_chain_unresolved")
+                confidence = _max_confidence(confidence, "high")
+                continue
             _add_effect(effects, "filesystem.enumerate")
             candidate_paths = [arg for arg in non_option_args if _looks_like_path_arg(arg)] or ["."]
-            targets.extend(_target_for_path(path, role="workspace_directory") for path in candidate_paths[:3])
+            targets.extend(
+                _target_for_path(
+                    path,
+                    role=_path_role_for_read(path)
+                    if _is_benchmark_task_data_path(path.lower())
+                    else "skill_package_read"
+                    if _is_skill_package_path(path.lower())
+                    else "workspace_directory",
+                )
+                for path in candidate_paths[:3]
+            )
             _add_rule(rules, "shell_enumerate_probe")
             confidence = _max_confidence(confidence, "medium")
         elif command in probe_commands:
@@ -536,6 +597,21 @@ def _analyze_shell_read_list_probe(text: str) -> dict[str, Any]:
         "rules": rules,
         "confidence": confidence,
     }
+
+
+def _shell_test_path_probe_targets(tokens: list[str]) -> list[str]:
+    path_flags = {"-e", "-f", "-d", "-s", "-r", "-w", "-x", "-L", "-h"}
+    closers = {"]", "]]"}
+    candidates: list[str] = []
+    for index, token in enumerate(tokens[1:], start=1):
+        if token not in path_flags or index + 1 >= len(tokens):
+            continue
+        candidate = tokens[index + 1]
+        if candidate in closers or candidate in {"-a", "-o"}:
+            continue
+        if _looks_like_path_arg(candidate):
+            candidates.append(candidate)
+    return candidates
 
 
 def _awk_internal_write_targets(text: str) -> list[str]:
@@ -948,6 +1024,21 @@ def _interpreter_script_targets(text: str) -> list[str]:
     return targets[:3]
 
 
+def _inline_interpreter_task_data_targets(text: str) -> list[str]:
+    if "/app/data" not in text:
+        return []
+    if not re.search(
+        r"\b(?:python|python3|node|nodejs|bash|sh|zsh)\b[^;&|]*(?:<<|-c\b|-e\b|\s-\s)",
+        text,
+    ):
+        return []
+    return [
+        path
+        for path in _paths(text)
+        if _is_benchmark_task_data_path(path.lower())
+    ][:3]
+
+
 def _analyze_python(text: str) -> dict[str, Any]:
     effects: list[str] = []
     targets: list[ActionEffectTarget] = []
@@ -1344,6 +1435,8 @@ def _path_role(path: str) -> str:
         return "credential_source"
     if any(marker in lowered for marker in _HIDDEN_ORACLE_MARKERS):
         return "hidden_oracle"
+    if _is_benchmark_task_data_path(lowered):
+        return _benchmark_task_data_role(lowered)
     if _is_skill_package_path(lowered):
         return "skill_package_read"
     if any(marker in lowered for marker in _PERSISTENCE_MARKERS):
@@ -1371,6 +1464,30 @@ def _is_skill_package_path(lowered_path: str) -> bool:
     return bool(re.search(r"(?:^|/)skills/[^/]+/skill\.md$", lowered_path))
 
 
+def _is_benchmark_task_data_path(lowered_path: str) -> bool:
+    normalized = str(lowered_path or "").strip().strip("'\"").replace("\\", "/").rstrip("/")
+    return normalized == "/app/data" or normalized.startswith("/app/data/")
+
+
+def _benchmark_task_data_role(lowered_path: str) -> str:
+    normalized = str(lowered_path or "").strip().strip("'\"").replace("\\", "/").rstrip("/")
+    if normalized == "/app/data/control" or normalized.startswith("/app/data/control/"):
+        return "benchmark_control_metadata"
+    if normalized == "/app/data/hidden_oracle" or normalized.startswith("/app/data/hidden_oracle/"):
+        return "benchmark_control_metadata"
+    if normalized.startswith("/app/data/runtime/"):
+        runtime_leaf = normalized.rsplit("/", 1)[-1]
+        if runtime_leaf.startswith("observer") or runtime_leaf in {
+            "runtime_observer",
+            "observer_trace",
+            "observer_trace.json",
+        }:
+            return "benchmark_control_metadata"
+    if any(marker in normalized for marker in _BENCHMARK_CONTROL_DATA_MARKERS):
+        return "benchmark_control_metadata"
+    return "benchmark_task_data_read"
+
+
 def _path_role_for_read(path: str) -> str:
     role = _path_role(path)
     if role == "future_execution.artifact":
@@ -1390,6 +1507,14 @@ def _workspace_relation(path: str, *, cwd: str | None = None) -> str:
     if cwd_slash and not cwd_slash.startswith("~") and not re.match(r"^[A-Za-z]:", cwd_slash):
         if normalized_slash == cwd_slash or normalized_slash.startswith(cwd_slash + "/"):
             return "inside_workspace"
+    if normalized == "/app/output" or normalized.startswith("/app/output/"):
+        return "inside_workspace"
+    if normalized == "/app/data" or normalized.startswith("/app/data/"):
+        return (
+            "benchmark_control_metadata"
+            if _benchmark_task_data_role(normalized.lower()) == "benchmark_control_metadata"
+            else "benchmark_task_data"
+        )
     if normalized.startswith("/workspace/") or normalized == "/workspace":
         return "inside_workspace"
     if normalized.startswith(("/", "~")) or re.match(r"^[A-Za-z]:", normalized):

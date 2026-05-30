@@ -65,12 +65,10 @@ class TestAnthropicProvider:
         with patch.dict(sys.modules, {"anthropic": fake_anthropic}):
             p._get_client()
 
-        fake_anthropic.AsyncAnthropic.assert_called_once()
-        call_kwargs = fake_anthropic.AsyncAnthropic.call_args.kwargs
-        assert call_kwargs["api_key"] == "test"
-        assert call_kwargs["base_url"] == "http://example.test"
-        assert call_kwargs["http_client"].trust_env is False
-        asyncio.run(call_kwargs["http_client"].aclose())
+        fake_anthropic.AsyncAnthropic.assert_called_once_with(
+            api_key="test",
+            base_url="http://example.test",
+        )
 
     def test_custom_base_url_strips_v1_for_anthropic_sdk(self):
         cfg = LLMProviderConfig(api_key="test", base_url="http://example.test/v1/")
@@ -80,23 +78,10 @@ class TestAnthropicProvider:
         with patch.dict(sys.modules, {"anthropic": fake_anthropic}):
             p._get_client()
 
-        fake_anthropic.AsyncAnthropic.assert_called_once()
-        call_kwargs = fake_anthropic.AsyncAnthropic.call_args.kwargs
-        assert call_kwargs["api_key"] == "test"
-        assert call_kwargs["base_url"] == "http://example.test"
-        assert call_kwargs["http_client"].trust_env is False
-        asyncio.run(call_kwargs["http_client"].aclose())
-
-    def test_client_init_ignores_unsupported_all_proxy_env(self, monkeypatch):
-        monkeypatch.setenv("ALL_PROXY", "socks://host.docker.internal:46657/")
-        monkeypatch.setenv("all_proxy", "socks://host.docker.internal:46657/")
-
-        p = self._make_provider()
-
-        client = p._get_client()
-        asyncio.run(p.aclose())
-
-        assert client is not None
+        fake_anthropic.AsyncAnthropic.assert_called_once_with(
+            api_key="test",
+            base_url="http://example.test",
+        )
 
     def test_satisfies_protocol(self):
         p = self._make_provider()
@@ -232,22 +217,6 @@ class TestOpenAIProvider:
             "thinking": {"type": "disabled"},
             "chat_template_kwargs": {"thinking": False},
         }
-        assert "temperature" not in call_kwargs
-
-    def test_complete_omits_temperature_for_gpt_5_4_mini(self):
-        p = self._make_provider(model="gpt-5.4-mini")
-        mock_response = MagicMock()
-        mock_choice = MagicMock()
-        mock_choice.message.content = '{"risk_assessment":"low","reasons":[],"confidence":0.8}'
-        mock_response.choices = [mock_choice]
-
-        mock_client = MagicMock()
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-        p._client = mock_client
-
-        asyncio.run(p.complete("system", "user msg", timeout_ms=3000))
-        call_kwargs = mock_client.chat.completions.create.call_args[1]
-        assert "temperature" not in call_kwargs
 
     def test_complete_uses_deepseek_reasoning_payload(self):
         p = self._make_provider(model="deepseek-v4-pro")
@@ -264,31 +233,6 @@ class TestOpenAIProvider:
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs["reasoning_effort"] == "high"
         assert call_kwargs["extra_body"] == {"thinking": {"type": "enabled"}}
-
-    def test_complete_passes_json_object_response_format_when_requested(self):
-        p = self._make_provider(model="fake")
-        mock_response = MagicMock()
-        mock_choice = MagicMock()
-        mock_choice.message.content = (
-            '{"role":"agentic_readonly","verdict":"consistent","severity":"low",'
-            '"confidence":0.8,"findings":[]}'
-        )
-        mock_response.choices = [mock_choice]
-        mock_client = MagicMock()
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-        p._client = mock_client
-
-        asyncio.run(
-            p.complete(
-                "sys",
-                "user",
-                timeout_ms=3000,
-                response_format={"type": "json_object"},
-            )
-        )
-
-        call_kwargs = mock_client.chat.completions.create.call_args[1]
-        assert call_kwargs["response_format"] == {"type": "json_object"}
 
     def test_complete_falls_back_to_kimi_reasoning_content(self):
         p = self._make_provider(model="kimi-k2.5")
@@ -311,17 +255,6 @@ class TestOpenAIProvider:
         p = OpenAIProvider(cfg)
         assert p.provider_id == "openai"
         assert p._config.base_url == "http://localhost:11434/v1"
-
-    def test_client_init_ignores_unsupported_all_proxy_env(self, monkeypatch):
-        monkeypatch.setenv("ALL_PROXY", "socks://host.docker.internal:46657/")
-        monkeypatch.setenv("all_proxy", "socks://host.docker.internal:46657/")
-
-        p = self._make_provider()
-
-        client = p._get_client()
-        asyncio.run(p.aclose())
-
-        assert client is not None
 
     def test_complete_timeout(self):
         p = self._make_provider()
@@ -355,3 +288,22 @@ class TestOpenAIProvider:
         asyncio.run(p.complete("sys", "msg", timeout_ms=3000, max_tokens=0))
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs["max_tokens"] == 512
+
+    def test_complete_forwards_response_format(self):
+        """FSPR strict-final calls can request OpenAI JSON object mode."""
+        p = self._make_provider(model="gpt-4o-mini")
+        mock_response = MagicMock()
+        mock_choice = MagicMock()
+        mock_choice.message.content = "{}"
+        mock_response.choices = [mock_choice]
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        p._client = mock_client
+
+        response_format = {"type": "json_object"}
+        asyncio.run(
+            p.complete("system", "user msg", timeout_ms=3000, response_format=response_format)
+        )
+        call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert call_kwargs["response_format"] == response_format

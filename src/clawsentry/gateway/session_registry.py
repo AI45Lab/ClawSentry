@@ -26,6 +26,15 @@ POST_ACTION_SCORE_SEMANTICS = {
     "decision_affecting": False,
     "aggregation": "latest, sum, avg, and EWMA are separate from session_risk_ewma; do not add raw channels",
 }
+_BLOCKED_SKILL_LINEAGE_KEYS = (
+    "runtime_root_path_hash",
+    "metadata_record_id",
+    "content_hash",
+    "skill_root_path_hash",
+    "skill_manifest_hash",
+    "observed_name",
+    "presented_skill_name",
+)
 
 
 def _risk_rank(risk_level: Optional[str]) -> int:
@@ -180,6 +189,42 @@ def _selected_summary(fields: dict[str, Any]) -> Optional[dict[str, Any]]:
         if value is not None
     }
     return compact or None
+
+
+def _blocked_skill_lineage_fact(
+    *,
+    event: dict[str, Any],
+    snapshot: dict[str, Any],
+    meta: dict[str, Any],
+) -> Optional[dict[str, Any]]:
+    lineage = meta.get("skill_lineage")
+    if not isinstance(lineage, dict):
+        return None
+    authority_reasons = {str(item) for item in snapshot.get("l1_authority_reasons") or []}
+    rule_hits = {str(item) for item in snapshot.get("rule_hits") or []}
+    if not (
+        "fspr_package_review" in authority_reasons
+        or "blocked_skill_lineage_match" in authority_reasons
+        or "first_use_skill_package_inconsistent" in rule_hits
+    ):
+        return None
+
+    fact = {
+        key: lineage.get(key)
+        for key in _BLOCKED_SKILL_LINEAGE_KEYS
+        if lineage.get(key) is not None
+    }
+    if not fact:
+        return None
+    fact.update({
+        "event_id": str(event.get("event_id") or ""),
+        "block_source": (
+            "fspr_package_review"
+            if "fspr_package_review" in authority_reasons
+            else "blocked_skill_lineage_match"
+        ),
+    })
+    return fact
 
 
 def build_compatibility_evidence_summary(event: Any) -> Optional[dict[str, Any]]:
@@ -759,6 +804,7 @@ class SessionRegistry:
                 "latest_approval_timeout_s": None,
                 "latest_decision_effect_summary": None,
                 "latest_adapter_effect_result_summary": None,
+                "blocked_skill_lineage_facts": [],
                 "quarantine": None,
                 "risk_timeline": deque(maxlen=self.max_timeline_per_session),
                 "post_action_score_timeline": deque(maxlen=self.max_timeline_per_session),
@@ -879,6 +925,25 @@ class SessionRegistry:
                     "released_reason": None,
                     "updated_at": occurred_at,
                 }
+        if decision_verdict == "block":
+            blocked_fact = _blocked_skill_lineage_fact(
+                event=event,
+                snapshot=snapshot,
+                meta=meta,
+            )
+            if blocked_fact is not None:
+                blocked_facts = [
+                    item
+                    for item in list(session.get("blocked_skill_lineage_facts") or [])
+                    if isinstance(item, dict)
+                ]
+                fact_key = tuple(blocked_fact.get(key) for key in _BLOCKED_SKILL_LINEAGE_KEYS)
+                if not any(
+                    tuple(item.get(key) for key in _BLOCKED_SKILL_LINEAGE_KEYS) == fact_key
+                    for item in blocked_facts
+                ):
+                    blocked_facts.append(blocked_fact)
+                session["blocked_skill_lineage_facts"] = blocked_facts[-20:]
         session["current_risk_level"] = risk_level
         if dimensions:
             session["cumulative_score"] = int(snapshot.get("composite_score") or 0)
@@ -941,6 +1006,7 @@ class SessionRegistry:
                 "latest_approval_timeout_s": None,
                 "latest_decision_effect_summary": None,
                 "latest_adapter_effect_result_summary": None,
+                "blocked_skill_lineage_facts": [],
                 "quarantine": None,
                 "risk_timeline": deque(maxlen=self.max_timeline_per_session),
                 "post_action_score_timeline": deque(maxlen=self.max_timeline_per_session),

@@ -122,6 +122,12 @@ class TestDetectionConfigDefaults:
         assert c.l3_advisory_async_enabled is False
         assert c.l3_heartbeat_review_enabled is False
 
+    def test_work5c_warning_defaults_are_disabled(self):
+        c = DetectionConfig()
+        assert c.work5c_warning_emitted is False
+        assert c.work5c_warning_profile_id == ""
+        assert c.work5c_warning_fspr_enabled is False
+
     def test_content_evidence_rollout_defaults(self):
         c = DetectionConfig()
         assert c.content_evidence_enabled is True
@@ -247,7 +253,6 @@ class TestBuildFromEnv:
             "CS_SKILL_TRUST_FSPR_ENABLED": "true",
             "CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED": "true",
             "CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED": "true",
-            "CS_SKILL_TRUST_FSPR_REVIEW_MODE": "final-only",
             "CS_SKILL_TRUST_FSPR_ROLE_SET": "identity-only",
             "CS_SKILL_TRUST_FSPR_TIMEOUT_MS": "2500",
             "CS_SKILL_TRUST_FSPR_CACHE_ENABLED": "false",
@@ -259,7 +264,6 @@ class TestBuildFromEnv:
         assert c.skill_trust_fspr_enabled is True
         assert c.skill_trust_fspr_pre_use_enabled is True
         assert c.skill_trust_fspr_post_action_enabled is True
-        assert c.skill_trust_fspr_review_mode == "final-only"
         assert c.skill_trust_fspr_role_set == "identity-only"
         assert c.skill_trust_fspr_timeout_ms == 2500
         assert c.skill_trust_fspr_cache_enabled is False
@@ -276,6 +280,19 @@ class TestBuildFromEnv:
         )
         assert cfg.skill_trust_runtime_benchmark_action == "audit"
         assert cfg.skill_trust_runtime_content_mismatch_strict_action == "audit"
+
+    def test_work5c_warning_env_parsing(self):
+        env = {
+            "CS_WORK5C_WARNING_EMITTED": "yes",
+            "CS_WORK5C_WARNING_PROFILE_ID": "fspr-warning-skill-md-shadow-v1",
+            "CS_WORK5C_WARNING_FSPR_ENABLED": "true",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            c = build_detection_config_from_env()
+
+        assert c.work5c_warning_emitted is True
+        assert c.work5c_warning_profile_id == "fspr-warning-skill-md-shadow-v1"
+        assert c.work5c_warning_fspr_enabled is True
 
     def test_comma_sep_list(self):
         env = {"CS_POST_ACTION_WHITELIST": "*.log, *.tmp, /var/cache/*"}

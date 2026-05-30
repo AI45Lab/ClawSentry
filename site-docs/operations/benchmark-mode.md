@@ -115,9 +115,9 @@ clawsentry benchmark disable --dir . --framework codex --codex-home "$CS_CODEX_H
 
 ---
 
-## SkillsSafety / SKILL-INJECT 框架支持矩阵 {#framework-matrix}
+## 支持的无人值守框架 {#framework-matrix}
 
-当前 live matrix 明确覆盖以下 4 个框架。
+Benchmark 模式用于 CI、安全回归和临时沙箱运行。当前公开文档只说明可用框架和运行边界，不承诺任何内部评测矩阵或结果。
 
 | 框架 | 支持状态 | 说明 |
 |---|---|---|
@@ -125,16 +125,16 @@ clawsentry benchmark disable --dir . --framework codex --codex-home "$CS_CODEX_H
 | Claude Code | 支持 | `UserPromptSubmit` prompt hook 阻断语义 |
 | Kimi CLI | 支持 | Skill Trust runtime metadata 接线统一 |
 | Gemini CLI | 支持 | Skill Trust runtime metadata 接线统一 |
-| a3s-code | 不支持 | a3s-code 在这两组 benchmark runner 中保持 unsupported rationale |
+| a3s-code | 参考集成 | 适合显式 SDK transport 验证；是否纳入某个外部评测由对应 runner 决定 |
 
 ---
 
 ## L3 Multi-turn 配置说明 {#l3-multi-turn}
 
-从 v0.7.4 起，L3 AgentAnalyzer **默认**启用多轮审查模式。Protected SkillsSafetyBench Docker sweep 固定环境设置 `CS_L3_MULTI_TURN=true`，与公开默认模式一致。
+从 v0.7.4 起，L3 AgentAnalyzer **默认**启用多轮审查模式。无人值守 benchmark profile 建议显式设置 `CS_L3_MULTI_TURN=true`，与公开运行时默认模式一致。
 
 ```bash
-# benchmark sweep 环境中通常已由 Docker env 显式设置：
+# 无人值守 benchmark / CI 环境中建议显式设置：
 CS_L3_MULTI_TURN=true
 ```
 
@@ -146,14 +146,6 @@ CS_L3_MULTI_TURN=false  # 或 0 / no / off
 
 !!! note "默认行为"
     生产环境和 benchmark 环境都应使用默认多轮模式。只有在需要复现 v0.7.3 及更早行为时才关闭。
-
----
-
-## FSPR contextual recovery 观察点 {#fspr-contextual-recovery-validation}
-
-Benchmark mode 可用于观察 FSPR 阻断 toxic skill 后的安全 recovery 路径：blocked lineage 必须保留，后续安全写入或执行只能通过 `contextual_review` routing intent 和精确 effect binding 被复核。公开文档只说明可观察字段和配置方式；详细验证指标、case selection 和 run directory 保留在开发仓库验证记录中。
-
-protected evidence 中建议检查这些字段：`review_state=completed`、`verdict=inconsistent`、`timing_mode=pre_use_gate`、`routing_intents[0].source=fspr_package_review`、`canonical_decision=block`。安全 recovery 是否允许继续，则由后续 `contextual_review` routing intent 和精确 effect binding 决定。
 
 ---
 

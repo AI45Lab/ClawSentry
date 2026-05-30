@@ -208,6 +208,9 @@ class DetectionConfig:
     capability_narrowing_greylist_action: str = "defer"
     tool_permission_group_overrides: str = ""
     agent_safety_feedback_enabled: bool = False
+    work5c_warning_emitted: bool = False
+    work5c_warning_profile_id: str = ""
+    work5c_warning_fspr_enabled: bool = False
     skill_trust_registry_path: Optional[str] = None
     skill_trust_first_use_normal_policy: str = "audit_only"
     skill_trust_first_use_benchmark_policy: str = "scan_sync"
@@ -246,6 +249,7 @@ class DetectionConfig:
     skill_trust_fspr_review_mode: str = "agentic-readonly"
     skill_trust_fspr_role_set: str = "default"
     skill_trust_fspr_timeout_ms: int = 120_000
+    skill_trust_fspr_max_turns: int = 16
     skill_trust_fspr_cache_enabled: bool = True
     skill_trust_fspr_provider_enabled: bool = False
     skill_trust_fspr_provider_sync_profiles: tuple[str, ...] = ("strict", "benchmark")
@@ -781,6 +785,7 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_LLM_DAILY_BUDGET_USD", "llm_daily_budget_usd", float),
     ("CS_BENCHMARK_DEFER_ACTION", "benchmark_defer_action", str),
     ("CS_BENCHMARK_PERSIST_SCOPE", "benchmark_persist_scope", str),
+    ("CS_WORK5C_WARNING_PROFILE_ID", "work5c_warning_profile_id", str),
     ("CS_ANTI_BYPASS_MEMORY_TTL_S", "anti_bypass_memory_ttl_s", float),
     ("CS_ANTI_BYPASS_MEMORY_MAX_RECORDS_PER_SESSION", "anti_bypass_memory_max_records_per_session", int),
     ("CS_ANTI_BYPASS_MIN_PRIOR_RISK", "anti_bypass_min_prior_risk", str),
@@ -833,6 +838,7 @@ _ENV_MAP: list[tuple[str, str, type]] = [
     ("CS_SKILL_TRUST_FSPR_REVIEW_MODE", "skill_trust_fspr_review_mode", str),
     ("CS_SKILL_TRUST_FSPR_ROLE_SET", "skill_trust_fspr_role_set", str),
     ("CS_SKILL_TRUST_FSPR_TIMEOUT_MS", "skill_trust_fspr_timeout_ms", int),
+    ("CS_SKILL_TRUST_FSPR_MAX_TURNS", "skill_trust_fspr_max_turns", int),
 ]
 
 _ENV_ALIAS_MAP: list[tuple[str, str, type, str]] = [
@@ -944,6 +950,8 @@ def build_detection_config_from_env() -> DetectionConfig:
     _parse_bool_env("CS_LLM_TOKEN_BUDGET_ENABLED", "llm_token_budget_enabled")
     _parse_bool_env("CS_BENCHMARK_AUTO_RESOLVE_DEFER", "benchmark_auto_resolve_defer")
     _parse_bool_env("CS_BENCHMARK_L2_AUTO_ENABLED", "benchmark_l2_auto_enabled")
+    _parse_bool_env("CS_WORK5C_WARNING_EMITTED", "work5c_warning_emitted")
+    _parse_bool_env("CS_WORK5C_WARNING_FSPR_ENABLED", "work5c_warning_fspr_enabled")
     _parse_bool_env("CS_ANTI_BYPASS_GUARD_ENABLED", "anti_bypass_guard_enabled")
     _parse_bool_env("CS_ANTI_BYPASS_RECORD_ALLOW_DECISIONS", "anti_bypass_record_allow_decisions")
     _parse_bool_env("CS_CAPABILITY_NARROWING_ENABLED", "capability_narrowing_enabled")

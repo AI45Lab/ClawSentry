@@ -38,7 +38,6 @@ class ToolSemanticEntry:
             "framework": self.framework,
             "native_tool_id": self.native_tool_id,
             "raw_name_field": self.raw_name_field,
-            "display_label": self.display_label,
             "canonical_tool": self.canonical_tool,
             "permission_groups": list(self.permission_groups),
             "d1_class": self.d1_class,
@@ -62,7 +61,7 @@ class ToolSemanticRegistry:
         return cls(_default_entries())
 
     def resolve(self, *, framework: str | None, tool_name: str | None, payload: dict[str, Any] | None = None) -> ToolSemanticEntry | None:
-        framework_l = _canonical_framework(framework)
+        framework_l = _normalize(framework)
         tool = str(tool_name or "").strip()
         tool_l = _normalize(tool)
         payload = payload or {}
@@ -79,7 +78,12 @@ class ToolSemanticRegistry:
             if entry.framework != "*" and framework_l and entry.framework != framework_l:
                 continue
             if tool_l in {_normalize(name) for name in entry.native_tool_names}:
-                return entry.with_native_tool_id(tool, entry.raw_name_field)
+                raw_field = entry.raw_name_field
+                if entry.framework == "gemini":
+                    raw_field = "gemini_tool_name"
+                elif entry.framework == "kimi":
+                    raw_field = "kimi_tool_name"
+                return entry.with_native_tool_id(tool, raw_field)
 
         return None
 
@@ -107,26 +111,12 @@ def _default_entries() -> tuple[ToolSemanticEntry, ...]:
     return (
         _bash_entry("codex", ("bash", "Bash"), "raw_tool_name"),
         _write_entry("codex", ("apply_patch", "Edit", "Write")),
-        _read_entry("codex", ("Read", "read_file")),
-        _enumerate_entry("codex", ("Glob", "Grep", "List", "Search", "LS")),
-        _read_entry("claude-code", ("Read", "read_file")),
-        _enumerate_entry("claude-code", ("Glob", "Grep", "LS", "List")),
-        _write_entry("claude-code", ("Write", "Edit", "MultiEdit")),
+        _read_entry("claude_code", ("Read", "read_file")),
         _read_entry("a3s", ("Read", "read_file")),
-        _bash_entry("claude-code", ("Bash", "bash"), "raw_tool_name"),
+        _bash_entry("claude_code", ("Bash", "bash"), "raw_tool_name"),
         _bash_entry("a3s", ("Bash", "bash", "command"), "raw_tool_name"),
-        _read_entry("gemini-cli", ("Read", "read_file")),
-        _enumerate_entry("gemini-cli", ("Glob", "Grep", "List", "Search", "LS")),
-        _write_entry("gemini-cli", ("Write", "Edit", "write_file", "edit_file")),
-        _bash_entry(
-            "gemini-cli",
-            ("run_shell_command", "shell_command", "execute_shell", "run_command", "ShellTool", "Shell"),
-            "gemini_tool_name",
-        ),
-        _read_entry("kimi-cli", ("Read", "read_file")),
-        _enumerate_entry("kimi-cli", ("Glob", "Grep", "List", "Search", "LS")),
-        _write_entry("kimi-cli", ("Write", "Edit", "write_file", "edit_file")),
-        _bash_entry("kimi-cli", ("Shell", "shell", "run_command"), "kimi_tool_name", enforcement_strength="native_allow_block_only"),
+        _bash_entry("gemini", ("run_shell_command", "shell_command", "execute_shell", "run_command"), "gemini_tool_name"),
+        _bash_entry("kimi", ("Shell", "shell", "run_command"), "kimi_tool_name", enforcement_strength="native_allow_block_only"),
         _bash_entry("openclaw", ("exec.approval.requested",), "raw_tool_name"),
         _read_entry("*", ("filesystem.read_file", "read_file")),
     )
@@ -176,25 +166,6 @@ def _write_entry(framework: str, names: tuple[str, ...]) -> ToolSemanticEntry:
     )
 
 
-def _enumerate_entry(framework: str, names: tuple[str, ...]) -> ToolSemanticEntry:
-    return ToolSemanticEntry(
-        framework=framework,
-        native_tool_names=names,
-        canonical_tool="list_files",
-        permission_groups=("read_only",),
-        d1_class="filesystem.enumerate",
-        action_kinds=("enumerate",),
-        effect_capabilities=("filesystem.enumerate",),
-        payload_fields=("path", "directory", "pattern"),
-        content_surfaces=("local_file_listing",),
-        path_fields=("path", "directory"),
-        network_fields=(),
-        enforcement_strength="gateway_shadow_only",
-        raw_name_field="raw_tool_name",
-        notes_or_rule_id="native_enumerate_effect",
-    )
-
-
 def _read_entry(framework: str, names: tuple[str, ...]) -> ToolSemanticEntry:
     return ToolSemanticEntry(
         framework=framework,
@@ -240,19 +211,6 @@ def _canonical_mcp(tool_l: str) -> ToolSemanticEntry:
 
 def _normalize(value: object) -> str:
     return str(value or "").strip().lower()
-
-
-def _canonical_framework(value: object) -> str:
-    framework = _normalize(value).replace("_", "-")
-    if framework in {"claude-code", "claude-code-cli"}:
-        return "claude-code"
-    if framework in {"gemini", "gemini-cli"}:
-        return "gemini-cli"
-    if framework in {"kimi", "kimi-cli"}:
-        return "kimi-cli"
-    if framework == "codex-cli":
-        return "codex"
-    return framework
 
 
 def _looks_like_mcp_dotted(tool_l: str) -> bool:

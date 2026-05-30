@@ -11,7 +11,6 @@ description: 管理 agent skill 供应链风险：admission scan、registry 生�
 Skill Trust 把本地 skill 包的身份、来源、hash、别名和 admission scan 结果接入 Gateway，变成可审计的运行时上下文。低信任 skill 不能仅凭文档声称自己是 canonical，也不能通过近名、改名或 provenance label 绕过策略。
 
 <div class="cs-pill-row" markdown>
-<span class="cs-pill">v0.8.3 contextual recovery</span>
 <span class="cs-pill">v0.8.0 runtime binding</span>
 <span class="cs-pill">六框架 surface acceptance</span>
 <span class="cs-pill">trust-mvp-v1 指纹</span>
@@ -50,7 +49,7 @@ Gateway 调用 `resolve_skill_trust()` 做 identity / lineage / hash / mirror / 
 </div>
 
 !!! note "v0.8.0 验收边界"
-    六框架 surface acceptance 覆盖 Gateway UDS + adapter/harness 决策路径上的 `runtime_path_disallowed`、blocked ledger entry 和 agent-facing feedback。它不是外部 CLI binary harbor smoke，也不发布公开综合评测结论。
+    六框架 surface acceptance 覆盖 Gateway UDS + adapter/harness 决策路径上的 `runtime_path_disallowed`、blocked ledger entry 和 agent-facing feedback。它是运行时接线验收，不是公开评测排名。
 
 ## Trust-list 状态 {#trust-list-states}
 
@@ -139,29 +138,6 @@ Provider-backed FSPR 复用 L2/L3 reviewer 的 `CS_LLM_PROVIDER`、`CS_LLM_MODEL
 ReadContentEvidence 复用 Content Evidence envelope，而不是创建第二套 schema。它只读取 Gateway-owned approved roots 中的 native read targets；请求侧 roots 和入站 `content_evidence` 都不能扩大读取边界。当前规则包括 `read_content_prompt_injection`、`read_content_hidden_html_instruction`、`read_content_zero_width_or_bidi`、`read_content_markdown_beacon`、`read_content_data_uri_or_base64_payload`、`sensitive_read_path`、`credential_read_content_skipped`、`read_content_execution_or_network_instruction`、`read_content_unsupported_binary` 和 `read_content_oversize`。敏感路径先按路径产生 finding，不读取正文。
 
 ToolSemanticRegistry 当前仅 shadow-mode 记录 native tool 语义，覆盖 Codex、Claude Code、A3S、Gemini、Kimi、OpenClaw 和 MCP 的初始映射。策略和 effect 归一化仍由既有实现生效；operator 配置的 `CS_TOOL_PERMISSION_GROUP_OVERRIDES` 继续优先于 registry defaults。
-
-### FSPR block 后的 contextual recovery routing {#contextual-recovery-routing}
-
-v0.8.3 以后，FSPR 阻断 toxic 或 inconsistent skill package 后，Gateway 会把“安全恢复动作”和“继续使用被阻断 skill lineage”区分开处理。
-
-| 情况 | Gateway 行为 |
-|---|---|
-| 继续读取、执行或复用被 FSPR 阻断的 skill package / lineage | 保持 `block`；blocked lineage 是硬边界 |
-| 对同一危险效果做 exact repeat、normalized repeat 或 denied-effect repeat | 保持 anti-bypass hard block |
-| 创建与被阻断 skill 无关的安全 fallback artifact，且 effect 绑定到当前 workspace | 生成 `contextual_review` routing intent，允许 L2/L3 对该 effect 精确复核 |
-| 无 target、target 在 workspace 外、或仅靠 cwd 前缀伪装 workspace | 不进入 contextual clearance；按常规风险或 hard block 处理 |
-
-`contextual_review` 只是一条 Gateway-owned routing intent，不是 allowlist，也不是对 FSPR verdict 的撤销。L2/L3 的 clearance 必须绑定到当前 action 的 normalized effect、target boundary 和 authority metadata；它不能清除 `fspr_package_review`、`runtime_binding_identity_conflict`、blocked lineage 或 anti-bypass denied-effect evidence。
-
-Replay 与 protected benchmark evidence 只保留 hash、状态、routing source、canonical decision 和脱敏摘要。原始 skill root path、host-only proxy secret、raw package body 和 L3 trace 不进入公开 replay payload。
-
-### 默认 FSPR 审查路线 {#fspr-review-mode}
-
-v0.8.4 起，生产默认 FSPR 路线切换为 `agentic-readonly`。这条路线不是旧 full MAS：它先运行本地 deterministic inventory 和 `agentic-evidence-digest-v1`，能由本地硬证据证明风险时直接返回；只有需要语义判断的少数情况才调用 provider，并且只允许 list/read/search 只读工具。
-
-`final-only` 保留为备用路线，可通过 `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` 显式启用。旧的 `full`、`reduced`、`metadata-only` role-set 已不再作为生产配置面；如果通过 legacy `CS_SKILL_TRUST_FSPR_ROLE_SET` 传入这些值，Gateway 会 fail closed，而不是回到早期顺序多 reviewer prompt。
-
-72-case real toxic corpus 复测显示 hardened `agentic-readonly` 相比 `final-only` 有更高 healthy detection 和 0 degraded。但该结果必须按路径拆分解释：59 deterministic floor / 5 digest floor / 8 provider path，不能表述成纯 provider/model 能力。
 
 ## 运行时解析与 Invariant Violations {#runtime-resolution}
 
@@ -361,9 +337,6 @@ CS_SKILL_TRUST_MIRROR_HASH_MAX_TOTAL_MS=1000
 CS_SKILL_TRUST_FSPR_ENABLED=false
 CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED=false
 CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED=false
-CS_SKILL_TRUST_FSPR_REVIEW_MODE=agentic-readonly
-# 可选备用路线：CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only
-# Legacy 兼容入口只接受 final-only；旧 full/reduced/metadata-only 会 fail closed。
 CS_SKILL_TRUST_FSPR_ROLE_SET=default
 CS_SKILL_TRUST_FSPR_TIMEOUT_MS=120000
 CS_SKILL_TRUST_FSPR_CACHE_ENABLED=true

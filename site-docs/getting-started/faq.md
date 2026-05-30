@@ -88,7 +88,7 @@ ClawSentry 通过环境变量配置 LLM Provider，支持以下选项：
     CS_LLM_PROVIDER=openai
     CS_LLM_BASE_URL=https://api.openai.com/v1
     CS_LLM_MODEL=gpt-4
-    OPENAI_API_KEY = <openai-api-key>
+    OPENAI_API_KEY = sk-your-key-here
     ```
 
     任何兼容 OpenAI API 的服务都可以使用，包括：
@@ -103,7 +103,7 @@ ClawSentry 通过环境变量配置 LLM Provider，支持以下选项：
     ```bash
     CS_LLM_PROVIDER=anthropic
     CS_LLM_MODEL=claude-sonnet-4-20250514
-    ANTHROPIC_API_KEY=<anthropic-api-key>
+    ANTHROPIC_API_KEY=sk-ant-your-key-here
     ```
 
     支持 Anthropic Claude 全系列模型。

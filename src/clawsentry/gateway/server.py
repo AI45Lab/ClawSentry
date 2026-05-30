@@ -78,7 +78,6 @@ from .models import (
     DecisionVerdict,
     EventType,
     FailureClass,
-    L1AuthorityClass,
     RiskLevel,
     RPCErrorCode,
     RPC_VERSION,
@@ -196,7 +195,6 @@ _CAPABILITY_NARROWING_DENIED_TOOLS = (
     "install_package",
 )
 _SAFE_LINEAGE_KEYS = {
-    "canonical_skill_id",
     "presented_skill_name",
     "skill_root_path_hash",
     "runtime_root_path_hash",
@@ -409,37 +407,6 @@ def _lineage_summary_from_event(event: dict[str, Any]) -> dict[str, Any] | None:
     return summary
 
 
-def _blocked_lineage_fact_from_meta(
-    meta: dict[str, Any],
-    decision: dict[str, Any],
-    snapshot: dict[str, Any],
-) -> dict[str, Any] | None:
-    if str(decision.get("decision") or "") != "block":
-        return None
-    reasons = set(snapshot.get("rule_hits") or [])
-    reasons.update(
-        str(item.get("source"))
-        for item in snapshot.get("routing_intents") or []
-        if isinstance(item, dict)
-    )
-    if "fspr_package_review" not in reasons and "runtime_binding" not in reasons:
-        return None
-    lineage = meta.get("lineage_event") or meta.get("skill_lineage")
-    if not isinstance(lineage, dict):
-        return None
-    keys = {
-        "canonical_skill_id": lineage.get("canonical_skill_id"),
-        "observed_name": lineage.get("observed_name") or lineage.get("presented_skill_name"),
-        "presented_skill_name": lineage.get("presented_skill_name"),
-        "runtime_root_path_hash": lineage.get("runtime_root_path_hash") or lineage.get("skill_root_path_hash"),
-        "metadata_record_id": lineage.get("metadata_record_id"),
-        "content_hash": lineage.get("content_hash"),
-        "source_event_id": lineage.get("event_id"),
-    }
-    compact = {key: value for key, value in keys.items() if isinstance(value, str) and value}
-    return compact or None
-
-
 def _lineage_event_from_summary(
     *,
     event: dict[str, Any],
@@ -640,6 +607,55 @@ def _lineage_events_from_summary(
     return [entry] if entry is not None else []
 
 
+_BLOCKED_SKILL_LINEAGE_MATCH_KEYS = (
+    "runtime_root_path_hash",
+    "metadata_record_id",
+    "content_hash",
+    "skill_root_path_hash",
+    "skill_manifest_hash",
+    "observed_name",
+    "presented_skill_name",
+)
+
+
+def _blocked_skill_lineage_match_from_session(
+    lineage_summary: dict[str, Any] | None,
+    session_stats: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if not isinstance(lineage_summary, dict) or not isinstance(session_stats, dict):
+        return None
+    facts = session_stats.get("blocked_skill_lineage_facts")
+    if not isinstance(facts, list):
+        return None
+    for fact in reversed(facts):
+        if not isinstance(fact, dict):
+            continue
+        for key in _BLOCKED_SKILL_LINEAGE_MATCH_KEYS:
+            current_value = lineage_summary.get(key)
+            if current_value is None or fact.get(key) != current_value:
+                continue
+            return {
+                "matched_key": key,
+                "matched_value": current_value,
+                "block_source": str(fact.get("block_source") or "session_blocked_skill_lineage"),
+                "blocked_event_id": str(fact.get("event_id") or ""),
+            }
+    return None
+
+
+def _context_with_blocked_skill_lineage_match(
+    context: DecisionContext | None,
+    match: dict[str, Any] | None,
+) -> DecisionContext | None:
+    if not match:
+        return context
+    summary = dict(context.session_risk_summary or {}) if context is not None else {}
+    summary["blocked_skill_lineage_match"] = dict(match)
+    if context is None:
+        return DecisionContext(session_risk_summary=summary)
+    return context.model_copy(update={"session_risk_summary": summary})
+
+
 def _safe_lineage_value(key: str, value: Any) -> Any | None:
     if key in {"skill_root_path_hash", "runtime_root_path_hash", "skill_manifest_hash", "content_hash"}:
         if isinstance(value, str) and _is_sha256_digest(value):
@@ -647,13 +663,7 @@ def _safe_lineage_value(key: str, value: Any) -> Any | None:
         return None
     if key in {"runtime_path_status", "runtime_content_status", "runtime_evidence_kind", "workspace_relation"}:
         return _safe_identity_label(value, max_len=80)
-    if key in {
-        "runtime_binding_reason",
-        "observed_name",
-        "presented_skill_name",
-        "canonical_skill_id",
-        "current_runner_contract_id",
-    }:
+    if key in {"runtime_binding_reason", "observed_name", "current_runner_contract_id"}:
         return _safe_identity_label(value, max_len=256)
     if key == "metadata_record_id":
         if isinstance(value, str) and value.startswith("sha256:"):
@@ -1526,6 +1536,16 @@ def _apply_gateway_owned_first_use_package_review(
     )
     if deadline_at is not None:
         timeout_s = min(timeout_s, max(0.0, deadline_at - time.monotonic()))
+    max_turns = max(
+        1,
+        int(
+            getattr(
+                detection_config,
+                "skill_trust_fspr_max_turns",
+                16,
+            )
+        ),
+    )
     provider = None
     review_mode = _fspr_review_mode_for_config(detection_config)
     if _fspr_provider_sync_enabled(detection_config):
@@ -1555,13 +1575,16 @@ def _apply_gateway_owned_first_use_package_review(
                 cache=cache,
                 cache_enabled=cache_enabled,
                 provider=provider,
+                max_turns=max_turns,
             )
         else:
             selected_roles: tuple[str, ...] | None = None
             if review_mode == "final-only" and provider is not None:
                 selected_roles = ()
             elif review_mode.startswith("unknown_review_mode:"):
-                selected_roles = (f"unknown_role_set:{review_mode.removeprefix('unknown_review_mode:')}",)
+                selected_roles = (
+                    f"unknown_role_set:{review_mode.removeprefix('unknown_review_mode:')}",
+                )
             result = run_first_use_skill_package_review(
                 root_value,
                 timeout_s=timeout_s,
@@ -2884,7 +2907,6 @@ class SupervisionGateway:
             if skill_registry_records is not None
             else load_skill_registry_records(self._detection_config.skill_trust_registry_path)
         )
-        self._blocked_skill_lineage_by_session: dict[str, list[dict[str, Any]]] = {}
         self._agent_safety_feedback_delivered_surfaces: set[tuple[str, str, str]] = set()
         self.default_session_scope_profile = _load_default_session_scope_profile()
         self.post_action_analyzer = PostActionAnalyzer(
@@ -2958,54 +2980,6 @@ class SupervisionGateway:
         }
         self._start_time = time.monotonic()
         self._ready = True
-
-    def _match_blocked_skill_lineage(
-        self,
-        *,
-        session_id: str,
-        event_dict: dict[str, Any],
-        context: DecisionContext | None,
-    ) -> dict[str, Any] | None:
-        facts = self._blocked_skill_lineage_by_session.get(session_id, [])
-        if not facts:
-            return None
-        current = _lineage_summary_from_event(event_dict) or {}
-        candidates: list[tuple[str, str]] = []
-        seen_candidates: set[tuple[str, str]] = set()
-
-        def add_candidate(key: str, value: Any) -> None:
-            if not isinstance(value, str) or not value:
-                return
-            item = (key, value)
-            if item in seen_candidates:
-                return
-            seen_candidates.add(item)
-            candidates.append(item)
-
-        for key in (
-            "runtime_root_path_hash",
-            "skill_root_path_hash",
-            "content_hash",
-            "metadata_record_id",
-            "canonical_skill_id",
-            "presented_skill_name",
-            "observed_name",
-        ):
-            add_candidate(key, current.get(key))
-        if context is not None and context.skill_trust is not None:
-            for key in ("runtime_root_path_hash", "metadata_record_id", "canonical_skill_id", "presented_name"):
-                value = getattr(context.skill_trust, key, None)
-                match_key = "presented_skill_name" if key == "presented_name" else key
-                add_candidate(match_key, value)
-        for fact in reversed(facts):
-            for key, value in candidates:
-                fact_value = fact.get(key)
-                if fact_value == value:
-                    return {
-                        "matched_key": key,
-                        "matched_value_hash": value if value.startswith("sha256:") else None,
-                    }
-        return None
 
     def _handle_budget_exhausted(self, event: dict[str, Any]) -> None:
         """Store and broadcast the first budget exhaustion transition for the day."""
@@ -3464,21 +3438,6 @@ class SupervisionGateway:
                     "context": context.model_copy(update={"content_evidence": content_evidence})
                 })
 
-        blocked_lineage_match = self._match_blocked_skill_lineage(
-            session_id=str(req.event.session_id or ""),
-            event_dict=req.event.model_dump(mode="json"),
-            context=req.context,
-        )
-        if blocked_lineage_match is not None:
-            summary = dict(req.context.session_risk_summary or {}) if req.context is not None else {}
-            summary["blocked_skill_lineage_match"] = blocked_lineage_match
-            req_context = (
-                req.context.model_copy(update={"session_risk_summary": summary})
-                if req.context is not None
-                else DecisionContext(session_risk_summary=summary)
-            )
-            req = req.model_copy(update={"context": req_context})
-
         # --- E-8: Record tool call for D4 frequency analysis ---
         if req.event.tool_name:
             self.policy_engine.session_tracker.record_tool_call(
@@ -3545,6 +3504,18 @@ class SupervisionGateway:
         previous_session_stats = self.session_registry.get_session_stats(
             str(req.event.session_id or "")
         )
+        lineage_probe = _lineage_summary_from_event(req.event.model_dump(mode="json"))
+        blocked_lineage_match = _blocked_skill_lineage_match_from_session(
+            lineage_probe,
+            previous_session_stats,
+        )
+        if blocked_lineage_match is not None:
+            req = req.model_copy(update={
+                "context": _context_with_blocked_skill_lineage_match(
+                    req.context,
+                    blocked_lineage_match,
+                )
+            })
         capability_narrowing_enabled = bool(effective_config.capability_narrowing_enabled)
         capability_trigger_rank = _risk_rank(effective_config.capability_narrowing_trigger_risk)
         if capability_trigger_rank <= 0:
@@ -3775,7 +3746,6 @@ class SupervisionGateway:
                     "cross_tool_script_similarity": "anti-bypass-cross-tool-review",
                     "denied_effect_repeat": "anti-bypass-denied-effect-repeat",
                     "pending_effect_equivalent": "anti-bypass-pending-effect-review",
-                    "contextual_pending_effect_repeat": "anti-bypass-contextual-pending-effect-review",
                 }.get(anti_bypass_match.match_type, "anti-bypass-follow-up-guard")
                 decision = CanonicalDecision(
                     decision=verdict,
@@ -3801,36 +3771,17 @@ class SupervisionGateway:
                     if anti_bypass_match.match_type in {
                         "denied_effect_repeat",
                         "pending_effect_equivalent",
-                        "contextual_pending_effect_repeat",
                     }:
                         rule_hits = list(snapshot.rule_hits or [])
-                        match_rule = {
-                            "denied_effect_repeat": "denied_effect_repeat",
-                            "pending_effect_equivalent": "pending_effect_equivalent",
-                            "contextual_pending_effect_repeat": "contextual_pending_effect_repeat",
-                        }.get(anti_bypass_match.match_type)
+                        match_rule = (
+                            "denied_effect_repeat"
+                            if anti_bypass_match.match_type == "denied_effect_repeat"
+                            else "pending_effect_equivalent"
+                        )
                         for rule_id in (match_rule, *anti_bypass_match.reason_codes):
                             if rule_id and rule_id not in rule_hits:
                                 rule_hits.append(rule_id)
-                        authority_reasons = list(snapshot.l1_authority_reasons or [])
-                        for reason in ("anti_bypass_follow_up_guard", anti_bypass_match.match_type):
-                            if reason and reason not in authority_reasons:
-                                authority_reasons.append(reason)
-                        update = {
-                            "rule_hits": rule_hits,
-                            "routing_intents": [
-                                intent
-                                for intent in (snapshot.routing_intents or [])
-                                if intent.source != "contextual_review"
-                            ],
-                            "l1_authority_class": L1AuthorityClass.DETERMINISTIC_HARD_BLOCK,
-                            "l1_authority_reasons": authority_reasons,
-                            "l1_block_authority": "hard_block",
-                            "l2_l3_summary": {
-                                "status": "not_triggered",
-                                "actual_tier": "L1",
-                            },
-                        }
+                        update = {"rule_hits": rule_hits}
                         if anti_bypass_match.match_type == "denied_effect_repeat":
                             update["short_circuit_rule"] = "SC-5"
                         snapshot = snapshot.model_copy(update=update)
@@ -4187,9 +4138,6 @@ class SupervisionGateway:
             record_id=record_id,
             config=effective_config,
         )
-        lineage_fact = _blocked_lineage_fact_from_meta(meta_dict, decision_dict, snapshot_dict)
-        if lineage_fact is not None:
-            self._blocked_skill_lineage_by_session.setdefault(_sid, []).append(lineage_fact)
 
         current_risk_level = str(snapshot_dict.get("risk_level") or decision_dict.get("risk_level") or "low")
         occurred_at = str(event_dict.get("occurred_at") or utc_now_iso())

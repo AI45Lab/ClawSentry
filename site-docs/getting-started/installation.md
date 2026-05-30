@@ -218,16 +218,14 @@ ClawSentry — AHP unified safety supervision framework.
 python -m pytest src/clawsentry/tests/ -v --tb=short
 ```
 
-预期看到类似输出（具体数量以当前发布的 CI/验证报告为准）：
+预期看到类似输出：
 
 ```
 ========================= test session starts ==========================
-collected 4035 items
-
 src/clawsentry/tests/test_models.py::test_valid_canonical_event PASSED
 src/clawsentry/tests/test_models.py::test_schema_version_format PASSED
 ...
-========================= 4026 passed, 9 skipped ===============
+========================= all selected tests passed =========================
 ```
 
 !!! success "全部通过即安装成功"

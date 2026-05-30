@@ -24,7 +24,7 @@ CS_AUTH_TOKEN=my-secret-token
 
 # LLM 配置
 CS_LLM_PROVIDER=openai
-CS_LLM_API_KEY=<api-key>
+CS_LLM_API_KEY=sk-xxx
 CS_LLM_MODEL=gpt-4o-mini
 
 # Token 预算（可选，基于 provider 真实 usage 执法）
@@ -139,11 +139,10 @@ v0.7.0 新增的 Skill Trust / capability narrowing / agent feedback surfaces �
 | `CS_SKILL_TRUST_FSPR_ENABLED` | `false` | 启用 First-Use Skill Package Review |
 | `CS_SKILL_TRUST_FSPR_PRE_USE_ENABLED` | `false` | 在 pre-use gate 时附加 FSPR evidence |
 | `CS_SKILL_TRUST_FSPR_POST_ACTION_ENABLED` | `false` | 在 post-action 阶段附加 incremental FSPR evidence |
-| `CS_SKILL_TRUST_FSPR_REVIEW_MODE` | `agentic-readonly` | FSPR 审查路线；默认使用只读 agentic + deterministic/digest floor，`final-only` 保留为备用路线 |
-| `CS_SKILL_TRUST_FSPR_ROLE_SET` | `default` | legacy role-set 入口；仅 `final-only` 兼容保留，旧 `full` / `reduced` / `metadata-only` 已移除 |
+| `CS_SKILL_TRUST_FSPR_ROLE_SET` | `default` | FSPR role set 标识 |
 | `CS_SKILL_TRUST_FSPR_TIMEOUT_MS` | `120000` | FSPR 总超时预算 |
 | `CS_SKILL_TRUST_FSPR_CACHE_ENABLED` | `true` | 启用 FSPR cache |
-| `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED` | `false` | 允许使用配置的 provider-backed FSPR review path |
+| `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED` | `false` | 允许使用配置的 provider-backed FSPR roles |
 | `CS_SKILL_TRUST_FSPR_PROVIDER_SYNC_PROFILES` | `strict,benchmark` | 允许 provider-backed FSPR 在 pre-use 同步路径运行的 profile；`CS_LLM_*` 只提供 provider 配置，不能单独启用 FSPR provider 执行 |
 | `CS_CONTENT_EVIDENCE_ENABLED` | `true` | 启用 request-local Content Evidence metadata；设为 `false` 时仍可收集 Gateway-owned metadata 并在 analyzer/report 持久化前剥离 raw body |
 | `CS_CONTENT_EVIDENCE_ANALYZER_BODY_ENABLED` | `true` | 是否允许 analyzer 看到 bounded content body；关闭时保留 hash/range/rule refs 并去除 `.content` refs |
@@ -573,7 +572,7 @@ CS_RATE_LIMIT_PER_MINUTE=0
 
 # L2 语义分析
 CS_LLM_PROVIDER=openai
-OPENAI_API_KEY=<api-key>
+OPENAI_API_KEY=sk-xxx
 CS_LLM_BASE_URL=http://localhost:11434/v1
 CS_LLM_MODEL=qwen2.5:7b
 ```
@@ -584,7 +583,7 @@ CS_LLM_MODEL=qwen2.5:7b
 # Gateway 核心
 CS_HTTP_HOST=0.0.0.0
 CS_HTTP_PORT=8080
-CS_AUTH_TOKEN=<set-a-random-token>
+CS_AUTH_TOKEN=prod-secret-token-xxxxx
 CS_TRAJECTORY_DB_PATH=/var/lib/clawsentry/trajectory.db
 CS_UDS_PATH=/var/run/clawsentry/gateway.sock
 CS_RATE_LIMIT_PER_MINUTE=300
@@ -595,7 +594,7 @@ AHP_SSL_KEYFILE=/etc/ssl/private/clawsentry-key.pem
 
 # 三层决策
 CS_LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=<anthropic-api-key>
+ANTHROPIC_API_KEY=sk-ant-xxx
 CS_L3_ENABLED=true
 
 # 会话执法

@@ -14,14 +14,11 @@ from clawsentry.gateway.models import (
     ClassifiedBy,
     ContentEvidenceEnvelope,
     ContentEvidenceItem,
-    ContextualClearanceOutcome,
     DecisionContext,
     DecisionTier,
     EventType,
-    L1AuthorityClass,
     RiskDimensions,
     RiskLevel,
-    ReviewRoutingIntent,
     RiskSnapshot,
     SkillTrustContext,
     FirstUseScanState,
@@ -74,35 +71,6 @@ def _snap(level: RiskLevel = RiskLevel.MEDIUM) -> RiskSnapshot:
         classified_by=ClassifiedBy.L1,
         classified_at="2026-03-21T12:00:00+00:00",
     )
-
-
-def _contextual_snap(level: RiskLevel = RiskLevel.HIGH) -> RiskSnapshot:
-    return _snap(level).model_copy(update={
-        "l1_authority_class": L1AuthorityClass.CONTEXTUAL_REVIEW_REQUIRED,
-        "l1_authority_reasons": ["contextual_high_risk_after_fspr"],
-        "l1_block_authority": "contextual_route_only",
-        "routing_intents": [
-            ReviewRoutingIntent(
-                source="contextual_review",
-                recommended_tier="l3",
-                policy_action="defer",
-                reason="contextual_high_risk_after_fspr",
-                routing_affecting=True,
-                source_metadata={
-                    "event_id": "evt-agent-analyzer",
-                    "session_id": "sess-agent-analyzer",
-                    "effect_hash": "sha256:" + "1" * 64,
-                    "canonical_argv_hash": "sha256:" + "2" * 64,
-                    "raw_payload_hash": "sha256:" + "3" * 64,
-                    "cwd_hash": "sha256:" + "4" * 64,
-                    "interpreter": "python",
-                    "script_or_content_hash": "sha256:" + "5" * 64,
-                    "input_path_hashes": ["sha256:" + "6" * 64],
-                    "output_path_hashes": ["sha256:" + "7" * 64],
-                },
-            )
-        ],
-    })
 
 
 def _skills_dir(tmp_path: Path) -> Path:
@@ -1971,42 +1939,6 @@ def test_parse_final_response_rejects_examples_evidence_refs_for_non_low_verdict
     assert result.trace is not None
     assert result.trace["degradation_reason"] == "invalid_evidence_refs"
     assert result.trace["turns"][0]["response_raw"]
-
-
-def test_contextual_low_l3_response_grants_bound_clearance(tmp_path: Path):
-    provider = MagicMock()
-    provider.provider_id = "mock-llm"
-    provider.complete = AsyncMock(
-        return_value='{"risk_level":"low","findings":["bounded local recovery"],"confidence":0.91}'
-    )
-    toolkit = ReadOnlyToolkit(tmp_path, StubTrajectoryStore())
-    registry = SkillRegistry(_skills_dir(tmp_path))
-    analyzer = AgentAnalyzer(
-        provider=provider,
-        toolkit=toolkit,
-        skill_registry=registry,
-        trigger_policy=L3TriggerPolicy(),
-        config=AgentAnalyzerConfig(enable_multi_turn=False),
-    )
-
-    result = asyncio.run(
-        analyzer.analyze(
-            _evt(tool_name="bash", payload={"command": "python3 scripts/verify.py"}),
-            DecisionContext(session_risk_summary={"l3_escalate": True}),
-            _contextual_snap(),
-            1000,
-        )
-    )
-
-    assert result.target_level == RiskLevel.HIGH
-    assert result.decision_tier == DecisionTier.L3
-    assert result.contextual_route_outcome == ContextualClearanceOutcome.CLEAR
-    assert result.contextual_confidence == 0.91
-    assert result.contextual_clearance_binding is not None
-    assert result.contextual_clearance_binding.event_id == "evt-agent-analyzer"
-    assert result.contextual_clearance_binding.output_path_hashes == ["sha256:" + "7" * 64]
-    assert result.contextual_clearance is not None
-    assert result.contextual_clearance.review_tier == DecisionTier.L3
 
 
 def test_l3_initial_prompt_marks_content_untrusted(tmp_path: Path):

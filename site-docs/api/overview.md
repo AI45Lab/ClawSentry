@@ -1,6 +1,6 @@
 ---
 title: API 概览
-description: 面向企业 Web 开发和安全运维的 ClawSentry API 地图、鉴权边界与有效性报告入口
+description: 面向企业 Web 开发和安全运维的 ClawSentry API 地图、鉴权边界与 OpenAPI 入口
 ---
 
 # API 概览
@@ -10,22 +10,14 @@ description: 面向企业 Web 开发和安全运维的 ClawSentry API 地图、�
 
 ## 面向企业 Web 接入的 API 地图
 
-ClawSentry 的公开 API 分为决策入口、报表监控、实时 SSE、L3 advisory 和 OpenClaw Webhook。每个端点都由源码 route、覆盖矩阵、OpenAPI operation 与 Markdown anchor 共同校验。
+ClawSentry 的公开 API 分为决策入口、报表监控、实时 SSE、L3 advisory 和 OpenClaw Webhook。二次开发者优先使用 OpenAPI Reference 查看字段、schema、鉴权和示例。
 
 <div class="cs-actions" markdown>
 [查看交互 Reference](reference.md){ .md-button .md-button--primary }
-[API 有效性报告](validity-report.md){ .md-button }
 [Metric Dictionary](metric-dictionary.md){ .md-button }
 [下载 OpenAPI JSON](openapi.json){ .md-button }
 </div>
 </section>
-
-<div class="cs-metric-grid" markdown>
-<div class="cs-metric" markdown><span>Coverage entries</span><strong>51</strong><small>public / enterprise / excluded 全量纳入</small></div>
-<div class="cs-metric" markdown><span>OpenAPI operations</span><strong>48</strong><small>排除静态 UI 与重复 service-local health</small></div>
-<div class="cs-metric" markdown><span>Public routes</span><strong>38</strong><small>可供默认 API Reference 浏览</small></div>
-<div class="cs-metric" markdown><span>Enterprise conditional</span><strong>10</strong><small>启用企业模式后注册</small></div>
-</div>
 
 ## Web 前端应该先看什么
 
@@ -132,17 +124,14 @@ sequenceDiagram
     Gateway-->>UI: decision / alert / risk event
 ```
 
-## 有效性与防漂移
+## OpenAPI 与维护边界
 
-本仓库维护三份机器可读产物，便于接入方复跑：
+公开站点保留稳定的 OpenAPI artifact，便于前端、SDK 或 HTTP client 集成：
 
-- [`api-coverage.json`](api-coverage.json)：逐端点语义覆盖矩阵，记录 service、method、path、auth、示例、错误、Markdown ref、OpenAPI ref。
 - [`openapi.json`](openapi.json)：交互式 API Reference 使用的 OpenAPI artifact。
-- [`api-validity.json`](api-validity.json)：源码 route、Markdown anchor、OpenAPI operation、文档端点提及的可溯源核验结果。
 
-人类可读版本见 [API 有效性报告](validity-report.md)。生成/校验命令：
+维护者可在源码仓库中复跑 API inventory 校验，确认文档端点、OpenAPI 和路由定义一致：
 
 ```bash
 python scripts/docs_api_inventory.py validate
-python scripts/docs_api_inventory.py report --output-dir .omx/reports --docs-output site-docs/api
 ```

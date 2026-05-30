@@ -23,7 +23,7 @@ AHP (Agent Harness Protocol) reference implementation — a unified security sup
 - **Real-time monitoring**: SSE streaming, `clawsentry watch` CLI, React/TypeScript web dashboard
 - **Production security**: Bearer token auth, HMAC webhook signatures, UDS chmod 0o600, SSL/TLS, rate limiting
 - **Session enforcement**: auto-escalate after N high-risk events with configurable cooldown
-- **4026 public Python regression tests + 56 Web UI tests**, with release-time CI/build evidence
+- **Public Python and Web UI regression coverage**, with release-time CI/build evidence
 
 ## Installation
 
@@ -35,17 +35,11 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
-## What's New in v0.8.4
-
-- **FSPR agentic-readonly default**: first-use skill package review now defaults to deterministic inventory + agentic evidence digest, with a bounded read-only provider loop only when needed.
-- **final-only remains a backup**: set `CS_SKILL_TRUST_FSPR_REVIEW_MODE=final-only` to use the legacy single final adjudicator route.
-- **Old full MAS removed**: `metadata-only`, `reduced`, and `full` sequential reviewer role-sets are no longer production routes and fail closed if supplied through the legacy role-set setting.
-
 ## What's New in v0.8.3
 
-- **FSPR contextual recovery routing**: after a toxic or inconsistent skill package is blocked, safe fallback actions can enter `contextual_review` for exact effect review rather than being overblocked by coarse session risk.
-- **Hard safety boundaries retained**: blocked skill lineage, FSPR package inconsistency, runtime binding violations, and anti-bypass denied-effect repeats cannot be cleared by contextual L2/L3 review.
-- **Protected benchmark evidence**: focused validation covers 21 AHP replay cases, two recovered SkillsSafety protected cases, and two SKILL-INJECT contextual protected cases with ASR `0.0` and protected FSPR block evidence.
+- **Content evidence and FSPR debug infrastructure**: Gateway read-content evidence, FSPR real-package scanning, provider microbench tooling, and corpus utilities are now part of the mainline.
+- **Benchmark runner hardening**: benchmark runners gained reviewer routing, proxy handling, parallel execution support, retry controls, technical rerun helpers, and raw rejudge support.
+- **Clearer user paths**: install, quickstart, integrations, configuration, CLI, API reference, deployment, troubleshooting, and changelog remain the primary public entry points.
 
 ## What's New in v0.8.2
 
@@ -69,12 +63,12 @@ Requires Python >= 3.11.
 
 - **Cross-CLI Skill Trust runtime binding**: Kimi CLI, Claude Code, Gemini CLI, Codex, and a3s-code attach Skill Trust runtime metadata from real skill paths and project context into Gateway evaluation.
 - **Prompt-hook parity and replay hardening**: Claude Code `UserPromptSubmit` uses prompt-block response semantics, and session replay keeps Skill Trust metadata hash/label-only.
-- **Benchmark matrix cleanup**: SkillsSafety/SKILL-INJECT docs separate raw baselines from protected pairings and document current four-framework live coverage.
+- **Benchmark mode cleanup**: benchmark-mode docs separate unattended CI behavior from normal production operation.
 
 ## What's New in v0.7.4
 
 - **L3 multi-turn by default**: L3 AgentAnalyzer now uses multi-turn review unless `CS_L3_MULTI_TURN=false`, `0`, `no`, or `off` explicitly requests legacy single-turn mode.
-- **Benchmark Docker alignment**: protected SkillsSafetyBench sweeps set `CS_L3_MULTI_TURN=true`, matching the public runtime default for unattended Docker benchmark runs.
+- **Benchmark Docker alignment**: unattended benchmark profiles set `CS_L3_MULTI_TURN=true`, matching the public runtime default for those runs.
 - **Docs and config refresh**: env-var docs, L3 docs, and benchmark notes now describe multi-turn as the default path.
 
 ## What's New in v0.7.3

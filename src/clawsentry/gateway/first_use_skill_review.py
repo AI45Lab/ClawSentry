@@ -5,17 +5,19 @@ from __future__ import annotations
 import ast
 import asyncio
 import hashlib
+import inspect
 import json
 import re
 import threading
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, MutableMapping, Protocol, Sequence
 
 from clawsentry import _tomllib as tomllib
 
 from .content_evidence import hash_evidence_bytes
+from .managed_benchmark_warnings import strip_managed_work5c_warning_blocks
 from .models import FirstUseSkillPackageReview
 
 FSPR_SCANNER_VERSION = "fspr.deterministic_inventory@v2"
@@ -32,11 +34,22 @@ def _safe_read_text(path: Path, *, max_bytes: int = 64_000) -> str:
     return data.decode("utf-8", errors="replace")
 
 
+def _strip_managed_fspr_warning_blocks(text: str) -> str:
+    return strip_managed_work5c_warning_blocks(text)
+
+
+def _fspr_visible_text(path: Path, *, max_bytes: int = 64_000) -> str:
+    text = _safe_read_text(path, max_bytes=max_bytes)
+    if path.name == "SKILL.md":
+        return _strip_managed_fspr_warning_blocks(text)
+    return text
+
+
 def _manifest_name(skill_root: Path) -> str:
     manifest = skill_root / "SKILL.md"
     if not manifest.is_file():
         return skill_root.name
-    text = _safe_read_text(manifest, max_bytes=8192)
+    text = _fspr_visible_text(manifest, max_bytes=8192)
     match = re.search(r"(?m)^name:\s*([A-Za-z0-9_.-]+)\s*$", text)
     return match.group(1) if match else skill_root.name
 
@@ -48,7 +61,12 @@ def _skill_root_hash(skill_root: Path) -> str:
         if _sensitive_fspr_path(rel.lower()):
             digest_material.append((rel, "sensitive-path-body-skipped"))
             continue
-        digest_material.append((rel, _sha256(path.read_bytes())))
+        data = path.read_bytes()
+        if rel == "SKILL.md":
+            data = _strip_managed_fspr_warning_blocks(
+                data.decode("utf-8", errors="replace")
+            ).encode("utf-8")
+        digest_material.append((rel, _sha256(data)))
     return _sha256(json.dumps(digest_material, sort_keys=True).encode("utf-8"))
 
 
@@ -128,9 +146,18 @@ class FSPRLLMRoleProvider:
                 }
                 if response_format is not None:
                     kwargs["response_format"] = response_format
-                result["value"] = asyncio.run(
-                    self._provider.complete(**kwargs)
-                )
+
+                async def complete_once() -> str:
+                    try:
+                        return str(await self._provider.complete(**kwargs))
+                    finally:
+                        close = getattr(self._provider, "aclose", None)
+                        if callable(close):
+                            close_result = close()
+                            if inspect.isawaitable(close_result):
+                                await close_result
+
+                result["value"] = asyncio.run(complete_once())
             except Exception as exc:
                 result["error"] = exc
 
@@ -698,6 +725,42 @@ def _agentic_runtime_body_excluded_path(rel: str) -> bool:
     return Path(rel_l).name == "bundle_manifest.json" or _sensitive_fspr_path(rel_l)
 
 
+_RAW_FSPR_FORBIDDEN_FILENAMES = frozenset({
+    "bundle_manifest.json",
+    "metadata.json",
+    "task.toml",
+})
+_RAW_FSPR_FORBIDDEN_NAME_TOKENS = ("judge", "ver" "ifier", "oracle", "ground_truth")
+
+
+def _raw_fspr_forbidden_relative_path(rel: str) -> str | None:
+    path = PurePosixPath(rel)
+    parts = tuple(part.lower() for part in path.parts)
+    if "_fspr_context" in parts:
+        return rel
+    name = path.name
+    lowered = name.lower()
+    if lowered in _RAW_FSPR_FORBIDDEN_FILENAMES:
+        return name
+    if lowered.startswith("manifest") and lowered.endswith(".jsonl"):
+        return name
+    if any(token in lowered for token in _RAW_FSPR_FORBIDDEN_NAME_TOKENS):
+        return name
+    return None
+
+
+def _raw_fspr_input_contamination_paths(skill_root: str | Path) -> list[str]:
+    root = Path(skill_root).resolve(strict=False)
+    if not root.exists():
+        return []
+    paths: list[str] = []
+    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+        rel = path.relative_to(root).as_posix()
+        if _raw_fspr_forbidden_relative_path(rel) is not None:
+            paths.append(rel)
+    return paths
+
+
 def build_fspr_inventory(
     skill_root: str | Path,
     *,
@@ -709,9 +772,15 @@ def build_fspr_inventory(
     max_total_bytes: int = 2_000_000,
     max_elapsed_ms: int = 2_000,
 ) -> FSPRInventory:
+    """Build an inventory capsule for review entrypoints.
+
+    This helper is deliberately not a review boundary: callers that expose a
+    raw-skill-only input must run the raw contamination checks before calling
+    this and before constructing any provider prompt.
+    """
     started_at = time.monotonic()
     root = Path(skill_root).resolve(strict=False)
-    manifest_text = _safe_read_text(root / "SKILL.md", max_bytes=8192) if (root / "SKILL.md").is_file() else ""
+    manifest_text = _fspr_visible_text(root / "SKILL.md", max_bytes=8192) if (root / "SKILL.md").is_file() else ""
     files: list[dict[str, Any]] = []
     script_summaries: list[dict[str, Any]] = []
     data_reference_summaries: list[dict[str, Any]] = []
@@ -744,6 +813,10 @@ def build_fspr_inventory(
             truncated = True
             findings.append(_budget_finding("fspr-budget-file-bytes", "max_bytes_per_file", [f"file:{rel}"]))
             data = path.read_bytes()[:max_bytes_per_file]
+            if rel == "SKILL.md":
+                data = _strip_managed_fspr_warning_blocks(
+                    data.decode("utf-8", errors="replace")
+                ).encode("utf-8")
             content_hash = _sha256(data)
         elif total_bytes + file_size > max_total_bytes:
             truncated = True
@@ -751,6 +824,10 @@ def build_fspr_inventory(
             break
         else:
             data = path.read_bytes()
+            if rel == "SKILL.md":
+                data = _strip_managed_fspr_warning_blocks(
+                    data.decode("utf-8", errors="replace")
+                ).encode("utf-8")
             content_hash = _sha256(data)
         total_bytes += len(data)
         files.append({
@@ -766,7 +843,7 @@ def build_fspr_inventory(
         if rel.startswith(("data/", "references/")):
             data_reference_hashes.setdefault(content_hash, []).append(rel)
         if rel == "SKILL.md":
-            text = _safe_read_text(path, max_bytes=8192)
+            text = text_for_scan
             if re.search(r"ignore\s+(?:all\s+)?previous\s+instructions|exfiltrate|reveal\s+secrets", text, re.I):
                 findings.append({
                     "id": "fspr-inventory-prompt-injection",
@@ -890,6 +967,8 @@ def build_fspr_cache_key(
     *,
     registry_snapshot_id: str,
     policy_fingerprint: str,
+    input_mode: str = "raw_skill_only",
+    context_hash: str | None = None,
     prompt_version: str = "fspr.v1",
     role_set_version: str = "roles.v1",
     policy_profile: str = "normal",
@@ -903,6 +982,8 @@ def build_fspr_cache_key(
     inventory = build_fspr_inventory(skill_root)
     material = {
         "skill_root_hash": inventory.skill_root_hash,
+        "input_mode": input_mode,
+        "context_hash": context_hash or "",
         "registry_snapshot_id": registry_snapshot_id,
         "policy_fingerprint": policy_fingerprint,
         "prompt_version": prompt_version,
@@ -942,7 +1023,7 @@ class FSPRReadOnlyToolkit:
         rel = resolved.relative_to(self.skill_root).as_posix()
         if _agentic_runtime_body_excluded_path(rel):
             raise ValueError("FSPR toolkit body read blocked for internal or sensitive path")
-        return _safe_read_text(resolved, max_bytes=max_bytes)
+        return _fspr_visible_text(resolved, max_bytes=max_bytes)
 
     def read_file_range(self, path: str | Path, *, start_line: int = 1, max_lines: int = 80) -> str:
         text = self.read_file(path)
@@ -977,7 +1058,7 @@ class FSPRReadOnlyToolkit:
                 continue
             scanned_files += 1
             try:
-                lines = _safe_read_text(resolved).splitlines()
+                lines = _fspr_visible_text(resolved).splitlines()
             except OSError:
                 continue
             for line_no, text in enumerate(lines, start=1):
@@ -1177,6 +1258,63 @@ def _timeout_result(
     )
 
 
+def _raw_input_contamination_cache_key(
+    skill_root: str | Path,
+    *,
+    paths: Sequence[str],
+    registry_snapshot_id: str,
+    policy_fingerprint: str,
+    input_mode: str,
+    context_hash: str | None,
+    role_set_version: str,
+    policy_profile: str,
+) -> str:
+    material = {
+        "reason": "raw_input_contamination",
+        "skill_root": str(Path(skill_root).resolve(strict=False)),
+        "paths": list(paths),
+        "registry_snapshot_id": registry_snapshot_id,
+        "policy_fingerprint": policy_fingerprint,
+        "input_mode": input_mode,
+        "context_hash": context_hash or "",
+        "role_set_version": role_set_version,
+        "policy_profile": policy_profile,
+    }
+    return _sha256(json.dumps(material, sort_keys=True).encode("utf-8"))
+
+
+def _raw_input_contamination_result(
+    *,
+    timing_mode: str,
+    paths: Sequence[str],
+    cache_key: str,
+) -> FSPRResult:
+    return FSPRResult(
+        timing_mode=timing_mode,
+        verdict="insufficient_evidence",
+        severity="low",
+        confidence=0.0,
+        role_results=[
+            _deterministic_inventory_role_result(
+                "insufficient_evidence",
+                [],
+                degraded=True,
+                degradation_reason="raw_input_contamination",
+            )
+        ],
+        final_findings=[],
+        evidence_capsule={
+            "raw_input_contamination": {
+                "paths": list(paths),
+            }
+        },
+        degraded=True,
+        degradation_reason="raw_input_contamination",
+        cache_key=cache_key,
+        cache=_fspr_cache_summary(cache_key, hit=False),
+    )
+
+
 def _parse_provider_role_result(role: str, raw: str) -> dict[str, Any]:
     payload = json.loads(_extract_provider_json(raw))
     if not isinstance(payload, dict):
@@ -1362,6 +1500,7 @@ _FSPR_AGENTIC_READONLY_TOOLS = frozenset({
 })
 
 _AGENTIC_COVERAGE_PROFILE = "agentic-readonly-coverage-v1"
+_AGENTIC_PROTOCOL_VERSION = "agentic-readonly-work2c-v1"
 _AGENTIC_EVIDENCE_DIGEST_VERSION = "agentic-evidence-digest-v1"
 _AGENTIC_PRIORITY_SUFFIXES = (
     ".md",
@@ -1529,7 +1668,6 @@ def _build_agentic_coverage_plan(
     for path in sorted(existing):
         if path != "SKILL.md" and _agentic_priority_path(path, root=root):
             priority.append(path)
-    priority.extend(_agentic_manifest_hint_paths(root, existing))
     priority = sorted(dict.fromkeys(
         path for path in priority if path in existing and path != "SKILL.md"
     ))
@@ -1574,7 +1712,6 @@ def _agentic_digest_input_paths(
             path for path in coverage_plan.get(key, [])
             if isinstance(path, str) and path in existing
         )
-    candidates.extend(_agentic_manifest_hint_paths(root, existing))
     selected: list[str] = []
     for path in sorted(dict.fromkeys(candidates)):
         if path == "BUNDLE_MANIFEST.json":
@@ -1836,7 +1973,7 @@ def _build_agentic_evidence_digest(
         ):
             continue
         try:
-            text = _safe_read_text(full_path, max_bytes=max_file_bytes)
+            text = _fspr_visible_text(full_path, max_bytes=max_file_bytes)
         except OSError:
             continue
         scanned_paths.append(path)
@@ -2617,7 +2754,9 @@ def run_agentic_readonly_fspr_review(
     timing_mode: str = "pre_use_gate",
     registry_snapshot_id: str = "unknown",
     policy_fingerprint: str = "unknown",
-    max_turns: int = 8,
+    input_mode: str = "raw_skill_only",
+    context_hash: str | None = None,
+    max_turns: int = 16,
     max_tool_calls: int = 12,
     max_tool_result_chars: int = 4_000,
     coverage_guard_enabled: bool = True,
@@ -2644,6 +2783,7 @@ def run_agentic_readonly_fspr_review(
     agentic_role_set_version = ":".join([
         "roles.v1",
         "agentic-readonly",
+        _AGENTIC_PROTOCOL_VERSION,
         _AGENTIC_COVERAGE_PROFILE,
         _AGENTIC_EVIDENCE_DIGEST_VERSION,
         f"turns={max(1, int(max_turns))}",
@@ -2660,10 +2800,38 @@ def run_agentic_readonly_fspr_review(
         f"det_floor={int(bool(deterministic_floor_short_circuit))}",
         f"digest_floor={int(bool(digest_floor_short_circuit))}",
     ])
+    contamination_paths = (
+        _raw_fspr_input_contamination_paths(skill_root)
+        if input_mode == "raw_skill_only"
+        else []
+    )
+    if contamination_paths:
+        cache_key = _raw_input_contamination_cache_key(
+            skill_root,
+            paths=contamination_paths,
+            registry_snapshot_id=registry_snapshot_id,
+            policy_fingerprint=policy_fingerprint,
+            input_mode=input_mode,
+            context_hash=context_hash,
+            role_set_version=agentic_role_set_version,
+            policy_profile="agentic-readonly",
+        )
+        if cache_enabled and cache is not None and cache_key in cache:
+            return _result_with_cache_hit(cache[cache_key])
+        result = _raw_input_contamination_result(
+            timing_mode=timing_mode,
+            paths=contamination_paths,
+            cache_key=cache_key,
+        )
+        if cache_enabled and cache is not None:
+            cache[cache_key] = result
+        return result
     cache_key = build_fspr_cache_key(
         skill_root,
         registry_snapshot_id=registry_snapshot_id,
         policy_fingerprint=policy_fingerprint,
+        input_mode=input_mode,
+        context_hash=context_hash,
         role_set_version=agentic_role_set_version,
         policy_profile="agentic-readonly",
     )
@@ -3277,6 +3445,8 @@ def run_first_use_skill_package_review(
     timing_mode: str = "post_action_incremental_evidence",
     registry_snapshot_id: str = "unknown",
     policy_fingerprint: str = "unknown",
+    input_mode: str = "raw_skill_only",
+    context_hash: str | None = None,
     cache: MutableMapping[str, FSPRResult] | None = None,
     cache_enabled: bool = True,
     provider: FSPRRoleProvider | None = None,
@@ -3296,11 +3466,40 @@ def run_first_use_skill_package_review(
 
     unknown_roles = _unknown_fspr_roles(selected_roles)
     role_plan = _fspr_role_plan(selected_roles) if provider is not None else []
+    role_set_version = _fspr_role_set_version(selected_roles, role_plan)
+    contamination_paths = (
+        _raw_fspr_input_contamination_paths(skill_root)
+        if input_mode == "raw_skill_only"
+        else []
+    )
+    if contamination_paths:
+        cache_key = _raw_input_contamination_cache_key(
+            skill_root,
+            paths=contamination_paths,
+            registry_snapshot_id=registry_snapshot_id,
+            policy_fingerprint=policy_fingerprint,
+            input_mode=input_mode,
+            context_hash=context_hash,
+            role_set_version=role_set_version,
+            policy_profile=policy_profile,
+        )
+        if cache_enabled and cache is not None and cache_key in cache:
+            return _result_with_cache_hit(cache[cache_key])
+        result = _raw_input_contamination_result(
+            timing_mode=timing_mode,
+            paths=contamination_paths,
+            cache_key=cache_key,
+        )
+        if cache_enabled and cache is not None:
+            cache[cache_key] = result
+        return result
     cache_key = build_fspr_cache_key(
         skill_root,
         registry_snapshot_id=registry_snapshot_id,
         policy_fingerprint=policy_fingerprint,
-        role_set_version=_fspr_role_set_version(selected_roles, role_plan),
+        input_mode=input_mode,
+        context_hash=context_hash,
+        role_set_version=role_set_version,
         policy_profile=policy_profile,
         budget_class=budget_class,
         scanner_version=scanner_version,
