@@ -118,7 +118,7 @@ stateDiagram-v2
 
 `AdmissionScanner` 对单个 skill 根目录运行以下检查，产出 `admission_risk`（`low` / `medium` / `high` / `critical` / `unknown`）：
 
-| 检查族（`finding_family`） | 触发条件 | 默认严重级别 |
+| Admission 检查维度 | 触发条件 | 默认严重级别 |
 |---|---|---|
 | `hash` | 成功捕获 content hash（始终产生） | `low` |
 | `alias` | frontmatter alias 规范化后与 canonical name 近似，或跨 skill 近名重复 | `medium`（跨 skill）、`low`（单 skill） |
@@ -131,7 +131,20 @@ stateDiagram-v2
 
 ## First-Use Skill Package Review (FSPR) Evidence
 
-FSPR 是 package-level evidence，不替代 runtime binding review。确定性 scanner 会把 finding 归一化到以下 `finding_family`：`semantic_integrity`、`supply_chain`、`secret_exposure`、`data_exfiltration`、`injection_resistance`、`permission_scope`、`destructive_potential`、`resource_discipline`、`persistence`。每条 finding 保留旧字段，同时补充 `rule_id`、`severity`、`confidence`、`language`、`evidence_refs`、`declared_capabilities`、`observed_capabilities`、`scanner_version` 和 `budget_truncated`。
+FSPR 是 Gateway-owned package-level evidence，不替代 runtime binding review，也不直接产出 allow / defer / block。确定性 scanner 会把 finding 归一化到 `review_axis`，用于说明 skill 包是否能作为可信 evidence 进入 Gateway policy：
+
+| `review_axis` | 证据维度 |
+|---|---|
+| `package_identity_integrity` | 包身份、名称、provenance、alias、decoy 和声明一致性 |
+| `capability_manifest_alignment` | manifest 声明能力与脚本实际能力是否一致 |
+| `data_boundary_control` | 敏感数据、本地读取和外部发送边界 |
+| `execution_surface_control` | shell、动态执行、远程安装、依赖拉取等执行面 |
+| `instruction_channel_integrity` | 包内文档、隐藏内容和 prompt-like 文本的指令边界 |
+| `state_mutation_scope` | 写入、删除、覆盖、重置等状态改变范围 |
+| `reentry_activation_surface` | 启动项、hook、cron、autoload、自恢复等长期生效面 |
+| `review_evidence_quality` | 扫描预算、截断、provider schema drift 和证据不足 |
+
+每条 finding 还会补充 `rule_id`、`severity`、`confidence`、`language`、`evidence_refs`、`declared_capabilities`、`observed_capabilities`、`scanner_version` 和 `budget_truncated`。这次 taxonomy 收口不改变检测正则、AST 能力识别、severity、verdict 或 Gateway policy routing；它只改变 evidence 的解释字段和公开叙事。
 
 Provider-backed FSPR 复用 L2/L3 reviewer 的 `CS_LLM_PROVIDER`、`CS_LLM_MODEL`、`CS_LLM_BASE_URL` 和运行时 `CS_LLM_API_KEY`，但这些变量只是 provider 配置。执行 provider-backed FSPR 还必须显式设置 `CS_SKILL_TRUST_FSPR_PROVIDER_ENABLED=true`；pre-use 同步 provider 路径还必须命中 `CS_SKILL_TRUST_FSPR_PROVIDER_SYNC_PROFILES`（默认 `strict,benchmark`）。Provider 输出中的 `recommended_action`、`recommended_policy_action` 和 `recommended_review_tier` 会降级并被 policy 忽略。
 

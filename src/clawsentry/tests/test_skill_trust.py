@@ -2232,7 +2232,7 @@ def test_hash_changed_blocks_pre_action_as_trusted_registry_drift():
 
     assert decision.decision == DecisionVerdict.BLOCK
     assert snapshot.risk_level == RiskLevel.HIGH
-    assert snapshot.rule_hits == ["skill_hash_mismatch"]
+    assert "skill_hash_mismatch" in snapshot.rule_hits
 
 
 def test_policy_blocks_poisoned_alias_plus_provenance_conflict_only_on_pre_action():

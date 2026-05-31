@@ -35,6 +35,12 @@ pip install clawsentry[all]      # everything
 
 Requires Python >= 3.11.
 
+## What's New in v0.8.6
+
+- **Skill Trust compatibility cleanup**: first-use skill package review output naming and compatibility paths are cleaned up for a simpler public contract.
+- **Documentation refresh**: public docs and release status are refreshed for v0.8.6.
+- **Runtime behavior unchanged**: detector rules, severity, verdicts, and Gateway policy routing are unchanged.
+
 ## What's New in v0.8.5
 
 - **Content evidence and FSPR debug infrastructure**: Gateway read-content evidence, FSPR real-package scanning, provider microbench tooling, and corpus utilities are now part of the mainline.

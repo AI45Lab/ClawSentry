@@ -43,6 +43,7 @@ from .anti_bypass_llm_recognizer import (
 from .content_evidence import collect_for_event, strip_content_bodies
 from .event_bus import EventBus
 from .first_use_skill_review import (
+    FSPR_EVIDENCE_CAPSULE_SCHEMA_VERSION,
     FSPRLLMRoleProvider,
     run_agentic_readonly_fspr_review,
     run_first_use_skill_package_review,
@@ -1633,7 +1634,7 @@ def _apply_gateway_owned_first_use_package_review(
             ],
             "final_findings": [],
             "evidence_capsule": {
-                "schema": "clawsentry.fspr_evidence_capsule.v1",
+                "schema": FSPR_EVIDENCE_CAPSULE_SCHEMA_VERSION,
                 "failure_class": "inventory_failure",
                 "failure_type": type(exc).__name__,
             },

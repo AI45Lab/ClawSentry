@@ -7,6 +7,26 @@ hide:
 
 本页只保留公开使用者需要看到的发布摘要。详细开发记录和内部进度说明保留在开发仓库文档中。
 
+## v0.8.6 {#v086}
+
+*2026-05-31*
+
+<div class="cs-pill-row">
+<span class="cs-pill cs-pill--release">Skill Trust Compatibility Cleanup</span>
+</div>
+
+### 改进
+
+- **Skill Trust 兼容性维护** — 收口首次使用 skill 包审查的公开输出命名和兼容路径，减少旧口径暴露。
+- **公开文档刷新** — 在线 changelog、首页提示和发布状态更新到 `v0.8.6`。
+- **运行时行为不变** — 检测规则、severity、verdict 与 Gateway policy routing 不变。
+
+### 边界
+
+- 本版本不声明新的检测能力、benchmark 排名或策略行为变化。
+
+---
+
 ## v0.8.5 {#v085}
 
 *2026-05-31*

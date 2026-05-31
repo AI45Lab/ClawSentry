@@ -8,6 +8,20 @@
 
 - 下一轮用户反馈与回归验证后补充。
 
+## [0.8.6] — 2026-05-31
+
+### 改进
+
+- **Skill Trust compatibility cleanup** — 收口首次使用 skill 包审查的公开输出命名和兼容路径，减少旧口径暴露；检测规则、severity、verdict 与 Gateway policy routing 不变。
+
+### 文档
+
+- 刷新公开 Skill Trust 文档、在线 changelog 和发布状态说明到 `v0.8.6`，将发布说明聚焦为使用者可理解的兼容性维护更新。
+
+### 边界
+
+- 本版本不声明新的检测能力、benchmark 排名或策略行为变化。
+
 ## [0.8.5] — 2026-05-31
 
 ### 新增
@@ -1774,6 +1788,7 @@
 [0.6.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.6
 [0.6.7]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.7
 [0.6.8]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.6.8
+[0.8.6]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.6
 [0.8.5]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.5
 [0.8.4]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.4
 [0.8.3]: https://github.com/Elroyper/ClawSentry/releases/tag/v0.8.3
